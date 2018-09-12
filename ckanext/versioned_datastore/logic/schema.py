@@ -50,5 +50,8 @@ def versioned_datastore_search_schema():
         # if a facets list is included then the top 10 most frequent values for each of the fields
         # listed will be returned along with estimated counts
         u'facets': [ignore_missing, list_of_strings()],
+        # the facet limits dict allows precise control over how many top values to return for each
+        # facet in the facets list
+        u'facet_limits': [ignore_missing, json_validator],
         u'__junk': [empty],
     }

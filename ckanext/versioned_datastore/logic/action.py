@@ -70,6 +70,14 @@ def datastore_search(context, data_dict):
                    will be returned along with estimated counts for each value. Calculating these
                    results has a reasonable overhead so only include this parameter if you need it
     :type facets: list or comma separated string
+    :param facet_limits: if present, specifies the number of top values to retrieve for the facets
+                        listed within. The default number will be used if this parameter is not
+                        specified or if a facet in the facets list does not appear in this dict. For
+                        example, with this facet list ['facet1', 'facet2', 'facet3', 'facet4'], and
+                        this facet_limits dict: {'facet1': 50, 'facet4': 10}, facet1 and facet4
+                        would be limited to top 50 and 10 values respectively, whereas facet2 and
+                        facet3 would be limited to the default of the top 10.
+    :type facet_limits: a dict
 
 
     **Results:**

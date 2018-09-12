@@ -15,7 +15,7 @@ def prefix_field(field):
 
 
 def create_search(q=None, filters=None, offset=None, limit=None, fields=None, facets=None,
-                  sort=None, **kwargs):
+                  facet_limits=None, sort=None, **kwargs):
     '''
     Given the parameters, creates a new elasticsearch-dsl Search object and returns it.
 
@@ -28,6 +28,7 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
     :param limit: the limit to stop the search result at (for pagination)
     :param fields: a list of field names to return in the result
     :param facets: a list of field names to return an aggregation of top 10 values and counts for
+    :param facet_limits: a dict of fields and their customised top n limits
     :param sort: a list of fields to sort by with ordering. By default the fields are sorted
                  ascending, but by providing "desc" after the field name a descending sort will be
                  used
@@ -74,5 +75,7 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
             # to produce the facet counts we use a bucket terms aggregation, note that using the
             # bucket function on the top level aggs attribute on the search object doesn't return a
             # copy of the search object like it does when adding queries etc
-            search.aggs.bucket(facet, u'terms', field=u'{}.keyword'.format(prefix_field(facet)))
+            search.aggs.bucket(facet, u'terms',
+                               field=u'{}.keyword'.format(prefix_field(facet)),
+                               size=facet_limits.get(facet, 10))
     return search
