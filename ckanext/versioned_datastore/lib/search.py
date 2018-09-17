@@ -64,13 +64,14 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
         for field_and_sort in sort:
             if not field_and_sort.endswith(' desc') and not field_and_sort.endswith(' asc'):
                 field_and_sort += u' asc'
-            field, direction = prefix_field(field_and_sort).rsplit(' ', maxsplit=1)
+            field, direction = prefix_field(field_and_sort).rsplit(' ', 1)
             if direction == u'desc':
                 sorts.append(u'-{}.keyword'.format(field))
             else:
                 sorts.append(u'{}.keyword'.format(field))
         search = search.sort(*sorts)
     if facets is not None:
+        facet_limits = facet_limits if facet_limits is not None else {}
         for facet in facets:
             # to produce the facet counts we use a bucket terms aggregation, note that using the
             # bucket function on the top level aggs attribute on the search object doesn't return a
