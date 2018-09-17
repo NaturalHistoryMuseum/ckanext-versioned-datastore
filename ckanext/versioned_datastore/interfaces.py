@@ -86,3 +86,21 @@ class IVersionedDatastore(interfaces.Interface):
         :rtype: eevee SearchResults object
         '''
         return result
+
+    def datastore_modify_fields(self, resource_id, mapping, fields):
+        '''
+        Allows modification of the field definitions before they are returned with the results of
+        a datastore_search. The definitions are used in CKAN by the recline view and therefore need
+        to abide by any of its requirements. By default all fields are included and are simply made
+        up of a dict containing an id and type key. The id is the name of the field and the type is
+        always string.
+
+        :param resource_id: the resource id that was searched
+        :param mapping: the mapping for the elasticsearch index containing the resource's data. This
+                        is the raw mapping as a dict, retrieved straight from elasticsearch's
+                        mapping endpoint
+        :param fields: the field definitions that have so far been extracted from the mapping, by
+                       default this is all fields
+        :return: the list of field definition dicts
+        '''
+        return fields

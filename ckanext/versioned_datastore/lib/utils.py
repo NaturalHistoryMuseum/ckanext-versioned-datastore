@@ -37,26 +37,15 @@ def format_facets(aggs):
     return facets
 
 
-def _extract_details(field, details):
-    '''
-    Helper that produces a dict with the field and it's type details.
-
-    :param field: the field name
-    :param details: the details dict for that field
-    :return: a dict
-    '''
-    return {
-        'name': field,
-        'type': details['type'],
-    }
-
-
 # TODO: should probs cache this
 def get_fields(resource_id):
     '''
     Given a resource id, looks up the mapping in elasticsearch for the index that contains the
     resource's data using the searcher object's client and then returns a list of fields with type
     information.
+
+    The response format is important as it must match the requirements of reclineJS's field
+    definitions. See http://okfnlabs.org/recline/docs/models.html#field for more details.
 
     :param resource_id:
     :return:
@@ -69,16 +58,13 @@ def get_fields(resource_id):
     fields = []
     for mappings in mapping.values():
         # we're only going to return the details of the data fields, so loop over those properties
-        for field, details in mappings['mappings'][DOC_TYPE]['properties']['data']['properties'].items():
-            # if the field is a nested object then it'll have its own properties, only go one level
-            # deep though for now
-            if 'properties' in details:
-                for subfield, subdetails in details['properties'].items():
-                    # add the details and make sure to prefix the field with the parent field name
-                    fields.append(_extract_details('{}.{}'.format(field, subfield), subdetails))
-            else:
-                fields.append(_extract_details(field, details))
-    return fields
+        for field in mappings['mappings'][DOC_TYPE]['properties']['data']['properties']:
+            fields.append({
+                u'id': field,
+                # by default, everything is a string
+                u'type': u'string',
+            })
+    return mapping, fields
 
 
 def is_datastore_resource(resource_id):

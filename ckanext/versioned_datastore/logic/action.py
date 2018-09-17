@@ -124,12 +124,18 @@ def datastore_search(context, data_dict):
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
+    resource_id = data_dict[u'resource_id']
+    mapping, fields = get_fields(resource_id)
+    # allow other extensions implementing our interface to modify the field definitions
+    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+
     # return a dictionary containing the results and other details
     return {
         u'total': result.total,
         u'records': [hit.data for hit in result.results()],
         u'facets': format_facets(result.aggregations),
-        u'fields': get_fields(data_dict['resource_id']),
+        u'fields': fields,
     }
 
 
