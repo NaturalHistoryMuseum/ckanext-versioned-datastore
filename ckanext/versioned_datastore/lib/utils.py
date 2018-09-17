@@ -3,7 +3,7 @@ from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
 # TODO: jazz up the config
-config = Config(elasticsearch_hosts=[u'http://172.17.0.3:9200'])
+config = Config(elasticsearch_hosts=[u'http://172.17.0.2:9200'])
 searcher = Searcher(config)
 
 
@@ -14,15 +14,18 @@ def format_facets(aggs):
 
         {
             "facet1": {
-                "value1": 1,
-                "value2": 4,
-                "value3": 1,
-                "value4": 2,
+                "details": {
+                    "sum_other_doc_count": 34,
+                    "doc_count_error_upper_bound": 3
+                },
+                "values": {
+                    "value1": 1,
+                    "value2": 4,
+                    "value3": 1,
+                    "value4": 2,
+                }
             },
-            "facet2": {
-                "value1": 9,
-                "value2": 10,
-            }
+            etc
         }
 
     etc.
@@ -32,8 +35,15 @@ def format_facets(aggs):
     '''
     facets = {}
     for facet, details in aggs.items():
-        facets[facet] = {value_details['key']: value_details['doc_count']
-                         for value_details in details['buckets']}
+        facets[facet] = {
+            'details': {
+                'sum_other_doc_count': details['sum_other_doc_count'],
+                'doc_count_error_upper_bound': details['doc_count_error_upper_bound'],
+            },
+            'values': {value_details['key']: value_details['doc_count']
+                       for value_details in details['buckets']}
+        }
+
     return facets
 
 
