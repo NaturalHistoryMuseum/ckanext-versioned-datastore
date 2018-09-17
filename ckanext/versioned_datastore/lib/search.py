@@ -50,9 +50,13 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
                     field = prefix_field(field)
                 search = search.query(u'match', **{field: query})
     if filters is not None:
-        for field, value in filters.items():
-            # filter on the keyword version of the field
-            search = search.filter(u'term', **{u'{}.keyword'.format(prefix_field(field)): value})
+        for field, values in filters.items():
+            if isinstance(values, basestring):
+                values = [values]
+            field = u'{}.keyword'.format(prefix_field(field))
+            for value in values:
+                # filter on the keyword version of the field
+                search = search.filter(u'term', **{field: value})
     if offset is not None:
         search = search.extra(from_=int(offset), size=100)
     if limit is not None:
