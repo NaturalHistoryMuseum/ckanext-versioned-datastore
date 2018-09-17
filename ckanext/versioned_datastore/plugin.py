@@ -8,6 +8,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.interfaces.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.ITemplateHelpers, inherit=True)
+    plugins.implements(plugins.IResourceController)
 
     # IActions
     def get_actions(self):
@@ -33,3 +34,15 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
         return {
             'is_datastore_resource': is_datastore_resource
         }
+
+    # IResourceController
+    def before_show(self, resource_dict):
+        # TODO: this url business?
+        # Modify the resource url of datastore resources so that
+        # they link to the datastore dumps.
+        # if resource_dict.get('url_type') == 'datastore':
+        #     resource_dict['url'] = p.toolkit.url_for(
+        #         controller='ckanext.datastore.controller:DatastoreController',
+        #         action='dump', resource_id=resource_dict['id'])
+        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
+        return resource_dict
