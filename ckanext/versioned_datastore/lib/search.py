@@ -51,7 +51,7 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
                 search = search.query(u'match', **{field: query})
     if filters is not None:
         for field, values in filters.items():
-            if isinstance(values, basestring):
+            if not isinstance(values, list):
                 values = [values]
             field = u'{}.keyword'.format(prefix_field(field))
             for value in values:
