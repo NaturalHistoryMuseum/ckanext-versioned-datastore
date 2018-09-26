@@ -1,7 +1,6 @@
 from ckan import plugins
-from ckanext.datastore.logic import auth
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource
-from ckanext.versioned_datastore.logic import action
+from ckanext.versioned_datastore.logic import action, auth
 
 
 class VersionedSearchPlugin(plugins.SingletonPlugin):
@@ -21,7 +20,6 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
 
     # IAuthFunctions
     def get_auth_functions(self):
-        # for the moment, just return the auth functions used by the datastore
         return {
             'datastore_create': auth.datastore_create,
             'datastore_upsert': auth.datastore_upsert,
