@@ -53,7 +53,7 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
         for field, values in filters.items():
             if not isinstance(values, list):
                 values = [values]
-            field = u'{}.keyword'.format(prefix_field(field))
+            field = u'{}'.format(prefix_field(field))
             for value in values:
                 # filter on the keyword version of the field
                 search = search.filter(u'term', **{field: value})
@@ -70,9 +70,9 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
                 field_and_sort += u' asc'
             field, direction = prefix_field(field_and_sort).rsplit(' ', 1)
             if direction == u'desc':
-                sorts.append(u'-{}.keyword'.format(field))
+                sorts.append(u'-{}'.format(field))
             else:
-                sorts.append(u'{}.keyword'.format(field))
+                sorts.append(field)
         search = search.sort(*sorts)
     if facets is not None:
         facet_limits = facet_limits if facet_limits is not None else {}
@@ -81,6 +81,6 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
             # bucket function on the top level aggs attribute on the search object doesn't return a
             # copy of the search object like it does when adding queries etc
             search.aggs.bucket(facet, u'terms',
-                               field=u'{}.keyword'.format(prefix_field(facet)),
+                               field=prefix_field(facet),
                                size=facet_limits.get(facet, 10))
     return search
