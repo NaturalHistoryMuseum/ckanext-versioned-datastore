@@ -55,3 +55,11 @@ def versioned_datastore_search_schema():
         u'facet_limits': [ignore_missing, json_validator],
         u'__junk': [empty],
     }
+
+
+def datastore_get_record_versions_schema():
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'id': [not_empty, int],
+        u'__junk': [empty],
+    }

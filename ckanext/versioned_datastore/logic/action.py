@@ -7,7 +7,8 @@ from ckan.lib.navl.dictization_functions import validate
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.search import create_search
 from ckanext.versioned_datastore.lib.utils import searcher, get_fields, format_facets
-from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema
+from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema, \
+    datastore_get_record_versions_schema
 
 log = logging.getLogger(__name__)
 
@@ -152,3 +153,24 @@ def datastore_upsert(context, data_dict):
 def datastore_delete(context, data_dict):
     # TODO: implement
     pass
+
+
+@logic.side_effect_free
+def datastore_get_record_versions(context, data_dict):
+    '''
+    Given a record id and an resource it appears in, returns the version timestamps available for that record in
+    ascending order.
+
+    Data dict params:
+    :param resource_id: resource id that the record id appears in
+    :type resource_id: string
+    :param id: the id of the record
+    :type id: integer
+
+    **Results:**
+
+    :returns: a list of versions
+    :rtype: list
+    '''
+    data_dict = _validate(context, data_dict, datastore_get_record_versions_schema())
+    return searcher.get_versions(data_dict['resource_id'], int(data_dict['id']))

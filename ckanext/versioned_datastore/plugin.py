@@ -16,6 +16,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_upsert': action.datastore_upsert,
             'datastore_delete': action.datastore_delete,
             'datastore_search': action.datastore_search,
+            'datastore_get_record_versions': action.datastore_get_record_versions,
         }
 
     # IAuthFunctions
@@ -25,6 +26,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_upsert': auth.datastore_upsert,
             'datastore_delete': auth.datastore_delete,
             'datastore_search': auth.datastore_search,
+            'datastore_get_record_versions': auth.datastore_get_record_versions,
         }
 
     # ITemplateHelpers
