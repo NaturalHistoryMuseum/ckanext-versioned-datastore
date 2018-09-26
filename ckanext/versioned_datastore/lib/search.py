@@ -74,6 +74,9 @@ def create_search(q=None, filters=None, offset=None, limit=None, fields=None, fa
             else:
                 sorts.append(field)
         search = search.sort(*sorts)
+    else:
+        # by default, sort by the _id field
+        search = search.sort(prefix_field('_id'))
     if facets is not None:
         facet_limits = facet_limits if facet_limits is not None else {}
         for facet in facets:
