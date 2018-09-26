@@ -8,7 +8,7 @@ empty = get_validator('empty')
 ignore_missing = get_validator('ignore_missing')
 int_validator = get_validator('int_validator')
 not_empty = get_validator('not_empty')
-not_missing = get_validator('not_missing')
+resource_id_exists = get_validator('resource_id_exists')
 
 
 def list_of_strings(delimiter=u','):
@@ -38,7 +38,7 @@ def versioned_datastore_search_schema():
     :return: a dict
     '''
     return {
-        u'resource_id': [not_missing, not_empty, unicode],
+        u'resource_id': [not_empty, unicode, resource_id_exists],
         u'q': [ignore_missing, unicode_or_json_validator],
         u'filters': [ignore_missing, json_validator],
         u'limit': [ignore_missing, int_validator],
