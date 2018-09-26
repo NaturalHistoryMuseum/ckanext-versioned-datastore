@@ -58,6 +58,11 @@ def versioned_datastore_search_schema():
 
 
 def datastore_get_record_versions_schema():
+    """
+    Returns the schema for the datastore_get_record_versions action.
+
+    :return: a dict
+    """
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'id': [not_empty, int],
