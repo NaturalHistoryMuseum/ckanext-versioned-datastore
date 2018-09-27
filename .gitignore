@@ -1,3 +1,5 @@
 *.egg-info
 *.pyc
 .noseids
+.pytest_cache
+.coverage

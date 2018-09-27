@@ -7,7 +7,7 @@ from elasticsearch_dsl import A
 from ckan import logic, plugins
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
-from ckanext.versioned_datastore.lib.utils import searcher, get_fields, format_facets, validate
+from ckanext.versioned_datastore.lib.utils import get_searcher, get_fields, format_facets, validate
 from ckanext.versioned_datastore.logic import schema
 
 log = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ def datastore_search(context, data_dict):
 
     # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
     # ready for cross-resource search but this code isn't (yet)
-    result = searcher.search(indexes=[resource_id], search=search, version=version)
+    result = get_searcher().search(indexes=[resource_id], search=search, version=version)
 
     # allow other extensions implementing our interface to modify the result object
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
@@ -137,7 +137,7 @@ def datastore_get_record_versions(context, data_dict):
     :rtype: list
     '''
     data_dict = validate(context, data_dict, schema.datastore_get_record_versions_schema())
-    return searcher.get_versions(data_dict['resource_id'], int(data_dict['id']))
+    return get_searcher().get_versions(data_dict['resource_id'], int(data_dict['id']))
 
 
 @logic.side_effect_free
@@ -203,7 +203,7 @@ def datastore_autocomplete(context, data_dict):
         search.aggs[u'field_values'].after = {field: after}
 
     # run the search
-    result = searcher.search(indexes=[resource_id], search=search, version=version)
+    result = get_searcher().search(indexes=[resource_id], search=search, version=version)
     # get the results we're interested in
     agg_result = result.aggregations[u'field_values']
     # return a dict of results, but only include the after details if there are any to include

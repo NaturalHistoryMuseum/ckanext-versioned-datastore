@@ -5,9 +5,16 @@ from eevee.search.search import Searcher
 from ckan import plugins
 from ckan.lib.navl import dictization_functions
 
-# TODO: jazz up the config
-config = Config(elasticsearch_hosts=[u'http://172.17.0.3:9200'])
-searcher = Searcher(config)
+
+searcher = None
+
+
+def get_searcher():
+    # TODO: jazz up the config
+    global searcher
+    if searcher is None:
+        searcher = Searcher(Config(elasticsearch_hosts=[u'http://172.17.0.3:9200']))
+    return searcher
 
 
 def validate(context, data_dict, default_schema):
@@ -82,11 +89,10 @@ def get_fields(resource_id):
     :param resource_id:
     :return:
     '''
-    # TODO: move to eevee?
     # the index name for the resource is prefixed
-    index = '{}{}'.format(config.elasticsearch_index_prefix, resource_id)
+    index = get_searcher().prefix_index(resource_id)
     # lookup the mapping on elasticsearch
-    mapping = searcher.elasticsearch.indices.get_mapping(index)
+    mapping = get_searcher().elasticsearch.indices.get_mapping(index)
     fields = []
     for mappings in mapping.values():
         # we're only going to return the details of the data fields, so loop over those properties
@@ -107,5 +113,4 @@ def is_datastore_resource(resource_id):
     :param resource_id: the resource id
     :return: True if the resource is a datastore resource, False if not
     '''
-    index = '{}{}'.format(config.elasticsearch_index_prefix, resource_id)
-    return searcher.elasticsearch.indices.exists(index)
+    return get_searcher().elasticsearch.indices.exists(get_searcher().prefix_index(resource_id))
