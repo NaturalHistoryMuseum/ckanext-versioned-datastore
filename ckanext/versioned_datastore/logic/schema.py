@@ -7,6 +7,7 @@ boolean_validator = get_validator('boolean_validator')
 empty = get_validator('empty')
 ignore_missing = get_validator('ignore_missing')
 int_validator = get_validator('int_validator')
+not_missing = get_validator('not_missing')
 not_empty = get_validator('not_empty')
 resource_id_exists = get_validator('resource_id_exists')
 
@@ -66,5 +67,25 @@ def datastore_get_record_versions_schema():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'id': [not_empty, int],
+        u'__junk': [empty],
+    }
+
+
+def datastore_autocomplete_schema():
+    """
+    Returns the schema for the datastore_autocomplete action.
+
+    :return: a dict
+    """
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'q': [ignore_missing, unicode_or_json_validator],
+        u'filters': [ignore_missing, json_validator],
+        u'limit': [ignore_missing, int_validator],
+        u'after': [ignore_missing, unicode],
+        u'field': [not_empty, unicode],
+        u'term': [not_missing, unicode],
+        # add an optional version (if it's left out we default to current)
+        u'version': [ignore_missing, int_validator],
         u'__junk': [empty],
     }

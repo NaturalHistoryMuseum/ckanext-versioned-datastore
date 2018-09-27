@@ -1,35 +1,16 @@
 # -*- coding: utf-8 -*-
-import copy
+import base64
 import logging
 
+from elasticsearch_dsl import A
+
 from ckan import logic, plugins
-from ckan.lib.navl.dictization_functions import validate
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib.search import create_search
-from ckanext.versioned_datastore.lib.utils import searcher, get_fields, format_facets
-from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema, \
-    datastore_get_record_versions_schema
+from ckanext.versioned_datastore.lib.search import create_search, prefix_field
+from ckanext.versioned_datastore.lib.utils import searcher, get_fields, format_facets, validate
+from ckanext.versioned_datastore.logic import schema
 
 log = logging.getLogger(__name__)
-
-
-def _validate(context, data_dict, default_schema):
-    '''
-    Validate the data_dict against a schema. If a schema is not available in the context (under the
-    key 'schema') then the default schema is used.
-
-    If the data_dict fails the validation process a ValidationError is raised, otherwise the
-    potentially updated data_dict is returned.
-
-    :param context: the ckan context dict
-    :param data_dict: the dict to validate
-    :param default_schema: the default schema to use if the context doesn't have one
-    '''
-    schema = context.get(u'schema', default_schema)
-    data_dict, errors = validate(data_dict, schema, context)
-    if errors:
-        raise plugins.toolkit.ValidationError(errors)
-    return data_dict
 
 
 @logic.side_effect_free
@@ -95,37 +76,20 @@ def datastore_search(context, data_dict):
     :param facets: list of fields and their top 10 values, if requested
     :type facets: dict
     '''
-    # make a copy of the data dict so that we can pass it to the various plugin interface
-    # implementor functions
-    original_data_dict = copy.deepcopy(data_dict)
-
-    # allow other extensions implementing our interface to modify the data_dict
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
-        data_dict = plugin.datastore_modify_data_dict(context, data_dict)
-
-    # validate the data dict against our schema
-    data_dict = _validate(context, data_dict, versioned_datastore_search_schema())
-    # extract the resource we're going to search against. Note that this is passed to eevee as a
-    # list as eevee is ready
-    # for cross-resource search but this code isn't (yet)
-    resources = [data_dict[u'resource_id']]
+    original_data_dict, data_dict, search = create_search(context, data_dict)
+    resource_id = data_dict[u'resource_id']
     # see if there's a version and if there is, convert it to an int
     version = None if u'version' not in data_dict else int(data_dict[u'version'])
-    # create an elasticsearch-dsl search object by passing the expanded data dict
-    search = create_search(**data_dict)
 
-    # allow other extensions implementing our interface to modify the search object
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
-        search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
-
-    # run the search through eevee
-    result = searcher.search(indexes=resources, search=search, version=version)
+    # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
+    # ready for cross-resource search but this code isn't (yet)
+    result = searcher.search(indexes=[resource_id], search=search, version=version)
 
     # allow other extensions implementing our interface to modify the result object
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
-    resource_id = data_dict[u'resource_id']
+    # get the fields
     mapping, fields = get_fields(resource_id)
     # allow other extensions implementing our interface to modify the field definitions
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
@@ -158,8 +122,8 @@ def datastore_delete(context, data_dict):
 @logic.side_effect_free
 def datastore_get_record_versions(context, data_dict):
     '''
-    Given a record id and an resource it appears in, returns the version timestamps available for that record in
-    ascending order.
+    Given a record id and an resource it appears in, returns the version timestamps available for
+    that record in ascending order.
 
     Data dict params:
     :param resource_id: resource id that the record id appears in
@@ -172,5 +136,80 @@ def datastore_get_record_versions(context, data_dict):
     :returns: a list of versions
     :rtype: list
     '''
-    data_dict = _validate(context, data_dict, datastore_get_record_versions_schema())
+    data_dict = validate(context, data_dict, schema.datastore_get_record_versions_schema())
     return searcher.get_versions(data_dict['resource_id'], int(data_dict['id']))
+
+
+@logic.side_effect_free
+def datastore_autocomplete(context, data_dict):
+    '''
+    Provides autocompletion results against a specific field in a specific resource.
+
+    **Data dict params:**
+
+    :param resource_id: id of the resource to be searched against
+    :type resource_id: string
+    :param q: full text query. If a string is passed, all fields are searched with the value. If a
+          dict is passed each of the fields and values contained within will be searched as
+          required (e.g. {"field1": "a", "field2": "b"}).
+    :type q: string or dictionary
+    :param filters: a dictionary of conditions that must be met to match a record
+                    (e.g {"field1": "a", "field2": "b"}) (optional)
+    :type filters: dictionary
+    :param limit: maximum number of records to return (optional, default: 100)
+    :type limit: int
+    :param after: search after offset value as a base64 encoded string
+    :type after: string
+    :param field: the field to autocomplete against
+    :type field: string
+    :param term: the search term for the autocompletion
+    :type term: string
+    :param version: version to search at, if not provided the current version of the data is
+                   searched.
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+
+
+    **Results:**
+
+    :returns: a dict containing the list of values and an after value for the next page's results
+    :rtype: dict
+    '''
+    # ensure the data dict is valid against our autocomplete action schema
+    data_dict = validate(context, data_dict, schema.datastore_autocomplete_schema())
+
+    # extract the fields specifically needed for setting up the autocomplete query
+    field = data_dict.pop(u'field')
+    term = data_dict.pop(u'term')
+    after = data_dict.pop(u'after', None)
+    # default to a size of 20 results
+    size = data_dict.pop(u'limit', 20)
+    # ensure the search doesn't respond with any hits cause we don't need them
+    data_dict[u'limit'] = 0
+
+    # now build the search object against the normal search code
+    _original_data_dict, data_dict, search = create_search(context, data_dict)
+    # get the resource id we're going to search against
+    resource_id = data_dict[u'resource_id']
+    # see if there's a version and if there is, convert it to an int
+    version = None if u'version' not in data_dict else int(data_dict[u'version'])
+
+    # add the autocompletion query part which takes the form of a prefix search
+    search = search.filter(u'prefix', **{prefix_field(field): term})
+    # modify the search so that it has the aggregation required to get the autocompletion results
+    search.aggs.bucket(u'field_values', u'composite', size=size,
+                       sources={field: A(u'terms', field=prefix_field(field), order=u'asc')})
+    # if there's an after included, add it into the aggregation
+    if after:
+        search.aggs[u'field_values'].after = {field: after}
+
+    # run the search
+    result = searcher.search(indexes=[resource_id], search=search, version=version)
+    # get the results we're interested in
+    agg_result = result.aggregations[u'field_values']
+    # return a dict of results, but only include the after details if there are any to include
+    return_dict = {
+        u'values': [bucket[u'key'][field] for bucket in agg_result[u'buckets']],
+    }
+    if u'after_key' in agg_result:
+        return_dict[u'after'] = agg_result[u'after_key'][field]
+    return return_dict

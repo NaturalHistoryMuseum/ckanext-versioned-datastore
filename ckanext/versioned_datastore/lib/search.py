@@ -1,4 +1,11 @@
+import copy
+
 from elasticsearch_dsl import Search
+
+from ckan import plugins
+from ckanext.versioned_datastore.interfaces import IVersionedDatastore
+from ckanext.versioned_datastore.lib.utils import validate
+from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema
 
 
 def prefix_field(field):
@@ -14,8 +21,40 @@ def prefix_field(field):
     return 'data.{}'.format(field)
 
 
-def create_search(q=None, filters=None, offset=None, limit=None, fields=None, facets=None,
-                  facet_limits=None, sort=None, **kwargs):
+def create_search(context, data_dict):
+    '''
+    Create the search object based on the parameters in the data_dict. This function will call
+    plugins that implement the datastore_modify_data_dict and datastore_modify_search interface
+    functions.
+
+    :param context: the context dict
+    :param data_dict: the data dict of parameters
+    :return: a 3-tuple containing: the original data_dict that was passed into this function, the
+                                   data_dict after modification by other plugins and finally the
+                                   elasticsearch-dsl Search object
+    '''
+    # make a copy of the data dict so that we can pass it to the various plugin interface
+    # implementor functions
+    original_data_dict = copy.deepcopy(data_dict)
+
+    # allow other extensions implementing our interface to modify the data_dict
+    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        data_dict = plugin.datastore_modify_data_dict(context, data_dict)
+
+    # validate the data dict against our schema
+    data_dict = validate(context, data_dict, versioned_datastore_search_schema())
+    # create an elasticsearch-dsl Search object by passing the expanded data dict
+    search = build_search_object(**data_dict)
+
+    # allow other extensions implementing our interface to modify the search object
+    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
+
+    return original_data_dict, data_dict, search
+
+
+def build_search_object(q=None, filters=None, offset=None, limit=None, fields=None, facets=None,
+                        facet_limits=None, sort=None, **kwargs):
     '''
     Given the parameters, creates a new elasticsearch-dsl Search object and returns it.
 
