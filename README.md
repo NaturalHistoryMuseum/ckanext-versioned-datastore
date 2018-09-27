@@ -1,5 +1,8 @@
 # Versioned Datastore for CKAN
 
+[![Travis](https://img.shields.io/travis/NaturalHistoryMuseum/ckanext-versioned-datastore.svg?style=flat-square)](https://travis-ci.org/NaturalHistoryMuseum/ckanext-versioned-datastore)
+[![Coveralls github](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore.svg?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
+
 A CKAN extension providing a versioned datastore using MongoDB, Elasticsearch and [Eevee](https://github.com/NaturalHistoryMuseum/eevee).
 
 
