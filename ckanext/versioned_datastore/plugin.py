@@ -26,6 +26,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_search': action.datastore_search,
             'datastore_get_record_versions': action.datastore_get_record_versions,
             'datastore_autocomplete': action.datastore_autocomplete,
+            'datastore_reindex': action.datastore_reindex,
         }
 
     # IAuthFunctions
@@ -37,6 +38,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_search': auth.datastore_search,
             'datastore_get_record_versions': auth.datastore_get_record_versions,
             'datastore_autocomplete': auth.datastore_autocomplete,
+            'datastore_reindex': auth.datastore_reindex,
         }
 
     # ITemplateHelpers

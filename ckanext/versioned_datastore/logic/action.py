@@ -330,3 +330,34 @@ def datastore_autocomplete(context, data_dict):
     if u'after_key' in agg_result:
         return_dict[u'after'] = agg_result[u'after_key'][field]
     return return_dict
+
+
+def datastore_reindex(context, data_dict):
+    '''
+    Triggers a reindex of the given resource's data. This does not reingest and reindex it simply
+    runs an update_by_query request on the resource's index in elasticsearch. The intent of this
+    action is to allow mapping changes (for example) to be picked up.
+
+    Data dict params:
+    :param resource_id: resource id that the record id appears in
+    :type resource_id: string
+
+    **Results:**
+
+    :returns: a dict containing the details of the reindex as returned from elasticsearch
+    :rtype: dict
+    '''
+    # validate the data dict
+    data_dict = utils.validate(context, data_dict, schema.datastore_reindex())
+    # check auth
+    plugins.toolkit.check_access(u'datastore_reindex', context, data_dict)
+    # retrieve the resource id
+    resource_id = data_dict[u'resource_id']
+    # cache a reference to the searcher object as we're going to use it twice
+    searcher = utils.get_searcher()
+    # figure out the name of the index
+    index_name = searcher.prefix_index(resource_id)
+    # run the reindex, note that this blocks
+    # TODO: do this asynchronously? We'd probably need more UI and fluff around it though to allow
+    #       user control of the elasticsearch based task that would be created
+    return searcher.elasticsearch.update_by_query(index=index_name)

@@ -132,3 +132,14 @@ def datastore_autocomplete_schema():
         # add an optional version (if it's left out we default to current)
         u'version': [ignore_missing, int_validator],
     }
+
+
+def datastore_reindex():
+    """
+    Returns the schema for the datastore_reindex action.
+
+    :return: a dict
+    """
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+    }
