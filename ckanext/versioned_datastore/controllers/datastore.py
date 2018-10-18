@@ -1,6 +1,7 @@
 from ckan import logic
 from ckan.lib import base
 from ckan.plugins import toolkit
+from ckanext.versioned_datastore.lib.stats import get_latest_stats
 
 
 class ResourceDataController(base.BaseController):
@@ -14,4 +15,5 @@ class ResourceDataController(base.BaseController):
         except logic.NotAuthorized:
             base.abort(401, _(u'Unauthorized to edit this resource'))
 
-        return base.render(u'package/resource_data.html')
+        extra_vars = {u'stats': get_latest_stats(resource_id)}
+        return base.render(u'package/resource_data.html', extra_vars=extra_vars)

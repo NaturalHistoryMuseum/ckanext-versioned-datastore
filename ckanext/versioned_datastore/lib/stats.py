@@ -1,3 +1,5 @@
+from sqlalchemy import desc
+
 from ckan import model
 
 from ckanext.versioned_datastore.model.stats import ImportStats
@@ -56,3 +58,8 @@ def indexing_monitor(stats_id):
         model.Session.commit()
 
     return monitor
+
+
+def get_latest_stats(resource_id):
+    return model.Session.query(ImportStats).filter(
+        ImportStats.resource_id == resource_id).order_by(desc(ImportStats.id)).first()
