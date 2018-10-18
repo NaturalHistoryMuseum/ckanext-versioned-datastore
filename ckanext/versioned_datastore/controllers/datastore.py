@@ -1,4 +1,5 @@
 from ckan import logic
+from ckan.common import _
 from ckan.lib import base
 from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.stats import get_latest_stats
