@@ -1,15 +1,39 @@
+import json
+
 from ckan.logic import get_validator
 from ckan.logic.validators import Invalid
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
 
 # grab all the validator functions upfront
 boolean_validator = get_validator('boolean_validator')
-empty = get_validator('empty')
 ignore_missing = get_validator('ignore_missing')
 int_validator = get_validator('int_validator')
 not_missing = get_validator('not_missing')
 not_empty = get_validator('not_empty')
 resource_id_exists = get_validator('resource_id_exists')
+OneOf = get_validator('OneOf')
+
+
+def list_of_dicts_validator(value, context):
+    '''
+    Validates that the value passed can be a list of dicts, either because it is or because it is
+    once it's been parsed as JSON.
+
+    :param value: the value
+    :param context: the context
+    :return: the value as a list of dicts
+    '''
+    # if the value is a string parse it as json first
+    if isinstance(value, basestring):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            raise Invalid('Cannot parse JSON')
+    # now check that the value is a list and all the elements in the list are dicts
+    if isinstance(value, list) and all(isinstance(item, dict) for item in value):
+        return value
+    # if we reach here the value is rubbish, error out
+    raise Invalid('Value must be a list of dictionaries')
 
 
 def list_of_strings(delimiter=u','):
@@ -22,12 +46,14 @@ def list_of_strings(delimiter=u','):
     :param delimiter: the string to delimit the value on, if it's a string. Defaults to a comma
     :return: a list
     '''
+
     def validator(value):
         if isinstance(value, list):
             return value
         if isinstance(value, basestring):
             return value.split(delimiter)
         raise Invalid(u'Invalid list of strings')
+
     return validator
 
 
@@ -54,7 +80,26 @@ def versioned_datastore_search_schema():
         # the facet limits dict allows precise control over how many top values to return for each
         # facet in the facets list
         u'facet_limits': [ignore_missing, json_validator],
-        u'__junk': [empty],
+    }
+
+
+def versioned_datastore_create_schema():
+    return {
+        u'resource_id': [ignore_missing, unicode, resource_id_exists],
+    }
+
+
+def versioned_datastore_upsert_schema():
+    return {
+        u'resource_id': [unicode, resource_id_exists],
+        u'version': [ignore_missing, int_validator],
+        u'index_action': [ignore_missing, unicode, OneOf([u'remove', u'retain', u'skip'])],
+    }
+
+
+def versioned_datastore_delete_schema():
+    return {
+        u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
 
 
@@ -67,7 +112,6 @@ def datastore_get_record_versions_schema():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'id': [not_empty, int],
-        u'__junk': [empty],
     }
 
 
@@ -87,5 +131,4 @@ def datastore_autocomplete_schema():
         u'term': [not_missing, unicode],
         # add an optional version (if it's left out we default to current)
         u'version': [ignore_missing, int_validator],
-        u'__junk': [empty],
     }

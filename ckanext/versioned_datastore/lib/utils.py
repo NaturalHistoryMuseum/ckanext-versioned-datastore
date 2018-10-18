@@ -1,19 +1,35 @@
+import tempfile
+from contextlib import contextmanager, closing
+
+import requests
+import rq
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
 from ckan import plugins
 from ckan.lib.navl import dictization_functions
+from ckanext.rq import jobs
 
-
+CSV_FORMATS = [u'csv', u'application/csv']
+TSV_FORMATS = [u'tsv']
+XLS_FORMATS = [u'xls', u'application/vnd.ms-excel']
+XLSX_FORMATS = [u'xlsx', u'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
+config = Config(
+    # TODO: get hosts etc from config
+    elasticsearch_hosts=[u'http://172.17.0.2:9200'],
+    mongo_host=u'172.17.0.3',
+    elasticsearch_index_prefix=u'nhm-',
+    mongo_database=u'nhm',
+)
 searcher = None
 
 
 def get_searcher():
-    # TODO: jazz up the config
     global searcher
     if searcher is None:
-        searcher = Searcher(Config(elasticsearch_hosts=[u'http://172.17.0.3:9200']))
+        searcher = Searcher(config)
     return searcher
 
 
@@ -114,3 +130,56 @@ def is_datastore_resource(resource_id):
     :return: True if the resource is a datastore resource, False if not
     '''
     return get_searcher().elasticsearch.indices.exists(get_searcher().prefix_index(resource_id))
+
+
+def is_ingestible(resource):
+    """
+    Returns True if the resource can be ingested into the datastore and False if not. To be
+    ingestible the resource must either be a datastore only resource (signified by the url being
+    set to _datastore_only_resource) or have a format that we can ingest (the format field on the
+    resource is used for this, not the URL).
+
+    :param resource: the resource dict
+    :return: True if it is, False if not
+    """
+    resource_format = resource.get(u'format', None)
+    return (resource[u'url'] == u'_datastore_only_resource' or
+            resource[u'url'] == u'http://_datastore_only_resource' or
+            (resource_format is not None and resource_format.lower() in ALL_FORMATS))
+
+
+@contextmanager
+def download_to_temp_file(url):
+    """
+    Streams the data from the given URL and saves it in a temporary file. The (named) temporary file
+    is then yielded to the caller for use. Once the context collapses the temporary file is removed.
+
+    :param url: the url to stream the data from
+    """
+    # open up the url for streaming
+    with closing(requests.get(url, stream=True)) as r:
+        # create a temporary file to store the data in
+        with tempfile.NamedTemporaryFile() as temp:
+            # iterate over the data from the url stream in chunks
+            for chunk in r.iter_content(chunk_size=1024):
+                # only write chunks with data in them
+                if chunk:
+                    # write the chunk to the file
+                    temp.write(chunk)
+            # the url has been completely downloaded to the temp file, so yield it for use
+            temp.seek(0)
+            yield temp
+
+
+def ensure_importing_queue_exists():
+    '''
+    This is a massive hack to get around the lack of rq Queue kwarg exposure from ckanext-rq. The
+    default timeout for queues is 180 seconds in rq which is not long enough for our import tasks
+    but the timeout parameter hasn't been exposed. This code creates a new queue in the ckanext-rq
+    cache so that when enqueuing new jobs it is used rather than a default one. Once this bug has
+    been fixed in ckan/ckanext-rq this code will be removed.
+    '''
+    name = jobs.add_queue_name_prefix(u'importing')
+    # set the timeout to 30 mins
+    queue = rq.Queue(name, default_timeout=60 * 30, connection=jobs._connect())
+    jobs._queues[name] = queue

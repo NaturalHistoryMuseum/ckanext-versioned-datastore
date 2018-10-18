@@ -1,14 +1,25 @@
 # -*- coding: utf-8 -*-
-import base64
 import logging
+from datetime import datetime
 
+from eevee.indexing.utils import delete_index
+from eevee.mongo import get_mongo
+from eevee.utils import to_timestamp
 from elasticsearch_dsl import A
 
 from ckan import logic, plugins
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
+from ckanext.versioned_datastore.lib import utils
+from ckanext.versioned_datastore.lib.importing import import_resource_data
+from ckanext.versioned_datastore.lib.indexing import DatastoreIndex
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
-from ckanext.versioned_datastore.lib.utils import get_searcher, get_fields, format_facets, validate
+from ckanext.versioned_datastore.lib.utils import get_searcher
 from ckanext.versioned_datastore.logic import schema
+
+try:
+    enqueue_job = plugins.toolkit.enqueue_job
+except AttributeError:
+    from ckanext.rq.jobs import enqueue as enqueue_job
 
 log = logging.getLogger(__name__)
 
@@ -83,14 +94,14 @@ def datastore_search(context, data_dict):
 
     # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
     # ready for cross-resource search but this code isn't (yet)
-    result = get_searcher().search(indexes=[resource_id], search=search, version=version)
+    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
 
     # allow other extensions implementing our interface to modify the result object
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
     # get the fields
-    mapping, fields = get_fields(resource_id)
+    mapping, fields = utils.get_fields(resource_id)
     # allow other extensions implementing our interface to modify the field definitions
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
@@ -99,24 +110,130 @@ def datastore_search(context, data_dict):
     return {
         u'total': result.total,
         u'records': [hit.data for hit in result.results()],
-        u'facets': format_facets(result.aggregations),
+        u'facets': utils.format_facets(result.aggregations),
         u'fields': fields,
     }
 
 
 def datastore_create(context, data_dict):
-    # TODO: implement
-    pass
+    '''
+    Adds a resource to the versioned datastore. This action doesn't take any data, it simply ensures
+    any setup work is complete for the given resource in the search backend. To add data after
+    creating a resource in the datastore, use the datastore_upsert action.
+
+    :param resource_id: resource id of the resource
+    :type resource_id: string
+
+    **Results:**
+
+    :returns: True if the datastore was initialised for this resource (or indeed if it was already
+              initialised) and False if not. If False is returned this implies that the resource
+              cannot be ingested into the datastore because the format is not supported
+    :rtype: boolean
+    '''
+    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_create_schema())
+    plugins.toolkit.check_access(u'datastore_create', context, data_dict)
+
+    resource_id = data_dict[u'resource_id']
+    # lookup the resource dict
+    resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
+    # only create the index if the resource is ingestable
+    if utils.is_ingestible(resource):
+        # note that the version parameter doesn't matter when creating the index so we can safely
+        # pass None
+        get_searcher().ensure_index_exists(DatastoreIndex(utils.config, resource_id, None))
+        return True
+    return False
 
 
 def datastore_upsert(context, data_dict):
-    # TODO: implement
-    pass
+    '''
+    Upserts data into the datastore for the resource. The data can be provided in the data_dict
+    using the key 'data' or, if data is not specified, the URL on the resource is used.
+
+    :param resource_id: resource id of the resource
+    :type resource_id: string
+    :param version: the version to store the data under (optional, if not specified defaults to now)
+    :type version: int
+    :param index_action: the index action to take. This must be one of:
+                            - skip: skips indexing altogether, this therefore allows the updating a
+                                    resource's data across multiple requests. If this argument is
+                                    used then the only way the newly ingested version will become
+                                    visible in the index is if a final request is made with one of
+                                    the other index_actions below.
+                            - remove: before the data in the new version is indexed, the records
+                                      that were not included in the version are flagged as deleted
+                                      meaning they will not be indexed in the new version. Note that
+                                      even if a record's data hasn't changed in the new version
+                                      (i.e. the v1 record looks the same as the v2 record) it will
+                                      not be deleted. This index action is intended to fulfill the
+                                      requirements of a typical user uploading a csv to the site -
+                                      they expect the indexed resource to contain the data in the
+                                      uploaded csv and nothing else.
+                            - retain: just index the records, regardless of whether they were
+                                      updated in the last version or not. This action allows for
+                                      indexing partial updates to the resources' data.
+    :type index_action: string (optional, default remove)
+
+
+    **Results:**
+
+    :returns: details about the job that has been submitted to fulfill the upsert request.
+    :rtype: dict
+
+    '''
+    # this comes through as junk if it's not removed before validating. This happens because the
+    # data dict is flattened during validation, but why this happens is unclear.
+    data = data_dict.get(u'records', None)
+    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_upsert_schema())
+    plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
+
+    resource_id = data_dict[u'resource_id']
+    # these 3 parameters are all optional and have the defaults defined below
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    index_action = data_dict.get(u'index_action', u'remove')
+
+    # the index name will be the resource id but with the custom search prefix
+    index_name = get_searcher().prefix_index(resource_id)
+    # get the latest version for the resource from the status index, or None if it hasn't been
+    # indexed yet
+    latest_version = get_searcher().get_index_versions().get(index_name, None)
+    # if there is a current version of the resource data
+    if latest_version is not None:
+        # the new version must be newer than the current one
+        if version <= latest_version:
+            raise plugins.toolkit.ValidationError(u'The new version must be newer than current '
+                                                  u'latest version ({})'.format(latest_version))
+
+    # ensure our custom queue exists
+    utils.ensure_importing_queue_exists()
+    # queue the job on our custom queue
+    job = enqueue_job(import_resource_data, args=[resource_id, utils.config, version, index_action,
+                                                  data], queue=u'importing')
+    return {
+        u'queued_at': job.enqueued_at.isoformat(),
+        u'job_id': job.id,
+    }
 
 
 def datastore_delete(context, data_dict):
-    # TODO: implement
-    pass
+    '''
+    Deletes the data in the datastore against the given resource_id. Note that this is achieved by
+    dropping the entire mongo collection at the resource_id's value.
+
+    :param resource_id: resource id of the resource
+    :type resource_id: string
+    '''
+    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_delete_schema())
+    plugins.toolkit.check_access(u'datastore_delete', context, data_dict)
+
+    resource_id = data_dict[u'resource_id']
+    # remove all resource data from elasticsearch (the eevee function used below deletes the index,
+    # the aliases and the status entry for this resource so that we don't have to)
+    delete_index(utils.config, resource_id)
+    # remove all resource data from mongo
+    with get_mongo(utils.config, collection=resource_id) as mongo:
+        mongo.drop()
 
 
 @logic.side_effect_free
@@ -136,8 +253,8 @@ def datastore_get_record_versions(context, data_dict):
     :returns: a list of versions
     :rtype: list
     '''
-    data_dict = validate(context, data_dict, schema.datastore_get_record_versions_schema())
-    return get_searcher().get_versions(data_dict['resource_id'], int(data_dict['id']))
+    data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
+    return utils.get_searcher().get_versions(data_dict['resource_id'], int(data_dict['id']))
 
 
 @logic.side_effect_free
@@ -175,7 +292,7 @@ def datastore_autocomplete(context, data_dict):
     :rtype: dict
     '''
     # ensure the data dict is valid against our autocomplete action schema
-    data_dict = validate(context, data_dict, schema.datastore_autocomplete_schema())
+    data_dict = utils.validate(context, data_dict, schema.datastore_autocomplete_schema())
 
     # extract the fields specifically needed for setting up the autocomplete query
     field = data_dict.pop(u'field')
@@ -203,7 +320,7 @@ def datastore_autocomplete(context, data_dict):
         search.aggs[u'field_values'].after = {field: after}
 
     # run the search
-    result = get_searcher().search(indexes=[resource_id], search=search, version=version)
+    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
     # get the results we're interested in
     agg_result = result.aggregations[u'field_values']
     # return a dict of results, but only include the after details if there are any to include

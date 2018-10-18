@@ -29,5 +29,7 @@ setup(
     entry_points='''
         [ckan.plugins]
         versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
+        [paste.paster_command]
+        initdb=ckanext.versioned_datastore.commands.initdb:VersionedDatastoreInitDBCommand
     ''',
 )
