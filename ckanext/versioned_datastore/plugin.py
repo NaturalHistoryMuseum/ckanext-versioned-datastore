@@ -1,6 +1,7 @@
 import logging
 
 from ckan import plugins, model, logic
+from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource
 from ckanext.versioned_datastore.logic import action, auth
 
@@ -91,8 +92,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
 
     # IRoutes
     def before_map(self, map):
-        map.connect(
-            'resource_data', '/dataset/{package_name}/resource_data/{resource_id}',
-            controller='ckanext.versioned_datastore.controllers.datastore:ResourceDataController',
-            action='resource_data', ckan_icon='cloud-upload')
+        map.connect(u'resource_data', u'/dataset/{package_name}/resource_data/{resource_id}',
+                    controller=ResourceDataController.path, action=u'resource_data',
+                    ckan_icon=u'cloud-upload')
         return map
