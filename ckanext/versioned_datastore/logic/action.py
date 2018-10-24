@@ -5,9 +5,11 @@ from datetime import datetime
 from eevee.indexing.utils import delete_index
 from eevee.mongo import get_mongo
 from eevee.utils import to_timestamp
+from elasticsearch import NotFoundError
 from elasticsearch_dsl import A
 
 from ckan import logic, plugins
+from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.importing import import_resource_data
@@ -92,9 +94,12 @@ def datastore_search(context, data_dict):
     # see if there's a version and if there is, convert it to an int
     version = None if u'version' not in data_dict else int(data_dict[u'version'])
 
-    # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
-    # ready for cross-resource search but this code isn't (yet)
-    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
+    try:
+        # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
+        # ready for cross-resource search but this code isn't (yet)
+        result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
+    except NotFoundError as e:
+        raise SearchIndexError(e.error)
 
     # allow other extensions implementing our interface to modify the result object
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
