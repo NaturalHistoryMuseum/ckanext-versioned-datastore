@@ -13,8 +13,9 @@ from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.importing import import_resource_data
-from ckanext.versioned_datastore.lib.indexing import DatastoreIndex
+from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
+from ckanext.versioned_datastore.lib.stats import create_stats
 from ckanext.versioned_datastore.lib.utils import get_searcher
 from ckanext.versioned_datastore.logic import schema
 
@@ -339,9 +340,9 @@ def datastore_autocomplete(context, data_dict):
 
 def datastore_reindex(context, data_dict):
     '''
-    Triggers a reindex of the given resource's data. This does not reingest and reindex it simply
-    runs an update_by_query request on the resource's index in elasticsearch. The intent of this
-    action is to allow mapping changes (for example) to be picked up.
+    Triggers a reindex of the given resource's data. This does not reingest the data to mongo, but
+    it does reindex the data in mongo to elasticsearch. The intent of this action is to allow
+    mapping changes (for example) to be picked up.
 
     Data dict params:
     :param resource_id: resource id that the record id appears in
@@ -358,11 +359,17 @@ def datastore_reindex(context, data_dict):
     plugins.toolkit.check_access(u'datastore_reindex', context, data_dict)
     # retrieve the resource id
     resource_id = data_dict[u'resource_id']
-    # cache a reference to the searcher object as we're going to use it twice
-    searcher = utils.get_searcher()
-    # figure out the name of the index
-    index_name = searcher.prefix_index(resource_id)
-    # run the reindex, note that this blocks
-    # TODO: do this asynchronously? We'd probably need more UI and fluff around it though to allow
-    #       user control of the elasticsearch based task that would be created
-    return searcher.elasticsearch.update_by_query(index=index_name)
+    index_name = get_searcher().prefix_index(resource_id)
+    latest_version = get_searcher().get_index_versions().get(index_name, None)
+    if latest_version is None:
+        # TODO: should this do this or should it ingest anyway with the latest mongo version?
+        raise plugins.toolkit.ValidationError(u'There is no version of the resource in the index so'
+                                              u'there is nothing to reindex')
+
+    stats_id = create_stats(resource_id)
+    job = enqueue_job(index_resource, args=[latest_version, utils.config, resource_id,
+                                            stats_id], queue=u'importing')
+    return {
+        u'queued_at': job.enqueued_at.isoformat(),
+        u'job_id': job.id,
+    }
