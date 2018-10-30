@@ -104,3 +104,33 @@ class IVersionedDatastore(interfaces.Interface):
         :return: the list of field definition dicts
         '''
         return fields
+
+    def datastore_modify_index_doc(self, resource_id, index_doc):
+        '''
+        Action allowing the modification of a resource's data during indexing. The index_doc passed
+        is a dict in the form:
+
+            {
+                "data": {},
+                "meta": {}
+            }
+
+        which will be sent in this form to elasticsearch for indexing. The data key's value contains
+        the data for the record at a version. The meta key's value contains metadata for the record
+        so that we can search it correctly. Breakdown of the standard keys in the meta dict:
+
+            - versions: a dict containing the range of versions this document is valid for. This is
+                        represented using an elasticsearch range, with "gte" for the first valid
+                        version and "lt" for the last version. If the "lt" key is missing the data
+                        is current.
+            - version: the version of this record this data represents
+            - next_version: will be missing if this data is current but if present, this holds the
+                            value of the next version of this record
+
+        If needed, the record id will be located in the index_doc under the key '_id'.
+
+        :param resource_id: the id of the resource being indexed
+        :param index_doc: a dict that will be sent to elasticsearch
+        :return: the dict for elasticsearch to index
+        '''
+        return index_doc

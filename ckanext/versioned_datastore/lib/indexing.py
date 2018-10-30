@@ -1,10 +1,12 @@
 import copy
 
+from ckan import plugins
 from eevee.indexing.feeders import ConditionalIndexFeeder
 from eevee.indexing.indexers import Indexer
 from eevee.indexing.indexes import Index
 from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
 
+from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import stats
 
 
@@ -29,10 +31,15 @@ class DatastoreIndex(Index):
             # integer
             to_index[u'_id'] = int(mongo_doc[u'id'])
 
-            # TODO: this is where we should handle geom loading (through a plugin loop!)
+            # create the base index doc
+            index_doc = self.create_index_document(to_index, version, next_version)
 
-            yield (self.create_action(mongo_doc[u'id'], version),
-                   self.create_index_document(to_index, version, next_version))
+            # allow other extensions implementing our interface to modify the index doc
+            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+                index_doc = plugin.datastore_modify_index_doc(self.unprefixed_name, index_doc)
+
+            # yield it
+            yield (self.create_action(mongo_doc[u'id'], version), index_doc)
 
     def get_index_create_body(self):
         body = super(DatastoreIndex, self).get_index_create_body()
