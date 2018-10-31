@@ -74,6 +74,10 @@ def datastore_search(context, data_dict):
                         would be limited to top 50 and 10 values respectively, whereas facet2 and
                         facet3 would be limited to the default of the top 10.
     :type facet_limits: a dict
+    :param run_query: boolean value indicating whether the query should be run and the results
+                      returned or whether the query should be created and the elasticsearch query
+                      returned instead of the results. Defaults to True.
+    :type run_query: boolean
 
 
     **Results:**
@@ -89,36 +93,60 @@ def datastore_search(context, data_dict):
     :type records: list of dicts
     :param facets: list of fields and their top 10 values, if requested
     :type facets: dict
+
+    If run_query is True, then a dict with the following keys is returned instead:
+
+    :param indexes: a list of the fully qualified indexes that the query would have been run against
+    :type indexes: a list of strings
+    :param search: the query dict that would have been sent to elasticsearch
+    :type search: dict
     '''
     original_data_dict, data_dict, search = create_search(context, data_dict)
     resource_id = data_dict[u'resource_id']
     # see if there's a version and if there is, convert it to an int
     version = None if u'version' not in data_dict else int(data_dict[u'version'])
 
-    try:
-        # run the search through eevee. Note that we pass the indexes to eevee as a list as eevee is
-        # ready for cross-resource search but this code isn't (yet)
-        result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
-    except NotFoundError as e:
-        raise SearchIndexError(e.error)
+    searcher = utils.get_searcher()
 
-    # allow other extensions implementing our interface to modify the result object
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
-        result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+    # if the run query option is false (default to true if not present) then just return the query
+    # we would have run against elasticsearch instead of actually running it. This is useful for
+    # running the query outside of ckan, for example on a tile server.
+    if not data_dict.get(u'run_query', True):
+        # call pre_search to add all the versioning filters necessary (and other things too)
+        result = searcher.pre_search(indexes=[resource_id], search=search, version=version)
+        return {
+            # the first part of the pre_search response is a list of indexes to run the query
+            # against
+            u'indexes': result[0],
+            # the second part is the search object itself which we can call to_dict on to pull the
+            # query out
+            u'search': result[1].to_dict(),
+        }
+    else:
+        try:
+            # run the search through eevee. Note that we pass the indexes to eevee as a list as
+            # eevee is ready for cross-resource search but this code isn't (yet)
+            result = searcher.search(indexes=[resource_id], search=search, version=version)
+        except NotFoundError as e:
+            raise SearchIndexError(e.error)
 
-    # get the fields
-    mapping, fields = utils.get_fields(resource_id)
-    # allow other extensions implementing our interface to modify the field definitions
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
-        fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+        # allow other extensions implementing our interface to modify the result object
+        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
-    # return a dictionary containing the results and other details
-    return {
-        u'total': result.total,
-        u'records': [hit.data for hit in result.results()],
-        u'facets': utils.format_facets(result.aggregations),
-        u'fields': fields,
-    }
+        # get the fields
+        mapping, fields = utils.get_fields(resource_id)
+        # allow other extensions implementing our interface to modify the field definitions
+        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+
+        # return a dictionary containing the results and other details
+        return {
+            u'total': result.total,
+            u'records': [hit.data for hit in result.results()],
+            u'facets': utils.format_facets(result.aggregations),
+            u'fields': fields,
+        }
 
 
 def datastore_create(context, data_dict):
