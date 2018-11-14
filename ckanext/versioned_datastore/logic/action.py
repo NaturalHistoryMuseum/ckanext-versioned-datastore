@@ -401,3 +401,56 @@ def datastore_reindex(context, data_dict):
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
     }
+
+
+@logic.side_effect_free
+def datastore_query_extent(context, data_dict):
+    '''
+    Return the geospatial extent of the results of a given datastore search query. The data_dict
+    parameters are the same as the arguments for `datastore_search`.
+
+
+    **Results:**
+
+    :rtype: A dict with the following keys
+    :param total_count: total number of rows matching the query
+    :type fields: integer
+    :param geom_count: Number of rows matching the query that have geospatial information
+    :type geom_count: int
+    :param bounds: the extent of the query's results, this will be missing if no bound can be
+                   calculated (for example, if the resource has no geo data)
+    :type bounds: list in the format [[lat min, long min], [lat max, long max]]
+    '''
+    # ensure the data dict is valid against our the datastore_search schema
+    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_search_schema())
+
+    # ensure the search doesn't respond with any hits cause we don't need them
+    data_dict[u'limit'] = 0
+
+    # now build the search object against the normal search code
+    _original_data_dict, data_dict, search = create_search(context, data_dict)
+    # get the resource id we're going to search against
+    resource_id = data_dict[u'resource_id']
+    # see if there's a version and if there is, convert it to an int
+    version = None if u'version' not in data_dict else int(data_dict[u'version'])
+
+    # add our bounds and geo count aggregations
+    search.aggs.bucket(u'bounds', u'geo_bounds', field=u'meta.geo', wrap_longitude=False)
+    search.aggs.bucket(u'geo_count', u'value_count', field=u'meta.geo')
+
+    # run the search
+    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
+
+    # create a dict of results for return
+    to_return = {
+        u'total_count': result.hits.total,
+        u'geom_count': result.aggregations[u'geo_count'][u'value'],
+    }
+
+    # extract and add the bounds info from the aggregations if there is any
+    if result.aggregations[u'geo_count'][u'value'] > 0:
+        top_left = result.aggregations[u'bounds'][u'bounds'][u'top_left']
+        bottom_right = result.aggregations[u'bounds'][u'bounds'][u'bottom_right']
+        to_return[u'bounds'] = [[p[u'lat'], p[u'lon']] for p in (top_left, bottom_right)]
+
+    return to_return
