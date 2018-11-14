@@ -4,6 +4,7 @@ from elasticsearch_dsl import Search
 
 from ckan import plugins
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
+from ckanext.versioned_datastore.lib.geo import add_geo_search
 from ckanext.versioned_datastore.lib.utils import validate
 from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema
 
@@ -62,7 +63,24 @@ def build_search_object(q=None, filters=None, offset=None, limit=None, fields=No
               and search values. If this is a dict then the keys (field names) are always prefixed
               with "data." unless the key is an empty string in which case the field uses is
               meta.all. This allows combination searches across meta.all and data.* fields.
-    :param filters: a dict of fields and values to filter the result with
+    :param filters: a dict of fields and values to filter the result with. If a key is present that
+                    is equal to "__geo__" then the value associated with it should be a dict which
+                    will be treated as a geo query to be run against the `meta.geo` field. The value
+                    should contain a "type" key which must have a corresponding value of "point",
+                    "box" or "polygon" and then other keys that are dependant on the type:
+                        - point:
+                            - distance: the radius of the circle centred on the specified location
+                                        within which records must lie to be matched. This can
+                                        specified in any form that elasticsearch accepts for
+                                        distances (see their doc, but values like 10km etc).
+                            - point: the point to centre the radius on, specified as a lat, long
+                                     pair in a list (i.e. [-20, 40.2]).
+                        - box:
+                            - points: the top left and bottom right points of the box, specified as
+                                      a list of two lat/long pairs (i.e. [[-20, 40.2], [0.5, 100]]).
+                        - polygon:
+                            - points: a list of at least 3 lat/long pairs (i.e. [[-16, 44],
+                                      [-13.1, 34.8], [15.99, 35], [5, 49]]).
     :param offset: the offset to start the search result from (for pagination)
     :param limit: the limit to stop the search result at (for pagination)
     :param fields: a list of field names to return in the result
@@ -83,6 +101,7 @@ def build_search_object(q=None, filters=None, offset=None, limit=None, fields=No
             search = search.query(u'match', **{u'meta.all': q})
         else:
             for field, query in q.items():
+                # TODO: change this to __all__ to match __geo__?
                 if field == u'':
                     field = u'meta.all'
                 else:
@@ -92,10 +111,14 @@ def build_search_object(q=None, filters=None, offset=None, limit=None, fields=No
         for field, values in filters.items():
             if not isinstance(values, list):
                 values = [values]
-            field = u'{}'.format(prefix_field(field))
-            for value in values:
-                # filter on the keyword version of the field
-                search = search.filter(u'term', **{field: value})
+            if field == u'__geo__':
+                # only pass through the first value
+                search = add_geo_search(search, values[0])
+            else:
+                field = u'{}'.format(prefix_field(field))
+                for value in values:
+                    # filter on the keyword version of the field
+                    search = search.filter(u'term', **{field: value})
     if offset is not None:
         search = search.extra(from_=int(offset), size=100)
     if limit is not None:
