@@ -180,6 +180,6 @@ def ensure_importing_queue_exists():
     been fixed in ckan/ckanext-rq this code will be removed.
     '''
     name = jobs.add_queue_name_prefix(u'importing')
-    # set the timeout to 30 mins
-    queue = rq.Queue(name, default_timeout=60 * 30, connection=jobs._connect())
+    # set the timeout to 12 hours
+    queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
     jobs._queues[name] = queue
