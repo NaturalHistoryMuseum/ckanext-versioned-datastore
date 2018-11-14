@@ -12,6 +12,32 @@ from ckanext.versioned_datastore.lib import stats
 
 class DatastoreIndex(Index):
 
+    def __init__(self, config, name, version, latitude_field=None, longitude_field=None):
+        super(DatastoreIndex, self).__init__(config, name, version)
+        self.latitude_field = latitude_field
+        self.longitude_field = longitude_field
+
+    def add_geo_data(self, index_doc):
+        '''
+        Adds a geo point to the meta part of the index document. This is done in place. If the
+        latitude and longitude fields have not been specified by the user or are not present then
+        nothing happens.
+
+        :param index_doc: the dict to be indexed
+        '''
+        if self.latitude_field and self.longitude_field:
+            # extract the latitude and longitude values
+            latitude = index_doc[u'data'].get(self.latitude_field, None)
+            longitude = index_doc[u'data'].get(self.longitude_field, None)
+            if latitude is not None and longitude is not None:
+                try:
+                    # check that the values are valid
+                    if -90 <= float(latitude) <= 90 and -180 <= float(longitude) <= 180:
+                        # update the meta.geo key to hold the latitude longitude pair
+                        index_doc[u'meta'][u'geo'] = u'{},{}'.format(latitude, longitude)
+                except ValueError:
+                    pass
+
     def get_commands(self, mongo_doc):
         """
         Yields all the action and data dicts as a tuple for the given mongo doc. To make things
@@ -34,6 +60,9 @@ class DatastoreIndex(Index):
             # create the base index doc
             index_doc = self.create_index_document(to_index, version, next_version)
 
+            # add geo data if there is any to add
+            self.add_geo_data(index_doc)
+
             # allow other extensions implementing our interface to modify the index doc
             for plugin in plugins.PluginImplementations(IVersionedDatastore):
                 index_doc = plugin.datastore_modify_index_doc(self.unprefixed_name, index_doc)
@@ -55,7 +84,9 @@ class DatastoreIndex(Index):
 
 def index_resource(version, config, resource_id, stats_id):
     feeder = ConditionalIndexFeeder(config, resource_id)
-    index = DatastoreIndex(config, resource_id, version)
+    index = DatastoreIndex(config, resource_id, version,
+                           latitude_field=resource.get(u'_latitude_field', None),
+                           longitude_field=resource.get(u'_longitude_field', None))
     # then index the data
     indexer = Indexer(version, config, [(feeder, index)], monitor_update_frequency=1000)
     indexer.register_monitor(stats.indexing_monitor(stats_id))
