@@ -1,24 +1,34 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Table
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Table, BigInteger
 
 from ckan.model import meta, DomainObject
 from ckan.model.types import JsonDictType
 
-
-import_stats_table = Table('versioned_datastore_import_stats', meta.metadata,
-                           Column(u'id', Integer, primary_key=True),
-                           Column(u'resource_id', String, nullable=False),
-                           Column(u'ingest_start_time', DateTime),
-                           Column(u'ingest_end_time', DateTime),
-                           Column(u'ingest_duration', Float),
-                           Column(u'ingest_in_progress', Boolean),
-                           Column(u'ingest_count', Integer),
-                           Column(u'ingest_operations', JsonDictType),
-                           Column(u'index_start_time', DateTime),
-                           Column(u'index_end_time', DateTime),
-                           Column(u'index_duration', Float),
-                           Column(u'index_in_progress', Boolean),
-                           Column(u'index_count', Integer),
-                           Column(u'index_operations', JsonDictType))
+import_stats_table = Table(
+    u'versioned_datastore_import_stats',
+    meta.metadata,
+    Column(u'id', Integer, primary_key=True),
+    Column(u'resource_id', String, nullable=False),
+    # the type of operation, either ingest or index
+    Column(u'type', String, nullable=False),
+    # the version this operation is creating (for ingestion this means the version it's adding to
+    # mongo, for indexing this means the version it's pulling from mongo and putting into
+    # elasticsearch)
+    Column(u'version', BigInteger, nullable=False),
+    # the start datetime of the operation
+    Column(u'start', DateTime),
+    # the end datetime of the operation
+    Column(u'end', DateTime),
+    # how long the operation took in seconds
+    Column(u'duration', Float),
+    # whether the operation is in progress or whether it has completed
+    Column(u'in_progress', Boolean),
+    # if there was an error, this column is populated with the details
+    Column(u'error', String),
+    # the number of records handled during the operation
+    Column(u'count', Integer),
+    # the detailed operation breakdown returned by eevee
+    Column(u'operations', JsonDictType),
+)
 
 
 class ImportStats(DomainObject):

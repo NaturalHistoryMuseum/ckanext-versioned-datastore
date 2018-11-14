@@ -1,4 +1,5 @@
 import copy
+import logging
 
 from ckan import plugins
 from eevee.indexing.feeders import ConditionalIndexFeeder
@@ -8,6 +9,9 @@ from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
 
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import stats
+
+
+log = logging.getLogger(__name__)
 
 
 class DatastoreIndex(Index):
@@ -82,13 +86,26 @@ class DatastoreIndex(Index):
         return body
 
 
-def index_resource(version, config, resource_id, stats_id):
+def index_resource(version, config, resource):
+    resource_id = resource[u'id']
     feeder = ConditionalIndexFeeder(config, resource_id)
     index = DatastoreIndex(config, resource_id, version,
                            latitude_field=resource.get(u'_latitude_field', None),
                            longitude_field=resource.get(u'_longitude_field', None))
     # then index the data
     indexer = Indexer(version, config, [(feeder, index)], monitor_update_frequency=1000)
+
+    # create a stats entry so that progress can be tracked
+    stats_id = stats.start_operation(resource[u'id'], stats.INDEX, version, indexer.start)
+    # register a monitor to track progress by updating the stats entry we just made
     indexer.register_monitor(stats.indexing_monitor(stats_id))
-    index_stats = indexer.index()
-    stats.finish_indexing(stats_id, index_stats)
+
+    try:
+        # run the index
+        index_stats = indexer.index()
+        stats.finish_operation(stats_id, index_stats)
+        return True
+    except Exception as e:
+        stats.mark_error(stats_id, e.message)
+        log.exception(u'An error occurred during indexing of {}'.format(resource_id))
+        return False

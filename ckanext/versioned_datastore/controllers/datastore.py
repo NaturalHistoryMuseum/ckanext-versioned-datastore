@@ -3,7 +3,7 @@ from ckan.common import _
 from ckan.lib import base
 from ckan.lib.helpers import url_for
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.stats import get_latest_stats
+from ckanext.versioned_datastore.lib.stats import get_all_stats
 
 
 class ResourceDataController(base.BaseController):
@@ -27,7 +27,7 @@ class ResourceDataController(base.BaseController):
                 pass
 
         extra_vars = {
-            u'stats': get_latest_stats(resource_id),
+            u'stats': get_all_stats(resource_id),
             u'reindex_action': url_for(u'resource_data', action=u'resource_data',
                                        package_name=package_name, resource_id=resource_id),
             u'reindex_result': reindex_result,

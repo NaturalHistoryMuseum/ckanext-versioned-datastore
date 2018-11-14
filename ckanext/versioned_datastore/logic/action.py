@@ -15,7 +15,6 @@ from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.importing import import_resource_data
 from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
-from ckanext.versioned_datastore.lib.stats import create_stats
 from ckanext.versioned_datastore.lib.utils import get_searcher
 from ckanext.versioned_datastore.logic import schema
 
@@ -387,6 +386,9 @@ def datastore_reindex(context, data_dict):
     plugins.toolkit.check_access(u'datastore_reindex', context, data_dict)
     # retrieve the resource id
     resource_id = data_dict[u'resource_id']
+    # retrieve the resource itself
+    resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
+
     index_name = get_searcher().prefix_index(resource_id)
     latest_version = get_searcher().get_index_versions().get(index_name, None)
     if latest_version is None:
@@ -394,9 +396,8 @@ def datastore_reindex(context, data_dict):
         raise plugins.toolkit.ValidationError(u'There is no version of the resource in the index so'
                                               u'there is nothing to reindex')
 
-    stats_id = create_stats(resource_id)
-    job = enqueue_job(index_resource, args=[latest_version, utils.config, resource_id,
-                                            stats_id], queue=u'importing')
+    job = enqueue_job(index_resource, args=[latest_version, utils.config, resource],
+                      queue=u'importing')
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,

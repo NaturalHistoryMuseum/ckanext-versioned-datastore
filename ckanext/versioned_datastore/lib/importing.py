@@ -109,15 +109,12 @@ def import_resource_data(resource_id, config, version, index_action, data):
     resource = get_resource(resource_id)
     # store a start time, this will be used as the ingestion time of the records
     start = datetime.now()
-
-    stats_id = stats.create_stats(resource_id)
-
     # ingest the resource into mongo
-    did_ingest = ingest_resource(version, start, config, resource, data, stats_id)
+    did_ingest = ingest_resource(version, start, config, resource, data)
     if did_ingest is not None and index_action != u'skip':
         # if the index action is remove we need to do that before indexing the resource's data
         if index_action == u'remove':
             index_action_remove(config, resource_id, version, start)
 
         # index the resource from mongo into elasticsearch
-        index_resource(version, config, resource_id, stats_id)
+        index_resource(version, config, resource)

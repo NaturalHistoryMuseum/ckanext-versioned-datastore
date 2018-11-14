@@ -1,4 +1,5 @@
 import itertools
+import logging
 import numbers
 
 import abc
@@ -16,6 +17,9 @@ from openpyxl.cell.read_only import EmptyCell
 from ckanext.versioned_datastore.lib import stats
 from ckanext.versioned_datastore.lib.utils import download_to_temp_file, CSV_FORMATS, TSV_FORMATS, \
     XLS_FORMATS, XLSX_FORMATS
+
+
+log = logging.getLogger(__name__)
 
 
 class DatastoreRecordConverter(RecordToMongoConverter):
@@ -297,7 +301,9 @@ def get_feeder(config, version, resource, data=None):
     return None
 
 
-def ingest_resource(version, start, config, resource, data, stats_id):
+def ingest_resource(version, start, config, resource, data):
+    # create a stats entry so that progress can be tracked
+    stats_id = stats.start_operation(resource[u'id'], stats.INGEST, version, start)
     # work out which feeder to use for the resource
     feeder = get_feeder(config, version, resource, data)
     # if the return is None then no feeder can be matched and the data is uningestible :(
@@ -310,6 +316,11 @@ def ingest_resource(version, start, config, resource, data, stats_id):
     converter = DatastoreRecordConverter(version, start)
     # create an ingester using our datastore feeder and the datastore converter
     ingester = Ingester(version, feeder, converter, config)
-    ingest_stats = ingester.ingest()
-    stats.finish_ingestion(stats_id, ingest_stats)
-    return True
+    try:
+        ingest_stats = ingester.ingest()
+        stats.finish_operation(stats_id, ingest_stats)
+        return True
+    except Exception as e:
+        stats.mark_error(stats_id, e.message)
+        log.exception(u'An error occurred during ingestion of {}'.format(resource[u'id']))
+        return False

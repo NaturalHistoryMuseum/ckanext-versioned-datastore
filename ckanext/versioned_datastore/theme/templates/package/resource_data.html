@@ -4,12 +4,60 @@
 
 {% block primary_content_inner %}
 
-  {% set show_table = true %}
+    {% block datastore_actions %}
+        <h3>{{ _('Actions') }}</h3>
 
-  <form method="post" action="{{ reindex_action }}" >
-    <button class="btn btn-primary" name="save" type="submit">
-      <i class="icon-cloud-upload"></i> {{ _('Reindex DataStore data') }}
-    </button>
-  </form>
+        <form method="post" action="{{ reindex_action }}">
+            <button class="btn btn-primary" name="save" type="submit">
+                <i class="icon-cloud-upload"></i> {{ _('Reindex DataStore data') }}
+            </button>
+        </form>
+    {% endblock %}
+
+    {% block datastore_history %}
+        <h3>{{ _('History') }}</h3>
+        <table class="table table-bordered">
+            <tr>
+                <th>{{ _('Status') }}</th>
+                <th>{{ _('Operation') }}</th>
+                <th>{{ _('Version') }}</th>
+                <th>{{ _('Start') }}</th>
+                <th>{{ _('End') }}</th>
+                <th>{{ _('Duration') }}</th>
+                <th>{{ _('Count') }}</th>
+            </tr>
+            {% for stat in stats %}
+                <tr>
+                    <td>
+                        {% if stat.in_progress %}
+                            <i class="icon icon-spinner"></i>
+                        {% elif stat.error %}
+                            <i class="icon icon-exclamation"></i>
+                        {% else %}
+                            <i class="icon icon-ok"></i>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stat.type == 'ingest' %}
+                            <i class="icon icon-upload"></i>
+                        {% elif stat.type == 'index' %}
+                            <i class="icon icon-search"></i>
+                        {% endif %}
+                        {{ stat.type }}
+                    </td>
+                    <td>{{ stat.version }}</td>
+                    <td>{{ h.render_datetime(stat.start, with_hours=True) }}</td>
+                    <td>{{ h.render_datetime(stat.end, with_hours=True) }}</td>
+                    <td>
+                        {% if stat.duration %}
+                            {{ stat.duration }} seconds
+                        {% endif %}
+                    </td>
+                    <td>{{ stat.count }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+
+    {% endblock %}
 
 {% endblock %}
