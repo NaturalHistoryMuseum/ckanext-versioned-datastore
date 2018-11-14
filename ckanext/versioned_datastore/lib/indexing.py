@@ -105,6 +105,6 @@ def index_resource(version, config, resource):
         indexer.index()
         return True
     except Exception as e:
-        stats.mark_error(stats_id, e.message)
+        stats.mark_error(stats_id, e)
         log.exception(u'An error occurred during indexing of {}'.format(resource_id))
         return False

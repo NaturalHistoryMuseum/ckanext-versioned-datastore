@@ -322,6 +322,6 @@ def ingest_resource(version, start, config, resource, data):
         ingester.ingest()
         return True
     except Exception as e:
-        stats.mark_error(stats_id, e.message)
+        stats.mark_error(stats_id, e)
         log.exception(u'An error occurred during ingestion of {}'.format(resource[u'id']))
         return False
