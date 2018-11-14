@@ -309,16 +309,17 @@ def ingest_resource(version, start, config, resource, data):
     # if the return is None then no feeder can be matched and the data is uningestible :(
     if feeder is None:
         return False
-    # register a monitor to keep the stats (and therefore the user) up to date
-    feeder.register_monitor(stats.ingestion_monitor(stats_id))
 
     # create our custom datastore converter object
     converter = DatastoreRecordConverter(version, start)
     # create an ingester using our datastore feeder and the datastore converter
     ingester = Ingester(version, feeder, converter, config)
+    # setup monitoring on the ingester so that we can update the database with stats about the
+    # ingestion as it progresses
+    stats.monitor_ingestion(stats_id, ingester)
+
     try:
-        ingest_stats = ingester.ingest()
-        stats.finish_operation(stats_id, ingest_stats)
+        ingester.ingest()
         return True
     except Exception as e:
         stats.mark_error(stats_id, e.message)

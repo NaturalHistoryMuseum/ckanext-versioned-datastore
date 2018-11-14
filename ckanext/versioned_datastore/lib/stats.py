@@ -23,9 +23,10 @@ def update_stats(stats_id, update):
     model.Session.commit()
 
 
-def finish_operation(stats_id, stats):
+def finish_operation(stats_id, total, stats):
     update_stats(stats_id, {
         ImportStats.in_progress: False,
+        ImportStats.count: total,
         ImportStats.duration: stats[u'duration'],
         ImportStats.start: stats[u'start'],
         ImportStats.end: stats[u'end'],
@@ -33,24 +34,31 @@ def finish_operation(stats_id, stats):
     })
 
 
-def ingestion_monitor(stats_id):
-    def monitor(count, _record):
+def monitor_ingestion(stats_id, ingester):
+    @ingester.totals_signal.connect_via(ingester)
+    def on_ingest(_sender, total, inserted, updated):
         update_stats(stats_id, {
             ImportStats.in_progress: True,
-            ImportStats.count: count,
+            ImportStats.count: total,
         })
 
-    return monitor
+    @ingester.finish_signal.connect_via(ingester)
+    def on_finish(_sender, total, inserted, updated, stats):
+        finish_operation(stats_id, total, stats)
 
 
-def indexing_monitor(stats_id):
-    def monitor(_percentage, count, _total):
-        update_stats(stats_id, {
-            ImportStats.in_progress: True,
-            ImportStats.count: count,
-        })
+def monitor_indexing(stats_id, indexer, update_frequency=1000):
+    @indexer.index_signal.connect_via(indexer)
+    def on_index(_sender, document_count, command_count, document_total):
+        if document_count % update_frequency == 0:
+            update_stats(stats_id, {
+                ImportStats.in_progress: True,
+                ImportStats.count: document_count,
+            })
 
-    return monitor
+    @indexer.finish_signal.connect_via(indexer)
+    def on_finish(_sender, document_count, command_count, stats):
+        finish_operation(stats_id, document_count, stats)
 
 
 def mark_error(stats_id, error):
