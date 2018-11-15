@@ -41,8 +41,8 @@ def add_multipolygon_filter(search, coordinates):
     1.
 
     :param search: the current elasticsearch DSL object
-    :param coordinates: a list of a list of a list of at least 3 lat/long pairs (i.e. [[[-16, 44],
-                        [-13.1, 34.8], [15.99, 35], [5, 49]]])
+    :param coordinates: a list of a list of a list of a list of at least 3 lat/long pairs (i.e.
+                        [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]])
     :return: a search object
     '''
     filters = []
@@ -73,8 +73,8 @@ def add_polygon_filter(search, coordinates):
     1.
 
     :param search: the current elasticsearch DSL object
-    :param coordinates: a list of a list of at least 3 lat/long pairs (i.e. [[-16, 44],
-                        [-13.1, 34.8], [15.99, 35], [5, 49]])
+    :param coordinates: a list of a list of a list of at least 3 lat/long pairs (i.e. [[[-16, 44],
+                        [-13.1, 34.8], [15.99, 35], [5, 49]]])
     :return: a search object
     '''
     # just wrap in another list and pass to the multipolygon handler
