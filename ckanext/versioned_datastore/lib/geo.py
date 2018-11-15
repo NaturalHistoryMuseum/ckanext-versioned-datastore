@@ -16,8 +16,8 @@ def add_point_filter(search, distance, coordinates):
     :param distance: the radius of the circle centred on the specified location within which records
                      must lie to be matched. This can specified in any form that elasticsearch
                      accepts for distances (see their doc, but essentially values like 10km etc).
-    :param coordinates: the point to centre the radius on, specified as a lat/long pair in a list
-                        (i.e. [-20, 40.2]).
+    :param coordinates: the point to centre the radius on, specified as a lon/lat pair in a list
+                        (i.e. [40.2, -20]).
     :return: a search object
     '''
     options = {
@@ -41,7 +41,7 @@ def add_multipolygon_filter(search, coordinates):
     1.
 
     :param search: the current elasticsearch DSL object
-    :param coordinates: a list of a list of a list of a list of at least 3 lat/long pairs (i.e.
+    :param coordinates: a list of a list of a list of a list of at least 3 lon/lat pairs (i.e.
                         [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]])
     :return: a search object
     '''
@@ -73,7 +73,7 @@ def add_polygon_filter(search, coordinates):
     1.
 
     :param search: the current elasticsearch DSL object
-    :param coordinates: a list of a list of a list of at least 3 lat/long pairs (i.e. [[[-16, 44],
+    :param coordinates: a list of a list of a list of at least 3 lon/lat pairs (i.e. [[[-16, 44],
                         [-13.1, 34.8], [15.99, 35], [5, 49]]])
     :return: a search object
     '''
