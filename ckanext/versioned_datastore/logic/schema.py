@@ -80,7 +80,8 @@ def versioned_datastore_search_schema():
         # the facet limits dict allows precise control over how many top values to return for each
         # facet in the facets list
         u'facet_limits': [ignore_missing, json_validator],
-        u'run_query': [ignore_missing, boolean_validator]
+        u'run_query': [ignore_missing, boolean_validator],
+        u'after': [ignore_missing, json_validator],
     }
 
 

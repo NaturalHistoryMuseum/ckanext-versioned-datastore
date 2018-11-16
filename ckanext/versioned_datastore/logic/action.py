@@ -145,6 +145,7 @@ def datastore_search(context, data_dict):
             u'records': [hit.data for hit in result.results()],
             u'facets': utils.format_facets(result.aggregations),
             u'fields': fields,
+            u'after': result.last_after,
         }
 
 
