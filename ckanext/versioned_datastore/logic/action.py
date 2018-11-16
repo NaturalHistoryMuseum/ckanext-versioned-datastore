@@ -434,9 +434,6 @@ def datastore_query_extent(context, data_dict):
                    calculated (for example, if the resource has no geo data)
     :type bounds: list in the format [[lat min, long min], [lat max, long max]]
     '''
-    # ensure the data dict is valid against our the datastore_search schema
-    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_search_schema())
-
     # ensure the search doesn't respond with any hits cause we don't need them and override two
     # unused params
     data_dict[u'limit'] = 0
