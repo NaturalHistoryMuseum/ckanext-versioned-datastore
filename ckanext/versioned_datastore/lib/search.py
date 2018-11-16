@@ -91,7 +91,10 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     :param facet_limits: a dict of fields and their customised top n limits
     :param sort: a list of fields to sort by with ordering. By default the fields are sorted
                  ascending, but by providing "desc" after the field name a descending sort will be
-                 used
+                 used. An ascending sort on _id is always added unless included in this list. This
+                 is to ensure there is a unique tie-breaking field which is useful for ensuring
+                 results stay the same each time they are requested and necessary to ensure the
+                 correct result list responses when using the after parameter for pagination.
     :param kwargs: as a convenience we allow a kwargs parameter which we ignore, this is useful to
                    as it allows the arguments to be passed by just unpacking the data_dict
     :return: an elasticsearch-dsl Search object
@@ -133,20 +136,6 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
 
     if fields is not None:
         search = search.source(map(prefix_field, fields))
-    if sort is not None:
-        sorts = []
-        for field_and_sort in sort:
-            if not field_and_sort.endswith(' desc') and not field_and_sort.endswith(' asc'):
-                field_and_sort += u' asc'
-            field, direction = prefix_field(field_and_sort).rsplit(' ', 1)
-            if direction == u'desc':
-                sorts.append(u'-{}'.format(field))
-            else:
-                sorts.append(field)
-        search = search.sort(*sorts)
-    else:
-        # by default, sort by the _id field
-        search = search.sort(prefix_field('_id'))
     if facets is not None:
         facet_limits = facet_limits if facet_limits is not None else {}
         for facet in facets:
@@ -156,4 +145,29 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
             search.aggs.bucket(facet, u'terms',
                                field=prefix_field(facet),
                                size=facet_limits.get(facet, 10))
+
+    # at least one sort is always added, on the _id column. This is necessary to ensure use of that
+    # search_after is predictable (in the elasticsearch docs it recommends that a tie-breaker field
+    # is present otherwise the response can include duplicates/missing records). The _id field is
+    # always unique and therefore an ideal tie-breaker, so we make sure it's always in the sort
+    sorts = []
+    # if the caller passes in _id then we don't need to add it in again
+    id_in_sort = False
+    if sort is not None:
+        for field_and_sort in sort:
+            if not field_and_sort.endswith(u' desc') and not field_and_sort.endswith(u' asc'):
+                # default the sort direction to ascending if nothing is provided
+                field_and_sort += u' asc'
+            field, direction = prefix_field(field_and_sort).rsplit(u' ', 1)
+            # set the id_in_sort boolean to True if we see the _id field in the caller defined sort
+            id_in_sort = not id_in_sort and field == u'_id'
+            # if the sort direction is desc we need to add a minus sign in front of the field name,
+            # otherwise we can just use the field name on its own as the default sort is asc
+            sorts.append(u'-{}'.format(field) if direction == u'desc' else field)
+
+    # by default, sort by the _id field
+    if not id_in_sort:
+        sorts.append(prefix_field(u'_id'))
+    search = search.sort(*sorts)
+
     return search
