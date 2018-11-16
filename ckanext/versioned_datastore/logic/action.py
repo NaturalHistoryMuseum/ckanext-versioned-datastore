@@ -48,6 +48,11 @@ def datastore_search(context, data_dict):
     :param filters: a dictionary of conditions that must be met to match a record
                     (e.g {"field1": "a", "field2": "b"}) (optional)
     :type filters: dictionary
+    :param after: search_after value for elasticsearch to paginate from (optional). Use this
+                  mechanism to do deep (beyond 10000 values) pagination. The values have to match
+                  the sort currently in use and therefore it's recommended that this value is not
+                  built but rather passed from the previous result's 'after' key.
+    :type after: a list of values
     :param limit: maximum number of records to return (optional, default: 100)
     :type limit: int
     :param offset: offset this number of records (optional)
@@ -92,6 +97,10 @@ def datastore_search(context, data_dict):
     :type records: list of dicts
     :param facets: list of fields and their top 10 values, if requested
     :type facets: dict
+    :param after: the next page's search_after value which can be passed back as the "after"
+                  parameter. This value will always be included if there were results otherwise None
+                  is returned. A value will also always be returned even if this page is the last.
+    :type after: a list or None
 
     If run_query is True, then a dict with the following keys is returned instead:
 
