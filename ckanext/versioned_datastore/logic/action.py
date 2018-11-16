@@ -336,6 +336,8 @@ def datastore_autocomplete(context, data_dict):
     size = data_dict.pop(u'limit', 20)
     # ensure the search doesn't respond with any hits cause we don't need them
     data_dict[u'limit'] = 0
+    # remove the offset if one was passed as we don't need it
+    data_dict.pop(u'offset', None)
 
     # now build the search object against the normal search code
     _original_data_dict, data_dict, search = create_search(context, data_dict)
@@ -426,8 +428,11 @@ def datastore_query_extent(context, data_dict):
     # ensure the data dict is valid against our the datastore_search schema
     data_dict = utils.validate(context, data_dict, schema.versioned_datastore_search_schema())
 
-    # ensure the search doesn't respond with any hits cause we don't need them
+    # ensure the search doesn't respond with any hits cause we don't need them and override two
+    # unused params
     data_dict[u'limit'] = 0
+    data_dict.pop(u'offset', None)
+    data_dict.pop(u'after', None)
 
     # now build the search object against the normal search code
     _original_data_dict, data_dict, search = create_search(context, data_dict)
