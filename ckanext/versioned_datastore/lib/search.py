@@ -54,8 +54,8 @@ def create_search(context, data_dict):
     return original_data_dict, data_dict, search
 
 
-def build_search_object(q=None, filters=None, offset=None, limit=None, fields=None, facets=None,
-                        facet_limits=None, sort=None, **kwargs):
+def build_search_object(q=None, filters=None, after=None, offset=None, limit=None, fields=None,
+                        facets=None, facet_limits=None, sort=None, **kwargs):
     '''
     Given the parameters, creates a new elasticsearch-dsl Search object and returns it.
 
@@ -81,6 +81,9 @@ def build_search_object(q=None, filters=None, offset=None, limit=None, fields=No
                         - polygon:
                             - points: a list of at least 3 lat/long pairs (i.e. [[-16, 44],
                                       [-13.1, 34.8], [15.99, 35], [5, 49]]).
+    :param after: the search after value to start the search result from (for pagination). Cannot be
+                  used in conjunction with offset. If both offset and after are provided then after
+                  is used and offset is ignored.
     :param offset: the offset to start the search result from (for pagination)
     :param limit: the limit to stop the search result at (for pagination)
     :param fields: a list of field names to return in the result
@@ -119,10 +122,15 @@ def build_search_object(q=None, filters=None, offset=None, limit=None, fields=No
                 for value in values:
                     # filter on the keyword version of the field
                     search = search.filter(u'term', **{field: value})
-    if offset is not None:
-        search = search.extra(from_=int(offset), size=100)
-    if limit is not None:
-        search = search.extra(size=int(limit))
+
+    # after and offset cannot be used together, prefer after over offset
+    if after is not None:
+        search = search.extra(search_after=after)
+    elif offset is not None:
+        search = search.extra(from_=int(offset))
+    # add the limit or a default of 100 if there isn't one specified
+    search = search.extra(size=int(limit) if limit is not None else 100)
+
     if fields is not None:
         search = search.source(map(prefix_field, fields))
     if sort is not None:
