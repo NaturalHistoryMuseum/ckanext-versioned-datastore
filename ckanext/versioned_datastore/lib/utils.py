@@ -105,6 +105,7 @@ def get_fields(resource_id):
     :param resource_id:
     :return:
     '''
+    # TODO: return only the fields in use in the version being searched
     # the index name for the resource is prefixed
     index = get_searcher().prefix_index(resource_id)
     # lookup the mapping on elasticsearch
