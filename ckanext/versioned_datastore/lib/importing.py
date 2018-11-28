@@ -11,7 +11,6 @@ from ckan import logic
 from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib.indexing import index_resource
 from ckanext.versioned_datastore.lib.ingesting import ingest_resource
-from ckanext.versioned_datastore.lib import stats
 
 
 log = logging.getLogger(__name__)
