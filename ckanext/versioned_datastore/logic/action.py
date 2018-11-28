@@ -109,10 +109,8 @@ def datastore_search(context, data_dict):
     :param search: the query dict that would have been sent to elasticsearch
     :type search: dict
     '''
-    original_data_dict, data_dict, search = create_search(context, data_dict)
+    original_data_dict, data_dict, version, search = create_search(context, data_dict)
     resource_id = data_dict[u'resource_id']
-    # see if there's a version and if there is, convert it to an int
-    version = None if u'version' not in data_dict else int(data_dict[u'version'])
 
     searcher = utils.get_searcher()
 
@@ -349,11 +347,9 @@ def datastore_autocomplete(context, data_dict):
     data_dict.pop(u'offset', None)
 
     # now build the search object against the normal search code
-    _original_data_dict, data_dict, search = create_search(context, data_dict)
+    _original_data_dict, data_dict, version, search = create_search(context, data_dict)
     # get the resource id we're going to search against
     resource_id = data_dict[u'resource_id']
-    # see if there's a version and if there is, convert it to an int
-    version = None if u'version' not in data_dict else int(data_dict[u'version'])
 
     # add the autocompletion query part which takes the form of a prefix search
     search = search.filter(u'prefix', **{prefix_field(field): term})
@@ -441,11 +437,9 @@ def datastore_query_extent(context, data_dict):
     data_dict.pop(u'after', None)
 
     # now build the search object against the normal search code
-    _original_data_dict, data_dict, search = create_search(context, data_dict)
+    _original_data_dict, data_dict, version, search = create_search(context, data_dict)
     # get the resource id we're going to search against
     resource_id = data_dict[u'resource_id']
-    # see if there's a version and if there is, convert it to an int
-    version = None if u'version' not in data_dict else int(data_dict[u'version'])
 
     # add our bounds and geo count aggregations
     search.aggs.bucket(u'bounds', u'geo_bounds', field=u'meta.geo', wrap_longitude=False)

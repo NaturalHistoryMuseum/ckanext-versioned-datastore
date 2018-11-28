@@ -22,6 +22,36 @@ def prefix_field(field):
     return 'data.{}'.format(field)
 
 
+def _find_version(data_dict):
+    '''
+    Retrieve the version from the data_dict. The version can be specified as a parameter in it's own
+    right or as a special filter in the filters dict using the key __version__. Using the version
+    parameter is preferred and will override any filter version value. The filter method is provided
+    because of limitations in the CKAN recline.js framework used by the NHM on CKAN 2.3 where no
+    additional parameters can be passed other than q, filters etc.
+
+    :param data_dict: the data dict, this might be modified if the __version__ key is used (it will
+                      be removed if present)
+    :return: the version found as an integer, or None if no version was found
+    '''
+    version = data_dict.get(u'version', None)
+    # TODO: __version__ support should be removed once the frontend is capable of using the param
+    # pop the __version__ to avoid including it in the normal search filters
+    filter_version = data_dict.get(u'filters', {}).pop(u'__version__', None)
+    # use the version parameter's value first if it exists
+    if version is not None:
+        return int(version)
+    # otherwise fallback on __version__
+    if filter_version is not None:
+        # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
+        if isinstance(filter_version, list):
+            # just use the first value
+            filter_version = filter_version[0]
+        return int(filter_version)
+    # no version found, return None
+    return None
+
+
 def create_search(context, data_dict):
     '''
     Create the search object based on the parameters in the data_dict. This function will call
@@ -38,12 +68,16 @@ def create_search(context, data_dict):
     # implementor functions
     original_data_dict = copy.deepcopy(data_dict)
 
+    # validate the data dict against our schema
+    data_dict = validate(context, data_dict, versioned_datastore_search_schema())
+
     # allow other extensions implementing our interface to modify the data_dict
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         data_dict = plugin.datastore_modify_data_dict(context, data_dict)
 
-    # validate the data dict against our schema
-    data_dict = validate(context, data_dict, versioned_datastore_search_schema())
+    # extract the version
+    version = _find_version(data_dict)
+
     # create an elasticsearch-dsl Search object by passing the expanded data dict
     search = build_search_object(**data_dict)
 
@@ -51,7 +85,7 @@ def create_search(context, data_dict):
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
 
-    return original_data_dict, data_dict, search
+    return original_data_dict, data_dict, version, search
 
 
 def build_search_object(q=None, filters=None, after=None, offset=None, limit=None, fields=None,
