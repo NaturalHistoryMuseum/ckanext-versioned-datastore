@@ -6,7 +6,7 @@ from eevee.indexing.utils import delete_index
 from eevee.mongo import get_mongo
 from eevee.utils import to_timestamp
 from elasticsearch import NotFoundError
-from elasticsearch_dsl import A
+from elasticsearch_dsl import A, Search
 
 from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
@@ -153,6 +153,7 @@ def datastore_search(context, data_dict):
             u'facets': utils.format_facets(result.aggregations),
             u'fields': fields,
             u'after': result.last_after,
+            u'_backend': u'versioned-datastore',
         }
 
 
@@ -296,6 +297,47 @@ def datastore_get_record_versions(context, data_dict):
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
     return utils.get_searcher().get_versions(data_dict['resource_id'], int(data_dict['id']))
+
+
+@logic.side_effect_free
+def datastore_get_resource_versions(context, data_dict):
+    '''
+    Given a resource id, returns the version timestamps available for that resource in ascending
+    order along with the number of records modified in the version.
+
+    Data dict params:
+    :param resource_id: resource id
+    :type resource_id: string
+
+    **Results:**
+
+    :returns: a list of versions and the number of changes in the form {"version": #, "changes": #}
+    :rtype: list of dicts
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_get_resource_versions_schema())
+    resource_id = data_dict[u'resource_id']
+    searcher = get_searcher()
+    index = searcher.prefix_index(resource_id)
+
+    after = None
+    versions = []
+    while True:
+        search = Search(using=searcher.elasticsearch, index=index)[0:0]
+        search.aggs.bucket(u'versions', u'composite', size=100,
+                           sources={u'version': A(u'terms', field=u'meta.version', order=u'asc')})
+        if after is not None:
+            search.aggs[u'versions'].after = {u'version': after}
+
+        result = search.execute().aggs.to_dict()[u'versions']
+        for bucket in result[u'buckets']:
+            versions.append({u'version': bucket[u'key'][u'version'],
+                             u'changes': bucket[u'doc_count']})
+
+        after = result.get(u'after_key', {}).get(u'version', None)
+        if after is None:
+            break
+
+    return versions
 
 
 @logic.side_effect_free

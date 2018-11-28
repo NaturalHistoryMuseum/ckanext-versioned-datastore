@@ -117,6 +117,17 @@ def datastore_get_record_versions_schema():
     }
 
 
+def datastore_get_resource_versions_schema():
+    """
+    Returns the schema for the datastore_get_resource_versions action.
+
+    :return: a dict
+    """
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+    }
+
+
 def datastore_autocomplete_schema():
     """
     Returns the schema for the datastore_autocomplete action.

@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 
 class VersionedSearchPlugin(plugins.SingletonPlugin):
-    plugins.implements(plugins.interfaces.IActions)
+    plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
     plugins.implements(plugins.ITemplateHelpers, inherit=True)
     plugins.implements(plugins.IResourceController)
@@ -26,6 +26,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_delete': action.datastore_delete,
             'datastore_search': action.datastore_search,
             'datastore_get_record_versions': action.datastore_get_record_versions,
+            'datastore_get_resource_versions': action.datastore_get_resource_versions,
             'datastore_autocomplete': action.datastore_autocomplete,
             'datastore_reindex': action.datastore_reindex,
             'datastore_query_extent': action.datastore_query_extent,
@@ -39,6 +40,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             'datastore_delete': auth.datastore_delete,
             'datastore_search': auth.datastore_search,
             'datastore_get_record_versions': auth.datastore_get_record_versions,
+            'datastore_get_resource_versions': auth.datastore_get_resource_versions,
             'datastore_autocomplete': auth.datastore_autocomplete,
             'datastore_reindex': auth.datastore_reindex,
             'datastore_query_extent': auth.datastore_query_extent,
