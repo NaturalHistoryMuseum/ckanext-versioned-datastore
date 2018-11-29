@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, Table, BigInteger
+from sqlalchemy import Column, DateTime, Float, Boolean, Table, BigInteger, UnicodeText
 
 from ckan.model import meta, DomainObject
 from ckan.model.types import JsonDictType
@@ -6,10 +6,10 @@ from ckan.model.types import JsonDictType
 import_stats_table = Table(
     u'versioned_datastore_import_stats',
     meta.metadata,
-    Column(u'id', Integer, primary_key=True),
-    Column(u'resource_id', String, nullable=False),
+    Column(u'id', BigInteger, primary_key=True),
+    Column(u'resource_id', UnicodeText, nullable=False, index=True),
     # the type of operation, either ingest or index
-    Column(u'type', String, nullable=False),
+    Column(u'type', UnicodeText, nullable=False),
     # the version this operation is creating (for ingestion this means the version it's adding to
     # mongo, for indexing this means the version it's pulling from mongo and putting into
     # elasticsearch)
@@ -23,9 +23,9 @@ import_stats_table = Table(
     # whether the operation is in progress or whether it has completed
     Column(u'in_progress', Boolean),
     # if there was an error, this column is populated with the details
-    Column(u'error', String),
+    Column(u'error', UnicodeText),
     # the number of records handled during the operation
-    Column(u'count', Integer),
+    Column(u'count', BigInteger),
     # the detailed operation breakdown returned by eevee
     Column(u'operations', JsonDictType),
 )
