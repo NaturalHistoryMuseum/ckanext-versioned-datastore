@@ -108,6 +108,10 @@ def datastore_search(context, data_dict):
     :type indexes: a list of strings
     :param search: the query dict that would have been sent to elasticsearch
     :type search: dict
+
+    In addition to returning these result dicts, the actual result object is made available through
+    the context dict under the key "versioned_datastore_query_result". This isn't available through
+    the http action API however.
     '''
     original_data_dict, data_dict, version, search = create_search(context, data_dict)
     resource_id = data_dict[u'resource_id']
@@ -139,6 +143,11 @@ def datastore_search(context, data_dict):
         # allow other extensions implementing our interface to modify the result object
         for plugin in plugins.PluginImplementations(IVersionedDatastore):
             result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+
+        # add the actual result object to the context in case the caller is an extension and they
+        # have used one of the interface hooks to alter the search object and include, for example,
+        # an aggregation
+        context[u'versioned_datastore_query_result'] = result
 
         # get the fields
         mapping, fields = utils.get_fields(resource_id)
