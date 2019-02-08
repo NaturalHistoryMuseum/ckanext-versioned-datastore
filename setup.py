@@ -18,14 +18,9 @@ setup(
     namespace_packages=['ckanext', 'ckanext.versioned_datastore'],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[
-        'elasticsearch==6.3.1',
-        'elasticsearch-dsl==6.2.1',
-        'eevee==0.1',
-    ],
-    dependency_links=[
-        'git+git://github.com/NaturalHistoryMuseum/eevee.git#egg=eevee-0.1',
-    ],
+    # apparently for CKAN extensions all dependencies should be in the requirements.txt
+    # and none should be in here...
+    install_requires=[],
     entry_points='''
         [ckan.plugins]
         versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
