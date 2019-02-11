@@ -1,7 +1,6 @@
 import logging
 
 from eevee.config import Config
-from eevee.search.search import Searcher
 
 from ckan import plugins, model, logic
 from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
