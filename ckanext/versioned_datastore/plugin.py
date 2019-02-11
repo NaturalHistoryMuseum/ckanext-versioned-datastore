@@ -1,8 +1,11 @@
 import logging
 
+from eevee.config import Config
+from eevee.search.search import Searcher
+
 from ckan import plugins, model, logic
 from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
-from ckanext.versioned_datastore.lib.utils import is_datastore_resource
+from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_searcher
 from ckanext.versioned_datastore.logic import action, auth
 
 log = logging.getLogger(__name__)
@@ -16,6 +19,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IResourceUrlChange)
     plugins.implements(plugins.IDomainObjectModification, inherit=True)
     plugins.implements(plugins.IConfigurer)
+    plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IRoutes, inherit=True)
 
     # IActions
@@ -100,3 +104,17 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                     controller=ResourceDataController.path, action=u'resource_data',
                     ckan_icon=u'cloud-upload')
         return map
+
+    # IConfigurable
+    def configure(self, ckan_config):
+        es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
+        es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
+        prefix = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_index_prefix')
+        config = Config(
+            elasticsearch_hosts=[u'http://{}:{}/'.format(host, es_port) for host in es_hosts],
+            elasticsearch_index_prefix=prefix,
+            mongo_host=ckan_config.get(u'ckanext.versioned_datastore.mongo_host'),
+            mongo_port=ckan_config.get(u'ckanext.versioned_datastore.mongo_port'),
+            mongo_database=ckan_config.get(u'ckanext.versioned_datastore.mongo_database'),
+        )
+        setup_searcher(config)

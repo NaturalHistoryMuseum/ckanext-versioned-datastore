@@ -3,7 +3,6 @@ from contextlib import contextmanager, closing
 
 import requests
 import rq
-from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
@@ -11,26 +10,22 @@ from ckan import plugins
 from ckan.lib.navl import dictization_functions
 from ckanext.rq import jobs
 
+
 CSV_FORMATS = [u'csv', u'application/csv']
 TSV_FORMATS = [u'tsv']
 XLS_FORMATS = [u'xls', u'application/vnd.ms-excel']
 XLSX_FORMATS = [u'xlsx', u'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
 ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
-config = Config(
-    # TODO: get hosts etc from config
-    elasticsearch_hosts=[u'http://172.17.0.2:9200'],
-    mongo_host=u'172.17.0.3',
-    elasticsearch_index_prefix=u'nhm-',
-    mongo_database=u'nhm',
-)
-searcher = None
+
+CONFIG = None
+SEARCHER = None
 
 
-def get_searcher():
-    global searcher
-    if searcher is None:
-        searcher = Searcher(config)
-    return searcher
+def setup_searcher(config):
+    global CONFIG
+    global SEARCHER
+    CONFIG = config
+    SEARCHER = Searcher(config)
 
 
 def validate(context, data_dict, default_schema):
@@ -107,9 +102,9 @@ def get_fields(resource_id):
     '''
     # TODO: return only the fields in use in the version being searched
     # the index name for the resource is prefixed
-    index = get_searcher().prefix_index(resource_id)
+    index = SEARCHER.prefix_index(resource_id)
     # lookup the mapping on elasticsearch
-    mapping = get_searcher().elasticsearch.indices.get_mapping(index)
+    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)
     fields = []
     for mappings in mapping.values():
         # we're only going to return the details of the data fields, so loop over those properties
@@ -130,7 +125,7 @@ def is_datastore_resource(resource_id):
     :param resource_id: the resource id
     :return: True if the resource is a datastore resource, False if not
     '''
-    return get_searcher().elasticsearch.indices.exists(get_searcher().prefix_index(resource_id))
+    return SEARCHER.elasticsearch.indices.exists(SEARCHER.prefix_index(resource_id))
 
 
 def is_ingestible(resource):

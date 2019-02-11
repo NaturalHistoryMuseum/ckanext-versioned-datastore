@@ -15,7 +15,6 @@ from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.importing import import_resource_data
 from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
-from ckanext.versioned_datastore.lib.utils import get_searcher
 from ckanext.versioned_datastore.logic import schema
 
 try:
@@ -116,14 +115,12 @@ def datastore_search(context, data_dict):
     original_data_dict, data_dict, version, search = create_search(context, data_dict)
     resource_id = data_dict[u'resource_id']
 
-    searcher = utils.get_searcher()
-
     # if the run query option is false (default to true if not present) then just return the query
     # we would have run against elasticsearch instead of actually running it. This is useful for
     # running the query outside of ckan, for example on a tile server.
     if not data_dict.get(u'run_query', True):
         # call pre_search to add all the versioning filters necessary (and other things too)
-        result = searcher.pre_search(indexes=[resource_id], search=search, version=version)
+        result = utils.SEARCHER.pre_search(indexes=[resource_id], search=search, version=version)
         return {
             # the first part of the pre_search response is a list of indexes to run the query
             # against
@@ -136,7 +133,7 @@ def datastore_search(context, data_dict):
         try:
             # run the search through eevee. Note that we pass the indexes to eevee as a list as
             # eevee is ready for cross-resource search but this code isn't (yet)
-            result = searcher.search(indexes=[resource_id], search=search, version=version)
+            result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
         except NotFoundError as e:
             raise SearchIndexError(e.error)
 
@@ -192,7 +189,7 @@ def datastore_create(context, data_dict):
     if utils.is_ingestible(resource):
         # note that the version parameter doesn't matter when creating the index so we can safely
         # pass None
-        get_searcher().ensure_index_exists(DatastoreIndex(utils.config, resource_id, None))
+        utils.SEARCHER.ensure_index_exists(DatastoreIndex(utils.CONFIG, resource_id, None))
         return True
     return False
 
@@ -245,10 +242,10 @@ def datastore_upsert(context, data_dict):
     index_action = data_dict.get(u'index_action', u'remove')
 
     # the index name will be the resource id but with the custom search prefix
-    index_name = get_searcher().prefix_index(resource_id)
+    index_name = utils.SEARCHER.prefix_index(resource_id)
     # get the latest version for the resource from the status index, or None if it hasn't been
     # indexed yet
-    latest_version = get_searcher().get_index_versions().get(index_name, None)
+    latest_version = utils.SEARCHER.get_index_versions().get(index_name, None)
     # if there is a current version of the resource data
     if latest_version is not None:
         # the new version must be newer than the current one
@@ -259,7 +256,7 @@ def datastore_upsert(context, data_dict):
     # ensure our custom queue exists
     utils.ensure_importing_queue_exists()
     # queue the job on our custom queue
-    job = enqueue_job(import_resource_data, args=[resource_id, utils.config, version, index_action,
+    job = enqueue_job(import_resource_data, args=[resource_id, utils.CONFIG, version, index_action,
                                                   data], queue=u'importing')
     return {
         u'queued_at': job.enqueued_at.isoformat(),
@@ -281,9 +278,9 @@ def datastore_delete(context, data_dict):
     resource_id = data_dict[u'resource_id']
     # remove all resource data from elasticsearch (the eevee function used below deletes the index,
     # the aliases and the status entry for this resource so that we don't have to)
-    delete_index(utils.config, resource_id)
+    delete_index(utils.CONFIG, resource_id)
     # remove all resource data from mongo
-    with get_mongo(utils.config, collection=resource_id) as mongo:
+    with get_mongo(utils.CONFIG, collection=resource_id) as mongo:
         mongo.drop()
 
 
@@ -305,7 +302,7 @@ def datastore_get_record_versions(context, data_dict):
     :rtype: list
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
-    return utils.get_searcher().get_versions(data_dict['resource_id'], int(data_dict['id']))
+    return utils.SEARCHER.get_versions(data_dict['resource_id'], int(data_dict['id']))
 
 
 @logic.side_effect_free
@@ -325,13 +322,12 @@ def datastore_get_resource_versions(context, data_dict):
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_resource_versions_schema())
     resource_id = data_dict[u'resource_id']
-    searcher = get_searcher()
-    index = searcher.prefix_index(resource_id)
+    index = utils.SEARCHER.prefix_index(resource_id)
 
     after = None
     versions = []
     while True:
-        search = Search(using=searcher.elasticsearch, index=index)[0:0]
+        search = Search(using=utils.SEARCHER.elasticsearch, index=index)[0:0]
         search.aggs.bucket(u'versions', u'composite', size=100,
                            sources={u'version': A(u'terms', field=u'meta.version', order=u'asc')})
         if after is not None:
@@ -412,7 +408,7 @@ def datastore_autocomplete(context, data_dict):
         search.aggs[u'field_values'].after = {field: after}
 
     # run the search
-    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
+    result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
     # get the results we're interested in
     agg_result = result.aggregations[u'field_values']
     # return a dict of results, but only include the after details if there are any to include
@@ -448,14 +444,14 @@ def datastore_reindex(context, data_dict):
     # retrieve the resource itself
     resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
 
-    index_name = get_searcher().prefix_index(resource_id)
-    latest_version = get_searcher().get_index_versions().get(index_name, None)
+    index_name = utils.SEARCHER.prefix_index(resource_id)
+    latest_version = utils.SEARCHER.get_index_versions().get(index_name, None)
     if latest_version is None:
         # TODO: should this do this or should it ingest anyway with the latest mongo version?
         raise plugins.toolkit.ValidationError(u'There is no version of the resource in the index so'
                                               u'there is nothing to reindex')
 
-    job = enqueue_job(index_resource, args=[latest_version, utils.config, resource],
+    job = enqueue_job(index_resource, args=[latest_version, utils.CONFIG, resource],
                       queue=u'importing')
     return {
         u'queued_at': job.enqueued_at.isoformat(),
@@ -497,7 +493,7 @@ def datastore_query_extent(context, data_dict):
     search.aggs.bucket(u'geo_count', u'value_count', field=u'meta.geo')
 
     # run the search
-    result = utils.get_searcher().search(indexes=[resource_id], search=search, version=version)
+    result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
 
     # create a dict of results for return
     to_return = {
