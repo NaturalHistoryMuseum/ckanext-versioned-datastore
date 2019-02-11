@@ -76,12 +76,12 @@ def format_facets(aggs):
     facets = {}
     for facet, details in aggs.items():
         facets[facet] = {
-            'details': {
-                'sum_other_doc_count': details['sum_other_doc_count'],
-                'doc_count_error_upper_bound': details['doc_count_error_upper_bound'],
+            u'details': {
+                u'sum_other_doc_count': details[u'sum_other_doc_count'],
+                u'doc_count_error_upper_bound': details[u'doc_count_error_upper_bound'],
             },
-            'values': {value_details['key']: value_details['doc_count']
-                       for value_details in details['buckets']}
+            u'values': {value_details[u'key']: value_details[u'doc_count']
+                        for value_details in details[u'buckets']}
         }
 
     return facets
@@ -108,7 +108,7 @@ def get_fields(resource_id):
     fields = []
     for mappings in mapping.values():
         # we're only going to return the details of the data fields, so loop over those properties
-        for field in mappings['mappings'][DOC_TYPE]['properties']['data']['properties']:
+        for field in mappings[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties']:
             fields.append({
                 u'id': field,
                 # by default, everything is a string

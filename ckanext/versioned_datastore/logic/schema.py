@@ -5,13 +5,13 @@ from ckan.logic.validators import Invalid
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
 
 # grab all the validator functions upfront
-boolean_validator = get_validator('boolean_validator')
-ignore_missing = get_validator('ignore_missing')
-int_validator = get_validator('int_validator')
-not_missing = get_validator('not_missing')
-not_empty = get_validator('not_empty')
-resource_id_exists = get_validator('resource_id_exists')
-OneOf = get_validator('OneOf')
+boolean_validator = get_validator(u'boolean_validator')
+ignore_missing = get_validator(u'ignore_missing')
+int_validator = get_validator(u'int_validator')
+not_missing = get_validator(u'not_missing')
+not_empty = get_validator(u'not_empty')
+resource_id_exists = get_validator(u'resource_id_exists')
+OneOf = get_validator(u'OneOf')
 
 
 def list_of_dicts_validator(value, context):
@@ -28,12 +28,12 @@ def list_of_dicts_validator(value, context):
         try:
             value = json.loads(value)
         except ValueError:
-            raise Invalid('Cannot parse JSON')
+            raise Invalid(u'Cannot parse JSON')
     # now check that the value is a list and all the elements in the list are dicts
     if isinstance(value, list) and all(isinstance(item, dict) for item in value):
         return value
     # if we reach here the value is rubbish, error out
-    raise Invalid('Value must be a list of dictionaries')
+    raise Invalid(u'Value must be a list of dictionaries')
 
 
 def list_of_strings(delimiter=u','):

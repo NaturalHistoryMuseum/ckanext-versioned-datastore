@@ -19,7 +19,7 @@ def prefix_field(field):
     :param field: the field name
     :return: data.<field>
     '''
-    return 'data.{}'.format(field)
+    return u'data.{}'.format(field)
 
 
 def _find_version(data_dict):

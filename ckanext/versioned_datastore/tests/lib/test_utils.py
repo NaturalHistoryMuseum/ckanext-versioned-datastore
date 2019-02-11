@@ -100,17 +100,17 @@ def test_format_facets(monkeypatch):
 
 def test_get_fields(monkeypatch):
     mock_mapping = {
-        "index_name": {
-            "mappings": {
+        u"index_name": {
+            u"mappings": {
                 DOC_TYPE: {
-                    "properties": {
-                        "data": {
-                            "properties": {
-                                "field1": {
-                                    "type": "keyword",
+                    u"properties": {
+                        u"data": {
+                            u"properties": {
+                                u"field1": {
+                                    u"type": u"keyword",
                                 },
-                                "field2": {
-                                    "type": "date",
+                                u"field2": {
+                                    u"type": u"date",
                                 },
                             }
                         }
@@ -126,7 +126,7 @@ def test_get_fields(monkeypatch):
     monkeypatch.setattr(u'ckanext.versioned_datastore.lib.utils.get_searcher',
                         MagicMock(return_value=searcher_mock))
 
-    mapping, fields = get_fields('index')
+    mapping, fields = get_fields(u'index')
     assert mapping == mock_mapping
     assert len(fields) == 2
     assert {u'id': u'field1', u'type': u'string'} in fields
@@ -135,11 +135,11 @@ def test_get_fields(monkeypatch):
 
 def test_is_datastore_resource(monkeypatch):
     exists_mock = MagicMock(return_value=True)
-    prefix_mock = lambda name: 'beans-{}'.format(name)
+    prefix_mock = lambda name: u'beans-{}'.format(name)
     searcher_mock = MagicMock(prefix_index=prefix_mock, elasticsearch=MagicMock(indices=MagicMock(
         exists=exists_mock)))
     monkeypatch.setattr(u'ckanext.versioned_datastore.lib.utils.get_searcher',
                         MagicMock(return_value=searcher_mock))
 
-    assert is_datastore_resource('banana')
-    assert exists_mock.call_args == call('beans-banana')
+    assert is_datastore_resource(u'banana')
+    assert exists_mock.call_args == call(u'beans-banana')

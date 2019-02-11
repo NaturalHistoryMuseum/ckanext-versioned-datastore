@@ -24,35 +24,35 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     # IActions
     def get_actions(self):
         return {
-            'datastore_create': action.datastore_create,
-            'datastore_upsert': action.datastore_upsert,
-            'datastore_delete': action.datastore_delete,
-            'datastore_search': action.datastore_search,
-            'datastore_get_record_versions': action.datastore_get_record_versions,
-            'datastore_get_resource_versions': action.datastore_get_resource_versions,
-            'datastore_autocomplete': action.datastore_autocomplete,
-            'datastore_reindex': action.datastore_reindex,
-            'datastore_query_extent': action.datastore_query_extent,
+            u'datastore_create': action.datastore_create,
+            u'datastore_upsert': action.datastore_upsert,
+            u'datastore_delete': action.datastore_delete,
+            u'datastore_search': action.datastore_search,
+            u'datastore_get_record_versions': action.datastore_get_record_versions,
+            u'datastore_get_resource_versions': action.datastore_get_resource_versions,
+            u'datastore_autocomplete': action.datastore_autocomplete,
+            u'datastore_reindex': action.datastore_reindex,
+            u'datastore_query_extent': action.datastore_query_extent,
         }
 
     # IAuthFunctions
     def get_auth_functions(self):
         return {
-            'datastore_create': auth.datastore_create,
-            'datastore_upsert': auth.datastore_upsert,
-            'datastore_delete': auth.datastore_delete,
-            'datastore_search': auth.datastore_search,
-            'datastore_get_record_versions': auth.datastore_get_record_versions,
-            'datastore_get_resource_versions': auth.datastore_get_resource_versions,
-            'datastore_autocomplete': auth.datastore_autocomplete,
-            'datastore_reindex': auth.datastore_reindex,
-            'datastore_query_extent': auth.datastore_query_extent,
+            u'datastore_create': auth.datastore_create,
+            u'datastore_upsert': auth.datastore_upsert,
+            u'datastore_delete': auth.datastore_delete,
+            u'datastore_search': auth.datastore_search,
+            u'datastore_get_record_versions': auth.datastore_get_record_versions,
+            u'datastore_get_resource_versions': auth.datastore_get_resource_versions,
+            u'datastore_autocomplete': auth.datastore_autocomplete,
+            u'datastore_reindex': auth.datastore_reindex,
+            u'datastore_query_extent': auth.datastore_query_extent,
         }
 
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'is_datastore_resource': is_datastore_resource
+            u'is_datastore_resource': is_datastore_resource
         }
 
     # IResourceController
@@ -64,14 +64,14 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
         #     resource_dict['url'] = p.toolkit.url_for(
         #         controller='ckanext.datastore.controller:DatastoreController',
         #         action='dump', resource_id=resource_dict['id'])
-        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
+        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict['id'])
         return resource_dict
 
     # IResourceUrlChange and IDomainObjectModification
     def notify(self, entity, operation=None):
         if isinstance(entity, model.Resource):
             if (operation == model.domain_object.DomainObjectOperation.changed and
-                    entity.state == 'deleted'):
+                    entity.state == u'deleted'):
                 # the resource has been or is now deleted, make sure the
                 logic.get_action(u'datastore_delete')({}, {u'resource_id': entity.id})
             elif operation == model.domain_object.DomainObjectOperation.new or not operation:
@@ -95,7 +95,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     # IConfigurer
     def update_config(self, config):
         # add templates
-        plugins.toolkit.add_template_directory(config, 'theme/templates')
+        plugins.toolkit.add_template_directory(config, u'theme/templates')
 
     # IRoutes
     def before_map(self, map):

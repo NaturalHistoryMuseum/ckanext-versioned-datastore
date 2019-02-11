@@ -302,7 +302,7 @@ def datastore_get_record_versions(context, data_dict):
     :rtype: list
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
-    return utils.SEARCHER.get_versions(data_dict['resource_id'], int(data_dict['id']))
+    return utils.SEARCHER.get_versions(data_dict[u'resource_id'], int(data_dict[u'id']))
 
 
 @logic.side_effect_free
