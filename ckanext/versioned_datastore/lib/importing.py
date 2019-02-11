@@ -2,16 +2,14 @@ import logging
 import time
 from datetime import datetime
 
-import dictdiffer
+from eevee import diffing
 from eevee.mongo import get_mongo, MongoOpBuffer
-from eevee.utils import serialise_diff
 from pymongo import UpdateOne
 
 from ckan import logic
 from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib.indexing import index_resource
 from ckanext.versioned_datastore.lib.ingesting import ingest_resource
-
 
 log = logging.getLogger(__name__)
 
@@ -33,14 +31,14 @@ def index_action_remove(config, resource_id, version, ingestion_time):
         # find and iterate through all the records that weren't updated in the given version
         for mongo_doc in mongo_buffer.mongo.find({u'latest_version': {u'$ne': version}}):
             # create a diff between current data in the record and an empty dict
-            diff = list(dictdiffer.diff(mongo_doc[u'data'], {}))
+            diff = diffing.SHALLOW_DIFFER.diff(mongo_doc[u'data'], {})
             # organise our update op
             update = {
                 u'$set': {
                     u'data': {},
                     u'latest_version': version,
                     u'last_ingested': ingestion_time,
-                    u'diffs.{}'.format(version): serialise_diff(diff),
+                    u'diffs.{}'.format(version): diffing.format_diff(diffing.SHALLOW_DIFFER, diff),
                 },
                 u'$addToSet': {u'versions': version}
             }
