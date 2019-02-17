@@ -139,3 +139,17 @@ def get_all_stats(resource_id):
     '''
     return model.Session.query(ImportStats).filter(
         ImportStats.resource_id == resource_id).order_by(desc(ImportStats.id))
+
+
+def get_last_ingest(resource_id):
+    '''
+    Retrieve the last ingest stat object from the database, or None if there aren't any.
+
+    :param resource_id: the resource id
+    :return: an ImportStats object or None
+    '''
+    return model.Session.query(ImportStats) \
+        .filter(ImportStats.resource_id == resource_id) \
+        .filter(ImportStats.type == INGEST) \
+        .order_by(ImportStats.version.desc()) \
+        .first()

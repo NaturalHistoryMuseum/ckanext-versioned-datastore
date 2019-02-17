@@ -10,8 +10,27 @@ from ckan import logic
 from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib.indexing import index_resource
 from ckanext.versioned_datastore.lib.ingesting import ingest_resource
+from ckanext.versioned_datastore.lib.stats import get_last_ingest
 
 log = logging.getLogger(__name__)
+
+
+def check_version_is_valid(resource_id, version):
+    '''
+    Checks that the given version is valid for the given resource id. Note that we check the ingest
+    version not the indexed version as this is the source of truth about the versions of the
+    resource we know about.
+
+    The version must be greater than the latest ingested version or there must not be any ingested
+    versions available.
+
+    :param resource_id: the resource's id
+    :param version: the version to check
+    '''
+    # retrieve the latest ingested version
+    ingest_version = get_last_ingest(resource_id)
+    # if there is a current version of the resource data the proposed version must be newer
+    return ingest_version is None or version > ingest_version.version
 
 
 def index_action_remove(config, resource_id, version, ingestion_time):
@@ -102,7 +121,14 @@ def import_resource_data(resource_id, config, version, index_action, data):
     :param data: a list of dicts to import, or None if the url of the resource should be used
                  instead
     '''
-    # first, retrieve the resource dict
+    # first, double check that the version is valid
+    if not check_version_is_valid(resource_id, version):
+        # log and silently skip this import
+        log.info(u'Skipped importing data for {} at version {} as the version is invalid'.format(
+            resource_id, version))
+        return
+
+    # then, retrieve the resource dict
     resource = get_resource(resource_id)
     # store a start time, this will be used as the ingestion time of the records
     start = datetime.now()
