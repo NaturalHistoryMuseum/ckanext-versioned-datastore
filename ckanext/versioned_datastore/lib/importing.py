@@ -65,7 +65,7 @@ def index_action_remove(config, resource_id, version, ingestion_time):
             mongo_buffer.add(UpdateOne({u'id': mongo_doc[u'id']}, update))
 
 
-def get_resource(resource_id, attempts=3, backoff=1):
+def get_resource(resource_id, attempts=10, backoff=1):
     '''
     Given a resource id, returns its resource dict. This function will attempt to get the resource
     a number of times with a backoff between each attempt. This is silly but useful as when queueing
