@@ -3,13 +3,13 @@ from contextlib import contextmanager, closing
 
 import requests
 import rq
+from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
 from ckan import plugins
 from ckan.lib.navl import dictization_functions
 from ckanext.rq import jobs
-
 
 CSV_FORMATS = [u'csv', u'application/csv']
 TSV_FORMATS = [u'tsv']
@@ -21,11 +21,26 @@ CONFIG = None
 SEARCHER = None
 
 
-def setup_searcher(config):
+def setup_eevee(ckan_config):
+    '''
+    Given the CKAN config, create the Eevee config object and the eevee Searcher object.
+
+    :param ckan_config: the ckan config
+    '''
     global CONFIG
     global SEARCHER
-    CONFIG = config
-    SEARCHER = Searcher(config)
+
+    es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
+    es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
+    prefix = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_index_prefix')
+    CONFIG = Config(
+        elasticsearch_hosts=[u'http://{}:{}/'.format(host, es_port) for host in es_hosts],
+        elasticsearch_index_prefix=prefix,
+        mongo_host=ckan_config.get(u'ckanext.versioned_datastore.mongo_host'),
+        mongo_port=int(ckan_config.get(u'ckanext.versioned_datastore.mongo_port')),
+        mongo_database=ckan_config.get(u'ckanext.versioned_datastore.mongo_database'),
+    )
+    SEARCHER = Searcher(CONFIG)
 
 
 def validate(context, data_dict, default_schema):
