@@ -1,6 +1,7 @@
 import itertools
 import logging
 import numbers
+from contextlib import closing
 
 import abc
 import openpyxl
@@ -162,8 +163,9 @@ class SVFeeder(URLDatastoreFeeder):
                 yield unicode(line, self.default_encoding)
 
     def records(self):
-        # stream the csv file from the url
-        with requests.get(self.url, stream=True) as response:
+        # stream the file from the url (note that we have to use closing here because the ability to
+        # directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
+        with closing(requests.get(self.url, stream=True)) as response:
             reader = csv.DictReader(self.line_iterator(response), dialect=self.dialect)
             for number, data in enumerate(reader, start=1):
                 # yield a new record for each row
