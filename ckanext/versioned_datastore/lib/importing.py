@@ -2,6 +2,7 @@ import logging
 import time
 from datetime import datetime
 
+from ckanext.versioned_datastore.lib import utils
 from eevee import diffing
 from eevee.mongo import get_mongo, MongoOpBuffer
 from pymongo import UpdateOne
@@ -139,5 +140,10 @@ def import_resource_data(resource_id, config, version, index_action, data):
         if index_action == u'remove':
             index_action_remove(config, resource_id, version, start)
 
-        # index the resource from mongo into elasticsearch
-        index_resource(version, config, resource)
+        # find out what the latest version in the index is
+        latest_index_versions = utils.SEARCHER.get_index_versions([resource_id], prefixed=False)
+        latest_index_version = latest_index_versions.get(resource_id, None)
+
+        # index the resource from mongo into elasticsearch. This will only index the records that
+        # have changed between the latest index version and the newly ingested version
+        index_resource(resource, config, latest_index_version, version)

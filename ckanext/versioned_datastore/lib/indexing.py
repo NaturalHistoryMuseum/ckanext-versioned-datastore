@@ -2,7 +2,7 @@ import copy
 import logging
 
 from ckan import plugins
-from eevee.indexing.feeders import ConditionalIndexFeeder
+from eevee.indexing.feeders import SimpleIndexFeeder
 from eevee.indexing.indexers import Indexer
 from eevee.indexing.indexes import Index
 from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
@@ -86,17 +86,17 @@ class DatastoreIndex(Index):
         return body
 
 
-def index_resource(version, config, resource):
+def index_resource(resource, config, lower_version, upper_version):
     resource_id = resource[u'id']
-    feeder = ConditionalIndexFeeder(config, resource_id)
-    index = DatastoreIndex(config, resource_id, version,
+    feeder = SimpleIndexFeeder(config, resource_id, lower_version, upper_version)
+    index = DatastoreIndex(config, resource_id, upper_version,
                            latitude_field=resource.get(u'_latitude_field', None),
                            longitude_field=resource.get(u'_longitude_field', None))
     # then index the data
-    indexer = Indexer(version, config, [(feeder, index)])
+    indexer = Indexer(upper_version, config, [(feeder, index)])
 
     # create a stats entry so that progress can be tracked
-    stats_id = stats.start_operation(resource[u'id'], stats.INDEX, version, indexer.start)
+    stats_id = stats.start_operation(resource[u'id'], stats.INDEX, upper_version, indexer.start)
     # setup monitoring on the indexer so that we can update the database with stats about the
     # index operation as it progresses
     stats.monitor_indexing(stats_id, indexer)

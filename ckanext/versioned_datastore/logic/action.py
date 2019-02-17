@@ -11,7 +11,7 @@ from elasticsearch_dsl import A, Search
 from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib import utils
+from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import import_resource_data, check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
@@ -436,14 +436,11 @@ def datastore_reindex(context, data_dict):
     # retrieve the resource itself
     resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
 
-    index_name = utils.SEARCHER.prefix_index(resource_id)
-    latest_version = utils.SEARCHER.get_index_versions().get(index_name, None)
-    if latest_version is None:
-        # TODO: should this do this or should it ingest anyway with the latest mongo version?
-        raise plugins.toolkit.ValidationError(u'There is no version of the resource in the index so'
-                                              u'there is nothing to reindex')
+    last_ingested_version = stats.get_last_ingest(resource_id)
+    if last_ingested_version is None:
+        raise plugins.toolkit.ValidationError(u'There is no ingested data for this version')
 
-    job = enqueue_job(index_resource, args=[latest_version, utils.CONFIG, resource],
+    job = enqueue_job(index_resource, args=[resource, utils.CONFIG, None, last_ingested_version],
                       queue=u'importing')
     return {
         u'queued_at': job.enqueued_at.isoformat(),
