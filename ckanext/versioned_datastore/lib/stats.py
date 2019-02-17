@@ -137,8 +137,8 @@ def get_all_stats(resource_id):
     :param resource_id: the id of the resource
     :return: a Query object which can be iterated over to retrieve all the results
     '''
-    return model.Session.query(ImportStats).filter(
-        ImportStats.resource_id == resource_id).order_by(desc(ImportStats.id))
+    return list(model.Session.query(ImportStats).filter(
+        ImportStats.resource_id == resource_id).order_by(desc(ImportStats.id)))
 
 
 def get_last_ingest(resource_id):
