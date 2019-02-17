@@ -155,12 +155,15 @@ class SVFeeder(URLDatastoreFeeder):
         self.dialect = dialect
         self.default_encoding = default_encoding
 
-    def line_iterator(self, r):
-        for line in r.iter_lines(decode_unicode=True):
-            if isinstance(line, unicode):
-                yield line
-            else:
-                yield unicode(line, self.default_encoding)
+    def line_iterator(self, response):
+        '''
+        Iterate over the lines in the response, decoding each into UTF-8.
+
+        :param response: a requests response object
+        :return: generator object that produces lines of text
+        '''
+        for line in response.iter_lines():
+            yield line.decode(self.default_encoding)
 
     def records(self):
         # stream the file from the url (note that we have to use closing here because the ability to
