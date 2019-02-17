@@ -1,6 +1,6 @@
 import logging
 
-from eevee.config import Config
+from eevee.utils import to_timestamp
 
 from ckan import plugins, model, logic
 from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
@@ -84,8 +84,16 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                         # if the datastore index for this resource was created then load the data.
                         # Note that we pass through the remove index_action to make sure any new
                         # data replaces the existing data
-                        logic.get_action(u'datastore_upsert')({}, {u'resource_id': entity.id,
-                                                                   u'index_action': u'remove'})
+                        data_dict = {
+                            u'resource_id': entity.id,
+                            u'index_action': u'remove',
+                        }
+                        # also pass a version if we can to avoid upserting the same data many times
+                        # (this notify function gets hit quite a lot even when only one update has
+                        # occurred on a resource)
+                        if entity.last_modified is not None:
+                            data_dict[u'version'] = to_timestamp(entity.last_modified)
+                        logic.get_action(u'datastore_upsert')({}, data_dict)
                 except plugins.toolkit.ValidationError, e:
                     # if anything went wrong we want to catch error instead of raising otherwise
                     # resource save will fail with 500
