@@ -28,10 +28,11 @@ class DatastoreRecordConverter(RecordToMongoConverter):
         super(DatastoreRecordConverter, self).__init__(version, ingestion_time)
 
     def diff_data(self, existing_data, new_data):
+        _, differ, diff = super(DatastoreRecordConverter, self).diff_data(existing_data, new_data)
         # even if the data hasn't changed we want to store a new version (the diff will just be
         # empty) as it means we can treat missing records from a new resource version as ones that
         # shouldn't be indexed by checking which records were updated in each version
-        return True, super(DatastoreRecordConverter, self).diff_data(existing_data, new_data)[1]
+        return True, differ, diff
 
 
 class DatastoreRecord(BaseRecord):
