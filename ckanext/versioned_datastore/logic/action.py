@@ -12,7 +12,7 @@ from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.importing import import_resource_data
+from ckanext.versioned_datastore.lib.importing import import_resource_data, check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
@@ -241,17 +241,9 @@ def datastore_upsert(context, data_dict):
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
     index_action = data_dict.get(u'index_action', u'remove')
 
-    # the index name will be the resource id but with the custom search prefix
-    index_name = utils.SEARCHER.prefix_index(resource_id)
-    # get the latest version for the resource from the status index, or None if it hasn't been
-    # indexed yet
-    latest_version = utils.SEARCHER.get_index_versions().get(index_name, None)
-    # if there is a current version of the resource data
-    if latest_version is not None:
-        # the new version must be newer than the current one
-        if version <= latest_version:
-            raise plugins.toolkit.ValidationError(u'The new version must be newer than current '
-                                                  u'latest version ({})'.format(latest_version))
+    # check that the version is valid
+    if not check_version_is_valid(resource_id, version):
+        raise plugins.toolkit.ValidationError(u'The new version must be newer than current version')
 
     # ensure our custom queue exists
     utils.ensure_importing_queue_exists()
