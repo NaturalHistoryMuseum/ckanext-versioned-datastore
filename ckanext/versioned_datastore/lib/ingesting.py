@@ -308,13 +308,14 @@ def get_feeder(config, version, resource, data=None):
 
 
 def ingest_resource(version, start, config, resource, data):
-    # create a stats entry so that progress can be tracked
-    stats_id = stats.start_operation(resource[u'id'], stats.INGEST, version, start)
     # work out which feeder to use for the resource
     feeder = get_feeder(config, version, resource, data)
     # if the return is None then no feeder can be matched and the data is uningestible :(
     if feeder is None:
         return False
+
+    # create a stats entry so that progress can be tracked
+    stats_id = stats.start_operation(resource[u'id'], stats.INGEST, version, start)
 
     # create our custom datastore converter object
     converter = DatastoreRecordConverter(version, start)
