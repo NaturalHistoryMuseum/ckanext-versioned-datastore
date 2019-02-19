@@ -17,8 +17,7 @@ from openpyxl.cell.read_only import EmptyCell
 
 from ckanext.versioned_datastore.lib import stats
 from ckanext.versioned_datastore.lib.utils import download_to_temp_file, CSV_FORMATS, TSV_FORMATS, \
-    XLS_FORMATS, XLSX_FORMATS
-
+    XLS_FORMATS, XLSX_FORMATS, is_datastore_only_resource
 
 log = logging.getLogger(__name__)
 
@@ -293,7 +292,7 @@ def get_feeder(config, version, resource, data=None):
     if data is not None:
         # if there is data provided, use the API feeder
         return APIDatastoreFeeder(version, resource_id, id_offset, data)
-    else:
+    elif not is_datastore_only_resource(resource[u'url']):
         # otherwise we need to use the URL on the resource check to see if the format is set and
         # isn't empty/None (hence the use of get)
         if resource.get(u'format', False):
