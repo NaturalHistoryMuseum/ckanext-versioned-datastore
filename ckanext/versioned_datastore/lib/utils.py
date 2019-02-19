@@ -11,6 +11,7 @@ from ckan import plugins
 from ckan.lib.navl import dictization_functions
 from ckanext.rq import jobs
 
+DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
 CSV_FORMATS = [u'csv', u'application/csv']
 TSV_FORMATS = [u'tsv']
 XLS_FORMATS = [u'xls', u'application/vnd.ms-excel']
@@ -143,6 +144,23 @@ def is_datastore_resource(resource_id):
     return SEARCHER.elasticsearch.indices.exists(SEARCHER.prefix_index(resource_id))
 
 
+def is_datastore_only_resource(resource_url):
+    '''
+    Checks whether the resource url is a datastore only resource url. When uploading data directly
+    to the API without using a source file/URL the url of the resource will be set to
+    "_datastore_only_resource" to indicate that as such. This function checks to see if the resource
+    URL provided is one of these URLs. Note that we check a few different scenarios as CKAN has the
+    nasty habit of adding a protocol onto the front of these URLs when saving the resource,
+    sometimes.
+
+    :param resource_url: the URL of the resource
+    :return: True if the resource is a datastore only resource, False if not
+    '''
+    return (resource_url == DATASTORE_ONLY_RESOURCE or
+            resource_url == u'http://{}'.format(DATASTORE_ONLY_RESOURCE) or
+            resource_url == u'https://{}'.format(DATASTORE_ONLY_RESOURCE))
+
+
 def is_ingestible(resource):
     """
     Returns True if the resource can be ingested into the datastore and False if not. To be
@@ -154,8 +172,7 @@ def is_ingestible(resource):
     :return: True if it is, False if not
     """
     resource_format = resource.get(u'format', None)
-    return (resource[u'url'] == u'_datastore_only_resource' or
-            resource[u'url'] == u'http://_datastore_only_resource' or
+    return (is_datastore_only_resource(resource[u'url']) or
             (resource_format is not None and resource_format.lower() in ALL_FORMATS))
 
 
