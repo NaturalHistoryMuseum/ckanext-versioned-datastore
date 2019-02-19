@@ -197,7 +197,7 @@ def datastore_create(context, data_dict):
 def datastore_upsert(context, data_dict):
     '''
     Upserts data into the datastore for the resource. The data can be provided in the data_dict
-    using the key 'data' or, if data is not specified, the URL on the resource is used.
+    using the key 'records' or, if data is not specified, the URL on the resource is used.
 
     :param resource_id: resource id of the resource
     :type resource_id: string
