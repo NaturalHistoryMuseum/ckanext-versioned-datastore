@@ -135,7 +135,7 @@ def import_resource_data(resource_id, config, version, index_action, data):
     start = datetime.now()
     # ingest the resource into mongo
     did_ingest = ingest_resource(version, start, config, resource, data)
-    if did_ingest is not None and index_action != u'skip':
+    if did_ingest and index_action != u'skip':
         # if the index action is remove we need to do that before indexing the resource's data
         if index_action == u'remove':
             index_action_remove(config, resource_id, version, start)
