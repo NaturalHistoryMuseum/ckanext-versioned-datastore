@@ -61,6 +61,18 @@ class DatastoreIndex(Index):
             # integer
             to_index[u'_id'] = int(mongo_doc[u'id'])
 
+            for key, value in to_index.items():
+                if isinstance(value, bool):
+                    # boolean values when passed through to elasticsearch will be rejected as they
+                    # currently aren't handled silently when converting to a number fails, therefore
+                    # just convert it to a string here. Note that records with boolean values can
+                    # only come from the API as if you upload a CSV we won't convert the value to
+                    # a boolean ever
+                    to_index[key] = unicode(value).lower()
+                else:
+                    # everything else can pass on through
+                    to_index[key] = value
+
             # create the base index doc
             index_doc = self.create_index_document(to_index, version, next_version)
 
