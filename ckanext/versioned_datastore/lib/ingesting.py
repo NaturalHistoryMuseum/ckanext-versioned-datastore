@@ -106,8 +106,7 @@ class DatastoreFeeder(IngestionFeeder):
         '''
         # if the record has an _id column then we use it, if it doesn't then we just use the index
         # of the record in the source plus the offset value. This accommodates the simple scenario
-        # where the source data dicts don't have ids and the user just wants to replace the existing
-        # data
+        # where the source data dicts don't have ids and the user just wants to add to the existing
         record_id = data.pop(u'_id', self.id_offset + number)
         return DatastoreRecord(self.version, record_id, data, self.resource_id)
 
@@ -285,6 +284,8 @@ def get_feeder(config, version, resource, data=None):
     # extract the resource id from the resource dict
     resource_id = resource[u'id']
 
+    # figure out what the current max id is in the collection, this will then be used as the offset
+    # for new records entered into the collection if the records don't have ids of their own
     with get_mongo(config, collection=resource_id) as mongo:
         doc_with_max_id = mongo.find_one(sort=[(u'id', -1)])
         id_offset = 0 if not doc_with_max_id else doc_with_max_id[u'id']
