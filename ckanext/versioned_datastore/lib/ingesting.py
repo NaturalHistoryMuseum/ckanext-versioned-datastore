@@ -143,7 +143,7 @@ class APIDatastoreFeeder(DatastoreFeeder):
         return u'API'
 
     def records(self):
-        for number, data in enumerate(self.data):
+        for number, data in enumerate(self.data, start=1):
             yield self.create_record(number, data)
 
 
@@ -210,7 +210,7 @@ class XLSFeeder(URLDatastoreFeeder):
             # assume the first row is the header
             header = [unicode(cell.value) for cell in next(rows)]
             # then read all the other rows as data
-            for number, row in enumerate(rows):
+            for number, row in enumerate(rows, start=1):
                 data = {}
                 for field, cell in zip(header, row):
                     # if the cell is the id column, it contains a number and the number is an
@@ -243,7 +243,7 @@ class XLSXFeeder(URLDatastoreFeeder):
             # always treat the first row as a header
             header = [unicode(cell.value) for cell in next(rows)]
             # then read all the other rows as data
-            for number, row in enumerate(rows):
+            for number, row in enumerate(rows, start=1):
                 data = {}
                 for field, cell in zip(header, row):
                     # if the cell is the id column and it contains a number make sure it stays a
