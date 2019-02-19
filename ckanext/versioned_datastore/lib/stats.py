@@ -125,7 +125,7 @@ def mark_error(stats_id, error):
         ImportStats.in_progress: False,
         ImportStats.duration: (end - start).total_seconds(),
         ImportStats.end: end,
-        ImportStats.error: error.message,
+        ImportStats.error: unicode(error.message),
     })
 
 
