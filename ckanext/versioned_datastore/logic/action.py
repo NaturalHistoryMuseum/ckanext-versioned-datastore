@@ -201,28 +201,16 @@ def datastore_upsert(context, data_dict):
 
     :param resource_id: resource id of the resource
     :type resource_id: string
+    :param replace: whether to remove any records not included in this update. If True, any record
+                    that was not in the set of data ingested is marked as deleted. Note that this is
+                    any record not included, not any record that hasn't changed. If a record is
+                    included in the data, has an _id that matches an existing record and its data
+                    hasn't changed, it will not be removed.
+                    If False, the data is ingested and all existing data is left to be either
+                    updated or continue to be current. There is no default for this option.
+    :type replace: bool
     :param version: the version to store the data under (optional, if not specified defaults to now)
     :type version: int
-    :param index_action: the index action to take. This must be one of:
-                            - skip: skips indexing altogether, this therefore allows the updating a
-                                    resource's data across multiple requests. If this argument is
-                                    used then the only way the newly ingested version will become
-                                    visible in the index is if a final request is made with one of
-                                    the other index_actions below.
-                            - remove: before the data in the new version is indexed, the records
-                                      that were not included in the version are flagged as deleted
-                                      meaning they will not be indexed in the new version. Note that
-                                      even if a record's data hasn't changed in the new version
-                                      (i.e. the v1 record looks the same as the v2 record) it will
-                                      not be deleted. This index action is intended to fulfill the
-                                      requirements of a typical user uploading a csv to the site -
-                                      they expect the indexed resource to contain the data in the
-                                      uploaded csv and nothing else.
-                            - retain: just index the records, regardless of whether they were
-                                      updated in the last version or not. This action allows for
-                                      indexing partial updates to the resources' data.
-    :type index_action: string (optional, default remove)
-
 
     **Results:**
 
@@ -237,9 +225,9 @@ def datastore_upsert(context, data_dict):
     plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
+    replace = data_dict[u'replace']
     # these 3 parameters are all optional and have the defaults defined below
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
-    index_action = data_dict.get(u'index_action', u'remove')
 
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
@@ -248,7 +236,7 @@ def datastore_upsert(context, data_dict):
     # ensure our custom queue exists
     utils.ensure_importing_queue_exists()
     # queue the job on our custom queue
-    job = enqueue_job(import_resource_data, args=[resource_id, utils.CONFIG, version, index_action,
+    job = enqueue_job(import_resource_data, args=[resource_id, utils.CONFIG, version, replace,
                                                   data], queue=u'importing')
     return {
         u'queued_at': job.enqueued_at.isoformat(),

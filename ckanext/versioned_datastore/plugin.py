@@ -86,7 +86,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                         # data replaces the existing data
                         data_dict = {
                             u'resource_id': entity.id,
-                            u'index_action': u'remove',
+                            u'replace': True,
                         }
                         # also pass a version if we can to avoid upserting the same data many times
                         # (this notify function gets hit quite a lot even when only one update has

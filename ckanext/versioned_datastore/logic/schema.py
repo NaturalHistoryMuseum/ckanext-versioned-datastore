@@ -93,9 +93,9 @@ def versioned_datastore_create_schema():
 
 def versioned_datastore_upsert_schema():
     return {
-        u'resource_id': [unicode, resource_id_exists],
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'replace': [not_missing, boolean_validator],
         u'version': [ignore_missing, int_validator],
-        u'index_action': [ignore_missing, unicode, OneOf([u'remove', u'retain', u'skip'])],
     }
 
 

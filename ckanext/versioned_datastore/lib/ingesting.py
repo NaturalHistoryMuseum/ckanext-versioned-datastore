@@ -1,3 +1,4 @@
+import contextlib
 import itertools
 import logging
 import numbers
@@ -9,30 +10,20 @@ import requests
 import six
 import xlrd
 from backports import csv
+from eevee import diffing
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
 from eevee.ingestion.ingesters import Ingester
-from eevee.mongo import get_mongo
+from eevee.mongo import get_mongo, MongoOpBuffer
+from eevee.utils import chunk_iterator
 from openpyxl.cell.read_only import EmptyCell
+from pymongo import UpdateOne
 
 from ckanext.versioned_datastore.lib import stats
 from ckanext.versioned_datastore.lib.utils import download_to_temp_file, CSV_FORMATS, TSV_FORMATS, \
     XLS_FORMATS, XLSX_FORMATS, is_datastore_only_resource
 
 log = logging.getLogger(__name__)
-
-
-class DatastoreRecordConverter(RecordToMongoConverter):
-
-    def __init__(self, version, ingestion_time):
-        super(DatastoreRecordConverter, self).__init__(version, ingestion_time)
-
-    def diff_data(self, existing_data, new_data):
-        _, differ, diff = super(DatastoreRecordConverter, self).diff_data(existing_data, new_data)
-        # even if the data hasn't changed we want to store a new version (the diff will just be
-        # empty) as it means we can treat missing records from a new resource version as ones that
-        # shouldn't be indexed by checking which records were updated in each version
-        return True, differ, diff
 
 
 class DatastoreRecord(BaseRecord):
@@ -307,7 +298,105 @@ def get_feeder(config, version, resource, data=None):
     return None
 
 
-def ingest_resource(version, start, config, resource, data):
+class UnchangedRecordTracker:
+    '''
+    Class to track records that are included in versions but not changed. This allows us to provide
+    the functionality whereby a new version's data replaces the existing data, i.e. essentially
+    deletes the previous data by setting its data to {}.
+    '''
+
+    def __init__(self, config, resource_id, version):
+        '''
+        :param config: the eevee config object
+        :param resource_id: the resource id
+        :param version: the version ingested
+        '''
+        self.config = config
+        self.resource_id = resource_id
+        self.version = version
+
+        # we use a temporary collection for some of the processing, let's give it a name that won't
+        # clash with any other proper collections
+        self.temp_collection = u'__unchanged_{}_{}'.format(self.resource_id, self.version)
+
+    @contextlib.contextmanager
+    def get_tracker_buffer(self):
+        '''
+        Returns an op buffer for the temporary collection tracking unchanged records.
+
+        :return: an op buffer
+        '''
+        mongo = get_mongo(self.config, collection=self.temp_collection)
+        with MongoOpBuffer(self.config, mongo) as op_buffer:
+            op_buffer.mongo.create_index(u'id')
+            yield op_buffer
+
+    def remove_missing_records(self, ingester_start_time):
+        '''
+        To be called after all the data in a version has been ingested, this function actually
+        removes the records that weren't in the latest version.
+
+        This means marking records already in the collection that haven't already been marked as
+        deleted and weren't included in the latest version's data as deleted. We do this by pushing
+        a new version to the records where the data is {}. This means that when the record is
+        indexed it will be ignored and effectively deleted.
+
+        :param ingester_start_time: the start time of the ingestion process
+        '''
+        with get_mongo(self.config, collection=self.resource_id) as resource_mongo:
+            with get_mongo(self.config, collection=self.temp_collection) as temp_mongo:
+                # this finds all the records that haven't been updated in the given version
+                condition = {u'latest_version': {u'$lt': self.version}}
+                # loop through the not-updated records in chunks
+                for chunk in chunk_iterator(resource_mongo.find(condition)):
+                    # extract the ids of the records
+                    chunk_ids = {mongo_doc[u'id'] for mongo_doc in chunk}
+                    # create a set of the record ids in this chunk that were in the version but
+                    # unchanged
+                    unchanged_ids = \
+                        {doc[u'id'] for doc in temp_mongo.find({u'id': {u'$in': list(chunk_ids)}})}
+
+                    # we'll collect up a batch of update operations to send to mongo at once for
+                    # max efficiency
+                    op_batch = []
+                    # now loop through all the records in the chunk
+                    for mongo_doc in chunk:
+                        # if the record hasn't already been removed and isn't in the unchanged set
+                        # then it was not present at all in the new version and needs removing
+                        if mongo_doc[u'data'] and mongo_doc[u'id'] not in unchanged_ids:
+                            # create a diff between current data in the record and an empty dict
+                            diff = diffing.SHALLOW_DIFFER.diff(mongo_doc[u'data'], {})
+                            # organise our update op
+                            update = {
+                                u'$set': {
+                                    # set the data to empty
+                                    u'data': {},
+                                    # update the latest version
+                                    u'latest_version': self.version,
+                                    # include the ingester start time
+                                    u'last_ingested': ingester_start_time,
+                                    # create a new diff from the last data on the record to empty
+                                    u'diffs.{}'.format(self.version):
+                                        diffing.format_diff(diffing.SHALLOW_DIFFER, diff),
+                                },
+                                # add the version to the versions array
+                                u'$addToSet': {u'versions': self.version}
+                            }
+                            # add the update to the batch of ops
+                            op_batch.append(UpdateOne({u'id': mongo_doc[u'id']}, update))
+
+                    # update the records
+                    if op_batch:
+                        resource_mongo.bulk_write(op_batch)
+
+                # clean up
+                temp_mongo.drop()
+
+
+def ingest_resource(version, start, config, resource, data, replace):
+    # cache the resource id as we use it a few times
+    resource_id = resource[u'id']
+
     # work out which feeder to use for the resource
     feeder = get_feeder(config, version, resource, data)
     # if the return is None then no feeder can be matched and the data is uningestible :(
@@ -315,10 +404,10 @@ def ingest_resource(version, start, config, resource, data):
         return False
 
     # create a stats entry so that progress can be tracked
-    stats_id = stats.start_operation(resource[u'id'], stats.INGEST, version, start)
+    stats_id = stats.start_operation(resource_id, stats.INGEST, version, start)
 
     # create our custom datastore converter object
-    converter = DatastoreRecordConverter(version, start)
+    converter = RecordToMongoConverter(version, start)
     # create an ingester using our datastore feeder and the datastore converter
     ingester = Ingester(version, feeder, converter, config)
     # setup monitoring on the ingester so that we can update the database with stats about the
@@ -326,9 +415,26 @@ def ingest_resource(version, start, config, resource, data):
     stats.monitor_ingestion(stats_id, ingester)
 
     try:
-        ingester.ingest()
+        if replace:
+            # create the tracker object and get the tracker buffer
+            tracker = UnchangedRecordTracker(config, resource_id, version)
+            with tracker.get_tracker_buffer() as tracker_buffer:
+                # connect to the update signal on the ingester
+                @ingester.update_signal.connect_via(ingester)
+                def on_update(_sender, record, doc):
+                    if replace and not doc:
+                        # we got an update for a record but no update doc so it was unchanged, we
+                        # need to add it to the tracker collection
+                        tracker_buffer.add(UpdateOne({u'id': record.id},
+                                                     {u'$set': {u'id': record.id}}, upsert=True))
+
+                ingester.ingest()
+                tracker.remove_missing_records(ingester.start)
+        else:
+            ingester.ingest()
+
         return True
     except Exception as e:
         stats.mark_error(stats_id, e)
-        log.exception(u'An error occurred during ingestion of {}'.format(resource[u'id']))
+        log.exception(u'An error occurred during ingestion of {}'.format(resource_id))
         return False
