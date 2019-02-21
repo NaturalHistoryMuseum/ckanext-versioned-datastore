@@ -8,8 +8,7 @@ from eevee.indexing.indexes import Index
 from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
 
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib import stats
-
+from ckanext.versioned_datastore.lib import stats, utils
 
 log = logging.getLogger(__name__)
 
@@ -98,17 +97,18 @@ class DatastoreIndex(Index):
         return body
 
 
-def index_resource(resource, config, lower_version, upper_version):
-    resource_id = resource[u'id']
-    feeder = SimpleIndexFeeder(config, resource_id, lower_version, upper_version)
-    index = DatastoreIndex(config, resource_id, upper_version,
-                           latitude_field=resource.get(u'_latitude_field', None),
-                           longitude_field=resource.get(u'_longitude_field', None))
+def index_resource(request):
+    resource_id = request.resource[u'id']
+    feeder = SimpleIndexFeeder(utils.CONFIG, resource_id, request.lower_version,
+                               request.upper_version)
+    index = DatastoreIndex(utils.CONFIG, resource_id, request.upper_version,
+                           latitude_field=request.resource.get(u'_latitude_field', None),
+                           longitude_field=request.resource.get(u'_longitude_field', None))
     # then index the data
-    indexer = Indexer(upper_version, config, [(feeder, index)])
+    indexer = Indexer(request.upper_version, utils.CONFIG, [(feeder, index)])
 
     # create a stats entry so that progress can be tracked
-    stats_id = stats.start_operation(resource[u'id'], stats.INDEX, upper_version, indexer.start)
+    stats_id = stats.start_operation(resource_id, stats.INDEX, request.upper_version, indexer.start)
     # setup monitoring on the indexer so that we can update the database with stats about the
     # index operation as it progresses
     stats.monitor_indexing(stats_id, indexer)

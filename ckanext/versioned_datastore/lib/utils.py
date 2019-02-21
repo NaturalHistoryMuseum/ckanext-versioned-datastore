@@ -2,14 +2,12 @@ import tempfile
 from contextlib import contextmanager, closing
 
 import requests
-import rq
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
 from ckan import plugins
 from ckan.lib.navl import dictization_functions
-from ckanext.rq import jobs
 
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
 CSV_FORMATS = [u'csv', u'application/csv']
@@ -197,17 +195,3 @@ def download_to_temp_file(url):
             # the url has been completely downloaded to the temp file, so yield it for use
             temp.seek(0)
             yield temp
-
-
-def ensure_importing_queue_exists():
-    '''
-    This is a massive hack to get around the lack of rq Queue kwarg exposure from ckanext-rq. The
-    default timeout for queues is 180 seconds in rq which is not long enough for our import tasks
-    but the timeout parameter hasn't been exposed. This code creates a new queue in the ckanext-rq
-    cache so that when enqueuing new jobs it is used rather than a default one. Once this bug has
-    been fixed in ckan/ckanext-rq this code will be removed.
-    '''
-    name = jobs.add_queue_name_prefix(u'importing')
-    # set the timeout to 12 hours
-    queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
-    jobs._queues[name] = queue

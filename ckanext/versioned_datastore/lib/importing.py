@@ -52,7 +52,7 @@ def get_resource(resource_id, attempts=10, backoff=1):
             time.sleep(backoff)
 
 
-def import_resource_data(resource_id, config, version, replace, data):
+def import_resource_data(request):
     '''
     Ingests the resource data into mongo and then, if needed, indexes it into elasticsearch. If the
     data argument is None (note, not falsey or an empty list, actually None) then the resource's url
@@ -61,31 +61,28 @@ def import_resource_data(resource_id, config, version, replace, data):
     This function is blocking so it should be called through the background task queue to avoid
     blocking up a CKAN thread.
 
-    :param resource_id: the resource id
-    :param config: the eevee config object
-    :param version: the data version
-    :param replace: whether to replace the data from previous versions or not
-    :param data: a list of dicts to import, or None if the url of the resource should be used
-                 instead
+    :param request: the ResourceImportRequest object describing the resource import we need to do
     '''
     # first, double check that the version is valid
-    if not check_version_is_valid(resource_id, version):
+    if not check_version_is_valid(request.resource_id, request.version):
         # log and silently skip this import
         log.info(u'Skipped importing data for {} at version {} as the version is invalid'.format(
-            resource_id, version))
+            request.resource_id, request.version))
         return
 
     # then, retrieve the resource dict
-    resource = get_resource(resource_id)
+    resource = get_resource(request.resource_id)
     # store a start time, this will be used as the ingestion time of the records
     start = datetime.now()
     # ingest the resource into mongo
-    did_ingest = ingest_resource(version, start, config, resource, data, replace)
+    did_ingest = ingest_resource(request.version, start, utils.CONFIG, resource, request.records,
+                                 request.replace)
     if did_ingest:
         # find out what the latest version in the index is
-        latest_index_versions = utils.SEARCHER.get_index_versions([resource_id], prefixed=False)
-        latest_index_version = latest_index_versions.get(resource_id, None)
+        latest_index_versions = utils.SEARCHER.get_index_versions([request.resource_id],
+                                                                  prefixed=False)
+        latest_index_version = latest_index_versions.get(request.resource_id, None)
 
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version
-        index_resource(resource, config, latest_index_version, version)
+        index_resource(resource, utils.CONFIG, latest_index_version, request.version)

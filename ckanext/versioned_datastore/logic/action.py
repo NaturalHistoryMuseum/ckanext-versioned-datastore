@@ -12,15 +12,11 @@ from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
-from ckanext.versioned_datastore.lib.importing import import_resource_data, check_version_is_valid
-from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex, index_resource
+from ckanext.versioned_datastore.lib.importing import check_version_is_valid
+from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
+from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
-
-try:
-    enqueue_job = plugins.toolkit.enqueue_job
-except AttributeError:
-    from ckanext.rq.jobs import enqueue as enqueue_job
 
 log = logging.getLogger(__name__)
 
@@ -220,7 +216,7 @@ def datastore_upsert(context, data_dict):
     '''
     # this comes through as junk if it's not removed before validating. This happens because the
     # data dict is flattened during validation, but why this happens is unclear.
-    data = data_dict.get(u'records', None)
+    records = data_dict.get(u'records', None)
     data_dict = utils.validate(context, data_dict, schema.versioned_datastore_upsert_schema())
     plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
 
@@ -233,11 +229,9 @@ def datastore_upsert(context, data_dict):
     if not check_version_is_valid(resource_id, version):
         raise plugins.toolkit.ValidationError(u'The new version must be newer than current version')
 
-    # ensure our custom queue exists
-    utils.ensure_importing_queue_exists()
-    # queue the job on our custom queue
-    job = enqueue_job(import_resource_data, args=[resource_id, utils.CONFIG, version, replace,
-                                                  data], queue=u'importing')
+    # queue the resource import job
+    job = queue_import(resource_id, version, replace, records)
+
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
@@ -428,8 +422,8 @@ def datastore_reindex(context, data_dict):
     if last_ingested_version is None:
         raise plugins.toolkit.ValidationError(u'There is no ingested data for this version')
 
-    job = enqueue_job(index_resource, args=[resource, utils.CONFIG, None, last_ingested_version],
-                      queue=u'importing')
+    job = queue_index(resource, None, last_ingested_version.version)
+
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
