@@ -13,7 +13,7 @@ from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import import_resource_data, check_version_is_valid
-from ckanext.versioned_datastore.lib.indexing import DatastoreIndex, index_resource
+from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex, index_resource
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
 

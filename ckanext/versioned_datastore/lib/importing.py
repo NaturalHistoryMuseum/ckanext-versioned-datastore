@@ -5,8 +5,8 @@ from datetime import datetime
 from ckan import logic
 from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.indexing import index_resource
-from ckanext.versioned_datastore.lib.ingesting import ingest_resource
+from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
+from ckanext.versioned_datastore.lib.ingestion.ingesting import ingest_resource
 from ckanext.versioned_datastore.lib.stats import get_last_ingest
 
 log = logging.getLogger(__name__)
