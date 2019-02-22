@@ -48,12 +48,20 @@ class DatastoreFeeder(IngestionFeeder):
 @six.add_metaclass(abc.ABCMeta)
 class URLDatastoreFeeder(DatastoreFeeder):
 
-    def __init__(self, version, resource_id, id_offset, url):
+    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload):
         '''
         :param url: the url where the data resides
+        :param api_key: the api key of the user who requested the ingestion, can be None
+        :param is_upload: whether the URL we're going to read from is a CKAN upload URL
         '''
         super(URLDatastoreFeeder, self).__init__(version, resource_id, id_offset)
         self.url = url
+        self.api_key = api_key
+        self.is_upload = is_upload
+
+    @property
+    def headers(self):
+        return {u'Authorization': self.api_key} if self.is_upload and self.api_key else {}
 
     @property
     def source(self):
@@ -82,8 +90,9 @@ class APIDatastoreFeeder(DatastoreFeeder):
 
 class SVFeeder(URLDatastoreFeeder):
 
-    def __init__(self, version, resource_id, id_offset, url, dialect, default_encoding=u'utf-8'):
-        super(SVFeeder, self).__init__(version, resource_id, id_offset, url)
+    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload, dialect,
+                 default_encoding=u'utf-8'):
+        super(SVFeeder, self).__init__(version, resource_id, id_offset, url, api_key, is_upload)
         self.dialect = dialect
         self.default_encoding = default_encoding
 
@@ -100,7 +109,7 @@ class SVFeeder(URLDatastoreFeeder):
     def records(self):
         # stream the file from the url (note that we have to use closing here because the ability to
         # directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
-        with closing(requests.get(self.url, stream=True)) as response:
+        with closing(requests.get(self.url, stream=True, headers=self.headers)) as response:
             reader = csv.DictReader(self.line_iterator(response), dialect=self.dialect)
             for number, data in enumerate(reader, start=1):
                 # yield a new record for each row
@@ -112,8 +121,9 @@ class CSVFeeder(SVFeeder):
     Feeds records from a CSV.
     '''
 
-    def __init__(self, version, resource_id, id_offset, url):
-        super(CSVFeeder, self).__init__(version, resource_id, id_offset, url, u'excel')
+    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload):
+        super(CSVFeeder, self).__init__(version, resource_id, id_offset, url, api_key,
+                                        is_upload, u'excel')
 
 
 class TSVFeeder(SVFeeder):
@@ -121,8 +131,9 @@ class TSVFeeder(SVFeeder):
     Feeds records from a TSV.
     '''
 
-    def __init__(self, version, resource_id, id_offset, url):
-        super(TSVFeeder, self).__init__(version, resource_id, id_offset, url, u'excel-tab')
+    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload):
+        super(TSVFeeder, self).__init__(version, resource_id, id_offset, url, api_key,
+                                        is_upload, u'excel-tab')
 
 
 class XLSFeeder(URLDatastoreFeeder):
@@ -133,7 +144,7 @@ class XLSFeeder(URLDatastoreFeeder):
     def records(self):
         # download the url into a temporary file and then read from that. This is necessary as xls
         # files can't be streamed, they have to be completed loaded into memory
-        with download_to_temp_file(self.url) as temp:
+        with download_to_temp_file(self.url, self.headers) as temp:
             # open the xls file up
             book = xlrd.open_workbook(temp.name)
             # select the first sheet by default
@@ -169,7 +180,7 @@ class XLSXFeeder(URLDatastoreFeeder):
     def records(self):
         # download the url into a temporary file and then read from that. This is necessary as xlsx
         # files can't be streamed, they have to be completed loaded into memory
-        with download_to_temp_file(self.url) as temp:
+        with download_to_temp_file(self.url, self.headers) as temp:
             wb = openpyxl.load_workbook(temp, read_only=True)
             # get a generator for the rows in the active workbook
             rows = wb.active.rows

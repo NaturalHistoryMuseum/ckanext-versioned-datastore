@@ -175,15 +175,17 @@ def is_ingestible(resource):
 
 
 @contextmanager
-def download_to_temp_file(url):
+def download_to_temp_file(url, headers=None):
     """
     Streams the data from the given URL and saves it in a temporary file. The (named) temporary file
     is then yielded to the caller for use. Once the context collapses the temporary file is removed.
 
     :param url: the url to stream the data from
+    :param headers: a dict of headers to pass with the request
     """
+    headers = headers if headers else {}
     # open up the url for streaming
-    with closing(requests.get(url, stream=True)) as r:
+    with closing(requests.get(url, stream=True, headers=headers)) as r:
         # create a temporary file to store the data in
         with tempfile.NamedTemporaryFile() as temp:
             # iterate over the data from the url stream in chunks

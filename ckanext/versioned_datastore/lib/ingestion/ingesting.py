@@ -28,7 +28,7 @@ FEEDER_FORMAT_MAP = dict(
 )
 
 
-def get_feeder(config, version, resource, data=None):
+def get_feeder(config, version, resource, data=None, api_key=None):
     '''
     Returns the correct feeder object for the given resource. The feeder object is created based on
     the format property on the resource, not on the URL. If no feeder can be matched to the resource
@@ -38,6 +38,7 @@ def get_feeder(config, version, resource, data=None):
     :param version: the version of the resource
     :param resource: the resource dict
     :param data: the data passed in the request (None if not passed)
+    :param api_key: the api key of the user who is requesting the ingest
     :return: a feeder object or None
     '''
     # extract the resource id from the resource dict
@@ -59,8 +60,9 @@ def get_feeder(config, version, resource, data=None):
             # get the format and convert it to lowercase
             resource_format = resource[u'format'].lower()
             if resource_format in FEEDER_FORMAT_MAP:
+                is_upload = resource[u'url_type'] == u'upload'
                 return FEEDER_FORMAT_MAP[resource_format](version, resource_id, id_offset,
-                                                          resource[u'url'])
+                                                          resource[u'url'], api_key, is_upload)
 
     # if nothing works out, return None to indicate that no feeder could be matched for the resource
     return None
@@ -161,12 +163,12 @@ class UnchangedRecordTracker:
                 temp_mongo.drop()
 
 
-def ingest_resource(version, start, config, resource, data, replace):
+def ingest_resource(version, start, config, resource, data, replace, api_key):
     # cache the resource id as we use it a few times
     resource_id = resource[u'id']
 
     # work out which feeder to use for the resource
-    feeder = get_feeder(config, version, resource, data)
+    feeder = get_feeder(config, version, resource, data, api_key)
     # if the return is None then no feeder can be matched and the data is uningestible :(
     if feeder is None:
         return False

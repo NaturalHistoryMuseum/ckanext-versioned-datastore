@@ -61,7 +61,7 @@ class ResourceImportRequest(object):
     records argument is a large list of dicts this becomes insane.
     '''
 
-    def __init__(self, resource_id, version, replace, records=None):
+    def __init__(self, resource_id, version, replace, records=None, api_key=None):
         '''
         :param resource_id: the id of the resource to import
         :param version: the version of the resource to import
@@ -72,6 +72,7 @@ class ResourceImportRequest(object):
         self.version = version
         self.replace = replace
         self.records = records
+        self.api_key = api_key
 
     def __repr__(self):
         return self.__str__()
@@ -110,7 +111,7 @@ def import_resource_data(request):
     start = datetime.now()
     # ingest the resource into mongo
     did_ingest = ingest_resource(request.version, start, utils.CONFIG, resource, request.records,
-                                 request.replace)
+                                 request.replace, request.api_key)
     if did_ingest:
         # find out what the latest version in the index is
         latest_index_versions = utils.SEARCHER.get_index_versions([request.resource_id],

@@ -229,8 +229,11 @@ def datastore_upsert(context, data_dict):
     if not check_version_is_valid(resource_id, version):
         raise plugins.toolkit.ValidationError(u'The new version must be newer than current version')
 
+    # get the current user
+    user = plugins.toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})
+
     # queue the resource import job
-    job = queue_import(resource_id, version, replace, records)
+    job = queue_import(resource_id, version, replace, records, user[u'apikey'])
 
     return {
         u'queued_at': job.enqueued_at.isoformat(),

@@ -41,7 +41,7 @@ def queue(function, args):
     return enqueue_job(function, args=args, queue=u'importing')
 
 
-def queue_import(resource_id, version, replace, records=None):
+def queue_import(resource_id, version, replace, records=None, api_key=None):
     '''
     Queues a job which when run will import the data for the resource.
 
@@ -49,9 +49,11 @@ def queue_import(resource_id, version, replace, records=None):
     :param version: the version of the resource to import
     :param replace: whether to replace the existing data or not
     :param records: a list of dicts to import, or None if the data is coming from URL or file
+    :param api_key: the api key of the user who initiated the import, this is required if the
+                    package the resource is in is private and the data in the resource was uploaded
     :return: the queued job
     '''
-    resource_import_request = ResourceImportRequest(resource_id, version, replace, records)
+    resource_import_request = ResourceImportRequest(resource_id, version, replace, records, api_key)
     return queue(import_resource_data, [resource_import_request])
 
 
