@@ -97,6 +97,31 @@ class DatastoreIndex(Index):
         return body
 
 
+class ResourceIndexRequest(object):
+    '''
+    Class representing a request to index data for a resource. We use a class like this to avoid
+    having a long list of arguments passed through to queued functions.
+    '''
+
+    def __init__(self, resource, lower_version, upper_version):
+        '''
+        :param resource: the dict for the resource we're going to index
+        :param lower_version: the lower version to index (exclusive)
+        :param upper_version: the upper version to index (inclusive)
+        '''
+        self.resource = resource
+        self.lower_version = lower_version
+        self.upper_version = upper_version
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource[u'id'],
+                                                                           self.lower_version,
+                                                                           self.upper_version)
+
+
 def index_resource(request):
     resource_id = request.resource[u'id']
     feeder = SimpleIndexFeeder(utils.CONFIG, resource_id, request.lower_version,

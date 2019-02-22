@@ -1,9 +1,9 @@
 import rq
-from ckanext.versioned_datastore.lib.importing import import_resource_data
 
 from ckan import plugins
 from ckanext.rq import jobs
-from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
+from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest
+from ckanext.versioned_datastore.lib.indexing.indexing import index_resource, ResourceIndexRequest
 
 try:
     enqueue_job = plugins.toolkit.enqueue_job
@@ -27,64 +27,6 @@ def ensure_importing_queue_exists():
         queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
         # add the queue to the queue cache
         jobs._queues[name] = queue
-
-
-class ResourceImportRequest(object):
-    '''
-    Class representing a request to import new data into a resource. We use a class like this for
-    two reasons, firstly to avoid having a long list of arguments passed through to queued
-    functions, and secondly because rq by default logs the arguments sent to a function and if the
-    records argument is a large list of dicts this becomes insane.
-    '''
-
-    def __init__(self, resource_id, version, replace, records=None):
-        '''
-        :param resource_id: the id of the resource to import
-        :param version: the version of the resource to import
-        :param replace: whether to replace the existing data or not
-        :param records: a list of dicts to import, or None if the data is coming from URL or file
-        '''
-        self.resource_id = resource_id
-        self.version = version
-        self.replace = replace
-        self.records = records
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        if self.records is not None:
-            records = len(self.records)
-        else:
-            records = 0
-        return u'Import on {}, version {}, replace: {}, records: {}'.format(self.resource_id,
-                                                                            self.version,
-                                                                            self.replace, records)
-
-
-class ResourceIndexRequest(object):
-    '''
-    Class representing a request to index data for a resource. We use a class like this to avoid
-    having a long list of arguments passed through to queued functions.
-    '''
-
-    def __init__(self, resource, lower_version, upper_version):
-        '''
-        :param resource: the dict for the resource we're going to index
-        :param lower_version: the lower version to index (exclusive)
-        :param upper_version: the upper version to index (inclusive)
-        '''
-        self.resource = resource
-        self.lower_version = lower_version
-        self.upper_version = upper_version
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __str__(self):
-        return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource[u'id'],
-                                                                           self.lower_version,
-                                                                           self.upper_version)
 
 
 def queue(function, args):

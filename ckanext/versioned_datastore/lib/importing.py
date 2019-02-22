@@ -7,6 +7,7 @@ from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
 from ckanext.versioned_datastore.lib.ingestion.ingesting import ingest_resource
+from ckanext.versioned_datastore.lib.indexing.indexing import ResourceIndexRequest
 from ckanext.versioned_datastore.lib.stats import get_last_ingest
 
 log = logging.getLogger(__name__)
@@ -52,6 +53,39 @@ def get_resource(resource_id, attempts=10, backoff=1):
             time.sleep(backoff)
 
 
+class ResourceImportRequest(object):
+    '''
+    Class representing a request to import new data into a resource. We use a class like this for
+    two reasons, firstly to avoid having a long list of arguments passed through to queued
+    functions, and secondly because rq by default logs the arguments sent to a function and if the
+    records argument is a large list of dicts this becomes insane.
+    '''
+
+    def __init__(self, resource_id, version, replace, records=None):
+        '''
+        :param resource_id: the id of the resource to import
+        :param version: the version of the resource to import
+        :param replace: whether to replace the existing data or not
+        :param records: a list of dicts to import, or None if the data is coming from URL or file
+        '''
+        self.resource_id = resource_id
+        self.version = version
+        self.replace = replace
+        self.records = records
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        if self.records is not None:
+            records = len(self.records)
+        else:
+            records = 0
+        return u'Import on {}, version {}, replace: {}, records: {}'.format(self.resource_id,
+                                                                            self.version,
+                                                                            self.replace, records)
+
+
 def import_resource_data(request):
     '''
     Ingests the resource data into mongo and then, if needed, indexes it into elasticsearch. If the
@@ -85,4 +119,4 @@ def import_resource_data(request):
 
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version
-        index_resource(resource, utils.CONFIG, latest_index_version, request.version)
+        index_resource(ResourceIndexRequest(resource, latest_index_version, request.version))
