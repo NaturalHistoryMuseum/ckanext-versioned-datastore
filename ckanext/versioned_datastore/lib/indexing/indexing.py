@@ -124,6 +124,10 @@ class ResourceIndexRequest(object):
 
 def index_resource(request):
     resource_id = request.resource[u'id']
+
+    log.info(u'Starting index of {}: {} > versions <= {}'.format(resource_id, request.lower_version,
+                                                                 request.upper_version))
+
     feeder = SimpleIndexFeeder(utils.CONFIG, resource_id, request.lower_version,
                                request.upper_version)
     index = DatastoreIndex(utils.CONFIG, resource_id, request.upper_version,

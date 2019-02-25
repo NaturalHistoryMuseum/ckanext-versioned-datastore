@@ -105,6 +105,9 @@ def import_resource_data(request):
             request.resource_id, request.version))
         return
 
+    log.info(u'Starting data import for {} at version {}'.format(request.resource_id,
+                                                                 request.version))
+
     # then, retrieve the resource dict
     resource = get_resource(request.resource_id)
     # store a start time, this will be used as the ingestion time of the records
@@ -121,3 +124,6 @@ def import_resource_data(request):
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version
         index_resource(ResourceIndexRequest(resource, latest_index_version, request.version))
+
+        log.info(u'Ingest and index complete for {} at version {}'.format(request.resource_id,
+                                                                          request.version))

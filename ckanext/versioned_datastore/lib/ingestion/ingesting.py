@@ -171,7 +171,10 @@ def ingest_resource(version, start, config, resource, data, replace, api_key):
     feeder = get_feeder(config, version, resource, data, api_key)
     # if the return is None then no feeder can be matched and the data is uningestible :(
     if feeder is None:
+        log.info(u'The data for resource {} is uningestible, skipping'.format(resource_id))
         return False
+
+    log.info(u'Starting ingest for {}'.format(resource_id))
 
     # create a stats entry so that progress can be tracked
     stats_id = stats.start_operation(resource_id, stats.INGEST, version, start)

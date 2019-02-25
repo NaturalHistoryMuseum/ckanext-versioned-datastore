@@ -1,3 +1,4 @@
+import logging
 import numbers
 from contextlib import closing
 
@@ -19,6 +20,8 @@ from ckanext.versioned_datastore.lib.utils import download_to_temp_file
 #       this because it's sqlalchemy requirements clash with those of our old version of ckan. Once
 #       we've completed the upgrade to ckan 2.8.x we should switch this code out of tabulator
 #       (unless we have a compelling reason not to)
+
+log = logging.getLogger(__name__)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -143,7 +146,9 @@ class SVFeeder(URLDatastoreFeeder):
         if encoding is None or encoding == u'ASCII':
             encoding = u'utf-8'
 
-        # TODO: log encoding
+        log.info(u'Using encoding {} for resource {} (version: {})'.format(encoding,
+                                                                           self.resource_id,
+                                                                           self.version))
 
         # stream the file from the url - note that we have to use closing here because the ability
         # to directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
