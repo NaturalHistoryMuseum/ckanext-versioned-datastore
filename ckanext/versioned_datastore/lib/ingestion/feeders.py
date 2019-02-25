@@ -54,6 +54,9 @@ class DatastoreFeeder(IngestionFeeder):
 
 @six.add_metaclass(abc.ABCMeta)
 class URLDatastoreFeeder(DatastoreFeeder):
+    '''
+    Abstract class encapsulating data that comes from a URL.
+    '''
 
     def __init__(self, version, resource_id, id_offset, url, api_key, is_upload):
         '''
@@ -68,6 +71,13 @@ class URLDatastoreFeeder(DatastoreFeeder):
 
     @property
     def headers(self):
+        '''
+        Returns the headers to be used when retrieving the data from the URL. By default this is an
+        empty dict if there is no authentication required, otherwise we include the provided API
+        key.
+
+        :return: a dict of headers
+        '''
         return {u'Authorization': self.api_key} if self.is_upload and self.api_key else {}
 
     @property
@@ -81,6 +91,10 @@ class URLDatastoreFeeder(DatastoreFeeder):
 
 
 class APIDatastoreFeeder(DatastoreFeeder):
+    '''
+    Feeder for API uploaded data. This is data that doesn't have a URL source, it has just been
+    POSTed to the server as a JSON list.
+    '''
 
     def __init__(self, version, resource_id, id_offset, data):
         super(APIDatastoreFeeder, self).__init__(version, resource_id, id_offset)
