@@ -1,4 +1,5 @@
 backports.csv==1.0.6
+cchardet==2.1.4
 elasticsearch==6.3.1
 elasticsearch-dsl==6.2.1
 openpyxl==2.5.8

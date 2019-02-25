@@ -1,4 +1,3 @@
-import csv
 import numbers
 from contextlib import closing
 
@@ -6,7 +5,9 @@ import abc
 import openpyxl
 import requests
 import six
+import unicodecsv as csv
 import xlrd
+from cchardet import UniversalDetector
 from eevee.ingestion.feeders import IngestionFeeder
 from openpyxl.cell.read_only import EmptyCell
 
@@ -90,27 +91,44 @@ class APIDatastoreFeeder(DatastoreFeeder):
 
 class SVFeeder(URLDatastoreFeeder):
 
-    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload, dialect,
-                 default_encoding=u'utf-8'):
+    def __init__(self, version, resource_id, id_offset, url, api_key, is_upload, dialect):
         super(SVFeeder, self).__init__(version, resource_id, id_offset, url, api_key, is_upload)
         self.dialect = dialect
-        self.default_encoding = default_encoding
-
-    def line_iterator(self, response):
-        '''
-        Iterate over the lines in the response, decoding each into UTF-8.
-
-        :param response: a requests response object
-        :return: generator object that produces lines of text
-        '''
-        for line in response.iter_lines():
-            yield line.decode(self.default_encoding)
 
     def records(self):
-        # stream the file from the url (note that we have to use closing here because the ability to
-        # directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
+        '''
+        Generator of records from the *SV file. This function will read a small sample of rows from
+        the source in an attempt to determine character encoding before reading the entire source
+        and yielding the records.
+
+        :return: a generator of records
+        '''
+        detector = UniversalDetector()
+        # number of lines to sample from the source
+        sample_size = 400
         with closing(requests.get(self.url, stream=True, headers=self.headers)) as response:
-            reader = csv.DictReader(self.line_iterator(response), dialect=self.dialect)
+            for line_number, line in enumerate(response.iter_lines(), start=1):
+                detector.feed(line)
+                # stop if we've read enough lines for the detector to be confident about the
+                # encoding or if we've reached the sample size limit
+                if detector.done or line_number == sample_size:
+                    break
+            detector.close()
+
+        encoding = detector.result[u'encoding']
+        # if the detector failed to work out the encoding (unlikely) or if the encoding it comes up
+        # with is ASCII, just default to UTF-8. This is worth doing for ASCII detections as utf-8
+        # is a superset of ASCII so by switching to utf-8 we're more likely to catch non-ASCII
+        # characters in the source after the sample size limit.
+        if encoding is None or encoding == u'ASCII':
+            encoding = u'utf-8'
+
+        # TODO: log encoding
+
+        # stream the file from the url - note that we have to use closing here because the ability
+        # to directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
+        with closing(requests.get(self.url, stream=True, headers=self.headers)) as response:
+            reader = csv.DictReader(response.iter_lines(), dialect=self.dialect, encoding=encoding)
             for number, data in enumerate(reader, start=1):
                 # yield a new record for each row
                 yield self.create_record(number, data)
