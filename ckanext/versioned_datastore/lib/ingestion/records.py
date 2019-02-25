@@ -20,12 +20,24 @@ class DatastoreRecord(BaseRecord):
 
     def convert(self):
         '''
-        Converts the record into a suitable format for storage in mongo. For us this just means we
-        return the data dict.
+        Converts the record into a suitable format for storage in mongo. For us this means:
+
+            - replacing '.' with '_' as neither mongo nor elasticsearch can handle dots in field
+              names as they both use the dot notation for nested field access
+            - ignoring fields with no name (we use a falsey check on the field name) to ensure we
+              don't create fields that are the empty string
 
         :return: a dict ready for storage in mongo
         '''
-        return self.data
+        converted = {}
+        for field, value in self.data.items():
+            # elasticsearch doesn't allow empty fields, plus it's silly so ignore them
+            if not field:
+                continue
+            # mongo doesn't allow dots in keys so replace them with underscores
+            field = field.replace(u'.', u'_')
+            converted[field] = value
+        return converted
 
     @property
     def id(self):
