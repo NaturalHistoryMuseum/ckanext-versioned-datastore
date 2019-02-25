@@ -68,7 +68,7 @@ def get_feeder(config, version, resource, data=None, api_key=None):
     return None
 
 
-class UnchangedRecordTracker:
+class UnchangedRecordTracker(object):
     '''
     Class to track records that are included in versions but not changed. This allows us to provide
     the functionality whereby a new version's data replaces the existing data, i.e. essentially
