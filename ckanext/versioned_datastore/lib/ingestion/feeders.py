@@ -15,6 +15,12 @@ from ckanext.versioned_datastore.lib.ingestion.records import DatastoreRecord
 from ckanext.versioned_datastore.lib.utils import download_to_temp_file
 
 
+# TODO: use tabulator lib: https://github.com/frictionlessdata/tabulator-py. We currently can't use
+#       this because it's sqlalchemy requirements clash with those of our old version of ckan. Once
+#       we've completed the upgrade to ckan 2.8.x we should switch this code out of tabulator
+#       (unless we have a compelling reason not to)
+
+
 @six.add_metaclass(abc.ABCMeta)
 class DatastoreFeeder(IngestionFeeder):
     '''
