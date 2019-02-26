@@ -188,6 +188,8 @@ def datastore_create(context, data_dict):
         # note that the version parameter doesn't matter when creating the index so we can safely
         # pass None
         utils.SEARCHER.ensure_index_exists(DatastoreIndex(utils.CONFIG, resource_id, None))
+        # make sure the privacy is correctly setup
+        utils.update_privacy(resource_id)
         return True
     return False
 

@@ -6,7 +6,7 @@ from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 
-from ckan import plugins
+from ckan import plugins, model
 from ckan.lib.navl import dictization_functions
 
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
@@ -197,3 +197,92 @@ def download_to_temp_file(url, headers=None):
             # the url has been completely downloaded to the temp file, so yield it for use
             temp.seek(0)
             yield temp
+
+
+def get_public_alias_prefix():
+    '''
+    Returns the prefix to use for the public aliases.
+
+    :return: the public prefix
+    '''
+    return u'pub'
+
+
+def get_public_alias_name(resource_id):
+    '''
+    Returns the name of the alias which makes gives public access to this resource's datastore data.
+    This is just "pub" (retrieved from get_public_alias_prefix above) prepended to the normal
+    prefixed index name, for example:
+
+        pubnhm-05ff2255-c38a-40c9-b657-4ccb55ab2feb
+
+    :param resource_id: the resource's id
+    :return: the name of the alias
+    '''
+    return u'{}{}'.format(get_public_alias_prefix(), SEARCHER.prefix_index(resource_id))
+
+
+def update_resources_privacy(package):
+    '''
+    Update the privacy of the resources in the datastore associated with the given package. If the
+    privacy is already set correctly on each of the resource's indices in Elasticsearch this does
+    nothing.
+
+    :param package: the package model object (not the dict!)
+    '''
+    for resource in package.resources:
+        update_privacy(resource.id, package.private)
+
+
+def update_privacy(resource_id, is_private=None):
+    '''
+    Update the privacy of the given resource id in the datastore. If the privacy is already set
+    correctly on the resource's index in Elasticsearch this does nothing.
+
+    :param resource_id: the resource's id
+    :param is_private: whether the package the resource is in is private or not. This is an optional
+                       parameter, if it is left out we look up the resource's package in the
+                       database and find out the private setting that way.
+    '''
+    if is_private is None:
+        resource = model.Resource.get(resource_id)
+        is_private = resource.resource_group.package.private
+    if is_private:
+        make_private(resource_id)
+    else:
+        make_public(resource_id)
+
+
+def make_private(resource_id):
+    '''
+    Makes the given resource private in elasticsearch. This is accomplished by removing the public
+    alias for the resource. If the resource's base index doesn't exist at all, or the alias already
+    doesn't exist, nothing happens.
+
+    :param resource_id: the resource's id
+    '''
+    prefixed_index_name = SEARCHER.prefix_index(resource_id)
+    public_index_name = get_public_alias_name(resource_id)
+    if SEARCHER.elasticsearch.indices.exists(prefixed_index_name):
+        if SEARCHER.elasticsearch.indices.exists_alias(prefixed_index_name, public_index_name):
+            SEARCHER.elasticsearch.indices.delete_alias(prefixed_index_name, public_index_name)
+
+
+def make_public(resource_id):
+    '''
+    Makes the given resource public in elasticsearch. This is accomplished by adding an alias to the
+    resource's index. If the resource's base index doesn't exist at all or the alias already exists,
+    nothing happens.
+
+    :param resource_id: the resource's id
+    '''
+    prefixed_index_name = SEARCHER.prefix_index(resource_id)
+    public_index_name = get_public_alias_name(resource_id)
+    if SEARCHER.elasticsearch.indices.exists(prefixed_index_name):
+        if not SEARCHER.elasticsearch.indices.exists_alias(prefixed_index_name, public_index_name):
+            actions = {
+                u'actions': [
+                    {u'add': {u'index': prefixed_index_name, u'alias': public_index_name}}
+                ]
+            }
+            SEARCHER.elasticsearch.indices.update_aliases(actions)

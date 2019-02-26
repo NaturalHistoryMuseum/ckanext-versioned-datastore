@@ -1,5 +1,6 @@
 import logging
 
+from ckanext.versioned_datastore.lib import utils
 from eevee.utils import to_timestamp
 
 from ckan import plugins, model, logic
@@ -72,12 +73,14 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     def notify(self, entity, operation=None):
         '''
         Respond to changes to model objects and resource URLs. We use this hook to ensure any new
-        data is imported into the versioned datastore. We're only interested in:
+        data is imported into the versioned datastore and to make sure the privacy settings on the
+        data are up to date. We're only interested in:
 
             - resource deletions
             - new resources
             - resources that have had their resource URL changed (i.e. have a new version of the
               data)
+            - packages that have changed
 
         :param entity: the entity that has changed
         :param operation: the operation undertaken on the object. If the function is being called
@@ -86,8 +89,11 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                           IResourceUrlChnage version of the notify hook doesn't pass an operation,
                           just the entity that has changed.
         '''
-        # we only care about resources
-        if isinstance(entity, model.Resource):
+        # if a package is the target entity and it's been changed
+        if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
+            utils.update_resources_privacy(entity)
+        # if a resource is the target entity
+        elif isinstance(entity, model.Resource):
             # the resource has been or is now deleted, make sure the datastore is updated
             if operation == DomainObjectOperation.changed and entity.state == u'deleted':
                 logic.get_action(u'datastore_delete')({}, {u'resource_id': entity.id})
