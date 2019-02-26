@@ -19,6 +19,8 @@ from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
 
 log = logging.getLogger(__name__)
+# stop elasticsearch from showing warning logs
+logging.getLogger(u'elasticsearch').setLevel(logging.ERROR)
 
 
 @logic.side_effect_free
