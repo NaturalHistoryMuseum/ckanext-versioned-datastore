@@ -3,6 +3,7 @@ import logging
 from eevee.utils import to_timestamp
 
 from ckan import plugins, model, logic
+from ckan.model import DomainObjectOperation
 from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
 from ckanext.versioned_datastore.logic import action, auth
@@ -69,34 +70,49 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
 
     # IResourceUrlChange and IDomainObjectModification
     def notify(self, entity, operation=None):
+        '''
+        Respond to changes to model objects and resource URLs. We use this hook to ensure any new
+        data is imported into the versioned datastore. We're only interested in:
+
+            - resource deletions
+            - new resources
+            - resources that have had their resource URL changed (i.e. have a new version of the
+              data)
+
+        :param entity: the entity that has changed
+        :param operation: the operation undertaken on the object. If the function is being called
+                          from IDomainObjectModification this will be one of the options from the
+                          DomainObjectOperation enum, otherwise it will be None as the
+                          IResourceUrlChnage version of the notify hook doesn't pass an operation,
+                          just the entity that has changed.
+        '''
+        # we only care about resources
         if isinstance(entity, model.Resource):
-            if (operation == model.domain_object.DomainObjectOperation.changed and
-                    entity.state == u'deleted'):
-                # the resource has been or is now deleted, make sure the
+            # the resource has been or is now deleted, make sure the datastore is updated
+            if operation == DomainObjectOperation.changed and entity.state == u'deleted':
                 logic.get_action(u'datastore_delete')({}, {u'resource_id': entity.id})
-            elif operation == model.domain_object.DomainObjectOperation.new or not operation:
-                # if operation is None, resource URL has been changed, as the notify function in
-                # IResourceUrlChange only takes 1 parameter
+            # either the resource is new or its URL has changed
+            elif operation == DomainObjectOperation.new or operation is None:
                 try:
                     # trigger the datastore create action to set things up
                     created = logic.get_action(u'datastore_create')({}, {u'resource_id': entity.id})
                     if created:
-                        # if the datastore index for this resource was created then load the data.
-                        # Note that we pass through the remove index_action to make sure any new
-                        # data replaces the existing data
+                        # if the datastore index for this resource was created or already existed
+                        # then load the data
                         data_dict = {
                             u'resource_id': entity.id,
+                            # use replace True to replace the existing data (this is what users
+                            # would expect)
                             u'replace': True,
                         }
-                        # also pass a version if we can to avoid upserting the same data many times
-                        # (this notify function gets hit quite a lot even when only one update has
-                        # occurred on a resource)
+                        # use the entities' last modified data if there is one, otherwise don't pass
+                        # one and let the action default it
                         if entity.last_modified is not None:
                             data_dict[u'version'] = to_timestamp(entity.last_modified)
                         logic.get_action(u'datastore_upsert')({}, data_dict)
                 except plugins.toolkit.ValidationError, e:
                     # if anything went wrong we want to catch error instead of raising otherwise
-                    # resource save will fail with 500
+                    # resource save will fail with a 500
                     log.critical(e)
                     pass
 
