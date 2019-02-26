@@ -230,8 +230,9 @@ def update_resources_privacy(package):
 
     :param package: the package model object (not the dict!)
     '''
-    for resource in package.resources:
-        update_privacy(resource.id, package.private)
+    for resource_group in package.resource_groups_all:
+        for resource in resource_group.resources_all:
+            update_privacy(resource.id, package.private)
 
 
 def update_privacy(resource_id, is_private=None):
