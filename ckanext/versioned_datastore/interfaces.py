@@ -3,7 +3,7 @@ import ckan.plugins.interfaces as interfaces
 
 class IVersionedDatastore(interfaces.Interface):
     '''
-    Allow modifying versioned datastore queries.
+    Allow modifying versioned datastore logic.
     '''
 
     def datastore_modify_data_dict(self, context, data_dict):
@@ -134,3 +134,18 @@ class IVersionedDatastore(interfaces.Interface):
         :return: the dict for elasticsearch to index
         '''
         return index_doc
+
+    def datastore_is_read_only_resource(self, resource_id):
+        '''
+        Allows implementors to designate certain resources as read only. This is purely a datastore
+        side concept and should be used to prevent actions such as:
+
+            - creating a new datastore for the resource (i.e. creating the index in elasticsearch)
+            - upserting data into the datastore for this resource
+            - deleting the datastore for this resource
+            - reindexing data in the datastore for this resource
+
+        :param resource_id: the resource id to check
+        :return: True if the resource should be treated as read only, False if not
+        '''
+        return False

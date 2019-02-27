@@ -2,6 +2,7 @@ import tempfile
 from contextlib import contextmanager, closing
 
 import requests
+from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
@@ -287,3 +288,14 @@ def make_public(resource_id):
                 ]
             }
             SEARCHER.elasticsearch.indices.update_aliases(actions)
+
+
+def is_resource_read_only(resource_id):
+    '''
+    Loops through the plugin implementations checking if any of them want the given resource id to
+    be read only.
+
+    :return: True if the resource should be treated as read only, False if not
+    '''
+    implementations = plugins.PluginImplementations(IVersionedDatastore)
+    return any(plugin.datastore_is_read_only_resource(resource_id) for plugin in implementations)

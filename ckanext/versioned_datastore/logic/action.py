@@ -181,6 +181,10 @@ def datastore_create(context, data_dict):
     plugins.toolkit.check_access(u'datastore_create', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
+
+    if utils.is_resource_read_only(resource_id):
+        return False
+
     # lookup the resource dict
     resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
     # only create the index if the resource is ingestable
@@ -225,6 +229,10 @@ def datastore_upsert(context, data_dict):
     plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
+
+    if utils.is_resource_read_only(resource_id):
+        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
+
     replace = data_dict[u'replace']
     # these 3 parameters are all optional and have the defaults defined below
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
@@ -257,6 +265,10 @@ def datastore_delete(context, data_dict):
     plugins.toolkit.check_access(u'datastore_delete', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
+
+    if utils.is_resource_read_only(resource_id):
+        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
+
     # remove all resource data from elasticsearch (the eevee function used below deletes the index,
     # the aliases and the status entry for this resource so that we don't have to)
     delete_index(utils.CONFIG, resource_id)
@@ -422,6 +434,10 @@ def datastore_reindex(context, data_dict):
     plugins.toolkit.check_access(u'datastore_reindex', context, data_dict)
     # retrieve the resource id
     resource_id = data_dict[u'resource_id']
+
+    if utils.is_resource_read_only(resource_id):
+        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
+
     # retrieve the resource itself
     resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
 
