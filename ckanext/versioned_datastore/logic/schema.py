@@ -156,3 +156,15 @@ def datastore_reindex():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
     }
+
+
+def datastore_get_rounded_version_schema():
+    """
+    Returns the schema for the datastore_get_rounded_version action.
+
+    :return: a dict
+    """
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'version': [ignore_missing, int_validator],
+    }

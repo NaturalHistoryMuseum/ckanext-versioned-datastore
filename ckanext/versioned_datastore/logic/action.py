@@ -112,13 +112,14 @@ def datastore_search(context, data_dict):
     '''
     original_data_dict, data_dict, version, search = create_search(context, data_dict)
     resource_id = data_dict[u'resource_id']
+    index_name = utils.prefix_resource(resource_id)
 
     # if the run query option is false (default to true if not present) then just return the query
     # we would have run against elasticsearch instead of actually running it. This is useful for
     # running the query outside of ckan, for example on a tile server.
     if not data_dict.get(u'run_query', True):
         # call pre_search to add all the versioning filters necessary (and other things too)
-        result = utils.SEARCHER.pre_search(indexes=[resource_id], search=search, version=version)
+        result = utils.SEARCHER.pre_search(indexes=[index_name], search=search, version=version)
         return {
             # the first part of the pre_search response is a list of indexes to run the query
             # against
@@ -131,7 +132,7 @@ def datastore_search(context, data_dict):
         try:
             # run the search through eevee. Note that we pass the indexes to eevee as a list as
             # eevee is ready for cross-resource search but this code isn't (yet)
-            result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
+            result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
         except NotFoundError as e:
             raise SearchIndexError(e.error)
 
@@ -145,7 +146,7 @@ def datastore_search(context, data_dict):
         context[u'versioned_datastore_query_result'] = result
 
         # get the fields
-        mapping, fields = utils.get_fields(resource_id)
+        mapping, fields = utils.get_fields(resource_id, version)
         # allow other extensions implementing our interface to modify the field definitions
         for plugin in plugins.PluginImplementations(IVersionedDatastore):
             fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
@@ -295,7 +296,8 @@ def datastore_get_record_versions(context, data_dict):
     :rtype: list
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
-    return utils.SEARCHER.get_versions(data_dict[u'resource_id'], int(data_dict[u'id']))
+    index_name = utils.prefix_resource(data_dict[u'resource_id'])
+    return utils.SEARCHER.get_record_versions(index_name, int(data_dict[u'id']))
 
 
 @logic.side_effect_free
@@ -314,28 +316,8 @@ def datastore_get_resource_versions(context, data_dict):
     :rtype: list of dicts
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_resource_versions_schema())
-    resource_id = data_dict[u'resource_id']
-    index = utils.SEARCHER.prefix_index(resource_id)
-
-    after = None
-    versions = []
-    while True:
-        search = Search(using=utils.SEARCHER.elasticsearch, index=index)[0:0]
-        search.aggs.bucket(u'versions', u'composite', size=100,
-                           sources={u'version': A(u'terms', field=u'meta.version', order=u'asc')})
-        if after is not None:
-            search.aggs[u'versions'].after = {u'version': after}
-
-        result = search.execute().aggs.to_dict()[u'versions']
-        for bucket in result[u'buckets']:
-            versions.append({u'version': bucket[u'key'][u'version'],
-                             u'changes': bucket[u'doc_count']})
-
-        after = result.get(u'after_key', {}).get(u'version', None)
-        if after is None:
-            break
-
-    return versions
+    index_name = utils.prefix_resource(data_dict[u'resource_id'])
+    return utils.SEARCHER.get_index_version_counts(index_name)
 
 
 @logic.side_effect_free
@@ -388,8 +370,8 @@ def datastore_autocomplete(context, data_dict):
 
     # now build the search object against the normal search code
     _original_data_dict, data_dict, version, search = create_search(context, data_dict)
-    # get the resource id we're going to search against
-    resource_id = data_dict[u'resource_id']
+    # get the index we're going to search against
+    index_name = utils.prefix_resource(data_dict[u'resource_id'])
 
     # add the autocompletion query part which takes the form of a prefix search
     search = search.filter(u'prefix', **{prefix_field(field): term})
@@ -401,7 +383,7 @@ def datastore_autocomplete(context, data_dict):
         search.aggs[u'field_values'].after = {field: after}
 
     # run the search
-    result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
+    result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
     # get the results we're interested in
     agg_result = result.aggregations[u'field_values']
     # return a dict of results, but only include the after details if there are any to include
@@ -479,15 +461,15 @@ def datastore_query_extent(context, data_dict):
 
     # now build the search object against the normal search code
     _original_data_dict, data_dict, version, search = create_search(context, data_dict)
-    # get the resource id we're going to search against
-    resource_id = data_dict[u'resource_id']
+    # get the index we're going to search against
+    index_name = utils.prefix_resource(data_dict[u'resource_id'])
 
     # add our bounds and geo count aggregations
     search.aggs.bucket(u'bounds', u'geo_bounds', field=u'meta.geo', wrap_longitude=False)
     search.aggs.bucket(u'geo_count', u'value_count', field=u'meta.geo')
 
     # run the search
-    result = utils.SEARCHER.search(indexes=[resource_id], search=search, version=version)
+    result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
 
     # create a dict of results for return
     to_return = {
@@ -502,3 +484,50 @@ def datastore_query_extent(context, data_dict):
         to_return[u'bounds'] = [[p[u'lat'], p[u'lon']] for p in (top_left, bottom_right)]
 
     return to_return
+
+
+@logic.side_effect_free
+def datastore_get_rounded_version(context, data_dict):
+    '''
+    Round the requested version of this query down to the nearest actual version of the
+    resource. This is necessary because we work in a system where although you can just query at
+    a timestamp you should round it down to the nearest known version. This guarantees that when
+    you come back and search the data later you'll get the same data. If the version requested
+    is older than the oldest version of the resource then the requested version itself is
+    returned (this is just a choice I made, we could return 0 for example instead).
+
+    An example: a version of resource A is created at t=2 and then a search is completed on it
+    at t=5. If a new version is created at t=3 then the search at t=5 won't return the data it
+    should. We could solve this problem in one of two ways:
+
+        - limit new versions of resources to only be either older than the oldest saved search
+        - rely on the current time when resource versions are created and searches are saved
+
+    There are however issues with both of these approaches:
+
+        - forcing new resource versions to exceed currently created search versions would
+          require a reasonable amount of work to figure out what the latest search version is and
+          also crosses extension boundaries as we'd need access to any tables that have a latest
+          query version.
+        - we want to be able to create resource versions beyond the latest version in the system
+          but before the current time to accommodate non-live data (i.e. data that comes from
+          timestamped dumps). There are a few benefits to allowing this, for example it allows
+          loading data where we create a number of resource versions at the same time but the
+          versions themselves represent when the data was extacted from another system or indeed
+          created rather than when it was loaded into CKAN.
+
+    Data dict params:
+    :param resource_id: the resource id
+    :type resource_id: string
+    :param version: the version to round (optional, if missing the latest version is returned)
+    :type version: integer
+
+    **Results:**
+
+    :returns: the rounded version or None if no versions are available for the given resource id
+    :rtype: integer or None
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_get_rounded_version_schema())
+    index_name = utils.prefix_resource(data_dict[u'resource_id'])
+    version = data_dict.get(u'version', None)
+    return utils.SEARCHER.get_rounded_versions([index_name], version)[index_name]

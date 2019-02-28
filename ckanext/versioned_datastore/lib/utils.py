@@ -2,6 +2,8 @@ import tempfile
 from contextlib import contextmanager, closing
 
 import requests
+from elasticsearch_dsl import Search, MultiSearch
+
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
@@ -43,6 +45,17 @@ def setup_eevee(ckan_config):
     SEARCHER = Searcher(CONFIG)
 
 
+def get_latest_version(resource_id):
+    '''
+    Retrieves the latest version of the given resource from the status index.
+
+    :param resource_id: the resource's id
+    :return: the version or None if the resource isn't indexed
+    '''
+    index_name = prefix_resource(resource_id)
+    return SEARCHER.get_latest_index_versions([index_name]).get(index_name, None)
+
+
 def validate(context, data_dict, default_schema):
     '''
     Validate the data_dict against a schema. If a schema is not available in the context (under the
@@ -60,6 +73,30 @@ def validate(context, data_dict, default_schema):
     if errors:
         raise plugins.toolkit.ValidationError(errors)
     return data_dict
+
+
+def prefix_resource(resource_id):
+    '''
+    Adds the configured prefix to the start of the resource id to get the index name for the
+    resource data in elasticsearch.
+
+    :param resource_id: the resource id
+    :return: the resource's index name
+    '''
+    return u'{}{}'.format(CONFIG.elasticsearch_index_prefix, resource_id)
+
+
+def prefix_field(field):
+    '''
+    Prefixes a the given field name with "data.". All data from the resource in eevee is stored
+    under the data key in the elasticsearch record so to avoid end users needing to know that all
+    fields should be referenced by their non-data.-prefixed name until they are internal to the code
+    and can be prefixed before being passed on to eevee.
+
+    :param field: the field name
+    :return: data.<field>
+    '''
+    return u'data.{}'.format(field)
 
 
 def format_facets(aggs):
@@ -103,32 +140,67 @@ def format_facets(aggs):
 
 
 # TODO: should probs cache this
-def get_fields(resource_id):
+def get_fields(resource_id, version=None):
     '''
-    Given a resource id, looks up the mapping in elasticsearch for the index that contains the
-    resource's data using the searcher object's client and then returns a list of fields with type
-    information.
+    Given a resource id, returns the fields that existed at the given version. If the version is
+    None then the fields for the latest version are returned.
 
     The response format is important as it must match the requirements of reclineJS's field
     definitions. See http://okfnlabs.org/recline/docs/models.html#field for more details.
 
-    :param resource_id:
-    :return:
+    All fields are returned by default as string types. This is because we have the capability to
+    allow searchers to specify whether to treat a field as a string or a number when searching and
+    therefore we don't need to try and guess the type and we can leave it to the user to know the
+    type which won't cause problems like interpreting a field as a number when it shouldn't be (for
+    example a barcode like '013655395'). If we decide that we do want to work out the type we simply
+    need to add another step to this function where we count how many records in the version have
+    the '.number' subfield - if the number is the same as the normal field count then the field is a
+    number type, if not it's a string.
+
+    :param resource_id: the resource's id
+    :param version: the version of the data we're querying (default: None, which means latest)
+    :return: a list of dicts containing the field data
     '''
-    # TODO: return only the fields in use in the version being searched
-    # the index name for the resource is prefixed
-    index = SEARCHER.prefix_index(resource_id)
-    # lookup the mapping on elasticsearch
-    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)
-    fields = []
-    for mappings in mapping.values():
-        # we're only going to return the details of the data fields, so loop over those properties
-        for field in mappings[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties']:
+    # create a list of field details, starting with the always present _id field
+    fields = [{u'id': u'_id', u'type': u'integer'}]
+
+    # figure out the index name from the resource id
+    index = prefix_resource(resource_id)
+    # lookup the mapping on elasticsearch to get all the field names
+    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)[index]
+    # figure out the rounded version so that we can figure out the fields at the right version
+    rounded_version = SEARCHER.get_rounded_versions([index], version)[index]
+    # if the rounded version response is None that means there are no versions available which
+    # shouldn't happen, but in case it does for some reason, just return the fields we have already
+    if rounded_version is None:
+        return fields
+
+    # we're only going to return the details of the data fields, collect up these up and sort them
+    # TODO: field ordering?
+    field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
+    # ignore the _id field, we already know what its deal is
+    field_names.remove(u'_id')
+
+    # find out which fields exist in this version and how many values each has
+    search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
+    for field in field_names:
+        # create a search which finds the documents that have a value for the given field at the
+        # rounded version. We're only interested in the counts though so set size to 0
+        search = search.add(Search().extra(size=0)
+                            .filter(u'exists', **{u'field': prefix_field(field)})
+                            .filter(u'term', **{u'meta.versions': rounded_version}))
+
+    # run the search and get the response
+    responses = search.execute()
+    for i, response in enumerate(responses):
+        # if the field has documents then it should be included in the fields list
+        if response.hits.total > 0:
             fields.append({
-                u'id': field,
-                # by default, everything is a string
+                u'id': field_names[i],
+                # by default everything is a string
                 u'type': u'string',
             })
+
     return mapping, fields
 
 
@@ -140,7 +212,7 @@ def is_datastore_resource(resource_id):
     :param resource_id: the resource id
     :return: True if the resource is a datastore resource, False if not
     '''
-    return SEARCHER.elasticsearch.indices.exists(SEARCHER.prefix_index(resource_id))
+    return SEARCHER.elasticsearch.indices.exists(prefix_resource(resource_id))
 
 
 def is_datastore_only_resource(resource_url):
@@ -220,7 +292,7 @@ def get_public_alias_name(resource_id):
     :param resource_id: the resource's id
     :return: the name of the alias
     '''
-    return u'{}{}'.format(get_public_alias_prefix(), SEARCHER.prefix_index(resource_id))
+    return u'{}{}'.format(get_public_alias_prefix(), prefix_resource(resource_id))
 
 
 def update_resources_privacy(package):
@@ -263,11 +335,11 @@ def make_private(resource_id):
 
     :param resource_id: the resource's id
     '''
-    prefixed_index_name = SEARCHER.prefix_index(resource_id)
+    index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if SEARCHER.elasticsearch.indices.exists(prefixed_index_name):
-        if SEARCHER.elasticsearch.indices.exists_alias(prefixed_index_name, public_index_name):
-            SEARCHER.elasticsearch.indices.delete_alias(prefixed_index_name, public_index_name)
+    if SEARCHER.elasticsearch.indices.exists(index_name):
+        if SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
+            SEARCHER.elasticsearch.indices.delete_alias(index_name, public_index_name)
 
 
 def make_public(resource_id):
@@ -278,13 +350,13 @@ def make_public(resource_id):
 
     :param resource_id: the resource's id
     '''
-    prefixed_index_name = SEARCHER.prefix_index(resource_id)
+    index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if SEARCHER.elasticsearch.indices.exists(prefixed_index_name):
-        if not SEARCHER.elasticsearch.indices.exists_alias(prefixed_index_name, public_index_name):
+    if SEARCHER.elasticsearch.indices.exists(index_name):
+        if not SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
             actions = {
                 u'actions': [
-                    {u'add': {u'index': prefixed_index_name, u'alias': public_index_name}}
+                    {u'add': {u'index': index_name, u'alias': public_index_name}}
                 ]
             }
             SEARCHER.elasticsearch.indices.update_aliases(actions)

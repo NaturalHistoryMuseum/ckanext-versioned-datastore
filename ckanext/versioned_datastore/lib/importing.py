@@ -117,9 +117,7 @@ def import_resource_data(request):
                                  request.replace, request.api_key)
     if did_ingest:
         # find out what the latest version in the index is
-        latest_index_versions = utils.SEARCHER.get_index_versions([request.resource_id],
-                                                                  prefixed=False)
-        latest_index_version = latest_index_versions.get(request.resource_id, None)
+        latest_index_version = utils.get_latest_version(request.resource_id)
 
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version

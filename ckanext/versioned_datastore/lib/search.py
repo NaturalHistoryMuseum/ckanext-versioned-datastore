@@ -5,21 +5,8 @@ from elasticsearch_dsl import Search
 from ckan import plugins
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.geo import add_geo_search
-from ckanext.versioned_datastore.lib.utils import validate
+from ckanext.versioned_datastore.lib.utils import validate, prefix_field
 from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema
-
-
-def prefix_field(field):
-    '''
-    Prefixes a the given field name with "data.". All data from the resource in eevee is stored
-    under the data key in the elasticsearch record so to avoid end users needing to know that all
-    fields should be referenced by their non-data.-prefixed name until they are internal to the code
-    and can be prefixed before being passed on to eevee.
-
-    :param field: the field name
-    :return: data.<field>
-    '''
-    return u'data.{}'.format(field)
 
 
 def _find_version(data_dict):
