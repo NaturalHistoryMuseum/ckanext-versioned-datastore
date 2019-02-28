@@ -139,7 +139,14 @@ def format_facets(aggs):
     return facets
 
 
-# TODO: should probs cache this
+# this dict stores cached get_field returns. It is only cleared by restarting the server. This is
+# safe because the cached data is keyed on the rounded version and is therefore stable as old
+# versions of data can't be modified, so the fields will always be valid. If for some reason this
+# isn't the case (such as if redactions for specific fields get added later and old versions of
+# records are updated) then the server just needs a restart and that's it).
+field_cache = {}
+
+
 def get_fields(resource_id, version=None):
     '''
     Given a resource id, returns the fields that existed at the given version. If the version is
@@ -161,19 +168,25 @@ def get_fields(resource_id, version=None):
     :param version: the version of the data we're querying (default: None, which means latest)
     :return: a list of dicts containing the field data
     '''
-    # create a list of field details, starting with the always present _id field
-    fields = [{u'id': u'_id', u'type': u'integer'}]
-
     # figure out the index name from the resource id
     index = prefix_resource(resource_id)
-    # lookup the mapping on elasticsearch to get all the field names
-    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)[index]
     # figure out the rounded version so that we can figure out the fields at the right version
     rounded_version = SEARCHER.get_rounded_versions([index], version)[index]
+    # the key for caching should be unique to the resource and the rounded version
+    cache_key = (resource_id, rounded_version)
+
+    # if there is a cached version, return it! Woo!
+    if cache_key in field_cache:
+        return field_cache[cache_key]
+
+    # create a list of field details, starting with the always present _id field
+    fields = [{u'id': u'_id', u'type': u'integer'}]
+    # lookup the mapping on elasticsearch to get all the field names
+    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)[index]
     # if the rounded version response is None that means there are no versions available which
     # shouldn't happen, but in case it does for some reason, just return the fields we have already
     if rounded_version is None:
-        return fields
+        return mapping, fields
 
     # we're only going to return the details of the data fields, collect up these up and sort them
     # TODO: field ordering?
@@ -200,6 +213,9 @@ def get_fields(resource_id, version=None):
                 # by default everything is a string
                 u'type': u'string',
             })
+
+    # stick the result in the cache for next time
+    field_cache[cache_key] = (mapping, fields)
 
     return mapping, fields
 
