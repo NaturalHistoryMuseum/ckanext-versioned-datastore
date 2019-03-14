@@ -304,33 +304,34 @@ def datastore_get_record_versions(context, data_dict):
 def datastore_get_resource_versions(context, data_dict):
     '''
     Given a resource id, returns the version timestamps available for that resource in ascending
-    order along with the number of records modified in the version and, optionally, the number of
-    records at that version.
+    order along with the number of records modified in the version and the number of records at that
+    version.
+
+    This action also accepts all the datastore_search parameters that can be used to search the
+    resource's data (i.e. q, filters). If these parameters are passed then the returned versions and
+    counts are for the data found using the search. This allows the discovery of the versions and
+    counts available for a query's result set.
 
     Data dict params:
     :param resource_id: resource id
     :type resource_id: string
-    :param include_count: whether to calculate the number of records available at each version,
-                          default False.
-    :type include_count: boolean
 
     **Results:**
 
-    :returns: a list of versions and the number of changes in the form {"version": #, "changes": #}.
-              If include_count is True, then "count": # is also returned.
+    :returns: a list of dicts, each in the form: {"version": #, "changes": #, "count": #}
     :rtype: list of dicts
     '''
-    data_dict = utils.validate(context, data_dict, schema.datastore_get_resource_versions_schema())
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
-    include_count = data_dict.get(u'include_count', False)
-    data = utils.SEARCHER.get_index_version_counts(index_name)
-    if include_count:
-        for result in data:
-            version = result[u'version']
-            count = Search(using=utils.SEARCHER.elasticsearch, index=index_name) \
-                .filter(u'term', **{u'meta.versions': version}) \
-                .count()
-            result[u'count'] = count
+
+    original_data_dict, data_dict, version, search = create_search(context, data_dict)
+
+    data = utils.SEARCHER.get_index_version_counts(index_name, search=search)
+
+    search = search.using(utils.SEARCHER.elasticsearch).index(index_name)[0:0]
+    for result in data:
+        version = result[u'version']
+        count = search.filter(u'term', **{u'meta.versions': version}).count()
+        result[u'count'] = count
     return data
 
 
