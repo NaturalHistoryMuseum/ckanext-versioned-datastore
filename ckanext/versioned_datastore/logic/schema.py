@@ -125,6 +125,7 @@ def datastore_get_resource_versions_schema():
     """
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'include_count': [ignore_missing, boolean_validator],
     }
 
 

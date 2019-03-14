@@ -304,20 +304,34 @@ def datastore_get_record_versions(context, data_dict):
 def datastore_get_resource_versions(context, data_dict):
     '''
     Given a resource id, returns the version timestamps available for that resource in ascending
-    order along with the number of records modified in the version.
+    order along with the number of records modified in the version and, optionally, the number of
+    records at that version.
 
     Data dict params:
     :param resource_id: resource id
     :type resource_id: string
+    :param include_count: whether to calculate the number of records available at each version,
+                          default False.
+    :type include_count: boolean
 
     **Results:**
 
-    :returns: a list of versions and the number of changes in the form {"version": #, "changes": #}
+    :returns: a list of versions and the number of changes in the form {"version": #, "changes": #}.
+              If include_count is True, then "count": # is also returned.
     :rtype: list of dicts
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_resource_versions_schema())
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
-    return utils.SEARCHER.get_index_version_counts(index_name)
+    include_count = data_dict.get(u'include_count', False)
+    data = utils.SEARCHER.get_index_version_counts(index_name)
+    if include_count:
+        for result in data:
+            version = result[u'version']
+            count = Search(using=utils.SEARCHER.elasticsearch, index=index_name) \
+                .filter(u'term', **{u'meta.versions': version}) \
+                .count()
+            result[u'count'] = count
+    return data
 
 
 @logic.side_effect_free
