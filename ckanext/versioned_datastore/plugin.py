@@ -96,14 +96,16 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             utils.update_resources_privacy(entity)
         # if a resource is the target entity
         elif isinstance(entity, model.Resource):
+            context = {u'model': model, u'ignore_auth': True}
             # the resource has been or is now deleted, make sure the datastore is updated
             if operation == DomainObjectOperation.changed and entity.state == u'deleted':
-                logic.get_action(u'datastore_delete')({}, {u'resource_id': entity.id})
+                logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
             # either the resource is new or its URL has changed
             elif operation == DomainObjectOperation.new or operation is None:
                 try:
                     # trigger the datastore create action to set things up
-                    created = logic.get_action(u'datastore_create')({}, {u'resource_id': entity.id})
+                    created = logic.get_action(u'datastore_create')(context,
+                                                                    {u'resource_id': entity.id})
                     if created:
                         # if the datastore index for this resource was created or already existed
                         # then load the data
@@ -117,7 +119,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                         # one and let the action default it
                         if entity.last_modified is not None:
                             data_dict[u'version'] = to_timestamp(entity.last_modified)
-                        logic.get_action(u'datastore_upsert')({}, data_dict)
+                        logic.get_action(u'datastore_upsert')(context, data_dict)
                 except plugins.toolkit.ValidationError, e:
                     # if anything went wrong we want to catch error instead of raising otherwise
                     # resource save will fail with a 500
