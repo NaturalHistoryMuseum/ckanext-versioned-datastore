@@ -143,9 +143,15 @@ def index_resource(request):
     stats.monitor_indexing(stats_id, indexer)
 
     try:
-        indexer.index()
-        return True
+        indexing_stats = indexer.index()
     except Exception as e:
         stats.mark_error(stats_id, e)
         log.exception(u'An error occurred during indexing of {}'.format(resource_id))
         return False
+
+    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        try:
+            plugin.datastore_after_indexing(request, indexing_stats, stats_id)
+        except Exception as e:
+            log.error(u'Error during after indexing hook handling in plugin {}'.format(plugin), e)
+    return True
