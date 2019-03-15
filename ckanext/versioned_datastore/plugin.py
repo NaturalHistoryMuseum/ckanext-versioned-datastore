@@ -99,6 +99,13 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             context = {u'model': model, u'ignore_auth': True}
             # the resource has been or is now deleted, make sure the datastore is updated
             if operation == DomainObjectOperation.changed and entity.state == u'deleted':
+                data_dict = {
+                    u'resource_id': entity.id,
+                }
+                # use the entities' last modified data if there is one, otherwise don't pass
+                # one and let the action default it
+                if entity.last_modified is not None:
+                    data_dict[u'version'] = to_timestamp(entity.last_modified)
                 logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
             # either the resource is new or its URL has changed
             elif operation == DomainObjectOperation.new or operation is None:

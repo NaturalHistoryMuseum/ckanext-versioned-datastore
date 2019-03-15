@@ -2,7 +2,8 @@ import rq
 
 from ckan import plugins
 from ckanext.rq import jobs
-from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest
+from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest, \
+    ResourceDeletionRequest, delete_resource_data
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource, ResourceIndexRequest
 
 try:
@@ -68,3 +69,17 @@ def queue_index(resource, lower_version, upper_version):
     '''
     resource_index_request = ResourceIndexRequest(resource, lower_version, upper_version)
     return queue(index_resource, [resource_index_request])
+
+
+def queue_deletion(resource_id, version):
+    '''
+    Queues a job which when run will delete all the data in a resource by saving a new version into
+    mongo for each record where the data field is empty ({}). After this is done, an index is
+    completed.
+
+    :param resource_id: the resource id
+    :param version: the version to delete the data in
+    :return: the queued job
+    '''
+    deletion_request = ResourceDeletionRequest(resource_id, version)
+    return queue(delete_resource_data, [deletion_request])

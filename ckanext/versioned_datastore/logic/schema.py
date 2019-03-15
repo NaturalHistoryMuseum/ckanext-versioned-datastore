@@ -102,6 +102,7 @@ def datastore_upsert_schema():
 def datastore_delete_schema():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
+        u'version': [ignore_missing, int_validator],
     }
 
 

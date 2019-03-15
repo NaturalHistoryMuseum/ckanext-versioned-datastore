@@ -2,8 +2,6 @@
 import logging
 from datetime import datetime
 
-from eevee.indexing.utils import delete_index
-from eevee.mongo import get_mongo
 from eevee.utils import to_timestamp
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import A
@@ -14,7 +12,7 @@ from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
-from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import
+from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
 
@@ -257,25 +255,31 @@ def datastore_upsert(context, data_dict):
 def datastore_delete(context, data_dict):
     '''
     Deletes the data in the datastore against the given resource_id. Note that this is achieved by
-    dropping the entire mongo collection at the resource_id's value.
+    setting all records to be empty in a new version and then indexing that new version. This
+    ensures that the data is not available in the latest version but is in old ones.
 
     :param resource_id: resource id of the resource
     :type resource_id: string
+    :param version: the version to delete the data at, can be missing and if it is it's defaults to
+                    the current timestamp
+    :type version: integer
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_delete_schema())
     plugins.toolkit.check_access(u'datastore_delete', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
+    # get the requested deletion version, or default to now
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
 
     if utils.is_resource_read_only(resource_id):
         raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
 
-    # remove all resource data from elasticsearch (the eevee function used below deletes the index,
-    # the aliases and the status entry for this resource so that we don't have to)
-    delete_index(utils.CONFIG, resource_id)
-    # remove all resource data from mongo
-    with get_mongo(utils.CONFIG, collection=resource_id) as mongo:
-        mongo.drop()
+    # queue the job
+    job = queue_deletion(resource_id, version)
+    return {
+        u'queued_at': job.enqueued_at.isoformat(),
+        u'job_id': job.id,
+    }
 
 
 @logic.side_effect_free

@@ -6,6 +6,7 @@ from ckan import logic
 from ckan.logic import NotFound
 from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
+from ckanext.versioned_datastore.lib.ingestion import deletion
 from ckanext.versioned_datastore.lib.ingestion.ingesting import ingest_resource
 from ckanext.versioned_datastore.lib.indexing.indexing import ResourceIndexRequest
 from ckanext.versioned_datastore.lib.stats import get_last_ingest
@@ -125,3 +126,65 @@ def import_resource_data(request):
 
         log.info(u'Ingest and index complete for {} at version {}'.format(request.resource_id,
                                                                           request.version))
+
+
+class ResourceDeletionRequest(object):
+    '''
+    Class representing a request to delete all of a resource's data. We use a class like this for
+    two reasons, firstly to avoid having a long list of arguments passed through to queued
+    functions, and secondly because rq by default logs the arguments sent to a function and if the
+    records argument is a large list of dicts this becomes insane.
+    '''
+
+    def __init__(self, resource_id, version):
+        '''
+        :param resource_id: the id of the resource to import
+        :param version: the version of the resource to import
+        '''
+        self.resource_id = resource_id
+        self.version = version
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return u'Deletion of {} at version {}'.format(self.resource_id, self.version)
+
+
+def delete_resource_data(request):
+    '''
+    Deletes all the resource's data. This involves ingesting a new version where all fields in each
+    record are missing and then indexing this new version.
+
+    This function is blocking so it should be called through the background task queue to avoid
+    blocking up a CKAN thread.
+
+    :param request: the ResourceDeletionRequest object describing the resource deletion we need to
+                    do
+    '''
+    # first, double check that the version is valid
+    if not check_version_is_valid(request.resource_id, request.version):
+        # log and silently skip this import
+        log.info(u'Skipped importing data for {} at version {} as the version is invalid'.format(
+            request.resource_id, request.version))
+        return
+
+    log.info(u'Starting data deletion for {} at version {}'.format(request.resource_id,
+                                                                   request.version))
+
+    # then, retrieve the resource dict
+    resource = get_resource(request.resource_id)
+    # store a start time, this will be used as the ingestion time of the records
+    start = datetime.now()
+    # delete the data in mongo
+    did_delete = deletion.delete_resource_data(request.resource_id, request.version, start)
+    if did_delete:
+        # find out what the latest version in the index is
+        latest_index_version = utils.get_latest_version(request.resource_id)
+
+        # index the resource from mongo into elasticsearch. This will only index the records that
+        # have changed between the latest index version and the newly ingested version
+        index_resource(ResourceIndexRequest(resource, latest_index_version, request.version))
+
+        log.info(u'Deletion complete for {} at version {}'.format(request.resource_id,
+                                                                  request.version))
