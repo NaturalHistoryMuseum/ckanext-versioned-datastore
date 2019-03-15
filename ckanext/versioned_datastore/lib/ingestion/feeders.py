@@ -130,6 +130,8 @@ class SVFeeder(URLDatastoreFeeder):
         # number of lines to sample from the source
         sample_size = 400
         with closing(requests.get(self.url, stream=True, headers=self.headers)) as response:
+            # make sure we get a response we can use
+            response.raise_for_status()
             for line_number, line in enumerate(response.iter_lines(), start=1):
                 detector.feed(line)
                 # stop if we've read enough lines for the detector to be confident about the
@@ -153,6 +155,8 @@ class SVFeeder(URLDatastoreFeeder):
         # stream the file from the url - note that we have to use closing here because the ability
         # to directly use with on requests.get wasn't added until 2.18.0 and we're on 2.10.0 :(
         with closing(requests.get(self.url, stream=True, headers=self.headers)) as response:
+            # make sure we get a response we can use
+            response.raise_for_status()
             reader = csv.DictReader(response.iter_lines(), dialect=self.dialect, encoding=encoding)
             for number, data in enumerate(reader, start=1):
                 # yield a new record for each row

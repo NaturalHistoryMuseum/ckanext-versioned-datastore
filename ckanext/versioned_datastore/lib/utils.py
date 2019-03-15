@@ -275,6 +275,8 @@ def download_to_temp_file(url, headers=None):
     headers = headers if headers else {}
     # open up the url for streaming
     with closing(requests.get(url, stream=True, headers=headers)) as r:
+        # check that we got a response we can use!
+        r.raise_for_status()
         # create a temporary file to store the data in
         with tempfile.NamedTemporaryFile() as temp:
             # iterate over the data from the url stream in chunks
