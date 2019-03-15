@@ -6,7 +6,7 @@ from eevee.indexing.utils import delete_index
 from eevee.mongo import get_mongo
 from eevee.utils import to_timestamp
 from elasticsearch import NotFoundError
-from elasticsearch_dsl import A, Search
+from elasticsearch_dsl import A
 
 from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
@@ -178,7 +178,7 @@ def datastore_create(context, data_dict):
               cannot be ingested into the datastore because the format is not supported
     :rtype: boolean
     '''
-    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_create_schema())
+    data_dict = utils.validate(context, data_dict, schema.datastore_create_schema())
     plugins.toolkit.check_access(u'datastore_create', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
@@ -226,7 +226,7 @@ def datastore_upsert(context, data_dict):
     # this comes through as junk if it's not removed before validating. This happens because the
     # data dict is flattened during validation, but why this happens is unclear.
     records = data_dict.get(u'records', None)
-    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_upsert_schema())
+    data_dict = utils.validate(context, data_dict, schema.datastore_upsert_schema())
     plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
@@ -262,7 +262,7 @@ def datastore_delete(context, data_dict):
     :param resource_id: resource id of the resource
     :type resource_id: string
     '''
-    data_dict = utils.validate(context, data_dict, schema.versioned_datastore_delete_schema())
+    data_dict = utils.validate(context, data_dict, schema.datastore_delete_schema())
     plugins.toolkit.check_access(u'datastore_delete', context, data_dict)
 
     resource_id = data_dict[u'resource_id']

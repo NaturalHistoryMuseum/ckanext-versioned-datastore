@@ -6,7 +6,7 @@ from ckan import plugins
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.geo import add_geo_search
 from ckanext.versioned_datastore.lib.utils import validate, prefix_field
-from ckanext.versioned_datastore.logic.schema import versioned_datastore_search_schema
+from ckanext.versioned_datastore.logic.schema import datastore_search_schema
 
 
 def _find_version(data_dict):
@@ -56,7 +56,7 @@ def create_search(context, data_dict):
     original_data_dict = copy.deepcopy(data_dict)
 
     # validate the data dict against our schema
-    data_dict = validate(context, data_dict, versioned_datastore_search_schema())
+    data_dict = validate(context, data_dict, datastore_search_schema())
 
     # allow other extensions implementing our interface to modify the data_dict
     for plugin in plugins.PluginImplementations(IVersionedDatastore):

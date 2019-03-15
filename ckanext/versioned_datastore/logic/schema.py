@@ -57,7 +57,7 @@ def list_of_strings(delimiter=u','):
     return validator
 
 
-def versioned_datastore_search_schema():
+def datastore_search_schema():
     '''
     Returns the schema for the datastore_search action. This is based on the datastore_search from
     the core ckanext-datastore extension, with some parameters removed and others added.
@@ -85,13 +85,13 @@ def versioned_datastore_search_schema():
     }
 
 
-def versioned_datastore_create_schema():
+def datastore_create_schema():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
 
 
-def versioned_datastore_upsert_schema():
+def datastore_upsert_schema():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'replace': [not_missing, boolean_validator],
@@ -99,7 +99,7 @@ def versioned_datastore_upsert_schema():
     }
 
 
-def versioned_datastore_delete_schema():
+def datastore_delete_schema():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
