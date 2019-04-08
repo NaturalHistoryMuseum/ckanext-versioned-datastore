@@ -39,6 +39,21 @@ class DatastoreFeeder(IngestionFeeder):
         self.resource_id = resource_id
         self.id_offset = id_offset
 
+        # keep track of the columns we've seen
+        self.all_columns = set()
+        self.columns = []
+
+    def update_columns(self, columns):
+        """
+        Update the list of columns we've seen.
+
+        :param columns: a sequence of columns
+        """
+        for column in columns:
+            if column != u'_id' and column not in self.all_columns:
+                self.all_columns.add(column)
+                self.columns.append(column)
+
     def create_record(self, number, data):
         '''
         Creates a record given the row number of the record (1-based) and the data from that row as
@@ -48,6 +63,8 @@ class DatastoreFeeder(IngestionFeeder):
         :param data: the row's data as a dictionary
         :return: a new DatastoreRecord object
         '''
+        # update the headers
+        self.update_columns(data.keys())
         # if the record has an _id column then we use it, if it doesn't then we just use the index
         # of the record in the source plus the offset value. This accommodates the simple scenario
         # where the source data dicts don't have ids and the user just wants to add to the existing
@@ -158,6 +175,11 @@ class SVFeeder(URLDatastoreFeeder):
             # make sure we get a response we can use
             response.raise_for_status()
             reader = csv.DictReader(response.iter_lines(), dialect=self.dialect, encoding=encoding)
+
+            # if there are columns, use them, then we are sure to get the right order
+            if reader.unicode_fieldnames:
+                self.update_columns(reader.unicode_fieldnames)
+
             for number, data in enumerate(reader, start=1):
                 # yield a new record for each row
                 yield self.create_record(number, data)

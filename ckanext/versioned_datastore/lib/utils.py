@@ -11,6 +11,7 @@ from eevee.search.search import Searcher
 
 from ckan import plugins, model
 from ckan.lib.navl import dictization_functions
+from ckanext.versioned_datastore.lib.details import get_details
 
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
 CSV_FORMATS = [u'csv', u'application/csv']
@@ -184,35 +185,50 @@ def get_fields(resource_id, version=None):
     # lookup the mapping on elasticsearch to get all the field names
     mapping = SEARCHER.elasticsearch.indices.get_mapping(index)[index]
     # if the rounded version response is None that means there are no versions available which
-    # shouldn't happen, but in case it does for some reason, just return the fields we have already
+    # shouldn't happen, but in case it does for some reason, just return the fields we have
+    # already
     if rounded_version is None:
         return mapping, fields
 
-    # we're only going to return the details of the data fields, collect up these up and sort them
-    # TODO: field ordering?
-    field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
-    # ignore the _id field, we already know what its deal is
-    field_names.remove(u'_id')
-
-    # find out which fields exist in this version and how many values each has
-    search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
-    for field in field_names:
-        # create a search which finds the documents that have a value for the given field at the
-        # rounded version. We're only interested in the counts though so set size to 0
-        search = search.add(Search().extra(size=0)
-                            .filter(u'exists', **{u'field': prefix_field(field)})
-                            .filter(u'term', **{u'meta.versions': rounded_version}))
-
-    # run the search and get the response
-    responses = search.execute()
-    for i, response in enumerate(responses):
-        # if the field has documents then it should be included in the fields list
-        if response.hits.total > 0:
+    # check to see if there are resource details available as these can give us the columns (in
+    # order too!)
+    details = get_details(resource_id, rounded_version)
+    if details:
+        # we have details, retrieve the columns and add them
+        for field in details.get_columns():
             fields.append({
-                u'id': field_names[i],
+                u'id': field,
                 # by default everything is a string
                 u'type': u'string',
             })
+    else:
+        # if we get here there was no details row available so we'll have to dynamically figure it
+        # out. No biggy.
+        # We're only going to return the details of the data fields, collect up these up and sort
+        # them
+        field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
+        # ignore the _id field, we already know what its deal is
+        field_names.remove(u'_id')
+
+        # find out which fields exist in this version and how many values each has
+        search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
+        for field in field_names:
+            # create a search which finds the documents that have a value for the given field at the
+            # rounded version. We're only interested in the counts though so set size to 0
+            search = search.add(Search().extra(size=0)
+                                .filter(u'exists', **{u'field': prefix_field(field)})
+                                .filter(u'term', **{u'meta.versions': rounded_version}))
+
+        # run the search and get the response
+        responses = search.execute()
+        for i, response in enumerate(responses):
+            # if the field has documents then it should be included in the fields list
+            if response.hits.total > 0:
+                fields.append({
+                    u'id': field_names[i],
+                    # by default everything is a string
+                    u'type': u'string',
+                })
 
     # stick the result in the cache for next time
     field_cache[cache_key] = (mapping, fields)

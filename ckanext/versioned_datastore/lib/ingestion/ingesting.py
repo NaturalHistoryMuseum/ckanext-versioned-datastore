@@ -2,6 +2,7 @@ import contextlib
 import itertools
 import logging
 
+from contextlib2 import suppress
 from eevee import diffing
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.ingesters import Ingester
@@ -10,10 +11,12 @@ from eevee.utils import chunk_iterator
 from pymongo import UpdateOne
 
 from ckanext.versioned_datastore.lib import stats
+from ckanext.versioned_datastore.lib.details import create_details
 from ckanext.versioned_datastore.lib.ingestion.feeders import XLSXFeeder, XLSFeeder, TSVFeeder, \
     CSVFeeder, APIDatastoreFeeder
 from ckanext.versioned_datastore.lib.utils import CSV_FORMATS, TSV_FORMATS, \
     XLS_FORMATS, XLSX_FORMATS, is_datastore_only_resource
+
 
 log = logging.getLogger(__name__)
 
@@ -205,6 +208,11 @@ def ingest_resource(version, start, config, resource, data, replace, api_key):
                 tracker.remove_missing_records(ingester.start)
         else:
             ingester.ingest()
+
+        # we really don't care about errors
+        with suppress(Exception):
+            # create a details row
+            create_details(resource_id, version, feeder.columns)
 
         return True
     except Exception as e:

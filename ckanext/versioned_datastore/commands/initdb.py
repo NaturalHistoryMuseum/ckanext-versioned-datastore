@@ -2,6 +2,7 @@ from ckan import model
 
 from ckan.lib.cli import CkanCommand
 from ckanext.versioned_datastore.model.stats import import_stats_table
+from ckanext.versioned_datastore.model.details import datastore_resource_details_table
 
 
 class VersionedDatastoreInitDBCommand(CkanCommand):
@@ -14,6 +15,7 @@ class VersionedDatastoreInitDBCommand(CkanCommand):
 
     def command(self):
         self._load_config()
-        # create the table if it doesn't exist
-        if not import_stats_table.exists(model.meta.engine):
-            import_stats_table.create(model.meta.engine)
+        # create the tables if they don't exist
+        for table in [import_stats_table, datastore_resource_details_table]:
+            if not table.exists(model.meta.engine):
+                table.create(model.meta.engine)
