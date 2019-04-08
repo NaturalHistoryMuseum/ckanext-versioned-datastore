@@ -94,7 +94,8 @@ def monitor_indexing(stats_id, indexer, update_frequency=1000):
                              performance issues.
     '''
     @indexer.index_signal.connect_via(indexer)
-    def on_index(_sender, mongo_doc, feeder, index, document_count, command_count, document_total):
+    def update_progress(_sender, indexed_record, index, feeder, document_count, indexed_count,
+                        document_total, op_stats, seen_versions):
         # this function is called each time a record is queued to be indexed into elasticsearch.
         # This means it is called a lot and therefore needs a barrier preventing it from hammering
         # the database, hence this modulo calculation
@@ -105,7 +106,7 @@ def monitor_indexing(stats_id, indexer, update_frequency=1000):
             })
 
     @indexer.finish_signal.connect_via(indexer)
-    def on_finish(_sender, document_count, command_count, stats):
+    def finish(_sender, document_count, indexed_count, stats):
         # this function is called when the indexing operation completes
         finish_operation(stats_id, document_count, stats)
 
