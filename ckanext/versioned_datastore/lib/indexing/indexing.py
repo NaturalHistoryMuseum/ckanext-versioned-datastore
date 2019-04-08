@@ -41,7 +41,7 @@ class DatastoreIndex(Index):
                 except ValueError:
                     pass
 
-    def get_commands(self, mongo_doc):
+    def get_index_docs(self, mongo_doc):
         """
         Yields all the action and data dicts as a tuple for the given mongo doc. To make things
         consistent the id of the record is copied into the _id field when the record is indexed.
@@ -83,7 +83,7 @@ class DatastoreIndex(Index):
                 index_doc = plugin.datastore_modify_index_doc(self.unprefixed_name, index_doc)
 
             # yield it
-            yield (self.create_action(mongo_doc[u'id'], version), index_doc)
+            yield version, index_doc
 
     def get_index_create_body(self):
         body = super(DatastoreIndex, self).get_index_create_body()
