@@ -125,7 +125,7 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     # is a copy field created by adding the values of each data.* field
     if q is not None and q is not u'' and q is not {}:
         if isinstance(q, basestring):
-            search = search.query(u'match', **{u'meta.all': q})
+            search = search.query(u'match', **{u'meta.all': {u'query': q, u'operator': u'and'}})
         else:
             for field, query in q.items():
                 # TODO: change this to __all__ to match __geo__?
