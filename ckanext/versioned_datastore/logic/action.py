@@ -4,11 +4,12 @@ import logging
 
 from datetime import datetime
 from eevee.utils import to_timestamp
-from elasticsearch import NotFoundError
+from elasticsearch import NotFoundError, RequestError
 from elasticsearch_dsl import A, Search
 
 from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
+from ckan.logic import ActionError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
@@ -637,62 +638,59 @@ def datastore_search_raw(context, data_dict):
     raw_result = data_dict.get(u'raw_result', False)
     include_version = data_dict.get(u'include_version', True)
 
-    # figure out the name of the index from the resource id
+    # interpret the parameters
     index_name = utils.prefix_resource(resource_id)
-
-    # validate the search
-    validation = utils.SEARCHER.elasticsearch.indices.validate_query(index=index_name, body=search)
-    if not validation[u'valid']:
-        raise plugins.toolkit.ValidationError(u'Invalid elasticsearch query')
-    # create a search object from the search parameter
     search = Search.from_dict(search)
 
-    if raw_result:
-        # the caller doesn't want us to parse the response and return it in our format, they just
-        # want the pure elasticsearch response.
-        if include_version:
-            # run pre search to get the search setup (this adds the version filter)
-            _, search, _ = utils.SEARCHER.pre_search(indexes=[index_name], search=search,
-                                                     version=version)
-        else:
-            # if we're not passing the search to the pre search function, we need to add the index
-            # and client manually
-            search = search.index(index_name).using(utils.SEARCHER.elasticsearch)
+    try:
+        if raw_result:
+            # the caller doesn't want us to parse the response and return it in our format, they
+            # just want the pure elasticsearch response.
+            if include_version:
+                # run pre search to get the search setup (this adds the version filter)
+                _, search, _ = utils.SEARCHER.pre_search(indexes=[index_name], search=search,
+                                                         version=version)
+            else:
+                # if we're not passing the search to the pre search function, we need to add the
+                # index and client manually
+                search = search.index(index_name).using(utils.SEARCHER.elasticsearch)
 
-        try:
             # run it and just return the result directly
             return search.execute().to_dict()
-        except NotFoundError as e:
-            raise SearchIndexError(e.error)
-    else:
-        try:
+        else:
             # run the search through eevee. Note that we pass the indexes to eevee as a list as
             # eevee is ready for cross-resource search but this code isn't (yet)
             result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
-        except NotFoundError as e:
-            raise SearchIndexError(e.error)
 
-        # allow other extensions implementing our interface to modify the result object
-        for plugin in plugins.PluginImplementations(IVersionedDatastore):
-            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+            # allow other extensions implementing our interface to modify the result object
+            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+                result = plugin.datastore_modify_result(context, original_data_dict, data_dict,
+                                                        result)
 
-        # add the actual result object to the context in case the caller is an extension and they
-        # have used one of the interface hooks to alter the search object and include, for example,
-        # an aggregation
-        context[u'versioned_datastore_query_result'] = result
+            # add the actual result object to the context in case the caller is an extension and
+            # they have used one of the interface hooks to alter the search object and include, for
+            # example, an aggregation
+            context[u'versioned_datastore_query_result'] = result
 
-        # get the fields
-        mapping, fields = utils.get_fields(resource_id, version)
-        # allow other extensions implementing our interface to modify the field definitions
-        for plugin in plugins.PluginImplementations(IVersionedDatastore):
-            fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+            # get the fields
+            mapping, fields = utils.get_fields(resource_id, version)
+            # allow other extensions implementing our interface to modify the field definitions
+            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+                fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
 
-        # return a dictionary containing the results and other details
-        return {
-            u'total': result.total,
-            u'records': [hit.data for hit in result.results()],
-            u'facets': utils.format_facets(result.aggregations),
-            u'fields': fields,
-            u'after': result.last_after,
-            u'_backend': u'versioned-datastore',
-        }
+            # return a dictionary containing the results and other details
+            return {
+                u'total': result.total,
+                u'records': [hit.data for hit in result.results()],
+                u'facets': utils.format_facets(result.aggregations),
+                u'fields': fields,
+                u'after': result.last_after,
+                u'_backend': u'versioned-datastore',
+            }
+    except RequestError as e:
+        if e.error == u'parsing_exception':
+            raise plugins.toolkit.ValidationError(str(e))
+        else:
+            raise e
+    except NotFoundError as e:
+        raise SearchIndexError(e.error)
