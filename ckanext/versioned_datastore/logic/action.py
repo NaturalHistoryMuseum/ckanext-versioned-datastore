@@ -688,9 +688,6 @@ def datastore_search_raw(context, data_dict):
                 u'_backend': u'versioned-datastore',
             }
     except RequestError as e:
-        if e.error == u'parsing_exception':
-            raise plugins.toolkit.ValidationError(str(e))
-        else:
-            raise e
+        raise plugins.toolkit.ValidationError(str(e))
     except NotFoundError as e:
         raise SearchIndexError(e.error)
