@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
+import copy
 import logging
-from datetime import datetime
 
+from datetime import datetime
 from eevee.utils import to_timestamp
 from elasticsearch import NotFoundError
-from elasticsearch_dsl import A
+from elasticsearch_dsl import A, Search
 
 from ckan import logic, plugins
 from ckan.lib.search import SearchIndexError
@@ -550,3 +551,148 @@ def datastore_get_rounded_version(context, data_dict):
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
     version = data_dict.get(u'version', None)
     return utils.SEARCHER.get_rounded_versions([index_name], version)[index_name]
+
+
+@logic.side_effect_free
+def datastore_search_raw(context, data_dict):
+    '''
+    This action allows you to search data in a resource using a raw elasticsearch query. This action
+    allows more flexibility over the search both in terms of querying using any of elasticsearch's
+    different DSL queries as well as aspects like turning versioning on and off.
+
+    If the resource to be searched is private then appropriate authorization is required.
+
+    Note that the structure of the documents in elasticsearch is defined as such:
+
+        - data._id: the id of the record, this is always an integer
+        - data.*: the data fields. Each field is stored in 3 different ways:
+            - data.<field_name>: keyword type
+            - data.<field_name>.full: text type
+            - data.<field_name>.number: double type, will be missing if the data value isn't
+                                        convertable to a number
+        - meta.*: various metadata fields, including:
+            - meta.all: a text type field populated from all the data in the data.* fields
+            - meta.geo: if a pair of lat/lon fields have been assigned on this resource this geo
+                        point type field is available
+            - meta.version: the version of this record, this field is a date type field represented
+                            in epoch millis
+            - meta.next_version: the next version of this record, this field is a date type field
+                            represented in epoch millis. If missing this is the current version of
+                            the record
+            - meta.versions: a date range type field which encapsulates the version range this
+                             document applies to for the record
+
+    Params:
+
+    :param resource_id: id of the resource to be searched against, required
+    :type resource_id: string
+    :param search: the search JSON to submit to elasticsearch. This should be a valid elasticsearch
+                   search, the only modifications that will be made to it are setting the version
+                   filter unless include_version=False. If not included then an empty {} is used.
+    :type search: dict
+    :param version: version to search at, if not provided the current version of the data is
+                   searched (unless using include_version=False).
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+    :param raw_result: whether to parse the result and return in the same format as datastore_search
+                       or just return the exact elasticsearch response, unaltered. Defaults to False
+    :type raw_result: bool
+    :param include_version: whether to include the version filter or not. By default this is True.
+                            This can only be set to False in combination with raw_result=True.
+    :type include_version: bool
+
+
+    **Results:**
+
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param fields: fields/columns and their extra metadata
+    :type fields: list of dicts
+    :param total: number of total matching records
+    :type total: int
+    :param records: list of matching results
+    :type records: list of dicts
+    :param facets: list of fields and their top 10 values, if requested
+    :type facets: dict
+    :param after: the next page's search_after value which can be passed back as the "after"
+                  parameter. This value will always be included if there were results otherwise None
+                  is returned. A value will also always be returned even if this page is the last.
+    :type after: a list or None
+
+    In addition to returning this result, the actual result object is made available through the
+    context dict under the key "versioned_datastore_query_result". This isn't available through the
+    http action API however.
+
+    If raw_result is True, then the elasticsearch response is returned without modification.
+    '''
+    # create a copy of the data dict for plugins later
+    original_data_dict = copy.deepcopy(data_dict)
+    # validate the data dict
+    data_dict = utils.validate(context, data_dict, schema.datastore_search_raw_schema())
+
+    # pull out the parameters
+    resource_id = data_dict[u'resource_id']
+    search = data_dict.get(u'search', {})
+    version = data_dict.get(u'version', None)
+    raw_result = data_dict.get(u'raw_result', False)
+    include_version = data_dict.get(u'include_version', True)
+
+    # figure out the name of the index from the resource id
+    index_name = utils.prefix_resource(resource_id)
+
+    # validate the search
+    validation = utils.SEARCHER.elasticsearch.indices.validate_query(index=index_name, body=search)
+    if not validation[u'valid']:
+        raise plugins.toolkit.ValidationError(u'Invalid elasticsearch query')
+    # create a search object from the search parameter
+    search = Search.from_dict(search)
+
+    if raw_result:
+        # the caller doesn't want us to parse the response and return it in our format, they just
+        # want the pure elasticsearch response.
+        if include_version:
+            # run pre search to get the search setup (this adds the version filter)
+            _, search, _ = utils.SEARCHER.pre_search(indexes=[index_name], search=search,
+                                                     version=version)
+        else:
+            # if we're not passing the search to the pre search function, we need to add the index
+            # and client manually
+            search = search.index(index_name).using(utils.SEARCHER.elasticsearch)
+
+        try:
+            # run it and just return the result directly
+            return search.execute().to_dict()
+        except NotFoundError as e:
+            raise SearchIndexError(e.error)
+    else:
+        try:
+            # run the search through eevee. Note that we pass the indexes to eevee as a list as
+            # eevee is ready for cross-resource search but this code isn't (yet)
+            result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
+        except NotFoundError as e:
+            raise SearchIndexError(e.error)
+
+        # allow other extensions implementing our interface to modify the result object
+        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+
+        # add the actual result object to the context in case the caller is an extension and they
+        # have used one of the interface hooks to alter the search object and include, for example,
+        # an aggregation
+        context[u'versioned_datastore_query_result'] = result
+
+        # get the fields
+        mapping, fields = utils.get_fields(resource_id, version)
+        # allow other extensions implementing our interface to modify the field definitions
+        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+
+        # return a dictionary containing the results and other details
+        return {
+            u'total': result.total,
+            u'records': [hit.data for hit in result.results()],
+            u'facets': utils.format_facets(result.aggregations),
+            u'fields': fields,
+            u'after': result.last_after,
+            u'_backend': u'versioned-datastore',
+        }

@@ -73,3 +73,8 @@ def datastore_query_extent(context, data_dict):
 @plugins.toolkit.auth_allow_anonymous_access
 def datastore_get_rounded_version(context, data_dict):
     return check(u'resource_show', context, data_dict)
+
+
+@plugins.toolkit.auth_allow_anonymous_access
+def datastore_search_raw(context, data_dict):
+    return check(u'resource_show', context, data_dict)

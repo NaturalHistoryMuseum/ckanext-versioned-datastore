@@ -158,3 +158,18 @@ def datastore_get_rounded_version_schema():
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'version': [ignore_missing, int_validator],
     }
+
+
+def datastore_search_raw_schema():
+    """
+    Returns the schema for the datastore_search_raw action.
+
+    :return: a dict
+    """
+    return {
+        u'resource_id': [not_empty, unicode, resource_id_exists],
+        u'search': [ignore_missing, json_validator],
+        u'version': [ignore_missing, int_validator],
+        u'raw_result': [ignore_missing, boolean_validator],
+        u'include_version': [ignore_missing, boolean_validator],
+    }
