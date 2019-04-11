@@ -36,6 +36,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             u'datastore_reindex': action.datastore_reindex,
             u'datastore_query_extent': action.datastore_query_extent,
             u'datastore_get_rounded_version': action.datastore_get_rounded_version,
+            u'datastore_search_raw': action.datastore_search_raw,
         }
 
     # IAuthFunctions
@@ -51,6 +52,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             u'datastore_reindex': auth.datastore_reindex,
             u'datastore_query_extent': auth.datastore_query_extent,
             u'datastore_get_rounded_version': auth.datastore_get_rounded_version,
+            u'datastore_search_raw': auth.datastore_search_raw,
         }
 
     # ITemplateHelpers
