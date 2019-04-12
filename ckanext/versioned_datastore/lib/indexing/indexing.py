@@ -14,8 +14,18 @@ log = logging.getLogger(__name__)
 
 
 class DatastoreIndex(Index):
+    '''
+    Represents an index in elasticsearch for a resource in CKAN for the eevee indexing process.
+    '''
 
     def __init__(self, config, name, version, latitude_field=None, longitude_field=None):
+        '''
+        :param config: the eevee config object
+        :param name: the resource id, this will be used as the index name
+        :param version: the version being indexed up to
+        :param latitude_field: optional - the name of a field containing latitudinal data
+        :param longitude_field: optional - the name of a field containing longitudinal data
+        '''
         super(DatastoreIndex, self).__init__(config, name, version)
         self.latitude_field = latitude_field
         self.longitude_field = longitude_field
@@ -23,8 +33,8 @@ class DatastoreIndex(Index):
     def add_geo_data(self, index_doc):
         '''
         Adds a geo point to the meta part of the index document. This is done in place. If the
-        latitude and longitude fields have not been specified by the user or are not present then
-        nothing happens.
+        latitude and longitude fields have not been specified by the user, are not present in the
+        data then or have invalid values then nothing happens.
 
         :param index_doc: the dict to be indexed
         '''
@@ -86,6 +96,12 @@ class DatastoreIndex(Index):
             yield version, index_doc
 
     def get_index_create_body(self):
+        '''
+        Returns a dict that should be used to define the index in elasticsearch. This should be
+        built off of the default eevee one unless you super know what you're doing.
+
+        :return: a dict
+        '''
         body = super(DatastoreIndex, self).get_index_create_body()
         body.setdefault(u'mappings', {}).setdefault(DOC_TYPE, {}).setdefault(
             u'properties', {}).update({
@@ -123,17 +139,25 @@ class ResourceIndexRequest(object):
 
 
 def index_resource(request):
+    '''
+    Indexes a resource's data from MongoDB into Elasticsearch.
+
+    :param request: the request
+    :return: True if the index took place successfully, False if not
+    '''
     resource_id = request.resource[u'id']
 
     log.info(u'Starting index of {}: {} > versions <= {}'.format(resource_id, request.lower_version,
                                                                  request.upper_version))
 
+    # create an index feeder, this gets the records out of MongoDB and presents them for indexing
     feeder = SimpleIndexFeeder(utils.CONFIG, resource_id, request.lower_version,
                                request.upper_version)
+    # create the index object which will process the documents from the feeder
     index = DatastoreIndex(utils.CONFIG, resource_id, request.upper_version,
                            latitude_field=request.resource.get(u'_latitude_field', None),
                            longitude_field=request.resource.get(u'_longitude_field', None))
-    # then index the data
+    # create an indexer object to do the indexing
     indexer = Indexer(request.upper_version, utils.CONFIG, [(feeder, index)])
 
     # create a stats entry so that progress can be tracked
@@ -143,15 +167,19 @@ def index_resource(request):
     stats.monitor_indexing(stats_id, indexer)
 
     try:
+        # actually do the index, getting back some stats
         indexing_stats = indexer.index()
     except Exception as e:
+        # if there's a problem, mark it in the stats
         stats.mark_error(stats_id, e)
         log.exception(u'An error occurred during indexing of {}'.format(resource_id))
         return False
 
+    # otherwise, we're all good, let the plugins do stuff if they want
     for plugin in plugins.PluginImplementations(IVersionedDatastore):
         try:
             plugin.datastore_after_indexing(request, indexing_stats, stats_id)
         except Exception as e:
             log.error(u'Error during after indexing hook handling in plugin {}'.format(plugin), e)
+    # done, return True to indicate all went successfully
     return True

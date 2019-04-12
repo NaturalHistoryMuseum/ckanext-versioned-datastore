@@ -11,13 +11,18 @@ from ckan import plugins, model
 from ckan.lib.navl import dictization_functions
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 
+
+# if the resource has been side loaded into the datastore then this should be its URL
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
+# the formats we support for ingestion
 CSV_FORMATS = [u'csv', u'application/csv']
 TSV_FORMATS = [u'tsv']
 XLS_FORMATS = [u'xls', u'application/vnd.ms-excel']
 XLSX_FORMATS = [u'xlsx', u'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
 ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
 
+# global variables to hold the current eevee config (not the CKAN one) and the current eevee
+# searcher object
 CONFIG = None
 SEARCHER = None
 

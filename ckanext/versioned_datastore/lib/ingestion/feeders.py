@@ -1,3 +1,4 @@
+import itertools
 import logging
 import numbers
 from contextlib import closing
@@ -81,7 +82,9 @@ class URLDatastoreFeeder(DatastoreFeeder):
     def __init__(self, version, resource_id, id_offset, url, api_key, is_upload):
         '''
         :param url: the url where the data resides
-        :param api_key: the api key of the user who requested the ingestion, can be None
+        :param api_key: the API key of a user who can read the data, if indeed the data needs an API
+                        key to get it. This is needed when the URL is the CKAN resource download URL
+                        of a private resource. Can be None to indicate no API key is required
         :param is_upload: whether the URL we're going to read from is a CKAN upload URL
         '''
         super(URLDatastoreFeeder, self).__init__(version, resource_id, id_offset)
@@ -122,16 +125,48 @@ class APIDatastoreFeeder(DatastoreFeeder):
 
     @property
     def source(self):
+        '''
+        Where the data we've read came from. We just return the string "API".
+
+        :return: always "API"
+        '''
         return u'API'
 
     def records(self):
-        for number, data in enumerate(self.data, start=1):
-            yield self.create_record(number, data)
+        '''
+        Returns a generator of DatastoreRecord objects. Given that the data is already a list of
+        dicts, we just iterate through them directly.
+
+        :return: a generator which yields DatastoreRecord objects
+        '''
+        return itertools.starmap(self.create_record, enumerate(self.data, start=1))
 
 
 class SVFeeder(URLDatastoreFeeder):
+    '''
+    Separated Value feeder, this feeder reads data from a URL and then parses it using the given
+    dialect with the unicodecsv DictReader.
+    '''
 
     def __init__(self, version, resource_id, id_offset, url, api_key, is_upload, dialect):
+        '''
+        :param version: the version of the data to be fed
+        :param resource_id: the resource id of the data's resource
+        :param id_offset: the id offset value. This is used if the data to be fed should be added to
+                          the existing data in the resource, i.e. the ids already used should be
+                          accounted for. For example, say in version 1, 5 records exist with ids
+                          1-5. In version 2, another 3 records are added that shouldn't replace the
+                          existing ones, this id offset value is used to start the ids at the given
+                          value, for example in this case, 6.
+        :param url: the URL to read the data from. This URL will be hit twice, firstly to work out
+                    the encoding of the data and then to read it.
+        :param api_key: the API key of a user who can read the data, if indeed the data needs an API
+                        key to get it. This is needed when the URL is the CKAN resource download URL
+                        of a private resource. Can be None to indicate no API key is required.
+        :param is_upload: whether the URL we're going to read from is a CKAN upload URL
+        :param dialect: the dialect to pass to the csv.DictReader init function as the dialect
+                        parameter
+        '''
         super(SVFeeder, self).__init__(version, resource_id, id_offset, url, api_key, is_upload)
         self.dialect = dialect
 
@@ -176,7 +211,9 @@ class SVFeeder(URLDatastoreFeeder):
             response.raise_for_status()
             reader = csv.DictReader(response.iter_lines(), dialect=self.dialect, encoding=encoding)
 
-            # if there are columns, use them, then we are sure to get the right order
+            # if there are columns, use them, then we are sure to get the right order. create_record
+            # will call update_columns too but if we get there first the calls won't do anything as
+            # all the columns it attempts to add will have already been seen
             if reader.unicode_fieldnames:
                 self.update_columns(reader.unicode_fieldnames)
 
@@ -211,6 +248,13 @@ class XLSFeeder(URLDatastoreFeeder):
     '''
 
     def records(self):
+        '''
+        Generator of records from (old) excel files. This function reads the excel file in its
+        entirety at the start of processing and can't stream it because (old) excel files can't be
+        streamed :(
+
+        :return: a generator of records
+        '''
         # download the url into a temporary file and then read from that. This is necessary as xls
         # files can't be streamed, they have to be completed loaded into memory
         with download_to_temp_file(self.url, self.headers) as temp:
@@ -247,6 +291,13 @@ class XLSXFeeder(URLDatastoreFeeder):
     '''
 
     def records(self):
+        '''
+        Generator of records from (new) excel files. This function reads the excel file in its
+        entirety at the start of processing and can't stream it because (new) excel files can't be
+        streamed :(
+
+        :return: a generator of records
+        '''
         # download the url into a temporary file and then read from that. This is necessary as xlsx
         # files can't be streamed, they have to be completed loaded into memory
         with download_to_temp_file(self.url, self.headers) as temp:

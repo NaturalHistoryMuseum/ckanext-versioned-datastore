@@ -11,6 +11,10 @@ class ResourceDataController(base.BaseController):
     path = u'ckanext.versioned_datastore.controllers.datastore:ResourceDataController'
 
     def resource_data(self, package_name, resource_id):
+        '''
+        Produces the DataStore page on a resource. This page contains details of the resource's
+        ingestion and indexing.
+        '''
         try:
             toolkit.c.pkg_dict = toolkit.get_action(u'package_show')(None, {u'id': package_name})
             toolkit.c.resource = toolkit.get_action(u'resource_show')(None, {u'id': resource_id})

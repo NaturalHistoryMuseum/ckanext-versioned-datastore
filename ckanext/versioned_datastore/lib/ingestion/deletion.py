@@ -16,20 +16,41 @@ class DeletionRecord(BaseRecord):
     '''
 
     def __init__(self, version, resource_id, record_id):
+        '''
+        :param version: the version of this operation
+        :param resource_id: the resource id of the resource we're deleting from
+        :param record_id: the record to be deleted
+        '''
         super(DeletionRecord, self).__init__(version)
         self.resource_id = resource_id
         self.record_id = record_id
 
     def convert(self):
+        '''
+        Converts the data into the form to be stored in mongo under the "data" field. As this is a
+        deletion record the return is an empty dict to signify the deletion.
+
+        :return: an empty dict
+        '''
         # to signal a deletion we're using an empty dict
         return {}
 
     @property
     def id(self):
+        '''
+        Returns the id of the record to delete.
+
+        :return: the record id
+        '''
         return self.record_id
 
     @property
     def mongo_collection(self):
+        '''
+        Returns the name of the collection in mongo that this record exists in (if indeed it does).
+
+        :return: the resource id which is used as the collection name too
+        '''
         return self.resource_id
 
 
@@ -39,14 +60,29 @@ class DeletionFeeder(IngestionFeeder):
     '''
 
     def __init__(self, version, resource_id):
+        '''
+        :param version: the version of data to be fed
+        :param resource_id: the resource id for which the data applies
+        '''
         super(DeletionFeeder, self).__init__(version)
         self.resource_id = resource_id
 
     @property
     def source(self):
+        '''
+        This is used for stats/logging and as it the name of the source of that data, in this case
+        we just return "deletion" always because deletions are a special case.
+
+        :return: "deletion", always
+        '''
         return u'deletion'
 
     def records(self):
+        '''
+        Generator function which yields DeletionRecord objects.
+
+        :return: yields DeletionRecords
+        '''
         with get_mongo(utils.CONFIG, collection=self.resource_id) as mongo:
             # loop through records in mongo
             for record in mongo.find(projection=[u'id', u'data']):

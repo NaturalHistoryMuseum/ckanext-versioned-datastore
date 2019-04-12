@@ -21,6 +21,7 @@ from ckanext.versioned_datastore.lib.utils import CSV_FORMATS, TSV_FORMATS, \
 log = logging.getLogger(__name__)
 
 
+# the available formats and feeders
 FEEDER_FORMAT_MAP = dict(
     itertools.chain(
         zip(CSV_FORMATS, itertools.repeat(CSVFeeder)),
@@ -34,8 +35,9 @@ FEEDER_FORMAT_MAP = dict(
 def get_feeder(config, version, resource, data=None, api_key=None):
     '''
     Returns the correct feeder object for the given resource. The feeder object is created based on
-    the format property on the resource, not on the URL. If no feeder can be matched to the resource
-    then None is returned.
+    the format property on the resource, not on the URL - i.e. if the URL ends in .csv we don't
+    match it to the CSVFeeder, we only match to the CSV feeder if the format is set on the resource.
+    If no feeder can be matched to the resource then None is returned.
 
     :param config: the config object
     :param version: the version of the resource
@@ -56,14 +58,16 @@ def get_feeder(config, version, resource, data=None, api_key=None):
     if data is not None:
         # if there is data provided, use the API feeder
         return APIDatastoreFeeder(version, resource_id, id_offset, data)
-    elif not is_datastore_only_resource(resource[u'url']):
+
+    # we don't work on datastore only resources as these are side loaded to avoid this process
+    if not is_datastore_only_resource(resource[u'url']):
         # otherwise we need to use the URL on the resource check to see if the format is set and
         # isn't empty/None (hence the use of get)
         if resource.get(u'format', False):
             # get the format and convert it to lowercase
             resource_format = resource[u'format'].lower()
             if resource_format in FEEDER_FORMAT_MAP:
-                is_upload = resource[u'url_type'] == u'upload'
+                is_upload = (resource[u'url_type'] == u'upload')
                 return FEEDER_FORMAT_MAP[resource_format](version, resource_id, id_offset,
                                                           resource[u'url'], api_key, is_upload)
 
@@ -167,6 +171,19 @@ class UnchangedRecordTracker(object):
 
 
 def ingest_resource(version, start, config, resource, data, replace, api_key):
+    '''
+    Ingest a new version of a resource's data.
+
+    :param version: the new version
+    :param start: the start time of the ingestion
+    :param config: the eevee config object
+    :param resource: the resource dict
+    :param data: the data to ingest (can be None if not using the API)
+    :param replace: boolean indicating whether to replace the existing data or not
+    :param api_key: the API key if the resource's CKAN URL is to be used as the source and the
+                    resource is private
+    :return: True if the ingest was successful, False if not
+    '''
     # cache the resource id as we use it a few times
     resource_id = resource[u'id']
 

@@ -4,6 +4,8 @@ from sqlalchemy import Column, Table, BigInteger, UnicodeText
 
 from ckan.model import meta, DomainObject
 
+# this table stores general details about each version of each resource. Currently it only stores
+# the column names and order.
 datastore_resource_details_table = Table(
     u'versioned_datastore_resource_details',
     meta.metadata,

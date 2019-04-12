@@ -3,6 +3,10 @@ from sqlalchemy import Column, DateTime, Float, Boolean, Table, BigInteger, Unic
 from ckan.model import meta, DomainObject
 from ckan.model.types import JsonDictType
 
+
+# this table stores general statistics about the ingest and index events that occur on resources. It
+# is also used to figure out what versions have been ingested and to a certain extent indexed and
+# it's therefore pretty important (it is used to avoid ingesting older versions for example).
 import_stats_table = Table(
     u'versioned_datastore_import_stats',
     meta.metadata,
