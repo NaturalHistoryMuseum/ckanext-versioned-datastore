@@ -63,7 +63,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
 
     # IResourceController
     def before_show(self, resource_dict):
-        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict['id'])
+        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict[u'id'])
         return resource_dict
 
     # IResourceUrlChange and IDomainObjectModification

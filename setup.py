@@ -1,27 +1,27 @@
 from setuptools import setup, find_packages
 
-version = '0.1'
+version = u'0.1'
 
 setup(
-    name='ckanext-versioned-datastore',
+    name=u'ckanext-versioned-datastore',
     version=version,
-    description="",
-    long_description='''
+    description=u"",
+    long_description=u'''
     ''',
     classifiers=[],
-    keywords='',
-    author=['Josh Humphries'],
-    author_email='data@nhm.ac.uk',
-    url='',
-    license='',
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    namespace_packages=['ckanext', 'ckanext.versioned_datastore'],
+    keywords=u'',
+    author=[u'Josh Humphries'],
+    author_email=u'data@nhm.ac.uk',
+    url=u'',
+    license=u'',
+    packages=find_packages(exclude=[u'ez_setup', u'examples', u'tests']),
+    namespace_packages=[u'ckanext', u'ckanext.versioned_datastore'],
     include_package_data=True,
     zip_safe=False,
     # apparently for CKAN extensions all dependencies should be in the requirements.txt
     # and none should be in here...
     install_requires=[],
-    entry_points='''
+    entry_points=u'''
         [ckan.plugins]
         versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
         [paste.paster_command]
