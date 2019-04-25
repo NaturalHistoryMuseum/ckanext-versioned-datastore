@@ -2,8 +2,7 @@ import logging
 import time
 from datetime import datetime
 
-from ckan import logic
-from ckan.logic import NotFound
+from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
 from ckanext.versioned_datastore.lib.ingestion import deletion
@@ -46,8 +45,8 @@ def get_resource(resource_id, attempts=10, backoff=1):
     while True:
         try:
             # retrieve the resource
-            return logic.get_action(u'resource_show')({}, {u'id': resource_id})
-        except NotFound:
+            return toolkit.get_action(u'resource_show')({}, {u'id': resource_id})
+        except toolkit.ObjectNotFound:
             attempts -= 1
             if attempts < 0:
                 raise

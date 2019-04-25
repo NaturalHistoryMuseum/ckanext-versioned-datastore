@@ -1,11 +1,11 @@
-from ckan import logic, model, plugins
+from ckan import model
+from ckan.plugins import toolkit
 
-from ckan.lib.cli import CkanCommand
 from ckanext.versioned_datastore.model.details import datastore_resource_details_table
 from ckanext.versioned_datastore.model.stats import import_stats_table
 
 
-class VersionedDatastoreCommands(CkanCommand):
+class VersionedDatastoreCommands(toolkit.CkanCommand):
     '''
     Perform various tasks on the versioned datastore.
 
@@ -24,7 +24,7 @@ class VersionedDatastoreCommands(CkanCommand):
     usage = __doc__
 
     def __init__(self, *args, **kwargs):
-        super(CkanCommand, self).__init__(*args, **kwargs)
+        super(VersionedDatastoreCommands, self).__init__(*args, **kwargs)
         # map of the available commands to the functions that perform them
         self.vds_commands = {
             u'initdb': self.initdb,
@@ -70,7 +70,7 @@ class VersionedDatastoreCommands(CkanCommand):
             # resources in the system
             data_dict = {u'query': u'name:', u'offset': 0, u'limit': 100}
             while True:
-                result = logic.get_action(u'resource_search')(context, data_dict)
+                result = toolkit.get_action(u'resource_search')(context, data_dict)
                 if len(result[u'results']) > 0:
                     resource_ids.update(resource[u'id'] for resource in result[u'results'])
                     data_dict[u'offset'] += data_dict[u'limit']
@@ -81,8 +81,8 @@ class VersionedDatastoreCommands(CkanCommand):
 
         for resource_id in resource_ids:
             try:
-                result = logic.get_action(u'datastore_reindex')(context,
+                result = toolkit.get_action(u'datastore_reindex')(context,
                                                                 {u'resource_id': resource_id})
                 print u'Queued reindex of {} as job {}'.format(resource_id, result[u'job_id'])
-            except plugins.toolkit.ValidationError as e:
+            except toolkit.ValidationError as e:
                 print u'Failed to reindex {} due to validation error: {}'.format(resource_id, e)

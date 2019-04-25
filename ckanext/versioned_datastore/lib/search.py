@@ -2,7 +2,7 @@ import copy
 
 from elasticsearch_dsl import Search
 
-from ckan import plugins
+from ckan.plugins import PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.geo import add_geo_search
 from ckanext.versioned_datastore.lib.utils import validate, prefix_field
@@ -59,7 +59,7 @@ def create_search(context, data_dict):
     data_dict = validate(context, data_dict, datastore_search_schema())
 
     # allow other extensions implementing our interface to modify the data_dict
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+    for plugin in PluginImplementations(IVersionedDatastore):
         data_dict = plugin.datastore_modify_data_dict(context, data_dict)
 
     # extract the version
@@ -69,7 +69,7 @@ def create_search(context, data_dict):
     search = build_search_object(**data_dict)
 
     # allow other extensions implementing our interface to modify the search object
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+    for plugin in PluginImplementations(IVersionedDatastore):
         search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
 
     return original_data_dict, data_dict, version, search

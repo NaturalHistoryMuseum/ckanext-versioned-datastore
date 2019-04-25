@@ -1,4 +1,4 @@
-from ckan import logic, plugins
+from ckan.plugins import toolkit
 
 
 def check(access, context, data_dict):
@@ -17,19 +17,19 @@ def check(access, context, data_dict):
     data_dict_copy[u'id'] = data_dict[u'resource_id']
 
     user = context.get(u'user')
-    authorized = logic.check_access(access, context, data_dict_copy)
+    authorized = toolkit.check_access(access, context, data_dict_copy)
 
     if authorized:
         return {u'success': True}
     else:
         return {
             u'success': False,
-            u'msg': plugins.toolkit._(u'User {} not authorized to alter resource {}'.format(
+            u'msg': toolkit._(u'User {} not authorized to alter resource {}'.format(
                 str(user), data_dict_copy[u'id']))
         }
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_search(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
@@ -46,17 +46,17 @@ def datastore_delete(context, data_dict):
     return check(u'resource_update', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_get_record_versions(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_get_resource_versions(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_autocomplete(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
@@ -65,16 +65,16 @@ def datastore_reindex(context, data_dict):
     return check(u'resource_update', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_query_extent(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_get_rounded_version(context, data_dict):
     return check(u'resource_show', context, data_dict)
 
 
-@plugins.toolkit.auth_allow_anonymous_access
+@toolkit.auth_allow_anonymous_access
 def datastore_search_raw(context, data_dict):
     return check(u'resource_show', context, data_dict)
