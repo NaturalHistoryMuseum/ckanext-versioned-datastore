@@ -1,13 +1,13 @@
 import rq
 
-from ckan import plugins
+from ckan.plugins import toolkit
 from ckanext.rq import jobs
 from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest, \
     ResourceDeletionRequest, delete_resource_data
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource, ResourceIndexRequest
 
 try:
-    enqueue_job = plugins.toolkit.enqueue_job
+    enqueue_job = toolkit.enqueue_job
 except AttributeError:
     from ckanext.rq.jobs import enqueue as enqueue_job
 

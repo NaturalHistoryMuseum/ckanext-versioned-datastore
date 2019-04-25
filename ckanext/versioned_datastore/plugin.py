@@ -3,7 +3,8 @@ import logging
 from ckanext.versioned_datastore.lib import utils
 from eevee.utils import to_timestamp
 
-from ckan import plugins, model, logic
+from ckan import model
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
 from ckan.model import DomainObjectOperation
 from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
@@ -12,16 +13,16 @@ from ckanext.versioned_datastore.logic import action, auth
 log = logging.getLogger(__name__)
 
 
-class VersionedSearchPlugin(plugins.SingletonPlugin):
-    plugins.implements(plugins.IActions)
-    plugins.implements(plugins.IAuthFunctions)
-    plugins.implements(plugins.ITemplateHelpers, inherit=True)
-    plugins.implements(plugins.IResourceController)
-    plugins.implements(plugins.IResourceUrlChange)
-    plugins.implements(plugins.IDomainObjectModification, inherit=True)
-    plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IConfigurable)
-    plugins.implements(plugins.IRoutes, inherit=True)
+class VersionedSearchPlugin(SingletonPlugin):
+    implements(interfaces.IActions)
+    implements(interfaces.IAuthFunctions)
+    implements(interfaces.ITemplateHelpers, inherit=True)
+    implements(interfaces.IResourceController)
+    implements(interfaces.IResourceUrlChange)
+    implements(interfaces.IDomainObjectModification, inherit=True)
+    implements(interfaces.IConfigurer)
+    implements(interfaces.IConfigurable)
+    implements(interfaces.IRoutes, inherit=True)
 
     # IActions
     def get_actions(self):
@@ -63,7 +64,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
 
     # IResourceController
     def before_show(self, resource_dict):
-        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict['id'])
+        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict[u'id'])
         return resource_dict
 
     # IResourceUrlChange and IDomainObjectModification
@@ -101,12 +102,12 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                 # one and let the action default it
                 if entity.last_modified is not None:
                     data_dict[u'version'] = to_timestamp(entity.last_modified)
-                logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
+                toolkit.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
             # either the resource is new or its URL has changed
             elif operation == DomainObjectOperation.new or operation is None:
                 try:
                     # trigger the datastore create action to set things up
-                    created = logic.get_action(u'datastore_create')(context,
+                    created = toolkit.get_action(u'datastore_create')(context,
                                                                     {u'resource_id': entity.id})
                     if created:
                         # if the datastore index for this resource was created or already existed
@@ -121,8 +122,8 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
                         # one and let the action default it
                         if entity.last_modified is not None:
                             data_dict[u'version'] = to_timestamp(entity.last_modified)
-                        logic.get_action(u'datastore_upsert')(context, data_dict)
-                except plugins.toolkit.ValidationError, e:
+                        toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                except toolkit.ValidationError, e:
                     # if anything went wrong we want to catch error instead of raising otherwise
                     # resource save will fail with a 500
                     log.critical(e)
@@ -131,7 +132,7 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
     # IConfigurer
     def update_config(self, config):
         # add templates
-        plugins.toolkit.add_template_directory(config, u'theme/templates')
+        toolkit.add_template_directory(config, u'theme/templates')
 
     # IRoutes
     def before_map(self, map):

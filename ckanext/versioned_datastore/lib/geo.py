@@ -2,7 +2,7 @@ import json
 
 from elasticsearch_dsl import Q
 
-from ckan import plugins
+from ckan.plugins import toolkit
 
 # the geo field is always meta.geo
 FIELD = u'meta.geo'
@@ -49,7 +49,7 @@ def add_multipolygon_filter(search, coordinates):
     for group in coordinates:
         points = group[0]
         if len(points) < 3:
-            raise plugins.toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or '
+            raise toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or '
                                                   u'more')
 
         options = {
@@ -108,15 +108,15 @@ def add_geo_search(search, geo_filter):
         # fetch the function which will build the query into the search object
         add_function, required_params = QUERY_TYPE_MAP[geo_filter[u'type']]
     except TypeError or ValueError:
-        raise plugins.toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
+        raise toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
     except KeyError:
-        raise plugins.toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
+        raise toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
 
     try:
         # try and pull out the required parameters for each type
         parameters = {param: geo_filter[param] for param in required_params}
     except KeyError:
-        raise plugins.toolkit.ValidationError(u'Missing parameters, must include {}'
+        raise toolkit.ValidationError(u'Missing parameters, must include {}'
                                               .format(u', '.join(required_params)))
 
     # call the function which will update the search object to include the geo filters and then

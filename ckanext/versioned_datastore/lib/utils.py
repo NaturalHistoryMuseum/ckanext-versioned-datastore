@@ -7,8 +7,8 @@ from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 from elasticsearch_dsl import Search, MultiSearch
 
-from ckan import plugins, model
-from ckan.lib.navl import dictization_functions
+from ckan import model
+from ckan.plugins import toolkit, PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 
 
@@ -73,9 +73,9 @@ def validate(context, data_dict, default_schema):
     :param default_schema: the default schema to use if the context doesn't have one
     '''
     schema = context.get(u'schema', default_schema)
-    data_dict, errors = dictization_functions.validate(data_dict, schema, context)
+    data_dict, errors = toolkit.dictization_functions.validate(data_dict, schema, context)
     if errors:
-        raise plugins.toolkit.ValidationError(errors)
+        raise toolkit.ValidationError(errors)
     return data_dict
 
 
@@ -392,5 +392,5 @@ def is_resource_read_only(resource_id):
 
     :return: True if the resource should be treated as read only, False if not
     '''
-    implementations = plugins.PluginImplementations(IVersionedDatastore)
+    implementations = PluginImplementations(IVersionedDatastore)
     return any(plugin.datastore_is_read_only_resource(resource_id) for plugin in implementations)

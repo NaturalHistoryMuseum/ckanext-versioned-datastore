@@ -1,7 +1,7 @@
 import copy
 import logging
 
-from ckan import plugins
+from ckan.plugins import PluginImplementations
 from eevee.indexing.feeders import SimpleIndexFeeder
 from eevee.indexing.indexers import Indexer
 from eevee.indexing.indexes import Index
@@ -89,7 +89,7 @@ class DatastoreIndex(Index):
             self.add_geo_data(index_doc)
 
             # allow other extensions implementing our interface to modify the index doc
-            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            for plugin in PluginImplementations(IVersionedDatastore):
                 index_doc = plugin.datastore_modify_index_doc(self.unprefixed_name, index_doc)
 
             # yield it
@@ -176,7 +176,7 @@ def index_resource(request):
         return False
 
     # otherwise, we're all good, let the plugins do stuff if they want
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+    for plugin in PluginImplementations(IVersionedDatastore):
         try:
             plugin.datastore_after_indexing(request, indexing_stats, stats_id)
         except Exception as e:
