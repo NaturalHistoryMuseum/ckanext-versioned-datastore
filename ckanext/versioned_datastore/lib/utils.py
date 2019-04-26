@@ -73,7 +73,7 @@ def validate(context, data_dict, default_schema):
     :param default_schema: the default schema to use if the context doesn't have one
     '''
     schema = context.get(u'schema', default_schema)
-    data_dict, errors = toolkit.dictization_functions.validate(data_dict, schema, context)
+    data_dict, errors = toolkit.navl_validate(data_dict, schema, context)
     if errors:
         raise toolkit.ValidationError(errors)
     return data_dict
