@@ -15,10 +15,9 @@ log = logging.getLogger(__name__)
 class VersionedSearchPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
-    plugins.implements(plugins.ITemplateHelpers, inherit=True)
+    plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IResourceController)
-    plugins.implements(plugins.IResourceUrlChange)
-    plugins.implements(plugins.IDomainObjectModification, inherit=True)
+    plugins.implements(plugins.IDomainObjectModification)
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IRoutes, inherit=True)
@@ -66,67 +65,50 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
         resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict['id'])
         return resource_dict
 
-    # IResourceUrlChange and IDomainObjectModification
-    def notify(self, entity, operation=None):
+    # IDomainObjectModification
+    def notify(self, entity, operation):
         '''
-        Respond to changes to model objects and resource URLs. We use this hook to ensure any new
-        data is imported into the versioned datastore and to make sure the privacy settings on the
-        data are up to date. We're only interested in:
+        Respond to changes to model objects. We use this hook to ensure any new data is imported
+        into the versioned datastore and to make sure the privacy settings on the data are up to
+        date. We're only interested in:
 
             - resource deletions
             - new resources
-            - resources that have had their resource URL changed (i.e. have a new version of the
-              data)
+            - resources that have had changes to their URL
             - packages that have changed
 
         :param entity: the entity that has changed
-        :param operation: the operation undertaken on the object. If the function is being called
-                          from IDomainObjectModification this will be one of the options from the
-                          DomainObjectOperation enum, otherwise it will be None as the
-                          IResourceUrlChnage version of the notify hook doesn't pass an operation,
-                          just the entity that has changed.
+        :param operation: the operation undertaken on the object. This will be one of the options
+                          from the DomainObjectOperation enum.
         '''
-        # if a package is the target entity and it's been changed
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
+            # if a package is the target entity and it's been changed ensure the privacy is applied
+            # correctly to it's resource indexes
             utils.update_resources_privacy(entity)
-        # if a resource is the target entity
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
-            # the resource has been or is now deleted, make sure the datastore is updated
-            if operation == DomainObjectOperation.changed and entity.state == u'deleted':
-                data_dict = {
-                    u'resource_id': entity.id,
-                }
-                # use the entities' last modified data if there is one, otherwise don't pass
-                # one and let the action default it
-                if entity.last_modified is not None:
-                    data_dict[u'version'] = to_timestamp(entity.last_modified)
+            data_dict = {u'resource_id': entity.id}
+            do_upsert = False
+
+            # use the entities' last modified data if there is one, otherwise don't pass
+            # one and let the action default it
+            last_modifed = getattr(entity, u'last_modified', None)
+            if last_modifed is not None:
+                data_dict[u'version'] = to_timestamp(last_modifed)
+
+            if operation == DomainObjectOperation.deleted:
                 logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
-            # either the resource is new or its URL has changed
-            elif operation == DomainObjectOperation.new or operation is None:
-                try:
-                    # trigger the datastore create action to set things up
-                    created = logic.get_action(u'datastore_create')(context,
-                                                                    {u'resource_id': entity.id})
-                    if created:
-                        # if the datastore index for this resource was created or already existed
-                        # then load the data
-                        data_dict = {
-                            u'resource_id': entity.id,
-                            # use replace True to replace the existing data (this is what users
-                            # would expect)
-                            u'replace': True,
-                        }
-                        # use the entities' last modified data if there is one, otherwise don't pass
-                        # one and let the action default it
-                        if entity.last_modified is not None:
-                            data_dict[u'version'] = to_timestamp(entity.last_modified)
-                        logic.get_action(u'datastore_upsert')(context, data_dict)
-                except plugins.toolkit.ValidationError, e:
-                    # if anything went wrong we want to catch error instead of raising otherwise
-                    # resource save will fail with a 500
-                    log.critical(e)
-                    pass
+            elif operation == DomainObjectOperation.new:
+                # datastore_create returns True when the resource looks like it's ingestible
+                do_upsert = logic.get_action(u'datastore_create')(context, data_dict)
+            elif operation == DomainObjectOperation.changed:
+                # only do the upsert on changed events if the URL has changed
+                do_upsert = getattr(entity, u'url_changed', False)
+
+            if do_upsert:
+                # use replace True to replace the existing data (this is what users would expect)
+                data_dict[u'replace'] = True
+                logic.get_action(u'datastore_upsert')(context, data_dict)
 
     # IConfigurer
     def update_config(self, config):
