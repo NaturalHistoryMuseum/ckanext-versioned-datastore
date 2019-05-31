@@ -2,6 +2,7 @@ import tempfile
 from contextlib import contextmanager, closing
 
 import requests
+from contextlib2 import suppress
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
@@ -10,6 +11,7 @@ from elasticsearch_dsl import Search, MultiSearch
 from ckan import plugins, model
 from ckan.lib.navl import dictization_functions
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
+from ckanext.versioned_datastore.lib.details import get_details
 
 
 # if the resource has been side loaded into the datastore then this should be its URL
@@ -168,6 +170,10 @@ def get_fields(resource_id, version=None):
     the '.number' subfield - if the number is the same as the normal field count then the field is a
     number type, if not it's a string.
 
+    The fields are returned in either alphabetical order, or if we have the ingestion details for
+    the resource at the required version then the order of the fields will match the order of the
+    fields in the original source.
+
     :param resource_id: the resource's id
     :param version: the version of the data we're querying (default: None, which means latest)
     :return: a list of dicts containing the field data
@@ -193,11 +199,18 @@ def get_fields(resource_id, version=None):
     if rounded_version is None:
         return mapping, fields
 
-    # we're only going to return the details of the data fields, collect up these up and sort
-    # them
-    field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
-    # ignore the _id field, we already know what its deal is
-    field_names.remove(u'_id')
+    # retrieve the ingestion event object for this resource version if there is one
+    details = get_details(resource_id, rounded_version)
+    if details:
+        # use the column names from the details, these will be in the order they were when ingested
+        field_names = details.get_columns()
+    else:
+        # no details for whatever reason, just sort the names to ensure consistency of presentation
+        field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
+
+    with suppress(ValueError):
+        # ignore the _id field, we already know what its deal is
+        field_names.remove(u'_id')
 
     # find out which fields exist in this version and how many values each has
     search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
