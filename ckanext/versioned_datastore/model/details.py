@@ -25,8 +25,18 @@ class DatastoreResourceDetails(DomainObject):
     Object for holding datastore resource details, currently just the columns at each version.
     '''
 
-    def get_columns(self):
-        return json.loads(self.columns)
+    def get_columns(self, validate=True):
+        '''
+        Retrieve the columns contained in this resource's version.
+
+        :param validate: if True (the default) then fullstops are replaced with underscores before
+                         returning the list of columns
+        :return: a list of column names in the order they were in the original data source
+        '''
+        columns = json.loads(self.columns)
+        if validate:
+            return [column.replace(u'.', u'_') for column in columns]
+        return columns
 
 
 meta.mapper(DatastoreResourceDetails, datastore_resource_details_table)

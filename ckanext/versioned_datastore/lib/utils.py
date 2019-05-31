@@ -10,7 +10,7 @@ from elasticsearch_dsl import Search, MultiSearch
 from ckan import plugins, model
 from ckan.lib.navl import dictization_functions
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-
+from ckanext.versioned_datastore.lib.details import get_all_details
 
 # if the resource has been side loaded into the datastore then this should be its URL
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
@@ -168,6 +168,10 @@ def get_fields(resource_id, version=None):
     the '.number' subfield - if the number is the same as the normal field count then the field is a
     number type, if not it's a string.
 
+    The fields are returned in either alphabetical order, or if we have the ingestion details for
+    the resource at the required version then the order of the fields will match the order of the
+    fields in the original source.
+
     :param resource_id: the resource's id
     :param version: the version of the data we're querying (default: None, which means latest)
     :return: a list of dicts containing the field data
@@ -193,31 +197,47 @@ def get_fields(resource_id, version=None):
     if rounded_version is None:
         return mapping, fields
 
-    # we're only going to return the details of the data fields, collect up these up and sort
-    # them
-    field_names = sorted(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
-    # ignore the _id field, we already know what its deal is
-    field_names.remove(u'_id')
+    # retrieve all the resource's details up to the target version to get the column orders at each
+    # version as they were in the ingestion sources for each version
+    all_details = get_all_details(resource_id, up_to_version=version)
+    # this set is used to avoid duplicating fields, we preload it with the _id column because we
+    # want to ignore that (it's already in the fields list defined above)
+    seen_fields = {u'_id'}
+    field_names = []
 
-    # find out which fields exist in this version and how many values each has
-    search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
-    for field in field_names:
-        # create a search which finds the documents that have a value for the given field at the
-        # rounded version. We're only interested in the counts though so set size to 0
-        search = search.add(Search().extra(size=0)
-                            .filter(u'exists', **{u'field': prefix_field(field)})
-                            .filter(u'term', **{u'meta.versions': rounded_version}))
+    if all_details:
+        # the all_details variable is an OrderedDict so we can iterate over it to get the details in
+        # ascending version order
+        for details in all_details.values():
+            columns = [column for column in details.get_columns() if column not in seen_fields]
+            field_names.extend(columns)
+            seen_fields.update(columns)
 
-    # run the search and get the response
-    responses = search.execute()
-    for i, response in enumerate(responses):
-        # if the field has documents then it should be included in the fields list
-        if response.hits.total > 0:
-            fields.append({
-                u'id': field_names[i],
-                # by default everything is a string
-                u'type': u'string',
-            })
+    mapped_fields = mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties']
+    # add any unseen mapped fields to the list of names. If we have a details object for each
+    # version this shouldn't add any additional fields and if not it ensures we don't miss any
+    field_names.extend(field for field in sorted(mapped_fields) if field not in seen_fields)
+
+    if field_names:
+        # find out which fields exist in this version and how many values each has
+        search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
+        for field in field_names:
+            # create a search which finds the documents that have a value for the given field at the
+            # rounded version. We're only interested in the counts though so set size to 0
+            search = search.add(Search().extra(size=0)
+                                .filter(u'exists', **{u'field': prefix_field(field)})
+                                .filter(u'term', **{u'meta.versions': rounded_version}))
+
+        # run the search and get the response
+        responses = search.execute()
+        for i, response in enumerate(responses):
+            # if the field has documents then it should be included in the fields list
+            if response.hits.total > 0:
+                fields.append({
+                    u'id': field_names[i],
+                    # by default everything is a string
+                    u'type': u'string',
+                })
 
     # stick the result in the cache for next time
     field_cache[cache_key] = (mapping, fields)
