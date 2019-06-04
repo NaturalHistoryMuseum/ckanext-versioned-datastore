@@ -17,7 +17,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IActions)
     implements(interfaces.IAuthFunctions)
     implements(interfaces.ITemplateHelpers, inherit=True)
-    implements(interfaces.IResourceController)
+    implements(interfaces.IResourceController, inherit=True)
     implements(interfaces.IResourceUrlChange)
     implements(interfaces.IDomainObjectModification, inherit=True)
     implements(interfaces.IConfigurer)
