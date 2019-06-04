@@ -69,7 +69,7 @@ class DatastoreFeeder(IngestionFeeder):
         # if the record has an _id column then we use it, if it doesn't then we just use the index
         # of the record in the source plus the offset value. This accommodates the simple scenario
         # where the source data dicts don't have ids and the user just wants to add to the existing
-        record_id = data.pop(u'_id', self.id_offset + number)
+        record_id = int(data.pop(u'_id', self.id_offset + number))
         return DatastoreRecord(self.version, record_id, data, self.resource_id)
 
 
