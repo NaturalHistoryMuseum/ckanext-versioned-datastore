@@ -9,7 +9,7 @@
 
         <form method="post" action="{{ reindex_action }}">
             <button class="btn btn-primary" name="save" type="submit">
-                <i class="icon-cloud-upload"></i> {{ _('Reindex DataStore data') }}
+                <i class="fas fa-cloud-upload-alt"></i> {{ _('Reindex DataStore data') }}
             </button>
         </form>
     {% endblock %}
@@ -30,18 +30,18 @@
                 <tr>
                     <td>
                         {% if stat.in_progress %}
-                            <i class="icon icon-spinner"></i>
+                            <i class="fas fa-spinner"></i>
                         {% elif stat.error %}
-                            <i class="icon icon-exclamation"></i>
+                            <i class="fas fa-exclamation"></i>
                         {% else %}
-                            <i class="icon icon-ok"></i>
+                            <i class="fas fa-check"></i>
                         {% endif %}
                     </td>
                     <td>
                         {% if stat.type == 'ingest' %}
-                            <i class="icon icon-tasks"></i>
+                            <i class="fas fa-tasks"></i>
                         {% elif stat.type == 'index' %}
-                            <i class="icon icon-search"></i>
+                            <i class="fas fa-search"></i>
                         {% endif %}
                         {{ stat.type }}
                     </td>

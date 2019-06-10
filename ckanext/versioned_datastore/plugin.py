@@ -120,7 +120,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     def before_map(self, map):
         map.connect(u'resource_data', u'/dataset/{package_name}/resource_data/{resource_id}',
                     controller=ResourceDataController.path, action=u'resource_data',
-                    ckan_icon=u'cloud-upload')
+                    ckan_icon=u'cloud-upload-alt')
         return map
 
     # IConfigurable
