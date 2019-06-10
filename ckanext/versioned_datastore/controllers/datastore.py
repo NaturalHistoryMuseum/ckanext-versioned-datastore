@@ -31,5 +31,7 @@ class ResourceDataController(toolkit.BaseController):
                 u'stats': get_all_stats(resource_id),
                 u'reindex_action': toolkit.url_for(u'resource_data', action=u'resource_data',
                                            package_name=package_name, resource_id=resource_id),
+                u'pkg_dict': toolkit.c.pkg_dict,
+                u'resource': toolkit.c.resource
             }
             return toolkit.render(u'package/resource_data.html', extra_vars=extra_vars)
