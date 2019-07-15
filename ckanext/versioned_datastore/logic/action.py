@@ -4,6 +4,7 @@ import logging
 
 from datetime import datetime
 from eevee.utils import to_timestamp
+from eevee.indexing.utils import DOC_TYPE
 from elasticsearch import NotFoundError, RequestError
 from elasticsearch_dsl import A, Search
 
@@ -156,6 +157,7 @@ def datastore_search(context, data_dict):
             u'records': [hit.data for hit in result.results()],
             u'facets': utils.format_facets(result.aggregations),
             u'fields': fields,
+            u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
             u'after': result.last_after,
             u'_backend': u'versioned-datastore',
         }
@@ -683,6 +685,8 @@ def datastore_search_raw(context, data_dict):
                 u'records': [hit.data for hit in result.results()],
                 u'facets': utils.format_facets(result.aggregations),
                 u'fields': fields,
+                u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][
+                    u'properties'],
                 u'after': result.last_after,
                 u'_backend': u'versioned-datastore',
             }
