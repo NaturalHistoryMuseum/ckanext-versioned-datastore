@@ -1,30 +1,42 @@
-from setuptools import setup, find_packages
+#!/usr/bin/env python
+# encoding: utf-8
+#
+# This file is part of ckanext-versioned-datastore
+# Created by the Natural History Museum in London, UK
 
-version = u'0.1'
+from setuptools import find_packages, setup
+
+__version__ = u'1.0.0-alpha'
+
+with open(u'README.md', u'r') as f:
+    __long_description__ = f.read()
 
 setup(
     name=u'ckanext-versioned-datastore',
-    version=version,
-    description=u"",
-    long_description=u'''
-    ''',
-    classifiers=[],
-    keywords=u'',
-    author=[u'Josh Humphries'],
+    version=__version__,
+    description=u'A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch.',
+    long_description=__long_description__,
+    classifiers=[
+        u'Development Status :: 3 - Alpha',
+        u'Framework :: Flask',
+        u'Programming Language :: Python :: 2.7'
+    ],
+    keywords=u'CKAN data elastic versioning',
+    author=u'Natural History Museum',
     author_email=u'data@nhm.ac.uk',
-    url=u'',
-    license=u'',
-    packages=find_packages(exclude=[u'ez_setup', u'examples', u'tests']),
-    namespace_packages=[u'ckanext', u'ckanext.versioned_datastore'],
+    url=u'https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore',
+    license=u'GNU GPLv3',
+    packages=find_packages(exclude=[u'tests']),
+    namespace_packages=[u'ckanext', u'ckanext.versioned.datastore'],
     include_package_data=True,
     zip_safe=False,
-    # apparently for CKAN extensions all dependencies should be in the requirements.txt
-    # and none should be in here...
     install_requires=[],
-    entry_points=u'''
+    entry_points= \
+        u'''
         [ckan.plugins]
-        versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
+            versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
+
         [paste.paster_command]
-        vds=ckanext.versioned_datastore.commands:VersionedDatastoreCommands
-    ''',
-)
+            vds=ckanext.versioned_datastore.commands:VersionedDatastoreCommands
+        ''',
+    )
