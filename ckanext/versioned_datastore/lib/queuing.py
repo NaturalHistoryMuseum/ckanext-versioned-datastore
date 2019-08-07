@@ -1,15 +1,10 @@
 import rq
 
 from ckan.plugins import toolkit
-from ckanext.rq import jobs
+from ckan.lib import jobs
 from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest, \
     ResourceDeletionRequest, delete_resource_data
 from ckanext.versioned_datastore.lib.indexing.indexing import index_resource, ResourceIndexRequest
-
-try:
-    enqueue_job = toolkit.enqueue_job
-except AttributeError:
-    from ckanext.rq.jobs import enqueue as enqueue_job
 
 
 def ensure_importing_queue_exists():
@@ -39,7 +34,7 @@ def queue(function, args):
     :return: the queued job
     '''
     ensure_importing_queue_exists()
-    return enqueue_job(function, args=args, queue=u'importing')
+    return toolkit.enqueue_job(function, args=args, queue=u'importing')
 
 
 def queue_import(resource_id, version, replace, records=None, api_key=None):
