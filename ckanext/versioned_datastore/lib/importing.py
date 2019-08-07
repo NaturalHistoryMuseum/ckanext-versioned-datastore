@@ -45,7 +45,7 @@ def get_resource(resource_id, attempts=10, backoff=1):
     while True:
         try:
             # retrieve the resource
-            return toolkit.get_action(u'resource_show')({}, {u'id': resource_id})
+            return toolkit.get_action(u'resource_show')({u'ignore_auth': True}, {u'id': resource_id})
         except toolkit.ObjectNotFound:
             attempts -= 1
             if attempts < 0:
