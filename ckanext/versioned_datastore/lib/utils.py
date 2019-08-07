@@ -206,9 +206,10 @@ def get_fields(resource_id, version=None):
     field_names = []
 
     if all_details:
-        # the all_details variable is an OrderedDict so we can iterate over it to get the details in
-        # ascending version order
-        for details in all_details.values():
+        # the all_details variable is an OrderedDict in ascending version order. We want to iterate
+        # in descending version order though so that we respect the column order at the version
+        # we're at before respecting any data from previous versions
+        for details in reversed(all_details.values()):
             columns = [column for column in details.get_columns() if column not in seen_fields]
             field_names.extend(columns)
             seen_fields.update(columns)
