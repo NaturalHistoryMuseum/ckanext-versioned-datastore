@@ -128,12 +128,13 @@ class ResourceIndexRequest(object):
         self.resource = resource
         self.lower_version = lower_version
         self.upper_version = upper_version
+        self.resource_id = self.resource[u'id']
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource[u'id'],
+        return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource_id,
                                                                            self.lower_version,
                                                                            self.upper_version)
 
