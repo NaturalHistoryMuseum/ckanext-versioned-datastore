@@ -346,13 +346,8 @@ def update_resources_privacy(package):
 
     :param package: the package model object (not the dict!)
     '''
-    if hasattr(package, 'resource_groups_all'):
-        for resource_group in package.resource_groups_all:
-            for resource in resource_group.resources_all:
-                update_privacy(resource.id, package.private)
-    else:
-        for resource in package.resources_all:
-            update_privacy(resource.id, package.private)
+    for resource in package.resources:
+        update_privacy(resource.id, package.private)
 
 
 def update_privacy(resource_id, is_private=None):
@@ -367,7 +362,7 @@ def update_privacy(resource_id, is_private=None):
     '''
     if is_private is None:
         resource = model.Resource.get(resource_id)
-        is_private = resource.resource_group.package.private
+        is_private = resource.package.private
     if is_private:
         make_private(resource_id)
     else:
