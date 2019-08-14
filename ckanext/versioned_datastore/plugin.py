@@ -91,25 +91,26 @@ class VersionedSearchPlugin(SingletonPlugin):
             data_dict = {u'resource_id': entity.id}
             do_upsert = False
 
-            # use the entities' last modified data if there is one, otherwise don't pass
-            # one and let the action default it
-            last_modifed = getattr(entity, u'last_modified', None)
-            if last_modifed is not None:
-                data_dict[u'version'] = to_timestamp(last_modifed)
-
             if operation == DomainObjectOperation.deleted:
-                logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
+                toolkit.get_action(u'datastore_delete')(context, data_dict)
             elif operation == DomainObjectOperation.new:
                 # datastore_create returns True when the resource looks like it's ingestible
-                do_upsert = logic.get_action(u'datastore_create')(context, data_dict)
+                do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
             elif operation == DomainObjectOperation.changed:
-                # only do the upsert on changed events if the URL has changed
-                do_upsert = getattr(entity, u'url_changed', False)
+                # always do an upsert if the resource has changed - we're essentially deferring to
+                # the backend to work out what to do
+                do_upsert = True
 
             if do_upsert:
+                # use the entities' last modified data if there is any, otherwise don't pass
+                # one and let the datastore_upsert action handle defaulting it
+                last_modified = getattr(entity, u'last_modified', None)
+                if last_modified is not None:
+                    data_dict[u'version'] = to_timestamp(last_modified)
+
                 # use replace True to replace the existing data (this is what users would expect)
                 data_dict[u'replace'] = True
-                logic.get_action(u'datastore_upsert')(context, data_dict)
+                toolkit.get_action(u'datastore_upsert')(context, data_dict)
 
     # IConfigurer
     def update_config(self, config):
