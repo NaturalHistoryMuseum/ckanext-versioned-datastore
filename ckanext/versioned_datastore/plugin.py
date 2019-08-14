@@ -89,28 +89,25 @@ class VersionedSearchPlugin(SingletonPlugin):
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
             data_dict = {u'resource_id': entity.id}
-            do_upsert = False
 
             if operation == DomainObjectOperation.deleted:
                 toolkit.get_action(u'datastore_delete')(context, data_dict)
-            elif operation == DomainObjectOperation.new:
-                # datastore_create returns True when the resource looks like it's ingestible
-                do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
-            elif operation == DomainObjectOperation.changed:
-                # always do an upsert if the resource has changed - we're essentially deferring to
-                # the backend to work out what to do
-                do_upsert = True
+            else:
+                do_upsert = False
 
-            if do_upsert:
-                # use the entities' last modified data if there is any, otherwise don't pass
-                # one and let the datastore_upsert action handle defaulting it
-                last_modified = getattr(entity, u'last_modified', None)
-                if last_modified is not None:
-                    data_dict[u'version'] = to_timestamp(last_modified)
+                if operation == DomainObjectOperation.new:
+                    # datastore_create returns True when the resource looks like it's ingestible
+                    do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
+                elif operation == DomainObjectOperation.changed:
+                    # always try the upsert if the resource has changed
+                    do_upsert = True
 
-                # use replace True to replace the existing data (this is what users would expect)
-                data_dict[u'replace'] = True
-                toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                if do_upsert:
+                    # use the revision version as the version
+                    data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
+                    # use replace to overwrite the existing data (this is what users would expect)
+                    data_dict[u'replace'] = True
+                    toolkit.get_action(u'datastore_upsert')(context, data_dict)
 
     # IConfigurer
     def update_config(self, config):
