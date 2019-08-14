@@ -413,3 +413,11 @@ def is_resource_read_only(resource_id):
     '''
     implementations = PluginImplementations(IVersionedDatastore)
     return any(plugin.datastore_is_read_only_resource(resource_id) for plugin in implementations)
+
+
+class ReadOnlyResourceException(toolkit.ValidationError):
+    pass
+
+
+class InvalidVersionException(toolkit.ValidationError):
+    pass

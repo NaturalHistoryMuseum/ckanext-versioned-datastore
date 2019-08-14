@@ -233,7 +233,7 @@ def datastore_upsert(context, data_dict):
     resource_id = data_dict[u'resource_id']
 
     if utils.is_resource_read_only(resource_id):
-        raise toolkit.ValidationError(u'This resource has been marked as read only')
+        raise utils.ReadOnlyResourceException(u'This resource has been marked as read only')
 
     replace = data_dict[u'replace']
     # these 3 parameters are all optional and have the defaults defined below
@@ -241,7 +241,7 @@ def datastore_upsert(context, data_dict):
 
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
-        raise toolkit.ValidationError(u'The new version must be newer than current version')
+        raise utils.InvalidVersionException(u'The new version must be newer than current version')
 
     # get the current user
     user = toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})

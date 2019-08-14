@@ -107,7 +107,11 @@ class VersionedSearchPlugin(SingletonPlugin):
                     data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
                     # use replace to overwrite the existing data (this is what users would expect)
                     data_dict[u'replace'] = True
-                    toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                    try:
+                        toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                    except (utils.ReadOnlyResourceException, utils.InvalidVersionException):
+                        # this is fine, just swallow
+                        pass
 
     # IConfigurer
     def update_config(self, config):
