@@ -84,7 +84,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         '''
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
             # if a package is the target entity and it's been changed ensure the privacy is applied
-            # correctly to it's resource indexes
+            # correctly to its resource indexes
             utils.update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
