@@ -7,3 +7,4 @@ requests==2.11.1
 six==1.11.0
 xlrd==1.1.0
 git+https://github.com/NaturalHistoryMuseum/eevee.git@v1.0.2#egg=eevee
+urllib3==1.25.3
