@@ -5,7 +5,7 @@ python:
   - "2.7"
 
 install:
-  - sh ckanext/versioned-datastore/tests/bin/build.sh
+  - sh ckanext/versioned_datastore/tests/bin/build.sh
 
 services:
   - redis-server
@@ -14,6 +14,6 @@ services:
 addons:
   postgresql: "9.4"
 
-script: coverage run --source=ckanext.versioned_datastore setup.py nosetests --ckan --with-pylons=ckanext/versioned-datastore/tests/bin/test.ini --nologcapture --debug=ckantest,ckanext.versioned_datastore --rednose
+script: coverage run --source=ckanext.versioned_datastore setup.py nosetests --ckan --with-pylons=ckanext/versioned_datastore/tests/bin/test.ini --nologcapture --debug=ckantest,ckanext.versioned_datastore --rednose
 
 after_success: coveralls
