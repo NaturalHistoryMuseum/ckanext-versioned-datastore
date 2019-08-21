@@ -35,4 +35,4 @@ pip install -r requirements.txt
 pip install -r dev_requirements.txt
 pip install -e .
 
-pip install -U elasticsearch==6.3.1
+paster --plugin=ckanext-versioned-datastore vds initdb -c ckanext/versioned_datastore/tests/bin/test.ini
