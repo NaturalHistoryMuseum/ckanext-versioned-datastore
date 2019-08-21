@@ -278,11 +278,15 @@ def is_ingestible(resource):
     Returns True if the resource can be ingested into the datastore and False if not. To be
     ingestible the resource must either be a datastore only resource (signified by the url being
     set to _datastore_only_resource) or have a format that we can ingest (the format field on the
-    resource is used for this, not the URL).
+    resource is used for this, not the URL). If the url is None, False is returned. This is technically
+    not possible due to a Resource model constraint but it's worth covering off anyway.
 
     :param resource: the resource dict
     :return: True if it is, False if not
     """
+    if resource.get(u'url', None) is None:
+        return False
+
     resource_format = resource.get(u'format', None)
     return (is_datastore_only_resource(resource[u'url']) or
             (resource_format is not None and resource_format.lower() in ALL_FORMATS))
