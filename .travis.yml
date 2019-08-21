@@ -1,11 +1,19 @@
-sudo: false
+dist: trusty
 language: python
+
 python:
   - "2.7"
+
 install:
-    - pip install coveralls
-    - pip install -r requirements.txt
-    - pip install -r ckanext/versioned_datastore/tests/requirements.txt
-script:
-    - pytest --cov=ckanext.versioned_datastore
+  - sh ckanext/versioned-datastore/tests/bin/build.sh
+
+services:
+  - redis-server
+  - postgresql
+
+addons:
+  postgresql: "9.4"
+
+script: coverage run --source=ckanext.versioned_datastore setup.py nosetests --ckan --with-pylons=ckanext/versioned-datastore/tests/bin/test.ini --nologcapture --debug=ckantest,ckanext.versioned_datastore --rednose
+
 after_success: coveralls
