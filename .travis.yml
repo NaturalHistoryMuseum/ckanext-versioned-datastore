@@ -5,7 +5,8 @@ python:
   - "2.7"
 
 before_install:
-  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.2.deb && dpkg -i --force-confnew elasticsearch-6.7.2.deb && service elasticsearch restart
+  - sudo mkdir /etc/elasticsearch && sudo chmod -R a+rw /etc/elasticsearch
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.2.deb && sudo dpkg -i --force-confnew elasticsearch-6.7.2.deb && sudo service elasticsearch restart
 
 install:
   - sh ckanext/versioned_datastore/tests/bin/build.sh
