@@ -233,7 +233,7 @@ def datastore_upsert(context, data_dict):
     resource_id = data_dict[u'resource_id']
 
     if utils.is_resource_read_only(resource_id):
-        raise toolkit.ValidationError(u'This resource has been marked as read only')
+        raise utils.ReadOnlyResourceException(u'This resource has been marked as read only')
 
     replace = data_dict[u'replace']
     # these 3 parameters are all optional and have the defaults defined below
@@ -241,13 +241,14 @@ def datastore_upsert(context, data_dict):
 
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
-        raise toolkit.ValidationError(u'The new version must be newer than current version')
+        raise utils.InvalidVersionException(u'The new version must be newer than current version')
 
     # get the current user
     user = toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})
 
     # queue the resource import job
-    job = queue_import(resource_id, version, replace, records, user[u'apikey'])
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    job = queue_import(resource, version, replace, records, user[u'apikey'])
 
     return {
         u'queued_at': job.enqueued_at.isoformat(),
@@ -278,7 +279,8 @@ def datastore_delete(context, data_dict):
         raise toolkit.ValidationError(u'This resource has been marked as read only')
 
     # queue the job
-    job = queue_deletion(resource_id, version)
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    job = queue_deletion(resource, version)
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
@@ -442,13 +444,11 @@ def datastore_reindex(context, data_dict):
     if utils.is_resource_read_only(resource_id):
         raise toolkit.ValidationError(u'This resource has been marked as read only')
 
-    # retrieve the resource itself
-    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
-
     last_ingested_version = stats.get_last_ingest(resource_id)
     if last_ingested_version is None:
         raise toolkit.ValidationError(u'There is no ingested data for this version')
 
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
     job = queue_index(resource, None, last_ingested_version.version)
 
     return {

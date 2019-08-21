@@ -27,7 +27,7 @@ setup(
     url=u'https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore',
     license=u'GNU GPLv3',
     packages=find_packages(exclude=[u'tests']),
-    namespace_packages=[u'ckanext', u'ckanext.versioned.datastore'],
+    namespace_packages=[u'ckanext', u'ckanext.versioned_datastore'],
     include_package_data=True,
     zip_safe=False,
     install_requires=[],

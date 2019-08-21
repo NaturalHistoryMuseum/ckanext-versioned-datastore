@@ -37,11 +37,11 @@ def queue(function, args):
     return toolkit.enqueue_job(function, args=args, queue=u'importing')
 
 
-def queue_import(resource_id, version, replace, records=None, api_key=None):
+def queue_import(resource, version, replace, records=None, api_key=None):
     '''
     Queues a job which when run will import the data for the resource.
 
-    :param resource_id: the id of the resource to import
+    :param resource: the resource we're going to import (this must be the resource dict)
     :param version: the version of the resource to import
     :param replace: whether to replace the existing data or not
     :param records: a list of dicts to import, or None if the data is coming from URL or file
@@ -49,7 +49,7 @@ def queue_import(resource_id, version, replace, records=None, api_key=None):
                     package the resource is in is private and the data in the resource was uploaded
     :return: the queued job
     '''
-    resource_import_request = ResourceImportRequest(resource_id, version, replace, records, api_key)
+    resource_import_request = ResourceImportRequest(resource, version, replace, records, api_key)
     return queue(import_resource_data, [resource_import_request])
 
 
@@ -57,7 +57,7 @@ def queue_index(resource, lower_version, upper_version):
     '''
     Queues a job which when run will index the data between the given versions for the resource.
 
-    :param resource: the dict for the resource we're going to index
+    :param resource: the resource we're going to index (this must be the resource dict)
     :param lower_version: the lower version to index (exclusive)
     :param upper_version: the upper version to index (inclusive)
     :return: the queued job
@@ -66,15 +66,15 @@ def queue_index(resource, lower_version, upper_version):
     return queue(index_resource, [resource_index_request])
 
 
-def queue_deletion(resource_id, version):
+def queue_deletion(resource, version):
     '''
     Queues a job which when run will delete all the data in a resource by saving a new version into
     mongo for each record where the data field is empty ({}). After this is done, an index is
     completed.
 
-    :param resource_id: the resource id
+    :param resource: the resource we're going to delete (this must be the resource dict)
     :param version: the version to delete the data in
     :return: the queued job
     '''
-    deletion_request = ResourceDeletionRequest(resource_id, version)
+    deletion_request = ResourceDeletionRequest(resource, version)
     return queue(delete_resource_data, [deletion_request])

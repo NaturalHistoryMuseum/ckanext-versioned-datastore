@@ -84,32 +84,34 @@ class VersionedSearchPlugin(SingletonPlugin):
         '''
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
             # if a package is the target entity and it's been changed ensure the privacy is applied
-            # correctly to it's resource indexes
+            # correctly to its resource indexes
             utils.update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
             data_dict = {u'resource_id': entity.id}
-            do_upsert = False
-
-            # use the entities' last modified data if there is one, otherwise don't pass
-            # one and let the action default it
-            last_modifed = getattr(entity, u'last_modified', None)
-            if last_modifed is not None:
-                data_dict[u'version'] = to_timestamp(last_modifed)
 
             if operation == DomainObjectOperation.deleted:
-                logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
-            elif operation == DomainObjectOperation.new:
-                # datastore_create returns True when the resource looks like it's ingestible
-                do_upsert = logic.get_action(u'datastore_create')(context, data_dict)
-            elif operation == DomainObjectOperation.changed:
-                # only do the upsert on changed events if the URL has changed
-                do_upsert = getattr(entity, u'url_changed', False)
+                toolkit.get_action(u'datastore_delete')(context, data_dict)
+            else:
+                do_upsert = False
 
-            if do_upsert:
-                # use replace True to replace the existing data (this is what users would expect)
-                data_dict[u'replace'] = True
-                logic.get_action(u'datastore_upsert')(context, data_dict)
+                if operation == DomainObjectOperation.new:
+                    # datastore_create returns True when the resource looks like it's ingestible
+                    do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
+                elif operation == DomainObjectOperation.changed:
+                    # always try the upsert if the resource has changed
+                    do_upsert = True
+
+                if do_upsert:
+                    # use the revision version as the version
+                    data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
+                    # use replace to overwrite the existing data (this is what users would expect)
+                    data_dict[u'replace'] = True
+                    try:
+                        toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                    except (utils.ReadOnlyResourceException, utils.InvalidVersionException):
+                        # this is fine, just swallow
+                        pass
 
     # IConfigurer
     def update_config(self, config):
