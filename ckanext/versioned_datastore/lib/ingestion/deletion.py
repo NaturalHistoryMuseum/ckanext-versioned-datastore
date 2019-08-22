@@ -1,11 +1,10 @@
 import logging
 
+from ckanext.versioned_datastore.lib import utils, stats
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
 from eevee.ingestion.ingesters import Ingester
 from eevee.mongo import get_mongo
-
-from ckanext.versioned_datastore.lib import utils, stats
 
 log = logging.getLogger(__name__)
 
@@ -123,3 +122,41 @@ def delete_resource_data(resource_id, version, start):
         stats.mark_error(stats_id, e)
         log.exception(u'An error occurred during data deletion of {}'.format(resource_id))
         return False
+
+
+class ReplaceDeletionFeeder(IngestionFeeder):
+    '''
+    A feeder for deletion records that come from a replacement upload.
+    '''
+
+    def __init__(self, version, resource_id, tracker, original_source):
+        '''
+        :param version: the version of data to be fed
+        :param resource_id: the resource id for which the data applies
+        :param tracker: the InclusionTracker object
+        :param original_source: the name of the original resource data source
+        '''
+        super(ReplaceDeletionFeeder, self).__init__(version)
+        self.resource_id = resource_id
+        self.tracker = tracker
+        self.original_source = original_source
+
+    @property
+    def source(self):
+        return self.original_source
+
+    def records(self):
+        '''
+        Generator function which yields DeletionRecord objects. When the replace flag is true during
+        ingestion this indicates that any records not present in the new resource data should be
+        deleted. By using the tracker this feeder can yield record objects which represent a record
+        that was not included in a new version of a resource's data for deletion.
+
+        :return: yields DeletionRecords
+        '''
+        with get_mongo(utils.CONFIG, collection=self.resource_id) as mongo:
+            # this finds all the records that haven't been updated in the given version
+            for mongo_doc in mongo.find({u'latest_version': {u'$lt': self.version}}):
+                if not self.tracker.was_included(mongo_doc[u'id']):
+                    # delete
+                    yield DeletionRecord(self.version, self.resource_id, mongo_doc[u'id'])
