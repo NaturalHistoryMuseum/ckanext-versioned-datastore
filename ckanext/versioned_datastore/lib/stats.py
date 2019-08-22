@@ -6,11 +6,12 @@ from ckan import model
 from ckanext.versioned_datastore.model.stats import ImportStats
 
 
+PREP = u'prep'
 INGEST = u'ingest'
 INDEX = u'index'
 
 
-def start_operation(resource_id, import_type, version, start):
+def start_operation(resource_id, import_type, version, start=None):
     '''
     Creates an ImportStats instance, saves it to the database and returns the database id of the
     newly created object.
@@ -18,9 +19,12 @@ def start_operation(resource_id, import_type, version, start):
     :param resource_id: the id of the resource being worked on
     :param import_type: the type of import operation being undertaken
     :param version: the version of the data
-    :param start: the datetime when this operation was started
+    :param start: the datetime when this operation was started (optional, if None current time will
+                  be used)
     :return: the database id of the saved ImportStats object
     '''
+    if start is None:
+        start = datetime.now()
     stats = ImportStats(resource_id=resource_id, type=import_type, version=version,
                         in_progress=True, start=start)
     stats.add()
@@ -40,14 +44,23 @@ def update_stats(stats_id, update):
     model.Session.commit()
 
 
-def finish_operation(stats_id, total, stats):
+def finish_operation(stats_id, total, stats=None):
     '''
     Update the ImportStats object with the given id to indicate that the operation is complete.
 
     :param stats_id: the database id of the object to finish
     :param total: the total number of records affected by this operation
-    :param stats: the stats dict returned by the operation
+    :param stats: the stats dict returned by the operation (optional)
     '''
+    if stats is None:
+        start = model.Session.query(ImportStats).get(stats_id).start
+        end = datetime.now()
+        stats = {
+            u'duration': (end - start).total_seconds(),
+            u'start': start,
+            u'end': end,
+            u'operations': {},
+        }
     update_stats(stats_id, {
         ImportStats.in_progress: False,
         ImportStats.count: total,

@@ -5,7 +5,7 @@ from ckan import model
 from ckanext.versioned_datastore.model.details import DatastoreResourceDetails
 
 
-def create_details(resource_id, version, columns):
+def create_details(resource_id, version, columns, file_hash=None):
     '''
     Helper for creating a DatastoreResourceDetails object.
 
@@ -15,7 +15,8 @@ def create_details(resource_id, version, columns):
     :return: the id of the created row
     '''
     columns_str = json.dumps(columns)
-    deets = DatastoreResourceDetails(resource_id=resource_id, version=version, columns=columns_str)
+    deets = DatastoreResourceDetails(resource_id=resource_id, version=version, columns=columns_str,
+                                     file_hash=file_hash)
     deets.add()
     deets.commit()
     return deets.id
@@ -57,3 +58,20 @@ def get_all_details(resource_id, up_to_version=None):
             all_details[details.version] = details
 
     return all_details
+
+
+def get_last_file_hash(resource_id):
+    '''
+    Retrieves the most recent file hash and returns it. If there is no most recent file hash (either
+    because there isn't a file hash present or because there aren't any details rows available, then
+    this function returns None.
+
+    :param resource_id: the resource id
+    :return: None or the most recent file hash
+    '''
+    last_details = model.Session.query(DatastoreResourceDetails) \
+        .filter(DatastoreResourceDetails.resource_id == resource_id) \
+        .order_by(DatastoreResourceDetails.version.desc())\
+        .first()
+
+    return last_details.file_hash if last_details is not None else None

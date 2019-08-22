@@ -85,11 +85,9 @@ def import_resource_data(request):
     log.info(u'Starting data import for {} at version {}'.format(request.resource_id,
                                                                  request.version))
 
-    # store a start time, this will be used as the ingestion time of the records
-    start = datetime.now()
     # ingest the resource into mongo
-    did_ingest = ingest_resource(request.version, start, utils.CONFIG, request.resource,
-                                 request.records, request.replace, request.api_key)
+    did_ingest = ingest_resource(request.version, utils.CONFIG, request.resource, request.records,
+                                 request.replace, request.api_key)
     if did_ingest:
         # find out what the latest version in the index is
         latest_index_version = utils.get_latest_version(request.resource_id)
