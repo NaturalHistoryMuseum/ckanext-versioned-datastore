@@ -1,0 +1,8 @@
+nose
+rednose
+mock
+httpretty
+coveralls
+pytest-cov
+urllib3==1.25.3
+-e git+https://github.com/NaturalHistoryMuseum/ckantest.git#egg=ckantest

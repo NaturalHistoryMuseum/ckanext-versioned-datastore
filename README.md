@@ -72,12 +72,12 @@ All configuration options are currently required.
 
 Name|Description|Example
 --|--|--
-`ckanext.versioned.datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
-`ckanext.versioned.datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
-`ckanext.versioned.datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
-`ckanext.versioned.datastore.mongo_host`|The mongo server host|`10.54.24.10`
-`ckanext.versioned.datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
-`ckanext.versioned.datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
+`ckanext.versioned_datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
+`ckanext.versioned_datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
+`ckanext.versioned_datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
+`ckanext.versioned_datastore.mongo_host`|The mongo server host|`10.54.24.10`
+`ckanext.versioned_datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
+`ckanext.versioned_datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
 
 
 # Further Setup

@@ -1,11 +1,25 @@
-sudo: false
+dist: trusty
 language: python
+
 python:
   - "2.7"
+
+before_install:
+  - sudo chown -R elasticsearch:elasticsearch /etc/elasticsearch && sudo chown -R elasticsearch:elasticsearch /etc/default/elasticsearch
+  - curl -O https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.2.deb && sudo dpkg -i --force-confnew elasticsearch-6.7.2.deb && sudo service elasticsearch restart
+
 install:
-    - pip install coveralls
-    - pip install -r requirements.txt
-    - pip install -r ckanext/versioned_datastore/tests/requirements.txt
-script:
-    - pytest --cov=ckanext.versioned_datastore
+  - sh ckanext/versioned_datastore/tests/bin/build.sh
+
+services:
+  - redis-server
+  - postgresql
+  - elasticsearch
+  - mongodb
+
+addons:
+  postgresql: "9.4"
+
+script: coverage run --source=ckanext.versioned_datastore setup.py nosetests --ckan --with-pylons=ckanext/versioned_datastore/tests/bin/test.ini --nologcapture --debug=ckantest,ckanext.versioned_datastore --rednose
+
 after_success: coveralls
