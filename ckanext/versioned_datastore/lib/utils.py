@@ -287,7 +287,8 @@ def is_ingestible(resource):
     """
     resource_format = resource.get(u'format', None)
     return (is_datastore_only_resource(resource[u'url']) or
-            (resource_format is not None and resource_format.lower() in ALL_FORMATS))
+            (resource_format is not None and resource_format.lower() in ALL_FORMATS) or
+            (resource_format is not None and resource_format.lower() == u'zip'))
 
 
 @contextmanager

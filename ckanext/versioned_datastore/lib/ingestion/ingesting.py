@@ -214,6 +214,8 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
         url = resource[u'url']
         # there may not be a format in the resource dict
         resource_format = resource.get(u'format', None)
+        if resource_format is not None:
+            resource_format = resource_format.lower()
         # headers for the download request, note that we only incldue the auth in the request if
         # the url is for an uploaded file, this prevents leaking the credentials
         headers = {u'Authorization': api_key} if (resource.get(u'url_type', None) == u'upload'
