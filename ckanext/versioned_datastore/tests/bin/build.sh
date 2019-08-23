@@ -32,7 +32,7 @@ paster datastore set-permissions -c test-core.ini | sudo -u postgres psql
 
 cd $HERE
 pip install -r dev_requirements.txt
-pip install -r requirements.txt
 python setup.py install
+pip install -r requirements.txt
 
 paster --plugin=ckanext-versioned-datastore vds initdb -c ckanext/versioned_datastore/tests/bin/test.ini
