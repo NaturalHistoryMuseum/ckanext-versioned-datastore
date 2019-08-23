@@ -30,7 +30,19 @@ setup(
     namespace_packages=[u'ckanext', u'ckanext.versioned_datastore'],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[],
+    install_requires=[
+        'backports.csv==1.0.6',
+        'cchardet==2.1.4',
+        'openpyxl==2.5.8',
+        'requests==2.11.1',
+        'six==1.11.0',
+        'xlrd==1.1.0',
+        'elasticsearch==6.3.1',
+        'elasticsearch-dsl==6.2.1',
+        ],
+    dependency_links=[
+        'git+https://github.com/NaturalHistoryMuseum/eevee.git@v1.0.2#egg=eevee'
+        ],
     entry_points= \
         u'''
         [ckan.plugins]
