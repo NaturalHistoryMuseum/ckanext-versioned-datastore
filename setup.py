@@ -39,7 +39,7 @@ setup(
         'xlrd==1.1.0',
         'elasticsearch==6.3.1',
         'elasticsearch-dsl==6.2.1',
-        'eevee==1.0.2',
+        'eevee',
         ],
     dependency_links=[
         'git+https://github.com/NaturalHistoryMuseum/eevee.git@v1.0.2#egg=eevee'
