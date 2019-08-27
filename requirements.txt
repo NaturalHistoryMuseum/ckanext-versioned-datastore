@@ -2,4 +2,3 @@
 .
 
 # dev overrides/additional libraries
--e git+https://github.com/NaturalHistoryMuseum/eevee.git@v1.0.2#egg=eevee
