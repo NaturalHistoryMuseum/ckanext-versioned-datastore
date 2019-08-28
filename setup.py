@@ -11,7 +11,7 @@ __version__ = u'1.0.0-alpha'
 with open(u'README.md', u'r') as f:
     __long_description__ = f.read()
 
-dependencies = {'eevee': 'git+https://github.com/NaturalHistoryMuseum/eevee#egg=eevee-1.0.2'}
+dependencies = {'eevee': 'git+https://github.com/NaturalHistoryMuseum/eevee#egg=eevee-1.0.3'}
 
 setup(
     name=u'ckanext-versioned-datastore',
