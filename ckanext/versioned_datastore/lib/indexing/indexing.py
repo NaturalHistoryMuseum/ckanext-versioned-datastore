@@ -134,6 +134,9 @@ class ResourceIndexRequest(object):
         return self.__str__()
 
     def __str__(self):
+        return unicode(self).encode(u'utf-8')
+
+    def __unicode__(self):
         return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource_id,
                                                                            self.lower_version,
                                                                            self.upper_version)

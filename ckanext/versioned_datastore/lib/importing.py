@@ -55,6 +55,9 @@ class ResourceImportRequest(object):
         return self.__str__()
 
     def __str__(self):
+        return unicode(self).encode(u'utf-8')
+
+    def __unicode__(self):
         if self.records is not None:
             records = len(self.records)
         else:
@@ -122,6 +125,9 @@ class ResourceDeletionRequest(object):
         return self.__str__()
 
     def __str__(self):
+        return unicode(self).encode(u'utf-8')
+
+    def __unicode__(self):
         return u'Deletion of {} at version {}'.format(self.resource_id, self.version)
 
 
