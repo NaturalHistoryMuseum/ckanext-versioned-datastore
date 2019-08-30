@@ -1,6 +1,5 @@
 import contextlib
 import gzip
-import hashlib
 import logging
 import shutil
 import tempfile
@@ -17,8 +16,8 @@ from ckanext.versioned_datastore.lib.ingestion import exceptions
 from ckanext.versioned_datastore.lib.ingestion.deletion import ReplaceDeletionFeeder
 from ckanext.versioned_datastore.lib.ingestion.readers import get_reader, APIReader
 from ckanext.versioned_datastore.lib.ingestion.records import DatastoreRecord
-from ckanext.versioned_datastore.lib.utils import download_to_temp_file, InclusionTracker, \
-    ensure_reset
+from ckanext.versioned_datastore.lib.ingestion.utils import download_to_temp_file, compute_hash, \
+    InclusionTracker
 from contextlib2 import suppress
 from datetime import datetime
 from eevee.ingestion.converters import RecordToMongoConverter
@@ -133,14 +132,7 @@ def prepare_resource(resource, version, data=None, api_key=None):
             # from the last file we ingested
             last_file_hash = get_last_file_hash(resource[u'id'])
             if fp is not None:
-                hasher = hashlib.sha1()
-                with ensure_reset(fp):
-                    while True:
-                        chunk = fp.read(16384)
-                        if not chunk:
-                            break
-                        hasher.update(chunk)
-                file_hash = hasher.hexdigest()
+                file_hash = compute_hash(fp)
             else:
                 # rather than hash the data list just use None
                 file_hash = None

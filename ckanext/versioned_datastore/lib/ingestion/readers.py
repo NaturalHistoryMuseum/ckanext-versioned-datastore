@@ -7,6 +7,7 @@ import six
 import xlrd
 from cchardet import UniversalDetector
 from ckanext.versioned_datastore.lib import utils
+from ckanext.versioned_datastore.lib.ingestion.utils import ensure_reset
 from openpyxl.cell.read_only import EmptyCell
 from ckanext.versioned_datastore.lib.ingestion import exceptions
 
@@ -116,7 +117,7 @@ class SVReader(ResourceReader):
         :return: a DictReader object
         '''
         if self.encoding is None:
-            with utils.ensure_reset(resource_data_fp):
+            with ensure_reset(resource_data_fp):
                 detector = UniversalDetector()
                 while True:
                     chunk = resource_data_fp.read(8192)
@@ -143,7 +144,7 @@ class SVReader(ResourceReader):
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
         '''
-        with utils.ensure_reset(resource_data_fp):
+        with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
             for row in reader:
                 yield row
@@ -156,7 +157,7 @@ class SVReader(ResourceReader):
         :param resource_data_fp: the file pointer to the source
         :return: a list of field names
         '''
-        with utils.ensure_reset(resource_data_fp):
+        with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
             return reader.unicode_fieldnames
 
@@ -186,7 +187,7 @@ class XLSReader(ResourceReader):
         :param resource_data_fp: the file pointer to the source
         :return: a generator of cell lists
         '''
-        with utils.ensure_reset(resource_data_fp):
+        with ensure_reset(resource_data_fp):
             # open the xls file up
             book = xlrd.open_workbook(resource_data_fp.name)
             # select the first sheet by default
@@ -254,7 +255,7 @@ class XLSXReader(ResourceReader):
         :param resource_data_fp: the file pointer to the source
         :return: a generator of cell lists
         '''
-        with utils.ensure_reset(resource_data_fp):
+        with ensure_reset(resource_data_fp):
             workbook = openpyxl.load_workbook(resource_data_fp, read_only=True)
             # get a generator for the rows in the first worksheet and return it
             return workbook.worksheets[0].iter_rows()
