@@ -25,16 +25,16 @@ def ensure_importing_queue_exists():
         jobs._queues[name] = queue
 
 
-def queue(function, args):
+def queue(function, request):
     '''
     Generic queueing function which ensures our special queue is setup first.
 
     :param function: the function to queue
-    :param args: the arguments for the function, this should be a list
+    :param request: the queue request object
     :return: the queued job
     '''
     ensure_importing_queue_exists()
-    return toolkit.enqueue_job(function, args=args, queue=u'importing')
+    return toolkit.enqueue_job(function, args=[request], queue=u'importing', title=unicode(request))
 
 
 def queue_import(resource, version, replace, records=None, api_key=None):
@@ -50,7 +50,7 @@ def queue_import(resource, version, replace, records=None, api_key=None):
     :return: the queued job
     '''
     resource_import_request = ResourceImportRequest(resource, version, replace, records, api_key)
-    return queue(import_resource_data, [resource_import_request])
+    return queue(import_resource_data, resource_import_request)
 
 
 def queue_index(resource, lower_version, upper_version):
@@ -63,7 +63,7 @@ def queue_index(resource, lower_version, upper_version):
     :return: the queued job
     '''
     resource_index_request = ResourceIndexRequest(resource, lower_version, upper_version)
-    return queue(index_resource, [resource_index_request])
+    return queue(index_resource, resource_index_request)
 
 
 def queue_deletion(resource, version):
@@ -77,4 +77,4 @@ def queue_deletion(resource, version):
     :return: the queued job
     '''
     deletion_request = ResourceDeletionRequest(resource, version)
-    return queue(delete_resource_data, [deletion_request])
+    return queue(delete_resource_data, deletion_request)
