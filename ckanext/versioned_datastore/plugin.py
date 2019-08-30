@@ -6,9 +6,9 @@ from eevee.utils import to_timestamp
 from ckan import model
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
 from ckan.model import DomainObjectOperation
-from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
 from ckanext.versioned_datastore.logic import action, auth
+from ckanext.versioned_datastore import routes
 
 log = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IDomainObjectModification, inherit=True)
     implements(interfaces.IConfigurer)
     implements(interfaces.IConfigurable)
-    implements(interfaces.IRoutes, inherit=True)
+    implements(interfaces.IBlueprint, inherit=True)
 
     # IActions
     def get_actions(self):
@@ -118,12 +118,9 @@ class VersionedSearchPlugin(SingletonPlugin):
         # add templates
         toolkit.add_template_directory(config, u'theme/templates')
 
-    # IRoutes
-    def before_map(self, map):
-        map.connect(u'resource_data', u'/dataset/{package_name}/resource_data/{resource_id}',
-                    controller=ResourceDataController.path, action=u'resource_data',
-                    ckan_icon=u'cloud-upload-alt')
-        return map
+    ## IBlueprint
+    def get_blueprint(self):
+        return routes.blueprints
 
     # IConfigurable
     def configure(self, ckan_config):
