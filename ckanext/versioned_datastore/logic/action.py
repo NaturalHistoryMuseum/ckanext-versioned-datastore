@@ -694,3 +694,53 @@ def datastore_search_raw(context, data_dict):
         raise toolkit.ValidationError(str(e))
     except NotFoundError as e:
         raise SearchIndexError(e.error)
+
+
+def datastore_ensure_privacy(context, data_dict):
+    '''
+    Ensure that the privacy settings are correct across all resources in the datastore or for just
+    one resource.
+
+    Params:
+    :param resource_id: optionally, the id of a specific resource to update. If this is present then
+                        only the resource provided will have it's privacy updated. If it is not
+                        present, all resources are updated.
+    :type resource_id: string
+
+
+    **Results:**
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param modified: the number of resources that had their privacy setting modified
+    :type ensured: integer
+    :param total: the total number of resources examined
+    :type total: integer
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_ensure_privacy_schema())
+
+    modified = 0
+    total = 0
+    if u'resource_id' in data_dict:
+        # just do this one
+        utils.update_privacy(data_dict[u'resource_id'])
+        ensured = 1
+    else:
+        package_data_dict = {u'limit': 50, u'offset': 0}
+        while True:
+            # iteratively retrieve all packages and ensure their resources
+            packages = toolkit.get_action(u'current_package_list_with_resources')(context,
+                                                                                  package_data_dict)
+            if not packages:
+                # we've ensured all the packages that are available
+                break
+            else:
+                package_data_dict[u'offset'] += len(packages)
+                for package in packages:
+                    for resource in package.get(u'resources', []):
+                        if resource[u'datastore_active']:
+                            total += 1
+                            if utils.update_privacy(resource[u'id'], package[u'private']):
+                                modified += 1
+
+    return {u'modified': modified, u'total': total}

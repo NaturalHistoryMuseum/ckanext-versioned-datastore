@@ -78,3 +78,9 @@ def datastore_get_rounded_version(context, data_dict):
 @toolkit.auth_allow_anonymous_access
 def datastore_search_raw(context, data_dict):
     return check(u'resource_show', context, data_dict)
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_ensure_privacy(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}

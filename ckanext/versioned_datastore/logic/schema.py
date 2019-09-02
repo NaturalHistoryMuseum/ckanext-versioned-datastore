@@ -172,3 +172,14 @@ def datastore_search_raw_schema():
         u'raw_result': [ignore_missing, boolean_validator],
         u'include_version': [ignore_missing, boolean_validator],
     }
+
+
+def datastore_ensure_privacy_schema():
+    '''
+    Returns the schema for the datastore_ensure_privacy action.
+
+    :return: a dict
+    '''
+    return {
+        u'resource_id': [ignore_missing, unicode, resource_id_exists],
+    }

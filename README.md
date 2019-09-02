@@ -156,6 +156,9 @@ Round the requested version of this query down to the nearest actual version of 
 ### `datastore_search_raw`
 This action allows you to search data in a resource using a raw elasticsearch query.
 
+### `datastore_ensure_privacy`
+This action runs through all resources (or handles a specific resource if a resource id is provided) and makes sure that the privacy set on each resource's package is reflected in the datastore.
+
 ## Commands
 
 ### `vds`
