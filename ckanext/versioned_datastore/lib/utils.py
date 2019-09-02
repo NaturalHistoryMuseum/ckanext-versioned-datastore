@@ -332,14 +332,15 @@ def update_privacy(resource_id, is_private=None):
     :param is_private: whether the package the resource is in is private or not. This is an optional
                        parameter, if it is left out we look up the resource's package in the
                        database and find out the private setting that way.
+    :return: True if modifications were required to update the resource data's privacy, False if not
     '''
     if is_private is None:
         resource = model.Resource.get(resource_id)
         is_private = resource.package.private
     if is_private:
-        make_private(resource_id)
+        return make_private(resource_id)
     else:
-        make_public(resource_id)
+        return make_public(resource_id)
 
 
 def make_private(resource_id):
@@ -349,12 +350,15 @@ def make_private(resource_id):
     doesn't exist, nothing happens.
 
     :param resource_id: the resource's id
+    :return: True if modifications were required to make the resource's data private, False if not
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
     if SEARCHER.elasticsearch.indices.exists(index_name):
         if SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
             SEARCHER.elasticsearch.indices.delete_alias(index_name, public_index_name)
+            return True
+    return False
 
 
 def make_public(resource_id):
@@ -364,6 +368,7 @@ def make_public(resource_id):
     nothing happens.
 
     :param resource_id: the resource's id
+    :return: True if modifications were required to make the resource's data public, False if not
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
@@ -375,6 +380,8 @@ def make_public(resource_id):
                 ]
             }
             SEARCHER.elasticsearch.indices.update_aliases(actions)
+            return True
+    return False
 
 
 def is_resource_read_only(resource_id):
