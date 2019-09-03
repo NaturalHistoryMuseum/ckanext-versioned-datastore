@@ -12,7 +12,7 @@ from ckanext.versioned_datastore.lib.stats import get_all_stats
 blueprint = Blueprint(name=u'datastore', import_name=__name__, url_prefix=u'')
 
 
-@blueprint.route('/dataset/<package_name>/resource_data/<resource_id>')
+@blueprint.route(u'/dataset/<package_name>/resource_data/<resource_id>', methods=[u'GET', u'POST'])
 def resource_data(package_name, resource_id):
     '''
     Produces the DataStore page on a resource. This page contains details of the resource's
