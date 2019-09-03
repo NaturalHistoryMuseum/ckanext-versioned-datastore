@@ -19,10 +19,15 @@ def resource_data(package_name, resource_id):
     ingestion and indexing.
     '''
     try:
-        toolkit.c.pkg_dict = toolkit.get_action(u'package_show')(None, {
+        # first, check access
+        toolkit.check_access(u'resource_update', {}, {
+            u'id': resource_id
+        })
+        # then retrieve the package and resource data
+        toolkit.c.pkg_dict = toolkit.get_action(u'package_show')({}, {
             u'id': package_name
         })
-        toolkit.c.resource = toolkit.get_action(u'resource_show')(None, {
+        toolkit.c.resource = toolkit.get_action(u'resource_show')({}, {
             u'id': resource_id
         })
     except toolkit.ObjectNotFound:
