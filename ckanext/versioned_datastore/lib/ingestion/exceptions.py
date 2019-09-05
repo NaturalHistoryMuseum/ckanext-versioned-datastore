@@ -11,12 +11,13 @@ class UnsupportedDataSource(IngestionException):
     the format isn't one we support.
     '''
 
-    def __init__(self, url):
+    def __init__(self, res_format):
         '''
-        :param url: the url that couldn't be ingested
+        :param res_format: the resource format
         '''
-        super(UnsupportedDataSource, self).__init__(u'Could not find reader for {}'.format(url))
-        self.url = url
+        super(UnsupportedDataSource, self).__init__(
+            u'Could not find ingest reader for {}'.format(res_format if res_format else u'n/a'))
+        self.res_format = res_format
 
 
 class InvalidId(IngestionException):

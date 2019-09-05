@@ -269,7 +269,7 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
         handled = True
 
     if not handled:
-        raise exceptions.UnsupportedDataSource(resource[u'url'])
+        raise exceptions.UnsupportedDataSource(resource.get(u'format', None))
 
 
 class DatastoreFeeder(IngestionFeeder):
