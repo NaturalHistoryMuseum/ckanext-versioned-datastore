@@ -8,7 +8,7 @@ from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
 from ckan.model import DomainObjectOperation
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
 from ckanext.versioned_datastore.logic import action, auth
-from ckanext.versioned_datastore import routes
+from ckanext.versioned_datastore import routes, helpers
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +60,12 @@ class VersionedSearchPlugin(SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            u'is_datastore_resource': is_datastore_resource
+            u'is_datastore_resource': is_datastore_resource,
+            u'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
+            u'get_human_duration': helpers.get_human_duration,
+            u'get_stat_icon': helpers.get_stat_icon,
+            u'get_stat_activity_class': helpers.get_stat_activity_class,
+            u'get_stat_title': helpers.get_stat_title,
         }
 
     # IResourceController
@@ -119,6 +124,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     def update_config(self, config):
         # add templates
         toolkit.add_template_directory(config, u'theme/templates')
+        toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
 
     ## IBlueprint
     def get_blueprint(self):

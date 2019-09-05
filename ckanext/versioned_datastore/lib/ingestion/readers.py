@@ -7,7 +7,7 @@ import six
 import xlrd
 from cchardet import UniversalDetector
 from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.ingestion.utils import ensure_reset
+from ckanext.versioned_datastore.lib.ingestion.utils import ensure_reset, iter_universal_lines
 from openpyxl.cell.read_only import EmptyCell
 from ckanext.versioned_datastore.lib.ingestion import exceptions
 
@@ -23,7 +23,7 @@ def get_reader(resource_format):
     resource_format = resource_format.lower()
     if resource_format in utils.CSV_FORMATS:
         return SVReader(u'excel')
-    if resource_format == utils.TSV_FORMATS:
+    if resource_format in utils.TSV_FORMATS:
         return SVReader(u'excel-tab')
     if resource_format in utils.XLS_FORMATS:
         return XLSReader()
@@ -133,7 +133,8 @@ class SVReader(ResourceReader):
                 self.encoding = u'utf-8'
 
         # create and return the dict reader
-        return unicodecsv.DictReader(resource_data_fp, dialect=self.dialect, encoding=self.encoding)
+        line_iterator = iter_universal_lines(resource_data_fp, self.encoding)
+        return unicodecsv.DictReader(line_iterator, dialect=self.dialect, encoding=self.encoding)
 
     def _get_rows(self, resource_data_fp):
         '''

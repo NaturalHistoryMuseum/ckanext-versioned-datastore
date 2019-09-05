@@ -1,0 +1,21 @@
+<span class="datastore_activity_message">
+    {% if stat.error %}
+        {%  if h.is_duplicate_ingestion(stat) %}
+            This version of the resource data has been imported before, skipping
+        {% else %}
+            {% trans error=stat.error %}
+            An error occurred during validation/preparation: {{ error }}
+            {% endtrans %}
+        {% endif %}
+    {% else %}
+        {% if stat.in_progress %}
+            {% trans count=stat.count %}
+            Validation/preparation in progress, {{ count }} records processed so far
+            {% endtrans %}
+        {% else %}
+            {% trans count=stat.count, duration=h.get_human_duration(stat) %}
+            Validated and prepared {{ count }} records for ingestion in {{ duration }}
+            {% endtrans %}
+        {% endif %}
+    {% endif %}
+</span>

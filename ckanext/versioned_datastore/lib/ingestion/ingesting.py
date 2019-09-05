@@ -10,6 +10,7 @@ import itertools
 import math
 import os
 import simplejson
+import unicodedata
 from ckanext.versioned_datastore.lib import stats
 from ckanext.versioned_datastore.lib.details import create_details, get_last_file_hash
 from ckanext.versioned_datastore.lib.ingestion import exceptions
@@ -18,6 +19,7 @@ from ckanext.versioned_datastore.lib.ingestion.readers import get_reader, APIRea
 from ckanext.versioned_datastore.lib.ingestion.records import DatastoreRecord
 from ckanext.versioned_datastore.lib.ingestion.utils import download_to_temp_file, compute_hash, \
     InclusionTracker
+from ckanext.versioned_datastore.model.stats import ImportStats
 from contextlib2 import suppress
 from datetime import datetime
 from eevee.ingestion.converters import RecordToMongoConverter
@@ -48,7 +50,8 @@ def ingest_resource(version, config, resource, data, replace, api_key):
     # create a stats entry so that preparation progress can be tracked
     prep_stats_id = stats.start_operation(resource_id, stats.PREP, version)
     try:
-        data_file_name, data_file_metadata = prepare_resource(resource, version, data, api_key)
+        data_file_name, data_file_metadata = prepare_resource(resource, version, prep_stats_id,
+                                                              data, api_key)
     except Exception as e:
         stats.mark_error(prep_stats_id, e)
         log.info(u'Prep failed for resource {} due to {}: {}'.format(resource_id,
@@ -58,7 +61,7 @@ def ingest_resource(version, config, resource, data, replace, api_key):
             # these exceptions are expected (validation problems for example)
             return False
         else:
-            raise e
+            raise
     else:
         stats.finish_operation(prep_stats_id, data_file_metadata[u'record_count'])
 
@@ -100,7 +103,7 @@ def ingest_resource(version, config, resource, data, replace, api_key):
             os.remove(data_file_name)
 
 
-def prepare_resource(resource, version, data=None, api_key=None):
+def prepare_resource(resource, version, stats_id, data=None, api_key=None, update_every=1000):
     '''
     Downloads, validates and then produces an intermediate file containing the rows from the
     resource to be ingested. If the data parameter is provided then it is used as the resource data,
@@ -118,10 +121,14 @@ def prepare_resource(resource, version, data=None, api_key=None):
 
     :param resource: the resource dict
     :param version: the version of the data
+    :param stats_id: the stats id for this prep run
     :param data: optional data, if provided must be a list of dicts
     :param api_key: the API key of a user who can read the data, if indeed the data needs an API
                     key to get it. This is needed when the URL is the CKAN resource download URL
                     of a private resource. Can be None to indicate no API key is required
+    :param update_every: the frequency with which to update the ImportStats (every x rows written to
+                         the intermediate file format). Setting this too low will cause the database
+                         to be written to a lot which could cause performance issues
     :return: the name of the intermediate file and the metadata dict
     '''
     name = os.path.join(tempfile.gettempdir(), u'{}_{}.jsonl.gz'.format(resource[u'id'], version))
@@ -173,8 +180,20 @@ def prepare_resource(resource, version, data=None, api_key=None):
                 # write the metadata out as a single line first
                 writer.write(simplejson.dumps(metadata, ensure_ascii=False) + u'\n')
                 # then write the rows out as single lines
-                for row in reader.iter_rows(fp):
-                    writer.write(simplejson.dumps(row, ensure_ascii=False) + u'\n')
+                for count, row in enumerate(reader.iter_rows(fp), start=1):
+                    row_data = simplejson.dumps(row, ensure_ascii=False)
+                    # check that the unicode produced doesn't contain any crap characters that we
+                    # won't be able to read during ingestion
+                    if any(unicodedata.category(character)[0] == u'C' for character in row_data):
+                        raise exceptions.InvalidCharacterException(count, row)
+
+                    writer.write(row_data + u'\n')
+
+                    if count % update_every == 0:
+                        stats.update_stats(stats_id, {
+                            ImportStats.in_progress: True,
+                            ImportStats.count: count,
+                        })
 
             return name, metadata
     except Exception:
@@ -250,7 +269,7 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
         handled = True
 
     if not handled:
-        raise exceptions.UnsupportedDataSource(resource[u'url'])
+        raise exceptions.UnsupportedDataSource(resource.get(u'format', None))
 
 
 class DatastoreFeeder(IngestionFeeder):
@@ -288,7 +307,7 @@ class DatastoreFeeder(IngestionFeeder):
                 # skip the first line
                 next(reader)
             for line in reader:
-                yield simplejson.loads(line, encoding=u'utf-8')
+                yield simplejson.loads(line)
 
     def get_existing_max_id(self):
         '''
