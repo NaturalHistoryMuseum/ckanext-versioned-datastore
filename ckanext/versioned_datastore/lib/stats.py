@@ -1,10 +1,9 @@
-from datetime import datetime
-
-from sqlalchemy import desc
+from traceback import format_exception_only
 
 from ckan import model
 from ckanext.versioned_datastore.model.stats import ImportStats
-
+from datetime import datetime
+from sqlalchemy import desc
 
 PREP = u'prep'
 INGEST = u'ingest'
@@ -138,7 +137,7 @@ def mark_error(stats_id, error):
         ImportStats.in_progress: False,
         ImportStats.duration: (end - start).total_seconds(),
         ImportStats.end: end,
-        ImportStats.error: unicode(error.message),
+        ImportStats.error: unicode(format_exception_only(type(error), error)[-1].strip()),
     })
 
 
