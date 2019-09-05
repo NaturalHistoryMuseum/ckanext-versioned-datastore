@@ -10,6 +10,7 @@ import itertools
 import math
 import os
 import simplejson
+import unicodedata
 from ckanext.versioned_datastore.lib import stats
 from ckanext.versioned_datastore.lib.details import create_details, get_last_file_hash
 from ckanext.versioned_datastore.lib.ingestion import exceptions
@@ -180,7 +181,14 @@ def prepare_resource(resource, version, stats_id, data=None, api_key=None, updat
                 writer.write(simplejson.dumps(metadata, ensure_ascii=False) + u'\n')
                 # then write the rows out as single lines
                 for count, row in enumerate(reader.iter_rows(fp), start=1):
-                    writer.write(simplejson.dumps(row, ensure_ascii=False) + u'\n')
+                    row_data = simplejson.dumps(row, ensure_ascii=False)
+                    # check that the unicode produced doesn't contain any crap characters that we
+                    # won't be able to read during ingestion
+                    if any(unicodedata.category(character)[0] == u'C' for character in row_data):
+                        raise exceptions.InvalidCharacterException(count, row)
+
+                    writer.write(row_data + u'\n')
+
                     if count % update_every == 0:
                         stats.update_stats(stats_id, {
                             ImportStats.in_progress: True,
