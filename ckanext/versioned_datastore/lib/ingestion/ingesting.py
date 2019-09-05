@@ -58,7 +58,7 @@ def ingest_resource(version, config, resource, data, replace, api_key):
             # these exceptions are expected (validation problems for example)
             return False
         else:
-            raise e
+            raise
     else:
         stats.finish_operation(prep_stats_id, data_file_metadata[u'record_count'])
 
