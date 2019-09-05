@@ -1,8 +1,12 @@
 <span class="datastore_activity_message">
     {% if stat.error %}
-        {% trans error=stat.error %}
-        An error occurred during validation/preparation: {{ error }}
-        {% endtrans %}
+        {%  if h.is_duplicate_ingestion(stat) %}
+            This version of the resource data has been imported before, skipping
+        {% else %}
+            {% trans error=stat.error %}
+            An error occurred during validation/preparation: {{ error }}
+            {% endtrans %}
+        {% endif %}
     {% else %}
         {% if stat.in_progress %}
             {% trans count=stat.count %}
