@@ -1,0 +1,17 @@
+<span class="datastore_activity_message">
+    {% if stat.error %}
+        {% trans error=stat.error %}
+        An error occurred during ingestion: {{ error }}
+        {% endtrans %}
+    {% else %}
+        {% if stat.in_progress %}
+            {% trans count=stat.count %}
+            Ingestion in progress, {{ count }} records processed so far
+            {% endtrans %}
+        {% else %}
+            {% trans count=stat.count, duration=h.get_human_duration(stat) %}
+            Ingested {{ count }} records in {{ duration }}
+            {% endtrans %}
+        {% endif %}
+    {% endif %}
+</span>

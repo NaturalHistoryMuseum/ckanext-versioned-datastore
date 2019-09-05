@@ -1,0 +1,17 @@
+<span class="datastore_activity_message">
+    {% if stat.error %}
+        {% trans error=stat.error %}
+        An error occurred during indexing: {{ error }}
+        {% endtrans %}
+    {% else %}
+        {% if stat.in_progress %}
+            {% trans count=stat.count %}
+            Indexing in progress, {{ count }} records processed so far
+            {% endtrans %}
+        {% else %}
+            {% trans count=stat.count, duration=h.get_human_duration(stat) %}
+            Indexed {{ count }} records in {{ duration }}
+            {% endtrans %}
+        {% endif %}
+    {% endif %}
+</span>
