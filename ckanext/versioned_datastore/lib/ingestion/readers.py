@@ -23,7 +23,7 @@ def get_reader(resource_format):
     resource_format = resource_format.lower()
     if resource_format in utils.CSV_FORMATS:
         return SVReader(u'excel')
-    if resource_format == utils.TSV_FORMATS:
+    if resource_format in utils.TSV_FORMATS:
         return SVReader(u'excel-tab')
     if resource_format in utils.XLS_FORMATS:
         return XLSReader()
