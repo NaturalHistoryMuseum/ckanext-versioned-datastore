@@ -299,7 +299,7 @@ class DatastoreFeeder(IngestionFeeder):
                 # skip the first line
                 next(reader)
             for line in reader:
-                yield simplejson.loads(line, encoding=u'utf-8')
+                yield simplejson.loads(line)
 
     def get_existing_max_id(self):
         '''
