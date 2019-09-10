@@ -124,6 +124,7 @@ class SVReader(ResourceReader):
                     if chunk:
                         detector.feed(chunk)
                     else:
+                        detector.close()
                         break
 
             self.encoding = detector.result[u'encoding']
