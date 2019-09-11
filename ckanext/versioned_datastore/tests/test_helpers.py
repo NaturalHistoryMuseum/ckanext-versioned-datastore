@@ -1,9 +1,9 @@
 from traceback import format_exception_only
 
 from ckanext.versioned_datastore.lib.stats import INGEST, INDEX, PREP
-from nose.tools import assert_equal, assert_true, assert_false
+from nose.tools import assert_equal, assert_true, assert_false, assert_not_equal
 from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration, \
-    get_stat_icon, get_stat_activity_class
+    get_stat_icon, get_stat_activity_class, get_stat_title
 from ckanext.versioned_datastore.lib.ingestion.exceptions import DuplicateDataSource, \
     UnsupportedDataSource
 from ckantest.models import TestBase
@@ -112,3 +112,11 @@ class TestHelpers(TestBase):
         for stat_type in [INGEST, INDEX, PREP, MagicMock()]:
             assert_equal(get_stat_activity_class(MagicMock(in_progress=False, error=None,
                                                            type=stat_type)), stat_type)
+
+    def test_get_stat_title(self):
+        # just check that for the types we know about we don't get back the default
+        for stat_type in [INGEST, INDEX, PREP]:
+            assert_not_equal(get_stat_title(MagicMock(type=stat_type)), stat_type)
+
+        fake_type = MagicMock()
+        assert_equal(get_stat_title(MagicMock(type=fake_type)), fake_type)
