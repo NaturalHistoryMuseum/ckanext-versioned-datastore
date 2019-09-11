@@ -8,6 +8,7 @@ from sqlalchemy import desc
 PREP = u'prep'
 INGEST = u'ingest'
 INDEX = u'index'
+ALL_TYPES = [PREP, INDEX, INGEST]
 
 
 def start_operation(resource_id, import_type, version, start=None):

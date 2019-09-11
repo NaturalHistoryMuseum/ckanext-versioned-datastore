@@ -1,6 +1,6 @@
 from traceback import format_exception_only
 
-from ckanext.versioned_datastore.lib.stats import INGEST, INDEX, PREP
+from ckanext.versioned_datastore.lib.stats import INGEST, INDEX, PREP, ALL_TYPES
 from nose.tools import assert_equal, assert_true, assert_false, assert_not_equal
 from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration, \
     get_stat_icon, get_stat_activity_class, get_stat_title
@@ -88,6 +88,11 @@ class TestHelpers(TestBase):
                      u'fa-search')
         assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=PREP)), u'fa-cogs')
 
+        # check that no types are missing icons
+        for stat_type in ALL_TYPES:
+            assert_not_equal(get_stat_icon(MagicMock(in_progress=False, error=None,
+                                                     type=stat_type)), u'fa-check')
+
         # anything else gets a check to avoid erroring
         assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=u'banana')),
                      u'fa-check')
@@ -109,13 +114,13 @@ class TestHelpers(TestBase):
                          u'duplicate')
 
         # now check the types. For these we just return the actual type value as the return value
-        for stat_type in [INGEST, INDEX, PREP, MagicMock()]:
+        for stat_type in ALL_TYPES + [MagicMock()]:
             assert_equal(get_stat_activity_class(MagicMock(in_progress=False, error=None,
                                                            type=stat_type)), stat_type)
 
     def test_get_stat_title(self):
         # just check that for the types we know about we don't get back the default
-        for stat_type in [INGEST, INDEX, PREP]:
+        for stat_type in ALL_TYPES:
             assert_not_equal(get_stat_title(MagicMock(type=stat_type)), stat_type)
 
         fake_type = MagicMock()
