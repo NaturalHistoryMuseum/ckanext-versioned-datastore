@@ -22,7 +22,7 @@ class TestUtils(TestBase):
             # create a context with a schema specified
             context = {
                 u'schema': context_schema
-                }
+            }
             # call validate
             validate(context, data_dict, default_schema)
 
@@ -73,25 +73,25 @@ class TestUtils(TestBase):
                     {
                         u'key': u'value1',
                         u'doc_count': 43
-                        },
+                    },
                     {
                         u'key': u'value2',
                         u'doc_count': 243
-                        },
+                    },
                     {
                         u'key': u'value3',
                         u'doc_count': 543
-                        },
+                    },
                     {
                         u'key': u'value4',
                         u'doc_count': 143
-                        },
+                    },
                     {
                         u'key': u'value5',
                         u'doc_count': 743
-                        },
-                    ]
-                },
+                    },
+                ]
+            },
             u'facet2': {
                 u'sum_other_doc_count': 0,
                 u'doc_count_error_upper_bound': 0,
@@ -99,10 +99,10 @@ class TestUtils(TestBase):
                     {
                         u'key': u'value1',
                         u'doc_count': 6
-                        },
-                    ]
-                }
-            })
+                    },
+                ]
+            }
+        })
 
         nose.tools.assert_equal(len(facets), 2)
         nose.tools.assert_equal(facets[u'facet1'][u'details'][u'sum_other_doc_count'], 901)
@@ -129,20 +129,20 @@ class TestUtils(TestBase):
                                 u"properties": {
                                     u"_id": {
                                         u'type': u'long'
-                                        },
+                                    },
                                     u"field1": {
                                         u"type": u"keyword",
-                                        },
+                                    },
                                     u"field2": {
                                         u"type": u"date",
-                                        },
-                                    }
+                                    },
                                 }
                             }
                         }
                     }
                 }
             }
+        }
 
         mapping_mock_function = MagicMock(return_value=mock_mapping)
         prefix_mock = lambda name: u'beans-{}'.format(name)
@@ -155,10 +155,10 @@ class TestUtils(TestBase):
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
         with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
-                        new=prefix_mock), \
+                   new=prefix_mock), \
              patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock), \
              patch(u'ckanext.versioned_datastore.lib.utils.MultiSearch',
-                        new=multisearch_class_mock):
+                   new=multisearch_class_mock):
             mapping, fields = get_fields(u'index')
             nose.tools.assert_equal(mapping, mock_mapping[u'beans-index'])
             nose.tools.assert_equal(len(fields), 3)
@@ -166,15 +166,15 @@ class TestUtils(TestBase):
             nose.tools.assert_equal(fields[0], {
                 u'id': u'_id',
                 u'type': u'integer'
-                })
+            })
             nose.tools.assert_true({
                                        u'id': u'field1',
                                        u'type': u'string'
-                                       } in fields)
+                                   } in fields)
             nose.tools.assert_true({
                                        u'id': u'field2',
                                        u'type': u'string'
-                                       } in fields)
+                                   } in fields)
 
     def test_is_datastore_resource(self):
         exists_mock = MagicMock(return_value=True)
@@ -197,29 +197,41 @@ class TestUtils(TestBase):
             nose.tools.assert_false(is_datastore_only_resource(no))
 
     def test_is_ingestible(self):
+        # all formats should be ingestible (even in uppercase)
         for fmt in ALL_FORMATS:
             nose.tools.assert_true(is_ingestible({
                 u'format': fmt,
                 u'url': MagicMock()
-                }))
+            }))
             nose.tools.assert_true(is_ingestible({
                 u'format': fmt.upper(),
                 u'url': MagicMock()
-                }))
-
+            }))
+        # zip should be ingestible (even in uppercase)
+        nose.tools.assert_true(is_ingestible({
+            u'format': u'ZIP',
+            u'url': MagicMock(),
+        }))
+        nose.tools.assert_true(is_ingestible({
+            u'format': u'zip',
+            u'url': MagicMock(),
+        }))
+        # a datastore only resource should be ingestible
         nose.tools.assert_true(is_ingestible({
             u'format': None,
             u'url': DATASTORE_ONLY_RESOURCE
-            }))
+        }))
+
+        # if there's no url then the resource is not ingestible
         nose.tools.assert_false(is_ingestible({
-            u'format': None,
-            u'url': None
-            }))
+            u'url': None,
+        }))
+        nose.tools.assert_false(is_ingestible({
+            u'format': u'csv',
+            u'url': None,
+        }))
+        # if there's no format and the resource is not datastore only then it is not ingestible
         nose.tools.assert_false(is_ingestible({
             u'format': None,
             u'url': u'http://banana.com/test.csv'
-            }))
-        nose.tools.assert_false(is_ingestible({
-            u'format': u'csv',
-            u'url': None
-            }))
+        }))
