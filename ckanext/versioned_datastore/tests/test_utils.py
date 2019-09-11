@@ -1,11 +1,10 @@
-import mock
 import nose
 from ckanext.versioned_datastore.lib.utils import (ALL_FORMATS, DATASTORE_ONLY_RESOURCE,
                                                    format_facets, get_fields, is_datastore_resource,
                                                    is_ingestible, validate)
 from ckantest.models import TestBase
 from eevee.indexing.utils import DOC_TYPE
-from mock import MagicMock, call
+from mock import patch, MagicMock, call
 
 
 class TestUtils(TestBase):
@@ -15,7 +14,7 @@ class TestUtils(TestBase):
     def test_validate_uses_context_schema(self):
         # mock the validate function to return a mock and False for errors
         mock_validate = MagicMock(return_value=(MagicMock(), False))
-        with mock.patch(self.validate_function, side_effect=mock_validate):
+        with patch(self.validate_function, side_effect=mock_validate):
             context_schema = MagicMock()
             default_schema = MagicMock()
             data_dict = MagicMock()
@@ -33,7 +32,7 @@ class TestUtils(TestBase):
 
     def test_validate_uses_default_schema(self):
         mock_validate = MagicMock(return_value=(MagicMock(), False))
-        with mock.patch(self.validate_function, side_effect=mock_validate):
+        with patch(self.validate_function, side_effect=mock_validate):
             default_schema = MagicMock()
             data_dict = MagicMock()
             # create a context with a no schema specified
@@ -53,7 +52,7 @@ class TestUtils(TestBase):
         returned_data_dict = MagicMock()
         # mock the validate function to return the data dict and False for errors
         mock_validate = MagicMock(return_value=(returned_data_dict, False))
-        with mock.patch(self.validate_function, side_effect=mock_validate):
+        with patch(self.validate_function, side_effect=mock_validate):
             passed_data_dict = MagicMock()
             # check that validate returns the data dict we mock returned from the validate function
             # above not the other MagicMock we passed to it
@@ -154,10 +153,10 @@ class TestUtils(TestBase):
                                         execute=MagicMock(return_value=es_response))
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
-        with mock.patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
+        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
                         new=prefix_mock), \
-             mock.patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock), \
-             mock.patch(u'ckanext.versioned_datastore.lib.utils.MultiSearch',
+             patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock), \
+             patch(u'ckanext.versioned_datastore.lib.utils.MultiSearch',
                         new=multisearch_class_mock):
             mapping, fields = get_fields(u'index')
             nose.tools.assert_equal(mapping, mock_mapping[u'beans-index'])
@@ -181,9 +180,9 @@ class TestUtils(TestBase):
         prefix_mock = lambda name: u'beans-{}'.format(name)
         searcher_mock = MagicMock(elasticsearch=MagicMock(indices=MagicMock(exists=exists_mock)))
 
-        with mock.patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
+        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
                         new=prefix_mock), \
-             mock.patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
+             patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
             nose.tools.assert_true(is_datastore_resource(u'banana'))
             nose.tools.assert_equal(exists_mock.call_args, call(u'beans-banana'))
 
