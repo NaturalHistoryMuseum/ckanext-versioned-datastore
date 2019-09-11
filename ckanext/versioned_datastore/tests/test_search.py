@@ -1,7 +1,6 @@
 from ckanext.versioned_datastore.lib.search import _find_version
-from nose.tools import assert_equal, assert_true, assert_false, assert_not_equal, assert_raises
 from ckantest.models import TestBase
-from mock import MagicMock, patch
+from nose.tools import assert_equal, assert_raises
 
 
 class TestSearchFindVersion(TestBase):
