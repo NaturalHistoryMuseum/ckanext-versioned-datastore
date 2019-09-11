@@ -1,11 +1,13 @@
 from traceback import format_exception_only
 
+from ckanext.versioned_datastore.lib.stats import INGEST, INDEX, PREP
 from nose.tools import assert_equal, assert_true, assert_false
-from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration
+from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration, \
+    get_stat_icon
 from ckanext.versioned_datastore.lib.ingestion.exceptions import DuplicateDataSource, \
     UnsupportedDataSource
 from ckantest.models import TestBase
-from mock import MagicMock
+from mock import MagicMock, patch
 
 
 class TestHelpers(TestBase):
@@ -62,3 +64,30 @@ class TestHelpers(TestBase):
         for duration, expected_output in scenarios:
             stat = MagicMock(duration=duration)
             assert_equal(get_human_duration(stat), expected_output)
+
+    def test_get_stat_icon(self):
+        # in progress stats are always pulsing spinners regardless of their type
+        assert_equal(get_stat_icon(MagicMock(in_progress=True)), u'fa-spinner fa-pulse')
+
+        # if there's a non-duplicate error, we use exclamation
+        with patch(u'ckanext.versioned_datastore.helpers.is_duplicate_ingestion',
+                   MagicMock(return_value=False)):
+            assert_equal(get_stat_icon(MagicMock(in_progress=False, error=MagicMock())),
+                         u'fa-exclamation')
+
+        # if there's a duplicate error, we use copy
+        with patch(u'ckanext.versioned_datastore.helpers.is_duplicate_ingestion',
+                   MagicMock(return_value=True)):
+            assert_equal(get_stat_icon(MagicMock(in_progress=False, error=MagicMock())),
+                         u'fa-copy')
+
+        # now check the types
+        assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=INGEST)),
+                     u'fa-tasks')
+        assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=INDEX)),
+                     u'fa-search')
+        assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=PREP)), u'fa-cogs')
+
+        # anything else gets a check to avoid erroring
+        assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=u'banana')),
+                     u'fa-check')
