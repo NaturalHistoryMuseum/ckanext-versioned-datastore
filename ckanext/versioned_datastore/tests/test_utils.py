@@ -1,7 +1,8 @@
 import nose
 from ckanext.versioned_datastore.lib.utils import (ALL_FORMATS, DATASTORE_ONLY_RESOURCE,
                                                    format_facets, get_fields, is_datastore_resource,
-                                                   is_ingestible, validate)
+                                                   is_ingestible, validate,
+                                                   is_datastore_only_resource)
 from ckantest.models import TestBase
 from eevee.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock, call
@@ -184,6 +185,16 @@ class TestUtils(TestBase):
             with patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
                 nose.tools.assert_true(is_datastore_resource(u'banana'))
                 nose.tools.assert_equal(exists_mock.call_args, call(u'beans-banana'))
+
+    def test_is_datastore_only_resource(self):
+        for yes in [DATASTORE_ONLY_RESOURCE, u'http://{}'.format(DATASTORE_ONLY_RESOURCE),
+                    u'https://{}'.format(DATASTORE_ONLY_RESOURCE)]:
+            nose.tools.assert_true(is_datastore_only_resource(yes))
+
+        for no in [u'ftp://{}'.format(DATASTORE_ONLY_RESOURCE), u'this is datastore only',
+                   None, u'{}/{}'.format(DATASTORE_ONLY_RESOURCE, DATASTORE_ONLY_RESOURCE),
+                   u'https://{}/nope'.format(DATASTORE_ONLY_RESOURCE)]:
+            nose.tools.assert_false(is_datastore_only_resource(no))
 
     def test_is_ingestible(self):
         for fmt in ALL_FORMATS:
