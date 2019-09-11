@@ -180,11 +180,10 @@ class TestUtils(TestBase):
         prefix_mock = lambda name: u'beans-{}'.format(name)
         searcher_mock = MagicMock(elasticsearch=MagicMock(indices=MagicMock(exists=exists_mock)))
 
-        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
-                        new=prefix_mock), \
-             patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
-            nose.tools.assert_true(is_datastore_resource(u'banana'))
-            nose.tools.assert_equal(exists_mock.call_args, call(u'beans-banana'))
+        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource', new=prefix_mock):
+            with patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
+                nose.tools.assert_true(is_datastore_resource(u'banana'))
+                nose.tools.assert_equal(exists_mock.call_args, call(u'beans-banana'))
 
     def test_is_ingestible(self):
         for fmt in ALL_FORMATS:
