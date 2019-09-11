@@ -3,7 +3,7 @@ from traceback import format_exception_only
 from ckanext.versioned_datastore.lib.stats import INGEST, INDEX, PREP
 from nose.tools import assert_equal, assert_true, assert_false
 from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration, \
-    get_stat_icon
+    get_stat_icon, get_stat_activity_class
 from ckanext.versioned_datastore.lib.ingestion.exceptions import DuplicateDataSource, \
     UnsupportedDataSource
 from ckantest.models import TestBase
@@ -91,3 +91,24 @@ class TestHelpers(TestBase):
         # anything else gets a check to avoid erroring
         assert_equal(get_stat_icon(MagicMock(in_progress=False, error=None, type=u'banana')),
                      u'fa-check')
+
+    def test_get_stat_activity_class(self):
+        # in progress stats always get the in_progress class
+        assert_equal(get_stat_activity_class(MagicMock(in_progress=True)), u'in_progress')
+
+        # if there's a non-duplicate error, we use failure
+        with patch(u'ckanext.versioned_datastore.helpers.is_duplicate_ingestion',
+                   MagicMock(return_value=False)):
+            assert_equal(get_stat_activity_class(MagicMock(in_progress=False, error=MagicMock())),
+                         u'failure')
+
+        # if there's a duplicate error, we use duplicate
+        with patch(u'ckanext.versioned_datastore.helpers.is_duplicate_ingestion',
+                   MagicMock(return_value=True)):
+            assert_equal(get_stat_activity_class(MagicMock(in_progress=False, error=MagicMock())),
+                         u'duplicate')
+
+        # now check the types. For these we just return the actual type value as the return value
+        for stat_type in [INGEST, INDEX, PREP, MagicMock()]:
+            assert_equal(get_stat_activity_class(MagicMock(in_progress=False, error=None,
+                                                           type=stat_type)), stat_type)
