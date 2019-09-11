@@ -1,7 +1,7 @@
 from traceback import format_exception_only
 
 import nose
-from ckanext.versioned_datastore.helpers import is_duplicate_ingestion
+from ckanext.versioned_datastore.helpers import is_duplicate_ingestion, get_human_duration
 from ckanext.versioned_datastore.lib.ingestion.exceptions import DuplicateDataSource, \
     UnsupportedDataSource
 from ckantest.models import TestBase
@@ -36,3 +36,29 @@ class TestHelpers(TestBase):
             format_exception_only(UnsupportedDataSource, non_dup_exception)[-1].strip()
         ))
         nose.tools.assert_false(is_duplicate_ingestion(stat4))
+
+    def test_get_human_duration(self):
+        scenarios = [
+            # seconds
+            (10.381, u'10.38 seconds'),
+            (10, u'10.00 seconds'),
+            (0, u'0.00 seconds'),
+            (2.111111111111328042384, u'2.11 seconds'),
+            (2.3, u'2.30 seconds'),
+            (10.385, u'10.38 seconds'),
+
+            # minutes
+            (60, u'1 minutes'),
+            (61, u'1 minutes'),
+            (190, u'3 minutes'),
+            (280.30290, u'5 minutes'),
+
+            # hours
+            (3600, u'1 hours'),
+            (3600.3289, u'1 hours'),
+            (11900, u'3 hours'),
+            (60 * 60 * 24 * 365 * 3, u'26280 hours'),
+        ]
+        for duration, expected_output in scenarios:
+            stat = MagicMock(duration=duration)
+            nose.tools.assert_equal(get_human_duration(stat), expected_output)
