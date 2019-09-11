@@ -22,18 +22,20 @@ def _find_version(data_dict):
     :return: the version found as an integer, or None if no version was found
     '''
     version = data_dict.get(u'version', None)
+
     # TODO: __version__ support should be removed once the frontend is capable of using the param
     # pop the __version__ to avoid including it in the normal search filters
     filter_version = data_dict.get(u'filters', {}).pop(u'__version__', None)
+    # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
+    if isinstance(filter_version, list):
+        # just use the first value
+        filter_version = filter_version[0]
+
     # use the version parameter's value first if it exists
     if version is not None:
         return int(version)
     # otherwise fallback on __version__
     if filter_version is not None:
-        # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
-        if isinstance(filter_version, list):
-            # just use the first value
-            filter_version = filter_version[0]
         return int(filter_version)
     # no version found, return None
     return None
