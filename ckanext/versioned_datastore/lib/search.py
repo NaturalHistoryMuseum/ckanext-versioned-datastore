@@ -1,12 +1,12 @@
 import copy
 
-from elasticsearch_dsl import Search
-
+import operator
 from ckan.plugins import PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.geo import add_geo_search
 from ckanext.versioned_datastore.lib.utils import validate, prefix_field
 from ckanext.versioned_datastore.logic.schema import datastore_search_schema
+from elasticsearch_dsl import Search
 
 
 def _find_version(data_dict):
@@ -126,18 +126,18 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     # add a free text query across all fields if there is one. This searches against meta.all which
     # is a copy field created by adding the values of each data.* field
     if q is not None and q is not u'' and q is not {}:
-        if isinstance(q, basestring):
+        if isinstance(q, (str, unicode, int, float)):
             search = search.query(u'match', **{u'meta.all': {u'query': q, u'operator': u'and'}})
-        else:
-            for field, query in q.items():
+        elif isinstance(q, dict):
+            for field, query in sorted(q.items(), key=operator.itemgetter(0)):
                 # TODO: change this to __all__ to match __geo__?
                 if field == u'':
                     field = u'meta.all'
                 else:
                     field = prefix_field(field)
-                search = search.query(u'match', **{field: query})
+                search = search.query(u'match', **{field: {u'query': query, u'operator': u'and'}})
     if filters is not None:
-        for field, values in filters.items():
+        for field, values in sorted(filters.items(), key=operator.itemgetter(0)):
             if not isinstance(values, list):
                 values = [values]
             if field == u'__geo__':
