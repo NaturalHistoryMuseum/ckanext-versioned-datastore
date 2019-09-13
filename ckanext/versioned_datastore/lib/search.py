@@ -181,9 +181,10 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
             if not field_and_sort.endswith(u' desc') and not field_and_sort.endswith(u' asc'):
                 # default the sort direction to ascending if nothing is provided
                 field_and_sort += u' asc'
-            field, direction = prefix_field(field_and_sort).rsplit(u' ', 1)
+            field, direction = field_and_sort.rsplit(u' ', 1)
             # set the id_in_sort boolean to True if we see the _id field in the caller defined sort
             id_in_sort = not id_in_sort and field == u'_id'
+            field = prefix_field(field)
             # if the sort direction is desc we need to add a minus sign in front of the field name,
             # otherwise we can just use the field name on its own as the default sort is asc
             sorts.append(u'-{}'.format(field) if direction == u'desc' else field)
