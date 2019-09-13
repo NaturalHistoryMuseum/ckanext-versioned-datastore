@@ -1,6 +1,7 @@
 import contextlib
 
-from ckanext.versioned_datastore.lib.search import _find_version, create_search
+from ckanext.versioned_datastore.lib.search import _find_version, create_search, build_search_object
+from ckanext.versioned_datastore.lib.utils import prefix_field
 from ckantest.models import TestBase
 from elasticsearch_dsl import Search
 from mock import MagicMock, patch
@@ -126,3 +127,376 @@ class TestCreateSearch(TestBase):
         # we don't care in this test if the Search has been created correctly, only that we get a
         # Search object back
         assert_true(isinstance(result[3], Search))
+
+
+class TestBuildSearchObject(TestBase):
+    plugins = [u'versioned_datastore']
+
+    def _run_test(self, kwargs, expected_result, add_size_and_sort=True):
+        if add_size_and_sort:
+            expected_result[u'size'] = 100
+            expected_result[u'sort'] = [u'data._id']
+        assert_equal(build_search_object(**kwargs).to_dict(), expected_result)
+        assert_equal(build_search_object(**kwargs), Search().from_dict(expected_result))
+
+    def test_blank(self):
+        self._run_test({}, {})
+
+    def test_q_empties(self):
+        self._run_test({u'q': u''}, {})
+        self._run_test({u'q': None}, {})
+        self._run_test({u'q': {}}, {})
+
+    def test_q_simple_text(self):
+        self._run_test(
+            {
+                u'q': u'banana'
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': u'banana',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'q': u'a multi-word example'
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': u'a multi-word example',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+
+    def test_q_dicts(self):
+        self._run_test(
+            {
+                u'q': {
+                    u'': u'banana'
+                }
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': u'banana',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'q': {
+                    u'field1': u'banana'
+                }
+            },
+            {
+                u'query': {
+                    u'match': {
+                        prefix_field(u'field1'): {
+                            u'query': u'banana',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'q': {
+                    u'field1': u'banana',
+                    u'field2': u'lemons'
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'must': [
+                            {
+                                u'match': {
+                                    prefix_field(u'field1'): {
+                                        u'query': u'banana',
+                                        u'operator': u'and',
+                                    },
+                                }
+                            },
+                            {
+                                u'match': {
+                                    prefix_field(u'field2'): {
+                                        u'query': u'lemons',
+                                        u'operator': u'and',
+                                    },
+                                }
+                            },
+                        ]
+                    }
+                }
+            }
+        )
+
+    def test_q_string_and_unicode(self):
+        self._run_test(
+            {
+                u'q': 'a string'
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': 'a string',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'q': u'a unicode string'
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': u'a unicode string',
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+
+    def test_q_non_string(self):
+        self._run_test(
+            {
+                u'q': 4
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': 4,
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'q': 4.31932
+            },
+            {
+                u'query': {
+                    u'match': {
+                        u'meta.all': {
+                            u'query': 4.31932,
+                            u'operator': u'and',
+                        }
+                    }
+                }
+            }
+        )
+
+    def test_filters_empties(self):
+        self._run_test({u'filters': {}}, {})
+
+    def test_filters_non_lists(self):
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': u'banana',
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': u'banana',
+                    u'field2': u'lemons',
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'lemons',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+
+        add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
+        mock_geo_value = MagicMock()
+        with patch(u'ckanext.versioned_datastore.lib.search.add_geo_search', add_geo_search_mock):
+            build_search_object(filters={u'__geo__': mock_geo_value})
+        assert_equal(add_geo_search_mock.call_count, 1)
+        search_object, filter_value = add_geo_search_mock.call_args[0]
+        assert_true(isinstance(search_object, Search))
+        assert_equal(mock_geo_value, filter_value)
+
+    def test_filters_lists(self):
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': [u'banana'],
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': [u'banana'],
+                    u'field2': [u'lemons'],
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'lemons',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': [u'banana', u'goat', u'funnel'],
+                    u'field2': [u'lemons', u'chunk'],
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'goat',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'funnel',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'lemons',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'chunk',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
+        add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
+        mock_geo_value = MagicMock()
+        with patch(u'ckanext.versioned_datastore.lib.search.add_geo_search', add_geo_search_mock):
+            build_search_object(filters={u'__geo__': [mock_geo_value]})
+        assert_equal(add_geo_search_mock.call_count, 1)
+        search_object, filter_value = add_geo_search_mock.call_args[0]
+        assert_true(isinstance(search_object, Search))
+        assert_equal(mock_geo_value, filter_value)
+
+    def test_filters_mix(self):
+        self._run_test(
+            {
+                u'filters': {
+                    u'field1': u'banana',
+                    u'field2': [u'lemons', u'blarp'],
+                }
+            },
+            {
+                u'query': {
+                    u'bool': {
+                        u'filter': [
+                            {
+                                u'term': {
+                                    prefix_field(u'field1'): u'banana',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'lemons',
+                                }
+                            },
+                            {
+                                u'term': {
+                                    prefix_field(u'field2'): u'blarp',
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        )
