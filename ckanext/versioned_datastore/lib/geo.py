@@ -80,14 +80,6 @@ def add_polygon_filter(search, coordinates):
     return add_multipolygon_filter(search, [coordinates])
 
 
-# we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
-QUERY_TYPE_MAP = {
-    u'Point': (add_point_filter, {u'distance', u'coordinates'}),
-    u'MultiPolygon': (add_multipolygon_filter, {u'coordinates'}),
-    u'Polygon': (add_polygon_filter, {u'coordinates'}),
-}
-
-
 def add_geo_search(search, geo_filter):
     '''
     Updates the given search DSL object with the geo filter specified in the geo_filter dict.
@@ -100,6 +92,13 @@ def add_geo_search(search, geo_filter):
                        elasticsearch understands (for example, 10km).
     :return: a search DSL object
     '''
+    # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
+    query_type_map = {
+        u'Point': (add_point_filter, {u'distance', u'coordinates'}),
+        u'MultiPolygon': (add_multipolygon_filter, {u'coordinates'}),
+        u'Polygon': (add_polygon_filter, {u'coordinates'}),
+    }
+
     try:
         # if it hasn't been parsed, parse the geo_filter as JSON
         if not isinstance(geo_filter, dict):
