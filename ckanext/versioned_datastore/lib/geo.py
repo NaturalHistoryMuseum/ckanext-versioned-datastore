@@ -104,8 +104,8 @@ def add_geo_search(search, geo_filter):
         if not isinstance(geo_filter, dict):
             geo_filter = json.loads(geo_filter)
         # fetch the function which will build the query into the search object
-        add_function, required_params = QUERY_TYPE_MAP[geo_filter[u'type']]
-    except TypeError or ValueError:
+        add_function, required_params = query_type_map[geo_filter[u'type']]
+    except (TypeError, ValueError):
         raise toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
     except KeyError:
         raise toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
