@@ -49,8 +49,7 @@ def add_multipolygon_filter(search, coordinates):
     for group in coordinates:
         points = group[0]
         if len(points) < 3:
-            raise toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or '
-                                                  u'more')
+            raise toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or more')
 
         options = {
             FIELD: {
@@ -117,7 +116,7 @@ def add_geo_search(search, geo_filter):
         parameters = {param: geo_filter[param] for param in required_params}
     except KeyError:
         raise toolkit.ValidationError(u'Missing parameters, must include {}'
-                                              .format(u', '.join(required_params)))
+                                      .format(u', '.join(required_params)))
 
     # call the function which will update the search object to include the geo filters and then
     # return the resulting search object
