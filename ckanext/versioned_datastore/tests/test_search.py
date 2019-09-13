@@ -516,3 +516,82 @@ class TestBuildSearchObject(TestBase):
     def test_fields(self):
         self._run_test({u'fields': [u'field1', u'field2']}, {u'_source': [u'data.field1',
                                                                           u'data.field2']})
+
+    def test_facets(self):
+        self._run_test({u'facets': []}, {})
+
+        self._run_test(
+            {
+                u'facets': [u'field1']
+            },
+            {
+                u'aggs': {
+                    u'field1': {
+                        u'terms': {
+                            u'field': prefix_field(u'field1'),
+                            u'size': 10
+                        }
+                    }
+                }
+            }
+        )
+
+        self._run_test(
+            {
+                u'facets': [u'field1', u'field2', u'field3']
+            },
+            {
+                u'aggs': {
+                    u'field1': {
+                        u'terms': {
+                            u'field': prefix_field(u'field1'),
+                            u'size': 10
+                        }
+                    },
+                    u'field2': {
+                        u'terms': {
+                            u'field': prefix_field(u'field2'),
+                            u'size': 10
+                        }
+                    },
+                    u'field3': {
+                        u'terms': {
+                            u'field': prefix_field(u'field3'),
+                            u'size': 10
+                        }
+                    }
+                }
+            }
+        )
+
+        self._run_test(
+            {
+                u'facets': [u'field1', u'field2', u'field3'],
+                u'facet_limits': {
+                    u'field1': 20,
+                    u'field3': 100,
+                }
+            },
+            {
+                u'aggs': {
+                    u'field1': {
+                        u'terms': {
+                            u'field': prefix_field(u'field1'),
+                            u'size': 20
+                        }
+                    },
+                    u'field2': {
+                        u'terms': {
+                            u'field': prefix_field(u'field2'),
+                            u'size': 10
+                        }
+                    },
+                    u'field3': {
+                        u'terms': {
+                            u'field': prefix_field(u'field3'),
+                            u'size': 100
+                        }
+                    }
+                }
+            }
+        )
