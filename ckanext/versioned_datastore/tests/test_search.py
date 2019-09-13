@@ -132,9 +132,10 @@ class TestCreateSearch(TestBase):
 class TestBuildSearchObject(TestBase):
     plugins = [u'versioned_datastore']
 
-    def _run_test(self, kwargs, expected_result, add_size_and_sort=True):
-        if add_size_and_sort:
+    def _run_test(self, kwargs, expected_result, add_size=True, add_sort=True):
+        if add_size:
             expected_result[u'size'] = 100
+        if add_sort:
             expected_result[u'sort'] = [u'data._id']
         assert_equal(build_search_object(**kwargs).to_dict(), expected_result)
         assert_equal(build_search_object(**kwargs), Search().from_dict(expected_result))
@@ -500,3 +501,18 @@ class TestBuildSearchObject(TestBase):
                 }
             }
         )
+
+    def test_after(self):
+        self._run_test({u'after': u'some value'}, {u'search_after': u'some value'})
+
+    def test_offset(self):
+        self._run_test({u'offset': 12}, {u'from': 12})
+        self._run_test({u'offset': u'289'}, {u'from': 289})
+
+    def test_limit(self):
+        self._run_test({u'limit': 15}, {u'size': 15}, add_size=False)
+        self._run_test({u'limit': u'1500'}, {u'size': 1500}, add_size=False)
+
+    def test_fields(self):
+        self._run_test({u'fields': [u'field1', u'field2']}, {u'_source': [u'data.field1',
+                                                                          u'data.field2']})
