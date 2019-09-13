@@ -136,7 +136,7 @@ class TestBuildSearchObject(TestBase):
         if add_size:
             expected_result[u'size'] = 100
         if add_sort:
-            expected_result[u'sort'] = [u'data._id']
+            expected_result[u'sort'] = [prefix_field(u'_id')]
         assert_equal(build_search_object(**kwargs).to_dict(), expected_result)
         assert_equal(build_search_object(**kwargs), Search().from_dict(expected_result))
 
@@ -594,4 +594,60 @@ class TestBuildSearchObject(TestBase):
                     }
                 }
             }
+        )
+
+    def test_sorts(self):
+        self._run_test({u'sort': []}, {})
+        self._run_test(
+            {
+                u'sort': [u'field1']
+            },
+            {
+                u'sort': [prefix_field(u'field1'), prefix_field(u'_id')]
+            },
+            add_sort=False
+        )
+        self._run_test(
+            {
+                u'sort': [u'field1', u'field2']
+            },
+            {
+                u'sort': [prefix_field(u'field1'), prefix_field(u'field2'), prefix_field(u'_id')]
+            },
+            add_sort=False
+        )
+        self._run_test(
+            {
+                u'sort': [u'field1', u'_id']
+            },
+            {
+                u'sort': [prefix_field(u'field1'), prefix_field(u'_id')]
+            },
+            add_sort=False
+        )
+        self._run_test(
+            {
+                u'sort': [u'field1 desc', u'field2 asc']
+            },
+            {
+                u'sort': [
+                    {
+                        prefix_field(u'field1'): {u'order': u'desc'}
+                    },
+                    prefix_field(u'field2'),
+                    prefix_field(u'_id')
+                ]
+            },
+            add_sort=False
+        )
+        self._run_test(
+            {
+                u'sort': [u'_id desc']
+            },
+            {
+                u'sort': [{
+                    prefix_field(u'_id'): {u'order': u'desc'}
+                }]
+            },
+            add_sort=False
         )
