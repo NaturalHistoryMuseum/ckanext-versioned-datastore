@@ -1,6 +1,33 @@
 from eevee.ingestion.feeders import BaseRecord
 
 
+def _convert(data):
+    '''
+    Converts the given dict into a suitable format for storage in mongo. For us this means:
+
+        - replacing '.' with '_' as neither mongo nor elasticsearch can handle dots in field
+          names as they both use the dot notation for nested field access
+        - ignoring fields with no name (we use a falsey check on the field name) to ensure we
+          don't create fields that are the empty string
+
+    This function is recursive.
+
+    :return: a dict ready for storage in mongo
+    '''
+    converted = {}
+    for field, value in data.items():
+        # elasticsearch doesn't allow empty fields, plus it's silly so ignore them
+        if not field:
+            continue
+        # mongo doesn't allow dots in keys so replace them with underscores
+        field = field.replace(u'.', u'_')
+        if isinstance(value, dict):
+            converted[field] = _convert(value)
+        else:
+            converted[field] = value
+    return converted
+
+
 class DatastoreRecord(BaseRecord):
     '''
     Represents a record from a feeder which needs to be ingested into mongo.
@@ -29,15 +56,7 @@ class DatastoreRecord(BaseRecord):
 
         :return: a dict ready for storage in mongo
         '''
-        converted = {}
-        for field, value in self.data.items():
-            # elasticsearch doesn't allow empty fields, plus it's silly so ignore them
-            if not field:
-                continue
-            # mongo doesn't allow dots in keys so replace them with underscores
-            field = field.replace(u'.', u'_')
-            converted[field] = value
-        return converted
+        return _convert(self.data)
 
     @property
     def id(self):
