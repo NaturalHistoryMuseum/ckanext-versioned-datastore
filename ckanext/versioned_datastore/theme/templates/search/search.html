@@ -8,12 +8,12 @@
   <li class="active">Search</li>
 {% endblock %}
 
+{% block primary_content %}
 {% resource 'ckanext-versioned_datastore/search' %}
 
-{% block primary_content %}
 <article class="module">
     <div class="module-content">
-        <h1 class="page-heading">Search!</h1>
+        <div id="search" data-module="vds_search"></div>
     </div>
 </article>
 {% endblock %}
