@@ -744,3 +744,73 @@ def datastore_ensure_privacy(context, data_dict):
                                 modified += 1
 
     return {u'modified': modified, u'total': total}
+
+
+@toolkit.side_effect_free
+def datastore_multisearch(context, data_dict):
+    '''
+    This action allows you to search data in multiple resources using a raw elasticsearch query.
+
+    Note that the structure of the documents in elasticsearch is defined as such:
+
+        - data._id: the id of the record, this is always an integer
+        - data.*: the data fields. Each field is stored in 3 different ways:
+            - data.<field_name>: keyword type
+            - data.<field_name>.full: text type
+            - data.<field_name>.number: double type, will be missing if the data value isn't
+                                        convertable to a number
+        - meta.*: various metadata fields, including:
+            - meta.all: a text type field populated from all the data in the data.* fields
+            - meta.geo: if a pair of lat/lon fields have been assigned on this resource this geo
+                        point type field is available
+            - meta.version: the version of this record, this field is a date type field represented
+                            in epoch millis
+            - meta.next_version: the next version of this record, this field is a date type field
+                            represented in epoch millis. If missing this is the current version of
+                            the record
+            - meta.versions: a date range type field which encapsulates the version range this
+                             document applies to for the record
+
+    Params:
+
+    :param search: the search JSON to submit to elasticsearch. This should be a valid elasticsearch
+                   search. The version filter is automatically added and doesn't need to be
+                   specified. If not included then an empty {} is used.
+    :type search: dict
+    :param version: version to search at, if not provided the current version of the data is
+                   searched
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+
+    **Results:**
+
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param total: number of total matching records
+    :type total: int
+    :param records: list of matching results
+    :type records: list of dicts
+    :param after: the next page's search_after value which can be passed back as the "after"
+                  parameter. This value will always be included if there were results otherwise None
+                  is returned. A value will also always be returned even if this page is the last.
+    :type after: a list or None
+    '''
+    # TODO: allow specifying the resources to search
+    # TODO: allow specifying the version to search at per resource
+    # TODO: should probably only allow searches on public resources? Perhaps if you specify the
+    #       resources we check for permission
+    # TODO: should we return field info? If so how?
+    # TODO: should we allow unversioned searches like we do with the search_raw action?
+    # TODO: how should we handle aggregations? Perhaps a raw response param like search_raw?
+    data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
+
+    search = Search.from_dict(data_dict.get(u'search', {}))
+    version = data_dict.get(u'version', None)
+
+    result = utils.SEARCHER.search(indexes=[u'pubnhm-*'], search=search, version=version)
+
+    return {
+        u'total': result.total,
+        u'records': [hit.data for hit in result.results()],
+        u'after': result.last_after,
+    }

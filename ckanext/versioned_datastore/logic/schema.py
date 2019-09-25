@@ -183,3 +183,10 @@ def datastore_ensure_privacy_schema():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
+
+
+def datastore_multisearch_schema():
+    return {
+        u'search': [ignore_missing, json_validator],
+        u'version': [ignore_missing, int_validator],
+    }
