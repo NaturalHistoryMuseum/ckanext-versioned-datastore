@@ -249,7 +249,11 @@ def is_datastore_resource(resource_id):
     :param resource_id: the resource id
     :return: True if the resource is a datastore resource, False if not
     '''
-    return SEARCHER.elasticsearch.indices.exists(prefix_resource(resource_id))
+    index_name = prefix_resource(resource_id)
+    # check that the index for this resource exists and there is a reference to it in the status
+    # index
+    return SEARCHER.elasticsearch.indices.exists(index_name) and \
+        index_name in SEARCHER.get_latest_index_versions([index_name])
 
 
 def is_datastore_only_resource(resource_url):
