@@ -807,7 +807,8 @@ def datastore_multisearch(context, data_dict):
     search = Search.from_dict(data_dict.get(u'search', {}))
     version = data_dict.get(u'version', None)
 
-    result = utils.SEARCHER.search(indexes=[u'pubnhm-*'], search=search, version=version)
+    indexes = [utils.get_public_alias_name(u'*')]
+    result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
     return {
         u'total': result.total,
