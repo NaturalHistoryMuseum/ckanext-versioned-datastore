@@ -4,6 +4,6 @@
 # This file is part of ckanext-versioned-datastore
 # Created by the Natural History Museum in London, UK
 
-from . import datastore
+from . import datastore, search
 
-blueprints = [datastore.blueprint]
+blueprints = [datastore.blueprint, search.blueprint]
