@@ -248,13 +248,18 @@ def get_fields(resource_id, version=None):
 
 def is_datastore_resource(resource_id):
     '''
-    Looks up in elasticsearch whether there is an index for this resource or not and returns the
-    boolean result. If there is an index, this is a datastore resource, if not it isn't.
+    Looks up in elasticsearch whether there is an index and an entry in the status index for the
+    given resource. If there is an index and an entry then this is a datastore resource, if not it
+    isn't.
 
     :param resource_id: the resource id
     :return: True if the resource is a datastore resource, False if not
     '''
-    return SEARCHER.elasticsearch.indices.exists(prefix_resource(resource_id))
+    index_name = prefix_resource(resource_id)
+    # check that the index for this resource exists and there is a reference to it in the status
+    # index
+    return SEARCHER.elasticsearch.indices.exists(index_name) and \
+        index_name in SEARCHER.get_latest_index_versions([index_name])
 
 
 def is_datastore_only_resource(resource_url):
