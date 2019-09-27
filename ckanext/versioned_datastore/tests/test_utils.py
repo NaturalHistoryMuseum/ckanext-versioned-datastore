@@ -2,7 +2,7 @@ import nose
 from ckanext.versioned_datastore.lib.utils import (ALL_FORMATS, DATASTORE_ONLY_RESOURCE,
                                                    format_facets, get_fields, is_datastore_resource,
                                                    is_ingestible, validate,
-                                                   is_datastore_only_resource)
+                                                   is_datastore_only_resource, iter_data_fields)
 from ckantest.models import TestBase
 from eevee.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock, call
@@ -248,3 +248,36 @@ class TestUtils(TestBase):
             u'format': None,
             u'url': u'http://banana.com/test.csv'
         }))
+
+    def test_is_iter_data_fields(self):
+        id_config = MagicMock()
+        banana_config = MagicMock()
+        llama_config = MagicMock()
+        cheese_config = MagicMock()
+
+        mapping = {
+            u'mappings': {
+                DOC_TYPE: {
+                    u'properties': {
+                        u'data': {
+                            u'properties': {
+                                u'_id': id_config,
+                                u'nests': {
+                                    u'properties': {
+                                        u'banana': banana_config,
+                                        u'llama': llama_config,
+                                    }
+                                },
+                                u'cheese': cheese_config,
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        fields_and_configs = dict(iter_data_fields(mapping))
+        nose.tools.assert_equal(fields_and_configs[(u'_id', )], id_config)
+        nose.tools.assert_equal(fields_and_configs[(u'nests', u'banana')], banana_config)
+        nose.tools.assert_equal(fields_and_configs[(u'nests', u'llama')], llama_config)
+        nose.tools.assert_equal(fields_and_configs[(u'cheese', )], cheese_config)

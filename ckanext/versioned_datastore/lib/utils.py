@@ -406,3 +406,28 @@ class ReadOnlyResourceException(toolkit.ValidationError):
 
 class InvalidVersionException(toolkit.ValidationError):
     pass
+
+
+def iter_data_fields(mapping):
+    '''
+    Returns an iterator over the fields defined in the given mapping which yields the name of the
+    field and the field's config. The names of the fields are represented by tuples allowing nested
+    fields to be represented using their whole path (for example, a field at the top level is just
+    ('field', ): {} but a nested one would be ('field', 'sub'): {}).
+
+    :param mapping: the mapping dict returned from elasticsearch, this should be the first value in
+                    the dict after the index name, i.e. the result of get_mapping(index)[index]
+    :return: an iterator which yields fields and their configs
+    '''
+    def iter_properties(props, path=None):
+        # this is a recursive function which can deal with nested fields
+        if path is None:
+            path = tuple()
+        for field, config in props.items():
+            if u'properties' in config:
+                for result in iter_properties(config[u'properties'], path=path + (field, )):
+                    yield result
+            else:
+                yield path + (field, ), config
+
+    return iter_properties(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
