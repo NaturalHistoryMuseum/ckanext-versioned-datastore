@@ -90,3 +90,9 @@ def datastore_ensure_privacy(context, data_dict):
 def datastore_multisearch(context, data_dict):
     # allow access to everyone
     return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_field_autocomplete(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}

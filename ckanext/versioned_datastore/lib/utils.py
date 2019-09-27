@@ -85,6 +85,16 @@ def prefix_resource(resource_id):
     return u'{}{}'.format(CONFIG.elasticsearch_index_prefix, resource_id)
 
 
+def unprefix_index(index_name):
+    '''
+    Removes the configured prefix from the start of the index name to get the resource id.
+
+    :param index_name: the index name
+    :return: the resource's id
+    '''
+    return index_name[len(CONFIG.elasticsearch_index_prefix):]
+
+
 def prefix_field(field):
     '''
     Prefixes a the given field name with "data.". All data from the resource in eevee is stored

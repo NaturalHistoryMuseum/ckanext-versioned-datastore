@@ -2,6 +2,9 @@
 import copy
 import logging
 
+from collections import defaultdict
+
+import itertools
 from datetime import datetime
 from eevee.utils import to_timestamp
 from eevee.indexing.utils import DOC_TYPE
@@ -814,4 +817,70 @@ def datastore_multisearch(context, data_dict):
         u'total': result.total,
         u'records': [hit.data for hit in result.results()],
         u'after': result.last_after,
+    }
+
+
+@toolkit.side_effect_free
+def datastore_field_autocomplete(context, data_dict):
+    '''
+    Returns a dictionary of available fields in the datastore which match the passed prefix. The
+    fields will be retrieved from the given public resources or all public resources if no
+    resource_ids option is provided.
+
+    Params:
+
+    :param prefix: prefix to match the fields against. Optional, by default all fields are matched
+    :type prefix: string
+    :param resource_ids: the resources to find the fields in. Optional, by default all public
+                         resources are used
+    :type version: list of string resource ids, separated by commas
+
+    **Results:**
+
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param fields: a dict of field names and their field properties. Example:
+                   {
+                       "field1": {
+                           "type": "keyword",
+                           "fields": {
+                               "full": "text",
+                               "number": "double"
+                           }
+                       },
+                   }
+                   The type value is the index type of the field if accessed directly. The fields
+                   value indicates the presence of subfields with their names and associated index
+                   types included.
+    :type fields: dict
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_field_autocomplete_schema())
+
+    # TODO: support case sensitive prefixing, maybe?
+    # TODO: allow choice of prefix searching on nested field name as a whole or as parts
+    prefix = data_dict.get(u'prefix', u'')
+    resource_ids = data_dict.get(u'resource_ids', [])
+
+    if len(resource_ids) == 0:
+        # get all public index mappings
+        target = utils.get_public_alias_name(u'*')
+    else:
+        # just get the public index mappings for the requested resource ids
+        target = u','.join(map(utils.get_public_alias_name, resource_ids))
+
+    fields = defaultdict(dict)
+    mappings = utils.SEARCHER.elasticsearch.indices.get_mapping(target)
+    for index, mapping in mappings.items():
+        resource_id = utils.unprefix_index(index)
+
+        for field_path, config in utils.iter_data_fields(mapping):
+            if any(part.startswith(prefix) for part in field_path):
+                fields[u'.'.join(field_path)][resource_id] = {
+                    u'type': config[u'type'],
+                    u'fields': {f: c[u'type'] for f, c in config.get(u'fields', {}).items()}
+                }
+
+    return {
+        u'fields': fields,
     }
