@@ -834,6 +834,7 @@ def datastore_field_autocomplete(context, data_dict):
     :param resource_ids: the resources to find the fields in. Optional, by default all public
                          resources are used
     :type version: list of string resource ids, separated by commas
+    :param lowercase: whether to do a case insensitive prefix match. Optional, default: False
 
     **Results:**
 
@@ -861,6 +862,7 @@ def datastore_field_autocomplete(context, data_dict):
     # TODO: allow choice of prefix searching on nested field name as a whole or as parts
     prefix = data_dict.get(u'prefix', u'')
     resource_ids = data_dict.get(u'resource_ids', [])
+    lowercase = data_dict.get(u'lowercase', False)
 
     if len(resource_ids) == 0:
         # get all public index mappings
@@ -875,7 +877,7 @@ def datastore_field_autocomplete(context, data_dict):
         resource_id = utils.unprefix_index(index)
 
         for field_path, config in utils.iter_data_fields(mapping):
-            if any(part.startswith(prefix) for part in field_path):
+            if any((part.lower() if lowercase else part).startswith(prefix) for part in field_path):
                 fields[u'.'.join(field_path)][resource_id] = {
                     u'type': config[u'type'],
                     u'fields': {f: c[u'type'] for f, c in config.get(u'fields', {}).items()}

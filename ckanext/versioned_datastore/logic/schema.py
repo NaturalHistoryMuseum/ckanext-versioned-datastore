@@ -196,4 +196,5 @@ def datastore_field_autocomplete_schema():
     return {
         u'prefix': [ignore_missing, unicode],
         u'resource_ids': [ignore_missing, list_of_strings()],
+        u'lowercase': [ignore_missing, boolean_validator],
     }
