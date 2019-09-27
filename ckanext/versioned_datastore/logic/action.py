@@ -855,6 +855,8 @@ def datastore_field_autocomplete(context, data_dict):
                    value indicates the presence of subfields with their names and associated index
                    types included.
     :type fields: dict
+    :param count: the number of fields returned
+    :type count: int
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_field_autocomplete_schema())
 
@@ -884,5 +886,6 @@ def datastore_field_autocomplete(context, data_dict):
                 }
 
     return {
+        u'count': len(fields),
         u'fields': fields,
     }
