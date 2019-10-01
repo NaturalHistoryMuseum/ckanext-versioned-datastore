@@ -38,6 +38,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_get_rounded_version': action.datastore_get_rounded_version,
             u'datastore_search_raw': action.datastore_search_raw,
             u'datastore_ensure_privacy': action.datastore_ensure_privacy,
+            u'datastore_count': action.datastore_count,
         }
 
     # IAuthFunctions
@@ -55,6 +56,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_get_rounded_version': auth.datastore_get_rounded_version,
             u'datastore_search_raw': auth.datastore_search_raw,
             u'datastore_ensure_privacy': auth.datastore_ensure_privacy,
+            u'datastore_count': auth.datastore_count,
         }
 
     # ITemplateHelpers
