@@ -183,3 +183,15 @@ def datastore_ensure_privacy_schema():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
+
+
+def datastore_count_schema():
+    '''
+    Returns the schema for the datastore_count action.
+
+    :return: a dict
+    '''
+    return {
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'version': [ignore_missing, int_validator]
+    }

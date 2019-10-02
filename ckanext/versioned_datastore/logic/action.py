@@ -744,3 +744,36 @@ def datastore_ensure_privacy(context, data_dict):
                                 modified += 1
 
     return {u'modified': modified, u'total': total}
+
+
+@toolkit.side_effect_free
+def datastore_count(context, data_dict):
+    '''
+    Count the number of records available at a specific version across a set of resources. This
+    allows quick counting of total records without any query, if you want to count with a query,
+    use the search actions with a limit of 0.
+
+    Params:
+    :param resource_ids: optionally, the ids of specific resources to count. Only public resources
+                         can be counted. If this parameter is not provided, then all public
+                         resources are counted.
+    :type resource_id: string, list of comma separated strings
+    :param version: version to count at, if not provided the current timestamp is used
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+
+    **Results:**
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: an integer count
+
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_count_schema())
+
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    resource_ids = data_dict.get(u'resource_ids', [u'*'])
+
+    indexes = [utils.get_public_alias_name(resource_id) for resource_id in resource_ids]
+    search = Search(using=utils.SEARCHER.elasticsearch, index=indexes)\
+        .filter(u'term', **{u'meta.versions': version})
+
+    return search.count()
