@@ -791,12 +791,15 @@ def datastore_multisearch(context, data_dict):
     :rtype: A dict with the following keys
     :param total: number of total matching records
     :type total: int
-    :param records: list of matching results
+    :param records: list of matching results as dicts. Each dict will contain a "data" key which
+                    holds the record data, and a "resource" key which holds the resource id the
+                    record belongs to.
     :type records: list of dicts
     :param after: the next page's search_after value which can be passed back as the "after"
                   parameter. This value will always be included if there were results otherwise None
                   is returned. A value will also always be returned even if this page is the last.
     :type after: a list or None
+    :
     '''
     # TODO: allow specifying the resources to search
     # TODO: allow specifying the version to search at per resource
@@ -805,18 +808,36 @@ def datastore_multisearch(context, data_dict):
     # TODO: should we return field info? If so how?
     # TODO: should we allow unversioned searches like we do with the search_raw action?
     # TODO: how should we handle aggregations? Perhaps a raw response param like search_raw?
+    # TODO: split resources part of response into a separate call? Could be a more general facet
+    #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
 
     search = Search.from_dict(data_dict.get(u'search', {}))
     version = data_dict.get(u'version', None)
 
+    # gather the number of hits in the top 10 most frequently represented indexes
+    search.aggs.bucket(u'indexes', u'terms', field=u'_index')
+
     indexes = [utils.get_public_alias_name(u'*')]
     result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
+    records = []
+    for hit in result.results():
+        records.append({
+            u'data': hit.data,
+            # should we provide the name too? If so cache a map of id -> name, then update it if we
+            # don't find the id in the map
+            u'resource': utils.trim_index_name(hit.hit_meta[u'index']),
+        })
+
     return {
         u'total': result.total,
-        u'records': [hit.data for hit in result.results()],
+        u'records': records,
         u'after': result.last_after,
+        u'resources': {
+            utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']
+            for bucket in result.aggregations[u'indexes'][u'buckets']
+        }
     }
 
 

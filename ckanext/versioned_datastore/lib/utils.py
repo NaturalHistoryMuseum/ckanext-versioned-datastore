@@ -326,6 +326,16 @@ def get_public_alias_name(resource_id):
     return u'{}{}'.format(get_public_alias_prefix(), prefix_resource(resource_id))
 
 
+def trim_index_name(index_name):
+    '''
+    Given an index's name, remove the prefix returning the original resource id.
+
+    :param index_name: the name of the index
+    :return: the resource id
+    '''
+    return index_name[len(CONFIG.elasticsearch_index_prefix):]
+
+
 def update_resources_privacy(package):
     '''
     Update the privacy of the resources in the datastore associated with the given package. If the
