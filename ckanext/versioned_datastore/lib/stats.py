@@ -94,21 +94,20 @@ def monitor_indexing(stats_id, indexer, update_frequency=1000):
                              performance issues.
     '''
     @indexer.index_signal.connect_via(indexer)
-    def update_progress(_sender, indexed_record, index, feeder, document_count, indexed_count,
-                        document_total, op_stats, seen_versions):
+    def update_progress(_sender, indexing_stats, **kwargs):
         # this function is called each time a record is queued to be indexed into elasticsearch.
         # This means it is called a lot and therefore needs a barrier preventing it from hammering
         # the database, hence this modulo calculation
-        if document_count % update_frequency == 0:
+        if indexing_stats.document_count % update_frequency == 0:
             update_stats(stats_id, {
                 ImportStats.in_progress: True,
-                ImportStats.count: document_count,
+                ImportStats.count: indexing_stats.document_count,
             })
 
     @indexer.finish_signal.connect_via(indexer)
-    def finish(_sender, document_count, indexed_count, stats):
+    def finish(_sender, indexing_stats, stats):
         # this function is called when the indexing operation completes
-        finish_operation(stats_id, document_count, stats)
+        finish_operation(stats_id, indexing_stats.document_count, stats)
 
 
 def mark_error(stats_id, error):
