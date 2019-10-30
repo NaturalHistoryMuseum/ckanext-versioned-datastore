@@ -1,0 +1,23 @@
+{
+  "query_version": "v1.0.0",
+  "search": "italy",
+  "filters": {
+    "type": "and",
+    "members": [
+      {
+        "type": "string_equals",
+        "fields": [
+          "genus"
+        ],
+        "value": "helix"
+      },
+      {
+        "type": "string_contains",
+        "fields": [
+          "higherGeography"
+        ],
+        "value": "europe"
+      }
+    ]
+  }
+}

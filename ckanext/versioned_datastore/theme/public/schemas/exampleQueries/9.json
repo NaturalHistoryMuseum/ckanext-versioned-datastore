@@ -1,0 +1,12 @@
+{
+  "query_version": "v1.0.0",
+  "filters": {
+    "type": "and",
+    "members": [
+      {
+        "type": "exists",
+        "geo_field": true
+      }
+    ]
+  }
+}

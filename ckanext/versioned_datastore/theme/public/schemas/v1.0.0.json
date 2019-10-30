@@ -1,0 +1,322 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://data.nhm.ac.uk/schemas/v1.0.0.json",
+  "definitions": {
+    "string_equals_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "fields",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "string_equals"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minLength": 1,
+          "uniqueItems": true
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "string_contains_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "fields",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "string_contains"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minLength": 0,
+          "uniqueItems": true
+        },
+        "value": {
+          "type": "string"
+        }
+      }
+    },
+    "number_equals_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "fields",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "number_equals"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minLength": 1,
+          "uniqueItems": true
+        },
+        "value": {
+          "type": "number"
+        }
+      }
+    },
+    "number_range_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "fields"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "greater_than"
+          ]
+        },
+        {
+          "required": [
+            "less_than"
+          ]
+        }
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "number_range"
+          ]
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minLength": 1,
+          "uniqueItems": true
+        },
+        "greater_than": {
+          "type": "number"
+        },
+        "greater_than_inclusive": {
+          "type": "boolean",
+          "default": true
+        },
+        "less_than": {
+          "type": "number"
+        },
+        "less_than_inclusive": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "geo_point_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "latitude",
+        "longitude"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "geo_point"
+          ]
+        },
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0
+        },
+        "radius_unit": {
+          "type": "string",
+          "enum": [
+            "mi",
+            "yd",
+            "ft",
+            "in",
+            "km",
+            "m",
+            "cm",
+            "mm",
+            "nmi"
+          ]
+        }
+      }
+    },
+    "geo_named_area_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "name"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "geo_named_area"
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    },
+    "geo_custom_area_term": {
+      "type": "object",
+      "required": [
+        "type",
+        "geoJSON"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "geo_custom_area"
+          ]
+        },
+        "geoJSON": {
+          "type": "object"
+        }
+      }
+    },
+    "exists_term": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "anyOf": [
+        {
+          "required": [
+            "fields"
+          ]
+        },
+        {
+          "required": [
+            "geo_field"
+          ]
+        }
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "exists"
+          ]
+        },
+        "geo_field": {
+          "type": "boolean"
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minLength": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "group": {
+      "required": [
+        "type",
+        "members"
+      ],
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "and",
+            "or"
+          ]
+        },
+        "members": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/group"
+              },
+              {
+                "$ref": "#/definitions/string_equals_term"
+              },
+              {
+                "$ref": "#/definitions/string_contains_term"
+              },
+              {
+                "$ref": "#/definitions/number_equals_term"
+              },
+              {
+                "$ref": "#/definitions/number_range_term"
+              },
+              {
+                "$ref": "#/definitions/geo_point_term"
+              },
+              {
+                "$ref": "#/definitions/geo_named_area_term"
+              },
+              {
+                "$ref": "#/definitions/geo_custom_area_term"
+              },
+              {
+                "$ref": "#/definitions/exists_term"
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    }
+  },
+  "type": "object",
+  "required": [
+    "query_version"
+  ],
+  "properties": {
+    "query_version": {
+      "type": "string",
+      "enum": [
+        "v1.0.0"
+      ]
+    },
+    "search": {
+      "type": "string"
+    },
+    "filters": {
+      "$ref": "#/definitions/group"
+    }
+  }
+}
