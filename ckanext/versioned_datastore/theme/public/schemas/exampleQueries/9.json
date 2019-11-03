@@ -1,11 +1,10 @@
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "exists",
-        "geo_field": true
+        "exists": {
+          "geo_field": true
+        }
       }
     ]
   }

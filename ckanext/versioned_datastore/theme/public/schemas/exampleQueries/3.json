@@ -1,21 +1,21 @@
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "string_contains",
-        "fields": [
-          "higherGeography"
-        ],
-        "value": "europe"
+        "string_contains": {
+          "fields": [
+            "higherGeography"
+          ],
+          "value": "europe"
+        }
       }
     ]
   }

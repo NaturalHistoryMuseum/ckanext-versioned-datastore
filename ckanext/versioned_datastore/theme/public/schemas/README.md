@@ -32,31 +32,28 @@ Only one `group` can exist at the top level but it can contain other `groups` to
 ##### Groups
 `groups` wrap `terms` and other `groups` allowing the encapsulation of boolean logic (`and` and
 `or`).
-Within a group, there are 2 available `types`: `and` and `or`.
+Within a group, there are 2 available types: `and` and `or`.
 
 ###### and
-The `and` type ensures that **all** terms and groups in the `members` array of the group must be met
-by the records being queried. Only records that meet all the constraints will be returned in the
-results.
+The `and` type ensures that **all** terms and groups in the array must be met by the records being
+queried. Only records that meet all the constraints will be returned in the results.
 
 ```json
 {
-    "type": "and",
-    "members": [
+    "and": [
       ...
     ]
 }
 ```
 
 ###### or
-The `or` ensures that **at least one** of the terms or groups in the `members` array of the group
-are met by the records being queried. Only records that meet **at least one** of the constraints
-will be returned in the results.
+The `or` ensures that **at least one** of the terms or groups in the array are met by the records
+being queried. Only records that meet **at least one** of the constraints will be returned in the
+results.
 
 ```json
 {
-    "type": "or",
-    "members": [
+    "or": [
       ...
     ]
 }
@@ -71,11 +68,12 @@ The match is always case insensitive.
 {
   ...
   {
-    "type": "string_equals",
-    "fields": [
-      "genus"
-    ],
-    "value": "helix"
+    "string_equals": {
+      "fields": [
+        "genus"
+      ],
+      "value": "helix"
+    }
   }
   ...
 }
@@ -94,11 +92,12 @@ key.
 {
   ...
   {
-    "type": "string_contains",
-    "fields": [
-      "country"
-    ],
-    "value": "united kingdom"
+    "string_contains": {
+      "fields": [
+        "country"
+      ],
+      "value": "united kingdom"
+    }
   }
   ...
 }
@@ -111,11 +110,12 @@ This term matches a number value exactly.
 {
   ...
   {
-    "type": "number_equals",
-    "fields": [
-      "length"
-    ],
-    "value": "45.19"
+    "number_equals": {
+      "fields": [
+        "length"
+      ],
+      "value": "45.19"
+    }
   }
   ...
 }
@@ -130,13 +130,14 @@ Inclusivity at the start and end of the range can be optionally controlled using
 {
   ...
   {
-    "type": "number_range",
-    "fields": [
-      "year"
-    ],
-    "greater_than": 1974,
-    "less_than": 2005,
-    "less_than_inclusive": false
+    "number_range": {
+      "fields": [
+        "year"
+      ],
+      "greater_than": 1974,
+      "less_than": 2005,
+      "less_than_inclusive": false,
+    }
   }
   ...
 }
@@ -165,11 +166,12 @@ The `radius` must be greater than or equal to 0.
 {
   ...
   {
-    "type": "geo_point",
-    "latitude": 51.4967,
-    "longitude": 0.1764,
-    "radius": 1.5,
-    "radius_unit": "mi"
+    "geo_point": {
+      "latitude": 51.4967,
+      "longitude": 0.1764,
+      "radius": 1.5,
+      "radius_unit": "mi"
+    }
   }
   ...
 }
@@ -185,8 +187,9 @@ No `fields `are necessary as the `meta.geo` field is always used.
 {
   ...
   {
-    "type": "geo_named_area",
-    "name": "europe"
+    "geo_named_area": {
+      "name": "europe"
+    }
   }
   ...
 }
@@ -202,11 +205,11 @@ No `fields `are necessary as the `meta.geo` field is always used.
 {
   ...
   {
-    "type": "geo_named_area",
-    "geoJSON": {
+    "geo_named_area": {
+      "geoJSON": {
         "type": "Polygon",
           "coordinates": [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]]
-        }
+      }
     }
   }
   ...
@@ -225,10 +228,11 @@ At least one of `fields` or `geo_field` must be present.
 {
   ...
   {
-    "type": "exists",
-    "fields": [
-      "family"
-    ]
+    "exists": {
+      "fields": [
+        "family"
+      ]
+    }
   }
   ...
 }
@@ -239,9 +243,7 @@ At least one of `fields` or `geo_field` must be present.
 
 ### 1.json
 ```json
-{
-  "query_version": "v1.0.0"
-}
+{}
 ```
 This query is the most basic possible in `v1.0.0`.
 It simply searches everything with no free text queries or filters.
@@ -250,7 +252,6 @@ It simply searches everything with no free text queries or filters.
 ### 2.json
 ```json
 {
-  "query_version": "v1.0.0",
   "search": "mollusca"
 }
 ```
@@ -260,23 +261,23 @@ This query searches all fields using the free text phrase "mollusca".
 ### 3.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "string_contains",
-        "fields": [
-          "higherGeography"
-        ],
-        "value": "europe"
+        "string_contains": {
+          "fields": [
+            "higherGeography"
+          ],
+          "value": "europe"
+        }
       }
     ]
   }
@@ -289,24 +290,24 @@ word `europe`.
 ### 4.json
 ```json
 {
-  "query_version": "v1.0.0",
   "search": "italy",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "string_contains",
-        "fields": [
-          "higherGeography"
-        ],
-        "value": "europe"
+        "string_contains": {
+          "fields": [
+            "higherGeography"
+          ],
+          "value": "europe"
+        }
       }
     ]
   }
@@ -318,28 +319,29 @@ This query is analogous to:
 
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_contains",
-        "fields": [],
-        "value": "italy"
+        "string_contains": {
+          "fields": [],
+          "value": "italy"
+        }
       },
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "string_contains",
-        "fields": [
-          "higherGeography"
-        ],
-        "value": "europe"
+        "string_contains": {
+          "fields": [
+            "higherGeography"
+          ],
+          "value": "europe"
+        }
       }
     ]
   }
@@ -350,40 +352,41 @@ This query is analogous to:
 ### 5.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "or",
-        "members": [
+        "or": [
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "italy"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "italy"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "spain"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "spain"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "portugal"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "portugal"
+            }
           }
         ]
       }
@@ -398,50 +401,52 @@ This query finds records where the `genus` is `helix` and either the `higherGeog
 ### 6.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "number_range",
-        "fields": [
-          "year"
-        ],
-        "less_than": 2010,
-        "less_than_inclusive": true,
-        "greater_than": 2000,
-        "greater_than_inclusive": true
+        "number_range": {
+          "fields": [
+            "year"
+          ],
+          "less_than": 2010,
+          "less_than_inclusive": true,
+          "greater_than": 2000,
+          "greater_than_inclusive": true
+        }
       },
       {
-        "type": "or",
-        "members": [
+        "or": [
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "italy"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "italy"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "spain"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "spain"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "portugal"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "portugal"
+            }
           }
         ]
       }
@@ -457,23 +462,23 @@ records from `italy`, `spain` or `portugal` from 2000 to 2010).
 ### 7.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "geo_point",
-        "latitude": 51.4712,
-        "longitude": -0.9421,
-        "radius": 10,
-        "radius_unit": "mi"
+        "geo_point": {
+          "latitude": 51.4712,
+          "longitude": -0.9421,
+          "radius": 10,
+          "radius_unit": "mi"
+        }
       }
     ]
   }
@@ -486,15 +491,14 @@ This query finds all records where `genus` is `helix` and `meta.geo` is within `
 ### 8.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "exists",
-        "fields": [
-          "associatedMedia"
-        ]
+        "exists": {
+          "fields": [
+            "associatedMedia"
+          ]
+        }
       }
     ]
   }
@@ -506,13 +510,12 @@ This query finds all records which have the `associatedMedia` field present.
 ### 9.json
 ```json
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "exists",
-        "geo_field": true
+        "exists": {
+          "geo_field": true
+        }
       }
     ]
   }

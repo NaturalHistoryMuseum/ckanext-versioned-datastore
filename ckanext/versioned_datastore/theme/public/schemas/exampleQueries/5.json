@@ -1,38 +1,39 @@
 {
-  "query_version": "v1.0.0",
   "filters": {
-    "type": "and",
-    "members": [
+    "and": [
       {
-        "type": "string_equals",
-        "fields": [
-          "genus"
-        ],
-        "value": "helix"
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
       },
       {
-        "type": "or",
-        "members": [
+        "or": [
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "italy"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "italy"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "spain"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "spain"
+            }
           },
           {
-            "type": "string_contains",
-            "fields": [
-              "higherGeography"
-            ],
-            "value": "portugal"
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "portugal"
+            }
           }
         ]
       }

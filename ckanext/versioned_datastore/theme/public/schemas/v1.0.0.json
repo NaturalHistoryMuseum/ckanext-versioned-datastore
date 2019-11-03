@@ -2,316 +2,277 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://data.nhm.ac.uk/schemas/v1.0.0.json",
   "definitions": {
-    "string_equals_term": {
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "list_of_groups_or_terms": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/group"
+          },
+          {
+            "$ref": "#/definitions/term"
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "term": {
       "type": "object",
-      "required": [
-        "type",
-        "fields",
-        "value"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+      "oneOf": [
+        {
+          "required": [
             "string_equals"
           ]
         },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minLength": 1,
-          "uniqueItems": true
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "string_contains_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "fields",
-        "value"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+        {
+          "required": [
             "string_contains"
           ]
         },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minLength": 0,
-          "uniqueItems": true
-        },
-        "value": {
-          "type": "string"
-        }
-      }
-    },
-    "number_equals_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "fields",
-        "value"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+        {
+          "required": [
             "number_equals"
           ]
         },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minLength": 1,
-          "uniqueItems": true
-        },
-        "value": {
-          "type": "number"
-        }
-      }
-    },
-    "number_range_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "fields"
-      ],
-      "anyOf": [
         {
           "required": [
-            "greater_than"
-          ]
-        },
-        {
-          "required": [
-            "less_than"
-          ]
-        }
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
             "number_range"
           ]
         },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minLength": 1,
-          "uniqueItems": true
-        },
-        "greater_than": {
-          "type": "number"
-        },
-        "greater_than_inclusive": {
-          "type": "boolean",
-          "default": true
-        },
-        "less_than": {
-          "type": "number"
-        },
-        "less_than_inclusive": {
-          "type": "boolean",
-          "default": true
-        }
-      }
-    },
-    "geo_point_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "latitude",
-        "longitude"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+        {
+          "required": [
             "geo_point"
           ]
         },
-        "latitude": {
-          "type": "number",
-          "minimum": -90,
-          "maximum": 90
-        },
-        "longitude": {
-          "type": "number",
-          "minimum": -180,
-          "maximum": 180
-        },
-        "radius": {
-          "type": "number",
-          "minimum": 0
-        },
-        "radius_unit": {
-          "type": "string",
-          "enum": [
-            "mi",
-            "yd",
-            "ft",
-            "in",
-            "km",
-            "m",
-            "cm",
-            "mm",
-            "nmi"
-          ]
-        }
-      }
-    },
-    "geo_named_area_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "name"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+        {
+          "required": [
             "geo_named_area"
           ]
         },
-        "name": {
-          "type": "string"
-        }
-      }
-    },
-    "geo_custom_area_term": {
-      "type": "object",
-      "required": [
-        "type",
-        "geoJSON"
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
+        {
+          "required": [
             "geo_custom_area"
           ]
         },
-        "geoJSON": {
-          "type": "object"
-        }
-      }
-    },
-    "exists_term": {
-      "type": "object",
-      "required": [
-        "type"
-      ],
-      "anyOf": [
         {
           "required": [
-            "fields"
-          ]
-        },
-        {
-          "required": [
-            "geo_field"
-          ]
-        }
-      ],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
             "exists"
           ]
-        },
-        "geo_field": {
-          "type": "boolean"
-        },
-        "fields": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minLength": 1,
-          "uniqueItems": true
         }
-      }
+      ],
+      "properties": {
+        "string_equals": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "string_contains": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "number_equals": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "number"
+            }
+          }
+        },
+        "number_range": {
+          "type": "object",
+          "required": [
+            "fields"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "greater_than"
+              ]
+            },
+            {
+              "required": [
+                "less_than"
+              ]
+            }
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "greater_than": {
+              "type": "number"
+            },
+            "less_than": {
+              "type": "number"
+            },
+            "greater_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            },
+            "less_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "geo_point": {
+          "type": "object",
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "dependencies": {
+            "radius": [
+              "radius_unit"
+            ]
+          },
+          "properties": {
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius_unit": {
+              "type": "string",
+              "enum": [
+                "mi",
+                "yd",
+                "ft",
+                "in",
+                "km",
+                "m",
+                "cm",
+                "mm",
+                "nmi"
+              ]
+            }
+          }
+        },
+        "geo_named_area": {
+          "type": "object",
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          }
+        },
+        "geo_custom_area": {
+          "type": "object",
+          "required": [
+            "geoJSON"
+          ],
+          "properties": {
+            "geoJSON": {
+              "type": "object"
+            }
+          }
+        },
+        "exists": {
+          "type": "object",
+          "anyOf": [
+            {
+              "required": [
+                "fields"
+              ]
+            },
+            {
+              "required": [
+                "geo_field"
+              ]
+            }
+          ],
+          "properties": {
+            "geo_field": {
+              "type": "boolean"
+            },
+            "fields": {
+              "$ref": "#/definitions/fields"
+            }
+          }
+        }
+      },
+      "maxProperties": 1
     },
     "group": {
-      "required": [
-        "type",
-        "members"
+      "oneOf": [
+        {
+          "required": [
+            "and"
+          ]
+        },
+        {
+          "required": [
+            "or"
+          ]
+        }
       ],
       "type": "object",
       "properties": {
-        "type": {
-          "type": "string",
-          "enum": [
-            "and",
-            "or"
-          ]
+        "and": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
         },
-        "members": {
-          "type": "array",
-          "items": {
-            "oneOf": [
-              {
-                "$ref": "#/definitions/group"
-              },
-              {
-                "$ref": "#/definitions/string_equals_term"
-              },
-              {
-                "$ref": "#/definitions/string_contains_term"
-              },
-              {
-                "$ref": "#/definitions/number_equals_term"
-              },
-              {
-                "$ref": "#/definitions/number_range_term"
-              },
-              {
-                "$ref": "#/definitions/geo_point_term"
-              },
-              {
-                "$ref": "#/definitions/geo_named_area_term"
-              },
-              {
-                "$ref": "#/definitions/geo_custom_area_term"
-              },
-              {
-                "$ref": "#/definitions/exists_term"
-              }
-            ]
-          },
-          "minItems": 1
+        "or": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
         }
-      }
+      },
+      "maxProperties": 1
     }
   },
   "type": "object",
-  "required": [
-    "query_version"
-  ],
   "properties": {
-    "query_version": {
-      "type": "string",
-      "enum": [
-        "v1.0.0"
-      ]
-    },
     "search": {
       "type": "string"
     },
