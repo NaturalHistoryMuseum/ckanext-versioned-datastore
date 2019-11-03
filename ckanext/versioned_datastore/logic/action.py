@@ -5,6 +5,7 @@ import logging
 from collections import defaultdict
 
 import itertools
+import jsonschema
 from datetime import datetime
 from eevee.utils import to_timestamp
 from eevee.indexing.utils import DOC_TYPE
@@ -19,6 +20,8 @@ from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
 from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
+from ckanext.versioned_datastore.lib.multisearch import translate_query, validate_query, \
+    get_latest_query_version, InvalidQuerySchemaVersionError
 from ckanext.versioned_datastore.logic import schema
 
 log = logging.getLogger(__name__)
@@ -752,37 +755,17 @@ def datastore_ensure_privacy(context, data_dict):
 @toolkit.side_effect_free
 def datastore_multisearch(context, data_dict):
     '''
-    This action allows you to search data in multiple resources using a raw elasticsearch query.
-
-    Note that the structure of the documents in elasticsearch is defined as such:
-
-        - data._id: the id of the record, this is always an integer
-        - data.*: the data fields. Each field is stored in 3 different ways:
-            - data.<field_name>: keyword type
-            - data.<field_name>.full: text type
-            - data.<field_name>.number: double type, will be missing if the data value isn't
-                                        convertable to a number
-        - meta.*: various metadata fields, including:
-            - meta.all: a text type field populated from all the data in the data.* fields
-            - meta.geo: if a pair of lat/lon fields have been assigned on this resource this geo
-                        point type field is available
-            - meta.version: the version of this record, this field is a date type field represented
-                            in epoch millis
-            - meta.next_version: the next version of this record, this field is a date type field
-                            represented in epoch millis. If missing this is the current version of
-                            the record
-            - meta.versions: a date range type field which encapsulates the version range this
-                             document applies to for the record
+    This action allows you to search data in multiple resources.
 
     Params:
 
-    :param search: the search JSON to submit to elasticsearch. This should be a valid elasticsearch
-                   search. The version filter is automatically added and doesn't need to be
-                   specified. If not included then an empty {} is used.
-    :type search: dict
+    :param query: the search JSON
+    :type query: dict
     :param version: version to search at, if not provided the current version of the data is
                    searched
     :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+    :param query_version: the query language version (for example v1.0.0)
+    :type query_version: string
 
     **Results:**
 
@@ -812,8 +795,20 @@ def datastore_multisearch(context, data_dict):
     #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
 
-    search = Search.from_dict(data_dict.get(u'search', {}))
-    version = data_dict.get(u'version', None)
+    query = data_dict.get(u'query', {})
+    query_version = data_dict.get(u'query_version', get_latest_query_version())
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+
+    try:
+        validate_query(query, query_version)
+        # translate the query into an elasticsearch-sql search object
+        search = translate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    # add the versioning (this shouldn't be here, this should be done in the eevee searcher but
+    # there is a bug there)
+    search = search.filter(u'term', **{u'meta.versions': version})
 
     # gather the number of hits in the top 10 most frequently represented indexes
     search.aggs.bucket(u'indexes', u'terms', field=u'_index')

@@ -187,8 +187,9 @@ def datastore_ensure_privacy_schema():
 
 def datastore_multisearch_schema():
     return {
-        u'search': [ignore_missing, json_validator],
+        u'query': [ignore_missing, json_validator],
         u'version': [ignore_missing, int_validator],
+        u'query_version': [ignore_missing, unicode],
     }
 
 

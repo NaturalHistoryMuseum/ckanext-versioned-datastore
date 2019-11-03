@@ -41,6 +41,7 @@ setup(
         'xlrd==1.1.0',
         'elasticsearch==6.3.1',
         'elasticsearch-dsl==6.2.1',
+        'jsonschema>=3.0.0'
         ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),
     entry_points= \
