@@ -801,7 +801,7 @@ def datastore_multisearch(context, data_dict):
 
     try:
         validate_query(query, query_version)
-        # translate the query into an elasticsearch-sql search object
+        # translate the query into an elasticsearch-dsl search object
         search = translate_query(query, query_version)
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
