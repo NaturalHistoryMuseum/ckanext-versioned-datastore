@@ -24,7 +24,7 @@ def load_schemas(schema_base_path=None):
 
     if schema_base_path is None:
         parent_path = os.path.dirname(__file__)
-        schema_base_path = os.path.join(parent_path, u'..', u'theme', u'public', u'schemas')
+        schema_base_path = os.path.join(parent_path, u'..', u'theme', u'public', u'querySchemas')
 
     for schema_file in os.listdir(schema_base_path):
         if schema_file.endswith(u'.json'):

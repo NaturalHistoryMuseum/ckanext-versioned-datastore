@@ -23,7 +23,7 @@ class TestMultisearch(TestBase):
 
     def test_load_schemas_default_path_is_the_public_folder(self):
         parent_path = os.path.dirname(__file__)
-        schema_base_path = os.path.join(parent_path, u'..', u'theme', u'public', u'schemas')
+        schema_base_path = os.path.join(parent_path, u'..', u'theme', u'public', u'querySchemas')
         default_schemas = load_schemas()
         also_default_schemas = load_schemas(schema_base_path=schema_base_path)
 

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://data.nhm.ac.uk/schemas/v1.0.0.json",
+  "$id": "https://data.nhm.ac.uk/querySchemas/v1.0.0.json",
   "definitions": {
     "fields": {
       "type": "array",
