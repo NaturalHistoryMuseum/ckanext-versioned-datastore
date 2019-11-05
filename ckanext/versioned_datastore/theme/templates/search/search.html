@@ -13,36 +13,25 @@
 
     <article class="module">
         <div class="module-content">
-            <div id="searchApp" data-module="vds_search" class="hide-until-loaded">
-                <div class="module module-search module-narrow module-shallow">
-                    <div class="module-content search-form flex-container flex-equal">
-                        <div class="search-input control-group search-giant">
-                            <label for="all" class="sr-only">Search</label>
-                            <input type="text" class="search" name="all" id="all"
-                                   value="" autocomplete="off" placeholder="Search all fields"
-                                   v-model="all" @keyup.enter="addAllMatch"/>
-                            <button type="submit" @click="addAllMatch">
-                                <i class="fas fa-search"></i>
-                                <span class="sr-only">{{ _('Search') }}</span>
-                            </button>
-                        </div>
+            {% block search_content %}
+                <div id="searchApp" data-module="vds_search" class="hide-until-loaded">
+                    <div class="module module-search module-narrow module-shallow">
+                        <form class="module-content search-form" id="searchForm">
+                            <div class="search-input control-group search-giant">
+                                <label for="all" class="sr-only">Search</label>
+                                <input type="text" class="search" name="all" id="all"
+                                        value="" autocomplete="off"
+                                        placeholder="Search all fields"/>
+                                <button type="submit">
+                                    <i class="fas fa-search"></i>
+                                    <span class="sr-only">{{ _('Search') }}</span>
+                                </button>
+                            </div>
+                        </form>
                     </div>
+                    <div id="result"></div>
                 </div>
-                <div id="result">
-                    <table class="table-bordered table-condensed" style="overflow-x: scroll">
-                        <tr>
-                            <td v-for="header in headers">
-                                [[ header ]]
-                            </td>
-                        </tr>
-                        <tr v-for="item in records">
-                            <td v-for="header in headers">
-                                [[ item.data[header] ]]
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </div>
+            {% endblock %}
         </div>
     </article>
 {% endblock %}
