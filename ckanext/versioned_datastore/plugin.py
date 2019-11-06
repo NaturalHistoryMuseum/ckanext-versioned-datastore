@@ -1,14 +1,17 @@
 import logging
 
 from ckanext.versioned_datastore.lib import utils
+from ckanext.versioned_datastore.lib.query import register_schema
+from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 from eevee.utils import to_timestamp
 
 from ckan import model
-from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from ckan.model import DomainObjectOperation
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
 from ckanext.versioned_datastore.logic import action, auth
 from ckanext.versioned_datastore import routes, helpers
+from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +25,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IConfigurer)
     implements(interfaces.IConfigurable)
     implements(interfaces.IBlueprint, inherit=True)
+    implements(IVersionedDatastoreQuerySchema)
 
     # IActions
     def get_actions(self):
@@ -132,10 +136,21 @@ class VersionedSearchPlugin(SingletonPlugin):
         toolkit.add_template_directory(config, u'theme/templates')
         toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
 
-    ## IBlueprint
+    # IBlueprint
     def get_blueprint(self):
         return routes.blueprints
 
     # IConfigurable
     def configure(self, ckan_config):
         setup_eevee(ckan_config)
+
+        # register all custom query schemas
+        for plugin in PluginImplementations(IVersionedDatastoreQuerySchema):
+            for version, schema in plugin.get_query_schemas():
+                register_schema(version, schema)
+
+    # IVersionedDatastoreQuerySchema
+    def get_query_schemas(self):
+        return [
+            (v1_0_0Schema.version, v1_0_0Schema())
+        ]

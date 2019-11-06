@@ -201,9 +201,18 @@
         "geo_named_area": {
           "type": "object",
           "required": [
+            "category",
             "name"
           ],
           "properties": {
+            "category": {
+              "type": "string",
+              "enum": [
+                "country",
+                "marine",
+                "geography"
+              ]
+            },
             "name": {
               "type": "string"
             }

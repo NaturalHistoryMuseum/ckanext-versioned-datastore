@@ -160,3 +160,16 @@ class IVersionedDatastore(interfaces.Interface):
         :param stats_id: the id of the statistics entry in the ImportStats database table
         '''
         pass
+
+
+class IVersionedDatastoreQuerySchema(interfaces.Interface):
+
+    def get_query_schemas(self):
+        '''
+        Hook to allow registering custom query schemas.
+
+        :return: a list of tuples of the format (query schema version, schema object) where the
+                 query schema version is a string of format v#.#.# and the schema object is an
+                 instance of ckanext.versioned_datastore.lib.query.Schema
+        '''
+        pass

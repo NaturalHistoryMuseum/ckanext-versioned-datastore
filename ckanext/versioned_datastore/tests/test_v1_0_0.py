@@ -1,4 +1,10 @@
-from ckanext.versioned_datastore.lib.multisearch import translate_query
+# !/usr/bin/env python
+# encoding: utf-8
+import io
+import os
+
+from ckanext.versioned_datastore.lib.query import schema_base_path
+from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 from ckantest.models import TestBase
 from nose.tools import assert_equal
 
@@ -8,7 +14,8 @@ class TestV1_0_0Translator(TestBase):
 
     @staticmethod
     def compare_query_and_search(query, search_dict):
-        assert_equal(translate_query(query, u'v1.0.0').to_dict(), search_dict)
+        schema = v1_0_0Schema()
+        assert_equal(schema.translate(query).to_dict(), search_dict)
 
     def test_translate_1(self):
         query = {}
@@ -57,7 +64,7 @@ class TestV1_0_0Translator(TestBase):
         search_dict = {
             u'query': {
                 u'bool': {
-                    u'must': [
+                    u'filter': [
                         {
                             u'term': {
                                 u'data.genus': u'helix'
@@ -104,7 +111,7 @@ class TestV1_0_0Translator(TestBase):
         search_dict = {
             u'query': {
                 u'bool': {
-                    u'must': [
+                    u'filter': [
                         {
                             u'term': {
                                 u'data.genus': u'helix'
@@ -117,7 +124,9 @@ class TestV1_0_0Translator(TestBase):
                                     u'operator': u'and'
                                 }
                             }
-                        },
+                        }
+                    ],
+                    u'must': [
                         {
                             u'match': {
                                 u'meta.all': {
@@ -178,7 +187,7 @@ class TestV1_0_0Translator(TestBase):
         search_dict = {
             u'query': {
                 u'bool': {
-                    u'must': [
+                    u'filter': [
                         {
                             u'term': {
                                 u'data.genus': u'helix'
@@ -278,7 +287,7 @@ class TestV1_0_0Translator(TestBase):
         search_dict = {
             u'query': {
                 u'bool': {
-                    u'must': [
+                    u'filter': [
                         {
                             u'term': {
                                 u'data.genus': u'helix'
@@ -355,7 +364,7 @@ class TestV1_0_0Translator(TestBase):
         search_dict = {
             u'query': {
                 u'bool': {
-                    u'must': [
+                    u'filter': [
                         {
                             u'term': {
                                 u'data.genus': u'helix'
@@ -415,6 +424,34 @@ class TestV1_0_0Translator(TestBase):
             u'query': {
                 u'exists': {
                     u'field': u'meta.geo'
+                }
+            }
+        }
+        self.compare_query_and_search(query, search_dict)
+
+    def test_translate_10(self):
+        country = u'Curaçao'
+        multipolygon = v1_0_0Schema().geojson[u'country'][country]
+        query = {
+            u"filters": {
+                u"and": [
+                    {
+                        u"geo_named_area": {
+                            u"name": country,
+                            u"category": u"country"
+                        }
+                    }
+                ]
+            }
+        }
+        search_dict = {
+            u'query': {
+                u'geo_polygon': {
+                    u'meta.geo': {
+                        u'points': [
+                            {u'lat': point[1], u'lon': point[0]} for point in multipolygon[0][0]
+                        ]
+                    }
                 }
             }
         }
