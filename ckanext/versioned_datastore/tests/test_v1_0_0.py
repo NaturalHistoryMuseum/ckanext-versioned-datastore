@@ -437,8 +437,7 @@ class TestV1_0_0Translator(TestBase):
                 u"and": [
                     {
                         u"geo_named_area": {
-                            u"name": country,
-                            u"category": u"country"
+                            u"country": country
                         }
                     }
                 ]

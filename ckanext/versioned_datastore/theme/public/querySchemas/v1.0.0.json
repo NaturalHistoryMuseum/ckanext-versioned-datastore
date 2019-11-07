@@ -200,21 +200,32 @@
         },
         "geo_named_area": {
           "type": "object",
-          "required": [
-            "category",
-            "name"
-          ],
-          "properties": {
-            "category": {
-              "type": "string",
-              "enum": [
-                "country",
-                "marine",
-                "geography"
+          "oneOf": [
+            {
+              "required": [
+                "country"
               ]
             },
-            "name": {
-              "type": "string"
+            {
+              "required": [
+                "marine"
+              ]
+            },
+            {
+              "required": [
+                "geography"
+              ]
+            }
+          ],
+          "properties": {
+            "country": {
+              "$ref": "geojson/v1.0.0-countries.json#country"
+            },
+            "marine": {
+              "$ref": "geojson/v1.0.0-marine.json#marine"
+            },
+            "geography": {
+              "$ref": "geojson/v1.0.0-geography.json#geography"
             }
           }
         },

@@ -23,6 +23,8 @@ class v1_0_0Schema(Schema):
         self.geojson = {
             u'country': self.load_geojson(u'50m-admin-0-countries-v4.1.0.geojson',
                                           (u'NAME_EN', u'NAME')),
+            # if we use name_en we end up with one atlantic ocean whereas if we use name we get 2 -
+            # the "North Atlantic Ocean" and the "South Atlantic Ocean". I think this is preferable.
             u'marine': self.load_geojson(u'50m-marine-regions-v4.1.0.geojson', (u'name',)),
             u'geography': self.load_geojson(u'50m-geography-regions-v4.1.0.geojson',
                                             (u'name_en', u'name')),
@@ -240,7 +242,8 @@ class v1_0_0Schema(Schema):
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
         queries = []
-        for polygon in self.geojson[options[u'category']][options[u'name']]:
+        category, name = next(iter(options.items()))
+        for polygon in self.geojson[category][name]:
             outer, holes = polygon[0], polygon[1:]
             outer_query = self.build_polygon_query(outer, validate=False)
 
