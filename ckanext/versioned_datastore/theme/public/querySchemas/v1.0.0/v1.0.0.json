@@ -229,13 +229,19 @@
           }
         },
         "geo_custom_area": {
-          "type": "object",
-          "required": [
-            "geoJSON"
-          ],
-          "properties": {
-            "geoJSON": {
-              "type": "object"
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
             }
           }
         },

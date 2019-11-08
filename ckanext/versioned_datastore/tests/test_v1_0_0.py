@@ -467,3 +467,65 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         self.compare_query_and_search(query, search_dict)
+
+    def test_translate_11(self):
+        a_square = [[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]]
+        another_square = [[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]
+        a_hole = [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]
+
+        def to_points(points):
+            return [{u'lat': point[1], u'lon': point[0]} for point in points]
+
+        query = {
+            u"filters": {
+                u"and": [
+                    {
+                        u"geo_custom_area": [
+                            # just a square
+                            [a_square],
+                            # a square with a square hole in it
+                            [another_square, a_hole]
+                        ]
+                    }
+                ]
+            }
+        }
+        search_dict = {
+            u"query": {
+                u"bool": {
+                    u"minimum_should_match": 1,
+                    u"should": [
+                        {
+                            u"geo_polygon": {
+                                u"meta.geo": {
+                                    u"points": to_points(a_square)
+                                }
+                            }
+                        },
+                        {
+                            u"bool": {
+                                u"filter": [
+                                    {
+                                        u"geo_polygon": {
+                                            u"meta.geo": {
+                                                u"points": to_points(another_square)
+                                            }
+                                        }
+                                    }
+                                ],
+                                u"must_not": [
+                                    {
+                                        u"geo_polygon": {
+                                            u"meta.geo": {
+                                                u"points": to_points(a_hole)
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        self.compare_query_and_search(query, search_dict)

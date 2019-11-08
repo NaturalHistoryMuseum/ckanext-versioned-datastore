@@ -239,22 +239,22 @@ class v1_0_0Schema(Schema):
         load_geojson function in this class.
 
         :param options: the options for the geo_named_area query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool Query)
         '''
-        queries = []
         category, name = next(iter(options.items()))
-        for polygon in self.geojson[category][name]:
-            outer, holes = polygon[0], polygon[1:]
-            outer_query = self.build_polygon_query(outer, validate=False)
+        return self.build_multipolygon_query(self.geojson[category][name])
 
-            if holes:
-                holes_queries = [self.build_polygon_query(hole, validate=False) for hole in holes]
-                # create a query which filters the outer query but filters out the holes
-                queries.append(Bool(filter=[outer_query], must_not=holes_queries))
-            else:
-                queries.append(outer_query)
+    def create_geo_custom_area(self, coordinates):
+        '''
+        Given the coordinates for a geo_custom_area term, creates and returns an elasticsearch-dsl
+        object to represent it. This term takes the equivalent of the coordinates array from a
+        MultiPolygon type feature in GeoJSON and uses it to build a query which captures records
+        that fall in the polygon (and outside any holes defined in the Polygon).
 
-        return self.build_or(queries)
+        :param coordinates: a MultiPolygon coordinates list
+        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool Query)
+        '''
+        return self.build_multipolygon_query(coordinates)
 
     @staticmethod
     def build_or(terms):
@@ -268,31 +268,51 @@ class v1_0_0Schema(Schema):
         return terms[0] if len(terms) == 1 else Bool(should=terms, minimum_should_match=1)
 
     @staticmethod
-    def build_polygon_query(points, validate=True):
+    def build_geo_polygon_query(points):
         '''
-        Utility function which when given a list of points, creates a geo_polygon query and returns
-        it. The points list must contain at least 4 lists, each list representing the longitude and
-        latitude of the point (note the order, this comes from the geojson standard). If fewer than
-        4 points are passed then a ValidationError is thrown. The first and last points in the list
-        must be the same, otherwise a ValidationError is thrown.
+        Given a list of points (where each point is a list with 2 elements, the longitude and
+        the latitude (note the order, it's the same as the GeoJSON spec)), creates a geo_polygon
+        elasticsearch-dsl query object for the points and returns it.
 
-        :param points: the list of points
-        :param validate: whether to validate the points for correctness against the geojson spec,
-                         default: True
-        :return: a geo_polygon query object
+        :param points: a list of points
+        :return: an elasticsearch-dsl query object
         '''
-        if validate:
-            if len(points) < 4:
-                raise toolkit.ValidationError(u'Not enough points')
-
-            if points[0] != points[-1]:
-                raise toolkit.ValidationError(u'First and last point must be the same')
-
         return Q(u'geo_polygon', **{
             u'meta.geo': {
                 u'points': [{u'lat': point[1], u'lon': point[0]} for point in points]
             }
         })
+
+    @staticmethod
+    def build_multipolygon_query(coordinates):
+        '''
+        Utility function for building elasticsearch-dsl queries that represent GeoJSON
+        MultiPolygons. Given the coordinates this function creates a geo_polygon queries and Bool
+        queries to represent the varioud enclosures and holes in those enclosures to find all
+        records residing in the MultiPolygon. The coordinates parameter should match the format
+        required by GeoJSON and therefore be a series of nested lists, see the GeoJSON docs for
+        details.
+
+        :param coordinates: the coordinate list, which is basically a list of Polygons. See the
+                            GeoJSON doc for the exact format and meaning
+        :return: an elasticsearch-dsl object representing the MultiPolygon
+        '''
+        queries = []
+        # the first list is a list of GeoJSON Polygons
+        for polygon in coordinates:
+            # then the Polygon is a list containing at least one element. The first element is the
+            # outer boundary shape of the polygon and any other elements are holes in this shape
+            outer, holes = polygon[0], polygon[1:]
+            outer_query = v1_0_0Schema.build_geo_polygon_query(outer)
+
+            if holes:
+                holes_queries = [v1_0_0Schema.build_geo_polygon_query(hole) for hole in holes]
+                # create a query which filters the outer query but filters out the holes
+                queries.append(Bool(filter=[outer_query], must_not=holes_queries))
+            else:
+                queries.append(outer_query)
+
+        return v1_0_0Schema.build_or(queries)
 
     @staticmethod
     def load_geojson(filename, name_keys):
