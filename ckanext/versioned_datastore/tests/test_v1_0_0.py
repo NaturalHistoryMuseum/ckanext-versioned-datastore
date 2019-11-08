@@ -1,6 +1,8 @@
 # !/usr/bin/env python
 # encoding: utf-8
 import io
+import json
+
 import os
 
 from ckanext.versioned_datastore.lib.query import schema_base_path
@@ -12,9 +14,19 @@ from nose.tools import assert_equal
 class TestV1_0_0Translator(TestBase):
     plugins = [u'versioned_datastore']
 
+    def test_validate_examples(self):
+        schema = v1_0_0Schema()
+        path = os.path.join(schema_base_path, schema.version, u'examples')
+        for filename in os.listdir(path):
+            with io.open(os.path.join(path, filename), u'r', encoding=u'utf-8') as f:
+                schema.validate(json.load(f))
+
     @staticmethod
     def compare_query_and_search(query, search_dict):
         schema = v1_0_0Schema()
+        # validate the query!
+        schema.validate(query)
+        # check that the translated version is correct compared to the expected search dict
         assert_equal(schema.translate(query).to_dict(), search_dict)
 
     def test_translate_1(self):
