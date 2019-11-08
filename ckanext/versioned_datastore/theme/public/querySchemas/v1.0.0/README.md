@@ -201,21 +201,19 @@ No `fields `are necessary as the `meta.geo` field is always used.
 ```
 
 ###### geo_custom_area
-This term matches a coordinate pair within the given GeoJSON area.
-No `fields `are necessary as the `meta.geo` field is always used.
+This term matches a coordinate pair within the given GeoJSON MultiPolygon coordinates.
+The array associated with the `geo_named_area` should be a valid GeoJSON multipolygon array.
+This therefore allows for the use of multiple Polygons in one term (associated using an or query).
+Additionally, holes in the Polygons are fully supported.
+See the GeoJSON doc on Polygons and MultiPolygons to get familiar with them.
 
-**TODO: the `geoJSON` value needs to be defined properly.**
+No `fields `are necessary as the `meta.geo` field is always used.
 
 ```json
 {
   ...
   {
-    "geo_named_area": {
-      "geoJSON": {
-        "type": "Polygon",
-          "coordinates": [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]]
-      }
-    }
+    "geo_custom_area": [[[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]]
   }
   ...
 }
