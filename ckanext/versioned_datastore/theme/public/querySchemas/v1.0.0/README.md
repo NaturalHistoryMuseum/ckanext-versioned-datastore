@@ -179,7 +179,12 @@ The `radius` must be greater than or equal to 0.
 
 ###### geo_named_area
 This term matches a coordinate pair within the given named area.
-The named areas available include country names and continents.
+The available names are split into 3 categories: `country`, `marine` and `geography`.
+Each name in the list corresponds to a GeoJSON MultiPolygon which outlines the given area.
+Holes are also supported for more complex areas.
+The names available are available in the schema through the linked `geojson/v1.0.0-{}.json`
+subschemas, where there is one for each category.
+
 No `fields `are necessary as the `meta.geo` field is always used.
 
 
@@ -188,7 +193,7 @@ No `fields `are necessary as the `meta.geo` field is always used.
   ...
   {
     "geo_named_area": {
-      "name": "europe"
+      "country": "Curaçao"
     }
   }
   ...

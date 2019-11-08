@@ -6,7 +6,7 @@ import abc
 import itertools
 import os
 import six
-from jsonschema.validators import validator_for
+from jsonschema.validators import validator_for, RefResolver
 
 schemas = OrderedDict()
 schema_base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), u'..', u'..', u'theme',
@@ -85,12 +85,14 @@ def load_core_schema(version):
     :param version: the version to load
     :return: the loaded schema (as a dict) and a jsonschmea validator object for the schema
     '''
-    schema_file = os.path.join(schema_base_path, u'{}.json'.format(version))
+    schema_file = os.path.join(schema_base_path, version, u'{}.json'.format(version))
     with io.open(schema_file, u'r', encoding=u'utf-8') as f:
         schema = json.load(f)
         validator_cls = validator_for(schema)
         validator_cls.check_schema(schema)
-        validator = validator_cls(schema)
+        # create a resolver which can resolve refs relative to the schema
+        resolver = RefResolver(base_uri='file://{}'.format(schema_file), referrer=schema)
+        validator = validator_cls(schema, resolver=resolver)
         return schema, validator
 
 

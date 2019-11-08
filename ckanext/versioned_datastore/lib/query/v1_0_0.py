@@ -295,7 +295,7 @@ class v1_0_0Schema(Schema):
         })
 
     @staticmethod
-    def load_geojson(filename, name_keys, path=os.path.join(schema_base_path, u'geojson')):
+    def load_geojson(filename, name_keys):
         '''
         Load the given geojson file, build a lookup using the data and the name_keys parameter and
         return it.
@@ -310,9 +310,10 @@ class v1_0_0Schema(Schema):
 
         :param filename: the name geojson file to load from the given path
         :param name_keys: a priority ordered sequence of keys to use for feature name retrieval
-        :param path: the base path to load the geojson file from
         :return: a dict of names -> MultiPolygons
         '''
+        path = os.path.join(schema_base_path, v1_0_0Schema.version, u'geojson')
+
         # make sure we read the file using utf-8
         with io.open(os.path.join(path, filename), u'r', encoding=u'utf-8') as f:
             lookup = defaultdict(list)

@@ -1,0 +1,11 @@
+{
+  "filters": {
+    "and": [
+      {
+        "geo_named_area": {
+          "country": "Curaçao"
+        }
+      }
+    ]
+  }
+}

@@ -1,6 +1,5 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://data.nhm.ac.uk/querySchemas/v1.0.0.json",
   "definitions": {
     "fields": {
       "type": "array",
@@ -219,13 +218,13 @@
           ],
           "properties": {
             "country": {
-              "$ref": "geojson/v1.0.0-countries.json#country"
+              "$ref": "geojson/v1.0.0-countries.json#/definitions/country"
             },
             "marine": {
-              "$ref": "geojson/v1.0.0-marine.json#marine"
+              "$ref": "geojson/v1.0.0-marine.json#/definitions/marine"
             },
             "geography": {
-              "$ref": "geojson/v1.0.0-geography.json#geography"
+              "$ref": "geojson/v1.0.0-geography.json#/definitions/geography"
             }
           }
         },
