@@ -806,8 +806,6 @@ def datastore_multisearch(context, data_dict):
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
-    debug = search.to_dict()
-
     # add the versioning (this shouldn't be here, this should be done in the eevee searcher but
     # there is a bug there)
     search = search.filter(u'term', **{u'meta.versions': version})
@@ -828,7 +826,6 @@ def datastore_multisearch(context, data_dict):
         })
 
     return {
-        u'debug': debug,
         u'total': result.total,
         u'records': records,
         u'after': result.last_after,
