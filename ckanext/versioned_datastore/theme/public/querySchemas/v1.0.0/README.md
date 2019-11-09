@@ -537,3 +537,133 @@ This query finds all records which have the `associatedMedia` field present.
 }
 ```
 This query finds all records that have the `meta.geo` field present.
+
+
+### 10.json
+```json
+{
+  "filters": {
+    "and": [
+      {
+        "geo_named_area": {
+          "country": "Curaçao"
+        }
+      }
+    ]
+  }
+}
+```
+
+This query finds all records where their `meta.geo` field resides inside the area defined as the
+country of Curaçao.
+
+
+### 11.json
+```json
+{
+  "filters": {
+    "and": [
+      {
+        "geo_custom_area": [
+          [
+            [
+              [
+                102.0,
+                2.0
+              ],
+              [
+                103.0,
+                2.0
+              ],
+              [
+                103.0,
+                3.0
+              ],
+              [
+                102.0,
+                3.0
+              ],
+              [
+                102.0,
+                2.0
+              ]
+            ]
+          ],
+          [
+            [
+              [
+                100.0,
+                0.0
+              ],
+              [
+                101.0,
+                0.0
+              ],
+              [
+                101.0,
+                1.0
+              ],
+              [
+                100.0,
+                1.0
+              ],
+              [
+                100.0,
+                0.0
+              ]
+            ],
+            [
+              [
+                100.2,
+                0.2
+              ],
+              [
+                100.8,
+                0.2
+              ],
+              [
+                100.8,
+                0.8
+              ],
+              [
+                100.2,
+                0.8
+              ],
+              [
+                100.2,
+                0.2
+              ]
+            ]
+          ]
+        ]
+      }
+    ]
+  }
+}
+```
+
+This query finds all records where their `meta.geo` field resides inside the given GeoJSON
+`MultiPolygon` coordinates.
+The coordinates given correspond to two shapes, a square and a square with another square hole
+within it (defining and area that the records cannot be in).
+
+
+### 12.json
+```json
+{
+  "filters": {
+    "not": [
+      {
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
+      }
+    ]
+  }
+}
+```
+
+This query finds only records where the `genus` _is not_ `helix`.
