@@ -30,9 +30,9 @@ Only one `group` can exist at the top level but it can contain other `groups` to
 `groups`.
 
 ##### Groups
-`groups` wrap `terms` and other `groups` allowing the encapsulation of boolean logic (`and` and
-`or`).
-Within a group, there are 2 available types: `and` and `or`.
+`groups` wrap `terms` and other `groups` allowing the encapsulation of boolean logic (`and`, `or`
+and `not`).
+Within a group, there are 3 available types: `and`, `or` and `not`.
 
 ###### and
 The `and` type ensures that **all** terms and groups in the array must be met by the records being
@@ -54,6 +54,18 @@ results.
 ```json
 {
     "or": [
+      ...
+    ]
+}
+```
+
+###### not
+The `not` type ensures that **all** terms and groups in the array _must not_ be met by the records
+being queried. Only records that meet none of the constraints will be returned in the results.
+
+```json
+{
+    "not": [
       ...
     ]
 }
