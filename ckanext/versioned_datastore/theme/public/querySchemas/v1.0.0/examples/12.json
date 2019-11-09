@@ -1,0 +1,14 @@
+{
+  "filters": {
+    "not": [
+      {
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
+      }
+    ]
+  }
+}

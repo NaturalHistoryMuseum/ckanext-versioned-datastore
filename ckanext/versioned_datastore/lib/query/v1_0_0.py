@@ -121,6 +121,16 @@ class v1_0_0Schema(Schema):
         '''
         return self.build_or([self.create_group_or_term(member) for member in group])
 
+    def create_not(self, group):
+        '''
+        Creates and returns an elasticsearch-dsl query object representing the given group as a
+        not query. This will be a Bool with a must_not in it.
+
+        :param group: the group to build the not from
+        :return: a Bool query
+        '''
+        return Bool(must_not=[self.create_group_or_term(member) for member in group])
+
     def create_string_equals(self, options):
         '''
         Given the options for a string_equals term, creates and returns an elasticsearch-dsl object

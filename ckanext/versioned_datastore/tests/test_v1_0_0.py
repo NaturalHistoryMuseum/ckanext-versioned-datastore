@@ -529,3 +529,33 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         self.compare_query_and_search(query, search_dict)
+
+    def test_translate_12(self):
+        query = {
+            u"filters": {
+                u"not": [
+                    {
+                        u"string_equals": {
+                            u"fields": [
+                                u"genus"
+                            ],
+                            u"value": u"helix"
+                        }
+                    }
+                ]
+            }
+        }
+        search_dict = {
+            u'query': {
+                u'bool': {
+                    u'must_not': [
+                        {
+                            u'term': {
+                                u'data.genus': u'helix'
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+        self.compare_query_and_search(query, search_dict)

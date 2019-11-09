@@ -282,6 +282,11 @@
           "required": [
             "or"
           ]
+        },
+        {
+          "required": [
+            "not"
+          ]
         }
       ],
       "type": "object",
@@ -290,6 +295,9 @@
           "$ref": "#/definitions/list_of_groups_or_terms"
         },
         "or": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
+        },
+        "not": {
           "$ref": "#/definitions/list_of_groups_or_terms"
         }
       },
