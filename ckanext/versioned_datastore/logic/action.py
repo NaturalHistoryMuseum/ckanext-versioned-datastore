@@ -773,6 +773,10 @@ def datastore_multisearch(context, data_dict):
     :param after: provides pagination. By passing a previous result set's after value, the next
                   page's results can be found. If not provided then the first page is retrieved
     :type after: a list
+    :param size: the number of records to return in the search result. If not provided then the
+                 default value of 100 is used. This value must be between 0 and 1000 and will be
+                 capped at which ever end is necessary if it is beyond these bounds
+    :type size: int
 
     **Results:**
 
@@ -808,6 +812,8 @@ def datastore_multisearch(context, data_dict):
     requested_resource_ids = data_dict.get(u'resource_ids', [])
     # the after parameter if there is one
     after = data_dict.get(u'after', None)
+    # the size parameter if there is one, if not default to 100. The size must be between 0 and 1000
+    size = max(0, min(data_dict.get(u'size', 100), 1000))
 
     # figure out which resources should be searched
     resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
@@ -824,6 +830,8 @@ def datastore_multisearch(context, data_dict):
 
     if after is not None:
         search = search.extra(search_after=after)
+
+    search = search.extra(size=size)
 
     # gather the number of hits in the top 10 most frequently represented indexes
     search.aggs.bucket(u'indexes', u'terms', field=u'_index')

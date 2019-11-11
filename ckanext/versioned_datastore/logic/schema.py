@@ -206,7 +206,8 @@ def datastore_multisearch_schema():
         u'version': [ignore_missing, int_validator],
         u'query_version': [ignore_missing, unicode],
         u'resource_ids': [ignore_missing, list_of_strings()],
-        u'after': [ignore_missing, list_validator]
+        u'after': [ignore_missing, list_validator],
+        u'size': [ignore_missing, int_validator],
     }
 
 
