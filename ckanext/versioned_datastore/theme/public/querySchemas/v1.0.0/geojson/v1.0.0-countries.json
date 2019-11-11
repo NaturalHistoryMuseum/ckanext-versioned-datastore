@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
     "country": {
+      "description": "The name of a country. The names are sourced from the [Natural Earth Data's 1:50m Admin 0 - Countries](https://www.naturalearthdata.com/downloads/50m-cultural-vectors/50m-admin-0-countries/) list and must be provided using exact casing.",
       "enum": [
         "Afghanistan",
         "Albania",

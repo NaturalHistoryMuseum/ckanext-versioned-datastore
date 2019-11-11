@@ -2,6 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "definitions": {
     "marine": {
+      "description": "The name of a marine area. The names are sourced from the [Natural Earth Data's 1:50m Physical Vectors](https://www.naturalearthdata.com/downloads/50m-physical-vectors/) list and must be provided using exact casing.",
       "enum": [
         "Adriatic Sea",
         "Aegean Sea",

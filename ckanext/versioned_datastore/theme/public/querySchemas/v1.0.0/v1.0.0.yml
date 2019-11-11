@@ -1,0 +1,107 @@
+openapi: 3.0.0
+info:
+  title: Data Portal Datastore Multisearch API
+  description: API for querying the Data Portal datastore
+  version: v1.0.0
+servers:
+  - url: https://data.nhm.ac.uk/api/3/action
+paths:
+  /datastore_multisearch:
+    post:
+      summary: Search for records across all or a selection of resources in one query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                resource_ids:
+                  type: array
+                  items:
+                    type: string
+                  description: >
+                    The resource ids to search. If this value is missing or an empty array then all
+                    resources are queried. Only resources available to the searching user are
+                    queried.
+                query:
+                  type: object
+                  description: The query to run.
+                  $ref: 'v1.0.0.json'
+                size:
+                  type: integer
+                  minimum: 0
+                  maximum: 1000
+                  description: The number of records to return in each result set.
+                after:
+                  type: array
+                  description: >
+                    Provides pagination. By passing a previous result set's `after` value, the next
+                    page's results can be found. If not provided then the first page is retrieved.
+                version:
+                  type: integer
+                  minimum: 0
+                  description: >
+                    The version to search at, if not provided the current version of the data is
+                    searched. This value should be a time represented as the number of milliseconds
+                    (not seconds!) since UNIX epoch.
+                query_version:
+                  type: string
+                  enum: ['v1.0.0']
+                  description: >
+                    The version of the query schema in use by the value in the query parameter. If
+                    this value isn't provided then the latest version is used.
+                top_resources:
+                  type: boolean
+                  default: false
+                  description: >
+                    If this value is set to `true` then the result set will contain a
+                    `top_resources` value which will list the resources with the most records found
+                    by the query. The top 10 resources and how many records were found in each are
+                    returned.
+            examples:
+              simple_and:
+                summary: A simple and search with two terms
+                value:
+                  $ref: 'examples/3.json'
+      responses:
+        '409':
+          description: Validation error response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  error:
+                    type: object
+        '200':
+          description: A JSON object containing the records found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      records:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            resource:
+                              type: string
+                            data:
+                              type: object
+                      total:
+                        type: integer
+                      resources:
+                        type: array
+                        items:
+                          type: object
+                      after:
+                        type: array
