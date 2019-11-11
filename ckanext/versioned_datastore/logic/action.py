@@ -814,6 +814,9 @@ def datastore_multisearch(context, data_dict):
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
+    # add a simple default sort to ensure we get an after value for pagination
+    search = search.sort({u'data._id': u'desc'})
+
     # gather the number of hits in the top 10 most frequently represented indexes
     search.aggs.bucket(u'indexes', u'terms', field=u'_index')
 
