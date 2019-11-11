@@ -208,6 +208,7 @@ def datastore_multisearch_schema():
         u'resource_ids': [ignore_missing, list_of_strings()],
         u'after': [ignore_missing, list_validator],
         u'size': [ignore_missing, int_validator],
+        u'top_resources': [ignore_missing, boolean_validator]
     }
 
 

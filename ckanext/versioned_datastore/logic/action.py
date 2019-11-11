@@ -777,6 +777,8 @@ def datastore_multisearch(context, data_dict):
                  default value of 100 is used. This value must be between 0 and 1000 and will be
                  capped at which ever end is necessary if it is beyond these bounds
     :type size: int
+    :param top_resources: whether to include the top 10 resources in the query result, default False
+    :type top_resources: bool
 
     **Results:**
 
@@ -793,11 +795,12 @@ def datastore_multisearch(context, data_dict):
                   parameter. This value will always be included if there were results otherwise None
                   is returned. A value will also always be returned even if this page is the last.
     :type after: a list or None
+    :param top_resources: if requested, the top 10 resources and the number of records matched in
+                          them by the query
+    :type top_resources: list of dicts
     '''
     # TODO: allow specifying the version to search at per resource
     # TODO: should we return field info? If so how?
-    # TODO: split resources part of response into a separate call? Could be a more general facet
-    #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
 
     # extract the parameters
@@ -812,6 +815,8 @@ def datastore_multisearch(context, data_dict):
     after = data_dict.get(u'after', None)
     # the size parameter if there is one, if not default to 100. The size must be between 0 and 1000
     size = max(0, min(data_dict.get(u'size', 100), 1000))
+    # the top_resources parameter if there is one
+    top_resources = data_dict.get(u'top_resources', False)
 
     # figure out which resources should be searched
     resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
@@ -831,8 +836,9 @@ def datastore_multisearch(context, data_dict):
 
     search = search.extra(size=size)
 
-    # gather the number of hits in the top 10 most frequently represented indexes
-    search.aggs.bucket(u'indexes', u'terms', field=u'_index')
+    if top_resources:
+        # gather the number of hits in the top 10 most frequently represented indexes if requested
+        search.aggs.bucket(u'indexes', u'terms', field=u'_index')
 
     # prefix all the resources we're going to be searching to get their index names
     indexes = [utils.prefix_resource(resource_id) for resource_id in resource_ids]
@@ -840,24 +846,25 @@ def datastore_multisearch(context, data_dict):
     # run the search!
     result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
-    records = []
-    for hit in result.results():
-        records.append({
+    return_dict = {
+        u'total': result.total,
+        u'after': result.last_after,
+        u'records': [{
             u'data': hit.data,
             # should we provide the name too? If so cache a map of id -> name, then update it if we
             # don't find the id in the map
             u'resource': utils.trim_index_name(hit.hit_meta[u'index']),
-        })
+        } for hit in result.results()],
+    }
 
-    return {
-        u'total': result.total,
-        u'records': records,
-        u'after': result.last_after,
-        u'resources': [
+    if top_resources:
+        # include the top resources if requested
+        return_dict[u'top_resources'] = [
             {utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']}
             for bucket in result.aggregations[u'indexes'][u'buckets']
         ]
-    }
+
+    return return_dict
 
 
 @toolkit.side_effect_free
