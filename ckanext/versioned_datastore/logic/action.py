@@ -770,6 +770,9 @@ def datastore_multisearch(context, data_dict):
                      because the parameter is missing or because an empty list is passed) then
                      all resources in the datastore that the user can access are searched
     :type resource_ids: a list of strings
+    :param after: provides pagination. By passing a previous result set's after value, the next
+                  page's results can be found. If not provided then the first page is retrieved
+    :type after: a list
 
     **Results:**
 
@@ -782,7 +785,7 @@ def datastore_multisearch(context, data_dict):
                     holds the record data, and a "resource" key which holds the resource id the
                     record belongs to.
     :type records: list of dicts
-    :param after: the next page's search_after value which can be passed back as the "after"
+    :param after: the next page's search_after value which can be passed back in the "after"
                   parameter. This value will always be included if there were results otherwise None
                   is returned. A value will also always be returned even if this page is the last.
     :type after: a list or None
@@ -803,6 +806,8 @@ def datastore_multisearch(context, data_dict):
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
     # the requested resources defaults to all of them (an empty list)
     requested_resource_ids = data_dict.get(u'resource_ids', [])
+    # the after parameter if there is one
+    after = data_dict.get(u'after', None)
 
     # figure out which resources should be searched
     resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
@@ -816,6 +821,9 @@ def datastore_multisearch(context, data_dict):
 
     # add a simple default sort to ensure we get an after value for pagination
     search = search.sort({u'data._id': u'desc'})
+
+    if after is not None:
+        search = search.extra(search_after=after)
 
     # gather the number of hits in the top 10 most frequently represented indexes
     search.aggs.bucket(u'indexes', u'terms', field=u'_index')
