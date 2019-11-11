@@ -766,6 +766,10 @@ def datastore_multisearch(context, data_dict):
     :type version: int, number of milliseconds (not seconds!) since UNIX epoch
     :param query_version: the query language version (for example v1.0.0)
     :type query_version: string
+    :param resource_ids: a list of resource ids to search. If no resources ids are specified (either
+                     because the parameter is missing or because an empty list is passed) then
+                     all resources in the datastore that the user can access are searched
+    :type resource_ids: a list of strings
 
     **Results:**
 
@@ -782,12 +786,8 @@ def datastore_multisearch(context, data_dict):
                   parameter. This value will always be included if there were results otherwise None
                   is returned. A value will also always be returned even if this page is the last.
     :type after: a list or None
-    :
     '''
-    # TODO: allow specifying the resources to search
     # TODO: allow specifying the version to search at per resource
-    # TODO: should probably only allow searches on public resources? Perhaps if you specify the
-    #       resources we check for permission
     # TODO: should we return field info? If so how?
     # TODO: should we allow unversioned searches like we do with the search_raw action?
     # TODO: how should we handle aggregations? Perhaps a raw response param like search_raw?
@@ -795,25 +795,32 @@ def datastore_multisearch(context, data_dict):
     #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
 
+    # extract the parameters
     query = data_dict.get(u'query', {})
+    # the query version defaults to the latest available version
     query_version = data_dict.get(u'query_version', get_latest_query_version())
+    # the version defaults to the current time
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    # the requested resources defaults to all of them (an empty list)
+    requested_resource_ids = data_dict.get(u'resource_ids', [])
+
+    # figure out which resources should be searched
+    resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
 
     try:
+        # validate and then translate the query into an elasticsearch-dsl search object
         validate_query(query, query_version)
-        # translate the query into an elasticsearch-dsl search object
         search = translate_query(query, query_version)
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
-    # add the versioning (this shouldn't be here, this should be done in the eevee searcher but
-    # there is a bug there)
-    search = search.filter(u'term', **{u'meta.versions': version})
-
     # gather the number of hits in the top 10 most frequently represented indexes
     search.aggs.bucket(u'indexes', u'terms', field=u'_index')
 
-    indexes = [utils.get_public_alias_name(u'*')]
+    # prefix all the resources we're going to be searching to get their index names
+    indexes = [utils.prefix_resource(resource_id) for resource_id in resource_ids]
+
+    # run the search!
     result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
     records = []
@@ -829,10 +836,10 @@ def datastore_multisearch(context, data_dict):
         u'total': result.total,
         u'records': records,
         u'after': result.last_after,
-        u'resources': {
-            utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']
+        u'resources': [
+            {utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']}
             for bucket in result.aggregations[u'indexes'][u'buckets']
-        }
+        ]
     }
 
 
