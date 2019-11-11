@@ -796,8 +796,6 @@ def datastore_multisearch(context, data_dict):
     '''
     # TODO: allow specifying the version to search at per resource
     # TODO: should we return field info? If so how?
-    # TODO: should we allow unversioned searches like we do with the search_raw action?
-    # TODO: how should we handle aggregations? Perhaps a raw response param like search_raw?
     # TODO: split resources part of response into a separate call? Could be a more general facet
     #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
