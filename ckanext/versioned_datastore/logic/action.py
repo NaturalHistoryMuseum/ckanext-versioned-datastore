@@ -846,7 +846,7 @@ def datastore_multisearch(context, data_dict):
     # run the search!
     result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
-    return_dict = {
+    response = {
         u'total': result.total,
         u'after': result.last_after,
         u'records': [{
@@ -859,12 +859,12 @@ def datastore_multisearch(context, data_dict):
 
     if top_resources:
         # include the top resources if requested
-        return_dict[u'top_resources'] = [
+        response[u'top_resources'] = [
             {utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']}
             for bucket in result.aggregations[u'indexes'][u'buckets']
         ]
 
-    return return_dict
+    return response
 
 
 @toolkit.side_effect_free
