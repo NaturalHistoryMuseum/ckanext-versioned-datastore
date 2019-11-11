@@ -5,6 +5,7 @@ import logging
 from collections import defaultdict
 
 import itertools
+import jsonschema
 from datetime import datetime
 from eevee.utils import to_timestamp
 from eevee.indexing.utils import DOC_TYPE
@@ -19,6 +20,8 @@ from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
 from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
+from ckanext.versioned_datastore.lib.query import translate_query, validate_query, \
+    get_latest_query_version, InvalidQuerySchemaVersionError
 from ckanext.versioned_datastore.logic import schema
 
 log = logging.getLogger(__name__)
@@ -752,37 +755,30 @@ def datastore_ensure_privacy(context, data_dict):
 @toolkit.side_effect_free
 def datastore_multisearch(context, data_dict):
     '''
-    This action allows you to search data in multiple resources using a raw elasticsearch query.
-
-    Note that the structure of the documents in elasticsearch is defined as such:
-
-        - data._id: the id of the record, this is always an integer
-        - data.*: the data fields. Each field is stored in 3 different ways:
-            - data.<field_name>: keyword type
-            - data.<field_name>.full: text type
-            - data.<field_name>.number: double type, will be missing if the data value isn't
-                                        convertable to a number
-        - meta.*: various metadata fields, including:
-            - meta.all: a text type field populated from all the data in the data.* fields
-            - meta.geo: if a pair of lat/lon fields have been assigned on this resource this geo
-                        point type field is available
-            - meta.version: the version of this record, this field is a date type field represented
-                            in epoch millis
-            - meta.next_version: the next version of this record, this field is a date type field
-                            represented in epoch millis. If missing this is the current version of
-                            the record
-            - meta.versions: a date range type field which encapsulates the version range this
-                             document applies to for the record
+    This action allows you to search data in multiple resources.
 
     Params:
 
-    :param search: the search JSON to submit to elasticsearch. This should be a valid elasticsearch
-                   search. The version filter is automatically added and doesn't need to be
-                   specified. If not included then an empty {} is used.
-    :type search: dict
+    :param query: the search JSON
+    :type query: dict
     :param version: version to search at, if not provided the current version of the data is
                    searched
     :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+    :param query_version: the query language version (for example v1.0.0)
+    :type query_version: string
+    :param resource_ids: a list of resource ids to search. If no resources ids are specified (either
+                     because the parameter is missing or because an empty list is passed) then
+                     all resources in the datastore that the user can access are searched
+    :type resource_ids: a list of strings
+    :param after: provides pagination. By passing a previous result set's after value, the next
+                  page's results can be found. If not provided then the first page is retrieved
+    :type after: a list
+    :param size: the number of records to return in the search result. If not provided then the
+                 default value of 100 is used. This value must be between 0 and 1000 and will be
+                 capped at which ever end is necessary if it is beyond these bounds
+    :type size: int
+    :param top_resources: whether to include the top 10 resources in the query result, default False
+    :type top_resources: bool
 
     **Results:**
 
@@ -795,50 +791,80 @@ def datastore_multisearch(context, data_dict):
                     holds the record data, and a "resource" key which holds the resource id the
                     record belongs to.
     :type records: list of dicts
-    :param after: the next page's search_after value which can be passed back as the "after"
+    :param after: the next page's search_after value which can be passed back in the "after"
                   parameter. This value will always be included if there were results otherwise None
                   is returned. A value will also always be returned even if this page is the last.
     :type after: a list or None
-    :
+    :param top_resources: if requested, the top 10 resources and the number of records matched in
+                          them by the query
+    :type top_resources: list of dicts
     '''
-    # TODO: allow specifying the resources to search
     # TODO: allow specifying the version to search at per resource
-    # TODO: should probably only allow searches on public resources? Perhaps if you specify the
-    #       resources we check for permission
     # TODO: should we return field info? If so how?
-    # TODO: should we allow unversioned searches like we do with the search_raw action?
-    # TODO: how should we handle aggregations? Perhaps a raw response param like search_raw?
-    # TODO: split resources part of response into a separate call? Could be a more general facet
-    #       call?
     data_dict = utils.validate(context, data_dict, schema.datastore_multisearch_schema())
 
-    search = Search.from_dict(data_dict.get(u'search', {}))
-    version = data_dict.get(u'version', None)
+    # extract the parameters
+    query = data_dict.get(u'query', {})
+    # the query version defaults to the latest available version
+    query_version = data_dict.get(u'query_version', get_latest_query_version())
+    # the version defaults to the current time
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    # the requested resources defaults to all of them (an empty list)
+    requested_resource_ids = data_dict.get(u'resource_ids', [])
+    # the after parameter if there is one
+    after = data_dict.get(u'after', None)
+    # the size parameter if there is one, if not default to 100. The size must be between 0 and 1000
+    size = max(0, min(data_dict.get(u'size', 100), 1000))
+    # the top_resources parameter if there is one
+    top_resources = data_dict.get(u'top_resources', False)
 
-    # gather the number of hits in the top 10 most frequently represented indexes
-    search.aggs.bucket(u'indexes', u'terms', field=u'_index')
+    # figure out which resources should be searched
+    resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
 
-    indexes = [utils.get_public_alias_name(u'*')]
+    try:
+        # validate and then translate the query into an elasticsearch-dsl search object
+        validate_query(query, query_version)
+        search = translate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    # add a simple default sort to ensure we get an after value for pagination
+    search = search.sort({u'data._id': u'desc'})
+
+    if after is not None:
+        search = search.extra(search_after=after)
+
+    search = search.extra(size=size)
+
+    if top_resources:
+        # gather the number of hits in the top 10 most frequently represented indexes if requested
+        search.aggs.bucket(u'indexes', u'terms', field=u'_index')
+
+    # prefix all the resources we're going to be searching to get their index names
+    indexes = [utils.prefix_resource(resource_id) for resource_id in resource_ids]
+
+    # run the search!
     result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
 
-    records = []
-    for hit in result.results():
-        records.append({
+    response = {
+        u'total': result.total,
+        u'after': result.last_after,
+        u'records': [{
             u'data': hit.data,
             # should we provide the name too? If so cache a map of id -> name, then update it if we
             # don't find the id in the map
             u'resource': utils.trim_index_name(hit.hit_meta[u'index']),
-        })
-
-    return {
-        u'total': result.total,
-        u'records': records,
-        u'after': result.last_after,
-        u'resources': {
-            utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']
-            for bucket in result.aggregations[u'indexes'][u'buckets']
-        }
+        } for hit in result.results()],
     }
+
+    if top_resources:
+        # include the top resources if requested
+        response[u'top_resources'] = [
+            {utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']}
+            for bucket in result.aggregations[u'indexes'][u'buckets']
+        ]
+
+    return response
 
 
 @toolkit.side_effect_free

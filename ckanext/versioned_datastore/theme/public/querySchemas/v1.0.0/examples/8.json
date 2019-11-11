@@ -1,0 +1,13 @@
+{
+  "filters": {
+    "and": [
+      {
+        "exists": {
+          "fields": [
+            "associatedMedia"
+          ]
+        }
+      }
+    ]
+  }
+}

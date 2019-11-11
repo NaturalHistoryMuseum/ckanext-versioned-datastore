@@ -1,0 +1,42 @@
+{
+  "filters": {
+    "and": [
+      {
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
+      },
+      {
+        "or": [
+          {
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "italy"
+            }
+          },
+          {
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "spain"
+            }
+          },
+          {
+            "string_contains": {
+              "fields": [
+                "higherGeography"
+              ],
+              "value": "portugal"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

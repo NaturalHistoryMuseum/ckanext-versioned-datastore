@@ -56,6 +56,21 @@ def list_of_strings(delimiter=u','):
     return validator
 
 
+def list_validator(value, context):
+    '''
+    Checks that the given value is a list. If it is then it is allowed to pass, if not an Invalid
+    error is raised.
+
+    :param value: the value to check
+    :param context: the context in which to check
+    :return:
+    '''
+    if isinstance(value, list):
+        return value
+    else:
+        raise toolkit.Invalid(u'Value must be a list')
+
+
 def datastore_search_schema():
     '''
     Returns the schema for the datastore_search action. This is based on the datastore_search from
@@ -187,8 +202,13 @@ def datastore_ensure_privacy_schema():
 
 def datastore_multisearch_schema():
     return {
-        u'search': [ignore_missing, json_validator],
+        u'query': [ignore_missing, json_validator],
         u'version': [ignore_missing, int_validator],
+        u'query_version': [ignore_missing, unicode],
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'after': [ignore_missing, list_validator],
+        u'size': [ignore_missing, int_validator],
+        u'top_resources': [ignore_missing, boolean_validator]
     }
 
 

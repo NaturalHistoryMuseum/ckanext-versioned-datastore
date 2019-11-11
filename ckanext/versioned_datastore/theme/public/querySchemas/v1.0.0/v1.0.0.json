@@ -1,0 +1,316 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "list_of_groups_or_terms": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/definitions/group"
+          },
+          {
+            "$ref": "#/definitions/term"
+          }
+        ]
+      },
+      "minItems": 1
+    },
+    "term": {
+      "type": "object",
+      "oneOf": [
+        {
+          "required": [
+            "string_equals"
+          ]
+        },
+        {
+          "required": [
+            "string_contains"
+          ]
+        },
+        {
+          "required": [
+            "number_equals"
+          ]
+        },
+        {
+          "required": [
+            "number_range"
+          ]
+        },
+        {
+          "required": [
+            "geo_point"
+          ]
+        },
+        {
+          "required": [
+            "geo_named_area"
+          ]
+        },
+        {
+          "required": [
+            "geo_custom_area"
+          ]
+        },
+        {
+          "required": [
+            "exists"
+          ]
+        }
+      ],
+      "properties": {
+        "string_equals": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "string_contains": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "number_equals": {
+          "type": "object",
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "number"
+            }
+          }
+        },
+        "number_range": {
+          "type": "object",
+          "required": [
+            "fields"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "greater_than"
+              ]
+            },
+            {
+              "required": [
+                "less_than"
+              ]
+            }
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "greater_than": {
+              "type": "number"
+            },
+            "less_than": {
+              "type": "number"
+            },
+            "greater_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            },
+            "less_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "geo_point": {
+          "type": "object",
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "dependencies": {
+            "radius": [
+              "radius_unit"
+            ]
+          },
+          "properties": {
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius_unit": {
+              "type": "string",
+              "enum": [
+                "mi",
+                "yd",
+                "ft",
+                "in",
+                "km",
+                "m",
+                "cm",
+                "mm",
+                "nmi"
+              ]
+            }
+          }
+        },
+        "geo_named_area": {
+          "type": "object",
+          "oneOf": [
+            {
+              "required": [
+                "country"
+              ]
+            },
+            {
+              "required": [
+                "marine"
+              ]
+            },
+            {
+              "required": [
+                "geography"
+              ]
+            }
+          ],
+          "properties": {
+            "country": {
+              "$ref": "geojson/v1.0.0-countries.json#/definitions/country"
+            },
+            "marine": {
+              "$ref": "geojson/v1.0.0-marine.json#/definitions/marine"
+            },
+            "geography": {
+              "$ref": "geojson/v1.0.0-geography.json#/definitions/geography"
+            }
+          }
+        },
+        "geo_custom_area": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "exists": {
+          "type": "object",
+          "anyOf": [
+            {
+              "required": [
+                "fields"
+              ]
+            },
+            {
+              "required": [
+                "geo_field"
+              ]
+            }
+          ],
+          "properties": {
+            "geo_field": {
+              "type": "boolean"
+            },
+            "fields": {
+              "$ref": "#/definitions/fields"
+            }
+          }
+        }
+      },
+      "maxProperties": 1
+    },
+    "group": {
+      "oneOf": [
+        {
+          "required": [
+            "and"
+          ]
+        },
+        {
+          "required": [
+            "or"
+          ]
+        },
+        {
+          "required": [
+            "not"
+          ]
+        }
+      ],
+      "type": "object",
+      "properties": {
+        "and": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
+        },
+        "or": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
+        },
+        "not": {
+          "$ref": "#/definitions/list_of_groups_or_terms"
+        }
+      },
+      "maxProperties": 1
+    }
+  },
+  "type": "object",
+  "properties": {
+    "search": {
+      "type": "string"
+    },
+    "filters": {
+      "$ref": "#/definitions/group"
+    }
+  }
+}
