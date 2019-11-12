@@ -801,6 +801,13 @@ def datastore_multisearch(context, data_dict):
     :param top_resources: if requested, the top 10 resources and the number of records matched in
                           them by the query
     :type top_resources: list of dicts
+    :param skipped_resources: a list of the resources from the requested resource_ids parameter that
+                              were not searched. This list is only populated if a the resource ids
+                              paramater is passed, otherwise it will be an empty list. The resources
+                              in this list will have been skipped for one of two reasons: either the
+                              user doesn't have access to the requested resource or the requested
+                              resource isn't a datastore resource.
+    :type skipped_resources: a list of strings
     '''
     # TODO: allow specifying the version to search at per resource
     # TODO: should we return field info? If so how?
@@ -861,6 +868,8 @@ def datastore_multisearch(context, data_dict):
             # don't find the id in the map
             u'resource': utils.trim_index_name(hit.hit_meta[u'index']),
         } for hit in result.results()],
+        # note that resource_ids is a set and therefore the in check is speedy
+        u'skipped_resources': [rid for rid in requested_resource_ids if rid not in resource_ids],
     }
 
     if top_resources:
