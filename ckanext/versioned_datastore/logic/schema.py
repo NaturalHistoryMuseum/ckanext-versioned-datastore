@@ -59,12 +59,18 @@ def list_of_strings(delimiter=u','):
 def list_validator(value, context):
     '''
     Checks that the given value is a list. If it is then it is allowed to pass, if not an Invalid
-    error is raised.
+    error is raised. If the value is a string then we attempt to parse it as a JSON serialised list
+    and raise an exception if we can't.
 
     :param value: the value to check
     :param context: the context in which to check
     :return:
     '''
+    if isinstance(value, basestring):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            raise toolkit.Invalid(u'Cannot parse JSON list')
     if isinstance(value, list):
         return value
     else:
