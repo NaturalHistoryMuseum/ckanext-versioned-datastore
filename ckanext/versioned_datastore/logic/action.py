@@ -768,7 +768,10 @@ def datastore_multisearch(context, data_dict):
     :type query_version: string
     :param resource_ids: a list of resource ids to search. If no resources ids are specified (either
                      because the parameter is missing or because an empty list is passed) then
-                     all resources in the datastore that the user can access are searched
+                     all resources in the datastore that the user can access are searched. Any
+                     resources that the user cannot access or that aren't datastore resources are
+                     skipped. If this means that no resources are available from the provided list
+                     then a ValidationError is raised.
     :type resource_ids: a list of strings
     :param after: provides pagination. By passing a previous result set's after value, the next
                   page's results can be found. If not provided then the first page is retrieved
@@ -820,6 +823,9 @@ def datastore_multisearch(context, data_dict):
 
     # figure out which resources should be searched
     resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
+
+    if not resource_ids:
+        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
     try:
         # validate and then translate the query into an elasticsearch-dsl search object
