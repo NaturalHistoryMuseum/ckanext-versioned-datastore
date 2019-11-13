@@ -482,7 +482,7 @@ def get_available_datastore_resources(context, only=None):
 
     # complete the database query and the elasticsearch query
     resources_and_packages = list(query)
-    datastore_resources = {hit.name for hit in status_search}
+    datastore_resources = {hit.name for hit in status_search.scan()}
 
     # this is the set of resource ids we will populate and return
     resource_ids = set()
