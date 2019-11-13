@@ -146,17 +146,18 @@ class TestUtils(TestBase):
 
         mapping_mock_function = MagicMock(return_value=mock_mapping)
         prefix_mock = lambda name: u'beans-{}'.format(name)
-        searcher_mock = MagicMock(elasticsearch=MagicMock(indices=MagicMock(get_mapping=
-                                                                            mapping_mock_function)))
+        client_mock = MagicMock(indices=MagicMock(get_mapping=mapping_mock_function))
+        search_helper_mock = MagicMock()
         es_response = [MagicMock(hits=MagicMock(total=4)), MagicMock(hits=MagicMock(total=10))]
         multisearch_mock = MagicMock()
         multisearch_mock.configure_mock(add=MagicMock(return_value=multisearch_mock),
                                         execute=MagicMock(return_value=es_response))
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
-        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource',
-                   new=prefix_mock), \
-             patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock), \
+        with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource', new=prefix_mock), \
+             patch(u'ckanext.versioned_datastore.lib.utils.CLIENT', new=client_mock), \
+             patch(u'ckanext.versioned_datastore.lib.utils.SEARCH_HELPER',
+                   new=search_helper_mock), \
              patch(u'ckanext.versioned_datastore.lib.utils.MultiSearch',
                    new=multisearch_class_mock):
             mapping, fields = get_fields(u'index')
@@ -190,14 +191,14 @@ class TestUtils(TestBase):
             return u'beans-{}'.format(name)
 
         for expected_outcome, exists, status in scenarios:
-            searcher_mock = MagicMock(
-                elasticsearch=MagicMock(indices=MagicMock(exists=MagicMock(return_value=exists))),
-                get_latest_index_versions=MagicMock(return_value=status)
-            )
+            client_mock = MagicMock(indices=MagicMock(exists=MagicMock(return_value=exists)))
+            search_helper_mock = MagicMock(get_latest_index_versions=MagicMock(return_value=status))
 
             with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource', new=prefix_mock):
-                with patch(u'ckanext.versioned_datastore.lib.utils.SEARCHER', new=searcher_mock):
-                    nose.tools.assert_equal(expected_outcome, is_datastore_resource(u'banana'))
+                with patch(u'ckanext.versioned_datastore.lib.utils.SEARCH_HELPER',
+                           new=search_helper_mock):
+                    with patch(u'ckanext.versioned_datastore.lib.utils.CLIENT', new=client_mock):
+                        nose.tools.assert_equal(expected_outcome, is_datastore_resource(u'banana'))
 
     def test_is_datastore_only_resource(self):
         for yes in [DATASTORE_ONLY_RESOURCE, u'http://{}'.format(DATASTORE_ONLY_RESOURCE),
