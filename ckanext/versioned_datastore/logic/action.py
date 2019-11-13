@@ -1,28 +1,25 @@
 # -*- coding: utf-8 -*-
 import copy
 import logging
-
 from collections import defaultdict
 
-import itertools
 import jsonschema
-from datetime import datetime
-from eevee.utils import to_timestamp
-from eevee.indexing.utils import DOC_TYPE
-from elasticsearch import NotFoundError, RequestError
-from elasticsearch_dsl import A, Search
-
 from ckan.plugins import toolkit, PluginImplementations
-from ckan.lib.search import SearchIndexError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
-from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
-from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.lib.query import translate_query, validate_query, \
     get_latest_query_version, InvalidQuerySchemaVersionError
+from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
+from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
+from datetime import datetime
+from eevee.indexing.utils import DOC_TYPE
+from eevee.utils import to_timestamp
+from eevee.search import create_version_query
+from elasticsearch import RequestError
+from elasticsearch_dsl import A, Search, MultiSearch
 
 log = logging.getLogger(__name__)
 # stop elasticsearch from showing warning logs
@@ -120,29 +117,25 @@ def datastore_search(context, data_dict):
     resource_id = data_dict[u'resource_id']
     index_name = utils.prefix_resource(resource_id)
 
+    # if the version is None, default it to the current timestamp
+    if version is None:
+        version = to_timestamp(datetime.now())
+
+    # add the version filter to the query
+    search = search.filter(create_version_query(version))
+
     # if the run query option is false (default to true if not present) then just return the query
     # we would have run against elasticsearch instead of actually running it. This is useful for
     # running the query outside of ckan, for example on a tile server.
     if not data_dict.get(u'run_query', True):
-        # call pre_search to add all the versioning filters necessary (and other things too)
-        result = utils.SEARCHER.pre_search(indexes=[index_name], search=search, version=version)
         return {
-            # the first part of the pre_search response is a list of indexes to run the query
-            # against
-            u'indexes': result[0],
-            # the second part is the search object itself which we can call to_dict on to pull the
-            # query out
-            u'search': result[1].to_dict(),
+            u'indexes': [index_name],
+            u'search': search.to_dict(),
         }
     else:
-        try:
-            # run the search through eevee. Note that we pass the indexes to eevee as a list as
-            # eevee is ready for cross-resource search but this code isn't (yet)
-            result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
-        except NotFoundError as e:
-            raise SearchIndexError(e.error)
+        result = utils.run_search(search, [index_name])
 
-        # allow other extensions implementing our interface to modify the result object
+        # allow other extensions implementing our interface to modify the result
         for plugin in PluginImplementations(IVersionedDatastore):
             result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
@@ -159,12 +152,12 @@ def datastore_search(context, data_dict):
 
         # return a dictionary containing the results and other details
         return {
-            u'total': result.total,
-            u'records': [hit.data for hit in result.results()],
-            u'facets': utils.format_facets(result.aggregations),
+            u'total': result.hits.total,
+            u'records': [hit.data.to_dict() for hit in result],
+            u'facets': utils.format_facets(result.aggs.to_dict()),
             u'fields': fields,
             u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
-            u'after': result.last_after,
+            u'after': utils.get_last_after(result),
             u'_backend': u'versioned-datastore',
         }
 
@@ -199,7 +192,7 @@ def datastore_create(context, data_dict):
     if utils.is_ingestible(resource):
         # note that the version parameter doesn't matter when creating the index so we can safely
         # pass None
-        utils.SEARCHER.ensure_index_exists(DatastoreIndex(utils.CONFIG, resource_id, None))
+        utils.SEARCH_HELPER.ensure_index_exists(DatastoreIndex(utils.CONFIG, resource_id, None))
         # make sure the privacy is correctly setup
         utils.update_privacy(resource_id)
         return True
@@ -312,7 +305,7 @@ def datastore_get_record_versions(context, data_dict):
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_get_record_versions_schema())
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
-    return utils.SEARCHER.get_record_versions(index_name, int(data_dict[u'id']))
+    return utils.SEARCH_HELPER.get_record_versions(index_name, int(data_dict[u'id']))
 
 
 @toolkit.side_effect_free
@@ -340,12 +333,12 @@ def datastore_get_resource_versions(context, data_dict):
 
     original_data_dict, data_dict, version, search = create_search(context, data_dict)
 
-    data = utils.SEARCHER.get_index_version_counts(index_name, search=search)
+    data = utils.SEARCH_HELPER.get_index_version_counts(index_name, search=search)
 
-    search = search.using(utils.SEARCHER.elasticsearch).index(index_name)[0:0]
+    search = search.using(utils.CLIENT).index(index_name)[0:0]
     for result in data:
         version = result[u'version']
-        count = search.filter(u'term', **{u'meta.versions': version}).count()
+        count = search.filter(create_version_query(version)).count()
         result[u'count'] = count
     return data
 
@@ -412,10 +405,11 @@ def datastore_autocomplete(context, data_dict):
     if after:
         search.aggs[u'field_values'].after = {field: after}
 
-    # run the search
-    result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
+    # run the search (this adds the version to the query too)
+    result = utils.run_search(search, [index_name], version)
+
     # get the results we're interested in
-    agg_result = result.aggregations[u'field_values']
+    agg_result = result.aggs.to_dict()[u'field_values']
     # return a dict of results, but only include the after details if there are any to include
     return_dict = {
         u'values': [bucket[u'key'][field] for bucket in agg_result[u'buckets']],
@@ -496,19 +490,20 @@ def datastore_query_extent(context, data_dict):
     search.aggs.bucket(u'bounds', u'geo_bounds', field=u'meta.geo', wrap_longitude=False)
     search.aggs.bucket(u'geo_count', u'value_count', field=u'meta.geo')
 
-    # run the search
-    result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
+    # add version filter and run the search
+    result = utils.run_search(search, [index_name], version)
+    agg_result = result.aggs.to_dict()
 
     # create a dict of results for return
     to_return = {
         u'total_count': result.hits.total,
-        u'geom_count': result.aggregations[u'geo_count'][u'value'],
+        u'geom_count': agg_result[u'geo_count'][u'value'],
     }
 
     # extract and add the bounds info from the aggregations if there is any
-    if result.aggregations[u'geo_count'][u'value'] > 0:
-        top_left = result.aggregations[u'bounds'][u'bounds'][u'top_left']
-        bottom_right = result.aggregations[u'bounds'][u'bounds'][u'bottom_right']
+    if agg_result[u'geo_count'][u'value'] > 0:
+        top_left = agg_result[u'bounds'][u'bounds'][u'top_left']
+        bottom_right = agg_result[u'bounds'][u'bounds'][u'bottom_right']
         to_return[u'bounds'] = [[p[u'lat'], p[u'lon']] for p in (top_left, bottom_right)]
 
     return to_return
@@ -558,7 +553,7 @@ def datastore_get_rounded_version(context, data_dict):
     data_dict = utils.validate(context, data_dict, schema.datastore_get_rounded_version_schema())
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
     version = data_dict.get(u'version', None)
-    return utils.SEARCHER.get_rounded_versions([index_name], version)[index_name]
+    return utils.SEARCH_HELPER.get_rounded_versions([index_name], version)[index_name]
 
 
 @toolkit.side_effect_free
@@ -641,7 +636,7 @@ def datastore_search_raw(context, data_dict):
     # pull out the parameters
     resource_id = data_dict[u'resource_id']
     search = data_dict.get(u'search', {})
-    version = data_dict.get(u'version', None)
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
     raw_result = data_dict.get(u'raw_result', False)
     include_version = data_dict.get(u'include_version', True)
 
@@ -650,56 +645,44 @@ def datastore_search_raw(context, data_dict):
     search = Search.from_dict(search)
 
     try:
+        # the user has asked for a raw result and that the version filter is not included
+        if raw_result and not include_version:
+            version = None
+
+        # run the query passing the version which will either be the requested version, the current
+        # timestamp or None if no version filter should be included in the search
+        result = utils.run_search(search, index_name, version)
+
         if raw_result:
-            # the caller doesn't want us to parse the response and return it in our format, they
-            # just want the pure elasticsearch response.
-            if include_version:
-                # run pre search to get the search setup (this adds the version filter)
-                _, search, _ = utils.SEARCHER.pre_search(indexes=[index_name], search=search,
-                                                         version=version)
-            else:
-                # if we're not passing the search to the pre search function, we need to add the
-                # index and client manually
-                search = search.index(index_name).using(utils.SEARCHER.elasticsearch)
+            return result.to_dict()
 
-            # run it and just return the result directly
-            return search.execute().to_dict()
-        else:
-            # run the search through eevee. Note that we pass the indexes to eevee as a list as
-            # eevee is ready for cross-resource search but this code isn't (yet)
-            result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
+        # allow other extensions implementing our interface to modify the result object
+        for plugin in PluginImplementations(IVersionedDatastore):
+            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
-            # allow other extensions implementing our interface to modify the result object
-            for plugin in PluginImplementations(IVersionedDatastore):
-                result = plugin.datastore_modify_result(context, original_data_dict, data_dict,
-                                                        result)
+        # add the actual result object to the context in case the caller is an extension and
+        # they have used one of the interface hooks to alter the search object and include, for
+        # example, an aggregation
+        context[u'versioned_datastore_query_result'] = result
 
-            # add the actual result object to the context in case the caller is an extension and
-            # they have used one of the interface hooks to alter the search object and include, for
-            # example, an aggregation
-            context[u'versioned_datastore_query_result'] = result
+        # get the fields
+        mapping, fields = utils.get_fields(resource_id, version)
+        # allow other extensions implementing our interface to modify the field definitions
+        for plugin in PluginImplementations(IVersionedDatastore):
+            fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
 
-            # get the fields
-            mapping, fields = utils.get_fields(resource_id, version)
-            # allow other extensions implementing our interface to modify the field definitions
-            for plugin in PluginImplementations(IVersionedDatastore):
-                fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
-
-            # return a dictionary containing the results and other details
-            return {
-                u'total': result.total,
-                u'records': [hit.data for hit in result.results()],
-                u'facets': utils.format_facets(result.aggregations),
-                u'fields': fields,
-                u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][
-                    u'properties'],
-                u'after': result.last_after,
-                u'_backend': u'versioned-datastore',
-            }
+        # return a dictionary containing the results and other details
+        return {
+            u'total': result.hits.total,
+            u'records': [hit.data.to_dict() for hit in result],
+            u'facets': utils.format_facets(result.aggs.to_dict()),
+            u'fields': fields,
+            u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
+            u'after': utils.get_last_after(result),
+            u'_backend': u'versioned-datastore',
+        }
     except RequestError as e:
         raise toolkit.ValidationError(str(e))
-    except NotFoundError as e:
-        raise SearchIndexError(e.error)
 
 
 def datastore_ensure_privacy(context, data_dict):
@@ -841,33 +824,39 @@ def datastore_multisearch(context, data_dict):
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
+    # add the version filter
+    search = search.filter(create_version_query(version))
     # add a simple default sort to ensure we get an after value for pagination
     search = search.sort({u'data._id': u'desc'})
-
+    # add the after if there is one
     if after is not None:
         search = search.extra(search_after=after)
-
+    # add the size parameter
     search = search.extra(size=size)
 
     if top_resources:
         # gather the number of hits in the top 10 most frequently represented indexes if requested
         search.aggs.bucket(u'indexes', u'terms', field=u'_index')
 
-    # prefix all the resources we're going to be searching to get their index names
-    indexes = [utils.prefix_resource(resource_id) for resource_id in resource_ids]
+    # add the indexes to the search
+    search = search.index([utils.prefix_resource(resource_id) for resource_id in resource_ids])
 
-    # run the search!
-    result = utils.SEARCHER.search(indexes=indexes, search=search, version=version)
+    # create a multisearch for this one query - this ensures there aren't any issues with the length
+    # of the URL as the index list is passed as a part of the body
+    multisearch = MultiSearch(using=utils.CLIENT).add(search)
+
+    # run the search and get the only result from the search results list
+    result = next(iter(multisearch.execute()))
 
     response = {
-        u'total': result.total,
-        u'after': result.last_after,
+        u'total': result.hits.total,
+        u'after': utils.get_last_after(result),
         u'records': [{
-            u'data': hit.data,
+            u'data': hit.data.to_dict(),
             # should we provide the name too? If so cache a map of id -> name, then update it if we
             # don't find the id in the map
-            u'resource': utils.trim_index_name(hit.hit_meta[u'index']),
-        } for hit in result.results()],
+            u'resource': utils.trim_index_name(hit.meta.index),
+        } for hit in result.hits],
         # note that resource_ids is a set and therefore the in check is speedy
         u'skipped_resources': [rid for rid in requested_resource_ids if rid not in resource_ids],
     }
@@ -876,7 +865,7 @@ def datastore_multisearch(context, data_dict):
         # include the top resources if requested
         response[u'top_resources'] = [
             {utils.trim_index_name(bucket[u'key']): bucket[u'doc_count']}
-            for bucket in result.aggregations[u'indexes'][u'buckets']
+            for bucket in result.aggs.to_dict()[u'indexes'][u'buckets']
         ]
 
     return response
@@ -936,7 +925,7 @@ def datastore_field_autocomplete(context, data_dict):
         target = u','.join(map(utils.get_public_alias_name, resource_ids))
 
     fields = defaultdict(dict)
-    mappings = utils.SEARCHER.elasticsearch.indices.get_mapping(target)
+    mappings = utils.CLIENT.indices.get_mapping(target)
     for index, mapping in mappings.items():
         resource_id = utils.unprefix_index(index)
 

@@ -63,10 +63,9 @@ class IVersionedDatastore(interfaces.Interface):
         Allows modifications to the result after the search.
 
         Each extension which implements this interface will be called in the order CKAN loaded them
-        in, The search parameter will be the output of the previous extension's interface
+        in, The result parameter will be the output of the previous extension's interface
         implementation, thus creating a chain of extensions, each getting a go at altering the
-        search object if necessary. The base datastore_search function provides the initial result
-        object.
+        result object if necessary.
 
         Implementors of this function should return the result object so that the datastore_search
         function can build the final return dict.
@@ -80,10 +79,10 @@ class IVersionedDatastore(interfaces.Interface):
         :type data_dict: dictionary
         :param result: the current result, as changed by the previous IVersionedDatastore extensions
                        in the chain
-        :type result: eevee SearchResults object
+        :type result: elasticsearch result object
 
         :returns: the result object with your modifications
-        :rtype: eevee SearchResults object
+        :rtype: elasticsearch result object
         '''
         return result
 

@@ -1,10 +1,12 @@
 from ckan import model
+from ckan.lib.search import SearchIndexError
 from ckan.plugins import toolkit, PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.details import get_all_details
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
-from eevee.search.search import Searcher
+from eevee.search import SearchHelper, create_version_query
+from elasticsearch import NotFoundError
 from elasticsearch_dsl import Search, MultiSearch
 
 # if the resource has been side loaded into the datastore then this should be its URL
@@ -16,10 +18,11 @@ XLS_FORMATS = [u'xls', u'application/vnd.ms-excel']
 XLSX_FORMATS = [u'xlsx', u'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
 ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
 
-# global variables to hold the current eevee config (not the CKAN one) and the current eevee
-# searcher object
+# global variables to hold the eevee config (not the CKAN one), the eevee search helper object and
+# an elasticsearch client object
 CONFIG = None
-SEARCHER = None
+SEARCH_HELPER = None
+CLIENT = None
 
 
 def setup_eevee(ckan_config):
@@ -29,7 +32,8 @@ def setup_eevee(ckan_config):
     :param ckan_config: the ckan config
     '''
     global CONFIG
-    global SEARCHER
+    global SEARCH_HELPER
+    global CLIENT
 
     es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
     es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
@@ -41,7 +45,9 @@ def setup_eevee(ckan_config):
         mongo_port=int(ckan_config.get(u'ckanext.versioned_datastore.mongo_port')),
         mongo_database=ckan_config.get(u'ckanext.versioned_datastore.mongo_database'),
     )
-    SEARCHER = Searcher(CONFIG)
+    SEARCH_HELPER = SearchHelper(CONFIG)
+    # for convenience, expose the client in the search helper at the module level
+    CLIENT = SEARCH_HELPER.client
 
 
 def get_latest_version(resource_id):
@@ -52,7 +58,7 @@ def get_latest_version(resource_id):
     :return: the version or None if the resource isn't indexed
     '''
     index_name = prefix_resource(resource_id)
-    return SEARCHER.get_latest_index_versions([index_name]).get(index_name, None)
+    return SEARCH_HELPER.get_latest_index_versions([index_name]).get(index_name, None)
 
 
 def validate(context, data_dict, default_schema):
@@ -184,7 +190,7 @@ def get_fields(resource_id, version=None):
     # figure out the index name from the resource id
     index = prefix_resource(resource_id)
     # figure out the rounded version so that we can figure out the fields at the right version
-    rounded_version = SEARCHER.get_rounded_versions([index], version)[index]
+    rounded_version = SEARCH_HELPER.get_rounded_versions([index], version)[index]
     # the key for caching should be unique to the resource and the rounded version
     cache_key = (resource_id, rounded_version)
 
@@ -195,7 +201,7 @@ def get_fields(resource_id, version=None):
     # create a list of field details, starting with the always present _id field
     fields = [{u'id': u'_id', u'type': u'integer'}]
     # lookup the mapping on elasticsearch to get all the field names
-    mapping = SEARCHER.elasticsearch.indices.get_mapping(index)[index]
+    mapping = CLIENT.indices.get_mapping(index)[index]
     # if the rounded version response is None that means there are no versions available which
     # shouldn't happen, but in case it does for some reason, just return the fields we have
     # already
@@ -226,7 +232,7 @@ def get_fields(resource_id, version=None):
 
     if field_names:
         # find out which fields exist in this version and how many values each has
-        search = MultiSearch(using=SEARCHER.elasticsearch, index=index)
+        search = MultiSearch(using=CLIENT, index=index)
         for field in field_names:
             # create a search which finds the documents that have a value for the given field at the
             # rounded version. We're only interested in the counts though so set size to 0
@@ -262,8 +268,8 @@ def is_datastore_resource(resource_id):
     index_name = prefix_resource(resource_id)
     # check that the index for this resource exists and there is a reference to it in the status
     # index
-    return SEARCHER.elasticsearch.indices.exists(index_name) and \
-        index_name in SEARCHER.get_latest_index_versions([index_name])
+    return CLIENT.indices.exists(index_name) and \
+        index_name in SEARCH_HELPER.get_latest_index_versions([index_name])
 
 
 def is_datastore_only_resource(resource_url):
@@ -379,9 +385,9 @@ def make_private(resource_id):
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if SEARCHER.elasticsearch.indices.exists(index_name):
-        if SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
-            SEARCHER.elasticsearch.indices.delete_alias(index_name, public_index_name)
+    if CLIENT.indices.exists(index_name):
+        if CLIENT.indices.exists_alias(index_name, public_index_name):
+            CLIENT.indices.delete_alias(index_name, public_index_name)
             return True
     return False
 
@@ -397,14 +403,14 @@ def make_public(resource_id):
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if SEARCHER.elasticsearch.indices.exists(index_name):
-        if not SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
+    if CLIENT.indices.exists(index_name):
+        if not CLIENT.indices.exists_alias(index_name, public_index_name):
             actions = {
                 u'actions': [
                     {u'add': {u'index': index_name, u'alias': public_index_name}}
                 ]
             }
-            SEARCHER.elasticsearch.indices.update_aliases(actions)
+            CLIENT.indices.update_aliases(actions)
             return True
     return False
 
@@ -472,8 +478,8 @@ def get_available_datastore_resources(context, only=None):
         .filter(model.Package.state == u'active') \
         .with_entities(model.Resource.id, model.Package.id)
     # retrieve the names in the status index
-    status_search = Search(index=CONFIG.elasticsearch_status_index_name,
-                           using=SEARCHER.elasticsearch).source([u'name'])
+    status_search = Search(index=CONFIG.elasticsearch_status_index_name, using=CLIENT) \
+        .source([u'name'])
 
     if only:
         # apply filters to only get the resources passed in the only list
@@ -518,3 +524,39 @@ def get_available_datastore_resources(context, only=None):
             continue
 
     return resource_ids
+
+
+def get_last_after(result):
+    '''
+    Retrieves the "after" value from the last record in the list of hits.
+
+    :param result: the result object from elasticsearch
+    :return: a list or None
+    '''
+    if result.hits and u'sort' in result.hits[-1].meta:
+        return list(result.hits[-1].meta[u'sort'])
+    else:
+        return None
+
+
+def run_search(search, indexes, version=None):
+    '''
+    Convenience function to runs a search on the given indexes using the client available in this
+    module.
+
+    If the index(es) required for the search are missing then a CKAN SearchIndexError exception is
+    raised.
+
+    :param search: the elasticsearch-dsl search object
+    :param indexes: either a list of index names to search in or a single index name as a string
+    :param version: version to filter the search results to, optional
+    :return: the result of running the query
+    '''
+    try:
+        if version is not None:
+            search = search.filter(create_version_query(version))
+        if isinstance(indexes, basestring):
+            indexes = [indexes]
+        return search.index(indexes).using(CLIENT).execute()
+    except NotFoundError as e:
+        raise SearchIndexError(e.error)
