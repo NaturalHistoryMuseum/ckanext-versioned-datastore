@@ -3,12 +3,13 @@
 import io
 import json
 
+import jsonschema
 import os
 
 from ckanext.versioned_datastore.lib.query import schema_base_path
 from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 from ckantest.models import TestBase
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 
 
 class TestV1_0_0Translator(TestBase):
@@ -559,3 +560,42 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         self.compare_query_and_search(query, search_dict)
+
+    def test_translate_ignores_additional_properties_in_filters(self):
+        schema = v1_0_0Schema()
+
+        nope = {
+            u"filters": {
+                u'something_else': {},
+                u"not": [
+                    {
+                        u"string_equals": {
+                            u"fields": [
+                                u"genus"
+                            ],
+                            u"value": u"helix"
+                        }
+                    }
+                ]
+            }
+        }
+        with assert_raises(jsonschema.ValidationError):
+            schema.validate(nope)
+
+    def test_translate_ignores_additional_properties_in_geo_named_area(self):
+        schema = v1_0_0Schema()
+
+        nope = {
+            u"filters": {
+                u"and": [
+                    {
+                        u"geo_named_area": {
+                            u"country": u"Belgium",
+                            u"something_else": False
+                        }
+                    }
+                ]
+            }
+        }
+        with assert_raises(jsonschema.ValidationError):
+            schema.validate(nope)

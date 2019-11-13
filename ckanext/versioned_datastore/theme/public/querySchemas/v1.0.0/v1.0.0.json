@@ -193,6 +193,7 @@
         "geo_named_area": {
           "description": "Term which finds records which are positioned within the area defined by the provided name. All names are sourced from [Natural Earth Data](https://www.naturalearthdata.com/).",
           "type": "object",
+          "maxProperties": 1,
           "oneOf": [
             {
               "required": [
@@ -243,7 +244,8 @@
         "exists": {
           "description": "Term which finds records where at least one of the fields specified exists and has a non-`null` value. The `fields` property can be omitted and the `geo_field` property included instead to find records that have geographic data stored with them.",
           "type": "object",
-          "anyOf": [
+          "maxProperties": 1,
+          "oneOf": [
             {
               "required": [
                 "fields"
