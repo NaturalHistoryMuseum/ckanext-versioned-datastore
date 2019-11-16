@@ -86,6 +86,7 @@ Name|Description|Example
 `ckanext.versioned_datastore.redis_host`|The redis server host. If this is provided slugging is enabled|`14.1.214.50`
 `ckanext.versioned_datastore.redis_port`|The port to use to connect to the redis host|`6379`
 `ckanext.versioned_datastore.redis_database`|The redis database index to use to store datastore multisearch slugs in|`1`
+`ckanext.versioned_datastore.slug_ttl`|The amount of time slugs should last for, in days. Default: `7`|`7`
 
 
 # Further Setup

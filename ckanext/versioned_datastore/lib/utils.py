@@ -26,6 +26,7 @@ SEARCH_HELPER = None
 ES_CLIENT = None
 
 REDIS_CLIENT = None
+SLUG_TTL = None
 
 
 def setup(ckan_config):
@@ -34,7 +35,7 @@ def setup(ckan_config):
 
     :param ckan_config: the ckan config
     '''
-    global CONFIG, SEARCH_HELPER, ES_CLIENT, REDIS_CLIENT
+    global CONFIG, SEARCH_HELPER, ES_CLIENT, REDIS_CLIENT, SLUG_TTL
 
     es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
     es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
@@ -58,6 +59,7 @@ def setup(ckan_config):
             port=int(ckan_config.get(u'ckanext.versioned_datastore.redis_port')),
             db=int(ckan_config.get(u'ckanext.versioned_datastore.redis_database')),
         )
+    SLUG_TTL = 60 * 60 * 24 * int(ckan_config.get(u'ckanext.versioned_datastore.redis_port', 7))
 
 
 def get_latest_version(resource_id):

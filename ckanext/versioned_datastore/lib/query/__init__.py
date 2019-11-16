@@ -173,7 +173,7 @@ def generate_slug(word_lists=(adjectives, adjectives, animals)):
     return u'{}-{}-{}'.format(*map(random.choice, word_lists))
 
 
-def create_search_and_slug(query, query_version, version, resource_ids, ttl=60 * 60 * 24 * 7,
+def create_search_and_slug(query, query_version, version, resource_ids, ttl=utils.SLUG_TTL,
                            pretty_slug=True, attempts=10):
     '''
     Given the parameters required to create a query, validate it, translate it in an elasticsearch
