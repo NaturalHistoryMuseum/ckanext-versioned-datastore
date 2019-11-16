@@ -155,7 +155,7 @@ class TestUtils(TestBase):
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
         with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource', new=prefix_mock), \
-             patch(u'ckanext.versioned_datastore.lib.utils.CLIENT', new=client_mock), \
+             patch(u'ckanext.versioned_datastore.lib.utils.ES_CLIENT', new=client_mock), \
              patch(u'ckanext.versioned_datastore.lib.utils.SEARCH_HELPER',
                    new=search_helper_mock), \
              patch(u'ckanext.versioned_datastore.lib.utils.MultiSearch',
@@ -197,7 +197,7 @@ class TestUtils(TestBase):
             with patch(u'ckanext.versioned_datastore.lib.utils.prefix_resource', new=prefix_mock):
                 with patch(u'ckanext.versioned_datastore.lib.utils.SEARCH_HELPER',
                            new=search_helper_mock):
-                    with patch(u'ckanext.versioned_datastore.lib.utils.CLIENT', new=client_mock):
+                    with patch(u'ckanext.versioned_datastore.lib.utils.ES_CLIENT', new=client_mock):
                         nose.tools.assert_equal(expected_outcome, is_datastore_resource(u'banana'))
 
     def test_is_datastore_only_resource(self):

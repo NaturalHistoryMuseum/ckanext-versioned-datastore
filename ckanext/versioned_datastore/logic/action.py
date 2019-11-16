@@ -335,7 +335,7 @@ def datastore_get_resource_versions(context, data_dict):
 
     data = utils.SEARCH_HELPER.get_index_version_counts(index_name, search=search)
 
-    search = search.using(utils.CLIENT).index(index_name)[0:0]
+    search = search.using(utils.ES_CLIENT).index(index_name)[0:0]
     for result in data:
         version = result[u'version']
         count = search.filter(create_version_query(version)).count()
@@ -859,7 +859,7 @@ def datastore_multisearch(context, data_dict):
 
     # create a multisearch for this one query - this ensures there aren't any issues with the length
     # of the URL as the index list is passed as a part of the body
-    multisearch = MultiSearch(using=utils.CLIENT).add(search)
+    multisearch = MultiSearch(using=utils.ES_CLIENT).add(search)
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
 
@@ -1042,7 +1042,7 @@ def datastore_field_autocomplete(context, data_dict):
 
     # just get the public index mappings for the requested resource ids
     resource_ids = u','.join(map(utils.prefix_resource, resource_ids))
-    mappings = utils.CLIENT.indices.get_mapping(resource_ids)
+    mappings = utils.ES_CLIENT.indices.get_mapping(resource_ids)
 
     fields = defaultdict(dict)
 

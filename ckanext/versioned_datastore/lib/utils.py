@@ -22,7 +22,7 @@ ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
 # an elasticsearch client object
 CONFIG = None
 SEARCH_HELPER = None
-CLIENT = None
+ES_CLIENT = None
 
 
 def setup_eevee(ckan_config):
@@ -33,7 +33,7 @@ def setup_eevee(ckan_config):
     '''
     global CONFIG
     global SEARCH_HELPER
-    global CLIENT
+    global ES_CLIENT
 
     es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
     es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
@@ -47,7 +47,7 @@ def setup_eevee(ckan_config):
     )
     SEARCH_HELPER = SearchHelper(CONFIG)
     # for convenience, expose the client in the search helper at the module level
-    CLIENT = SEARCH_HELPER.client
+    ES_CLIENT = SEARCH_HELPER.client
 
 
 def get_latest_version(resource_id):
@@ -201,7 +201,7 @@ def get_fields(resource_id, version=None):
     # create a list of field details, starting with the always present _id field
     fields = [{u'id': u'_id', u'type': u'integer'}]
     # lookup the mapping on elasticsearch to get all the field names
-    mapping = CLIENT.indices.get_mapping(index)[index]
+    mapping = ES_CLIENT.indices.get_mapping(index)[index]
     # if the rounded version response is None that means there are no versions available which
     # shouldn't happen, but in case it does for some reason, just return the fields we have
     # already
@@ -232,7 +232,7 @@ def get_fields(resource_id, version=None):
 
     if field_names:
         # find out which fields exist in this version and how many values each has
-        search = MultiSearch(using=CLIENT, index=index)
+        search = MultiSearch(using=ES_CLIENT, index=index)
         for field in field_names:
             # create a search which finds the documents that have a value for the given field at the
             # rounded version. We're only interested in the counts though so set size to 0
@@ -268,7 +268,7 @@ def is_datastore_resource(resource_id):
     index_name = prefix_resource(resource_id)
     # check that the index for this resource exists and there is a reference to it in the status
     # index
-    return CLIENT.indices.exists(index_name) and \
+    return ES_CLIENT.indices.exists(index_name) and \
         index_name in SEARCH_HELPER.get_latest_index_versions([index_name])
 
 
@@ -385,9 +385,9 @@ def make_private(resource_id):
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if CLIENT.indices.exists(index_name):
-        if CLIENT.indices.exists_alias(index_name, public_index_name):
-            CLIENT.indices.delete_alias(index_name, public_index_name)
+    if ES_CLIENT.indices.exists(index_name):
+        if ES_CLIENT.indices.exists_alias(index_name, public_index_name):
+            ES_CLIENT.indices.delete_alias(index_name, public_index_name)
             return True
     return False
 
@@ -403,14 +403,14 @@ def make_public(resource_id):
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
-    if CLIENT.indices.exists(index_name):
-        if not CLIENT.indices.exists_alias(index_name, public_index_name):
+    if ES_CLIENT.indices.exists(index_name):
+        if not ES_CLIENT.indices.exists_alias(index_name, public_index_name):
             actions = {
                 u'actions': [
                     {u'add': {u'index': index_name, u'alias': public_index_name}}
                 ]
             }
-            CLIENT.indices.update_aliases(actions)
+            ES_CLIENT.indices.update_aliases(actions)
             return True
     return False
 
@@ -478,7 +478,7 @@ def get_available_datastore_resources(context, only=None):
         .filter(model.Package.state == u'active') \
         .with_entities(model.Resource.id, model.Package.id)
     # retrieve the names in the status index
-    status_search = Search(index=CONFIG.elasticsearch_status_index_name, using=CLIENT) \
+    status_search = Search(index=CONFIG.elasticsearch_status_index_name, using=ES_CLIENT) \
         .source([u'name'])
 
     if only:
@@ -557,6 +557,6 @@ def run_search(search, indexes, version=None):
             search = search.filter(create_version_query(version))
         if isinstance(indexes, basestring):
             indexes = [indexes]
-        return search.index(indexes).using(CLIENT).execute()
+        return search.index(indexes).using(ES_CLIENT).execute()
     except NotFoundError as e:
         raise SearchIndexError(e.error)
