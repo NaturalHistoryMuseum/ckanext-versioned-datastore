@@ -1,3 +1,4 @@
+import redis
 from ckan import model
 from ckan.lib.search import SearchIndexError
 from ckan.plugins import toolkit, PluginImplementations
@@ -24,16 +25,16 @@ CONFIG = None
 SEARCH_HELPER = None
 ES_CLIENT = None
 
+REDIS_CLIENT = None
 
-def setup_eevee(ckan_config):
+
+def setup(ckan_config):
     '''
-    Given the CKAN config, create the Eevee config object and the eevee Searcher object.
+    Given the CKAN config, setup the plugin's global variables.
 
     :param ckan_config: the ckan config
     '''
-    global CONFIG
-    global SEARCH_HELPER
-    global ES_CLIENT
+    global CONFIG, SEARCH_HELPER, ES_CLIENT, REDIS_CLIENT
 
     es_hosts = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_hosts').split(u',')
     es_port = ckan_config.get(u'ckanext.versioned_datastore.elasticsearch_port')
@@ -48,6 +49,15 @@ def setup_eevee(ckan_config):
     SEARCH_HELPER = SearchHelper(CONFIG)
     # for convenience, expose the client in the search helper at the module level
     ES_CLIENT = SEARCH_HELPER.client
+
+    # create a global redis client if the settings for it have been provided
+    redis_host = ckan_config.get(u'ckanext.versioned_datastore.redis_host')
+    if redis_host:
+        REDIS_CLIENT = redis.Redis(
+            host=redis_host,
+            port=int(ckan_config.get(u'ckanext.versioned_datastore.redis_port')),
+            db=int(ckan_config.get(u'ckanext.versioned_datastore.redis_database')),
+        )
 
 
 def get_latest_version(resource_id):

@@ -8,7 +8,7 @@ from eevee.utils import to_timestamp
 from ckan import model
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from ckan.model import DomainObjectOperation
-from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
+from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup
 from ckanext.versioned_datastore.logic import action, auth
 from ckanext.versioned_datastore import routes, helpers
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
@@ -146,7 +146,7 @@ class VersionedSearchPlugin(SingletonPlugin):
 
     # IConfigurable
     def configure(self, ckan_config):
-        setup_eevee(ckan_config)
+        setup(ckan_config)
 
         # register all custom query schemas
         for plugin in PluginImplementations(IVersionedDatastoreQuerySchema):

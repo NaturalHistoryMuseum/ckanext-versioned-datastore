@@ -743,7 +743,8 @@ def datastore_multisearch(context, data_dict):
     As well as returning the results of the search, this action also returns a slug which can be
     used to retrieve the query (not the query results) at a later time. This slug will return, if
     resolved using the datastore_resolve_slug action) the query, the query version, the resource ids
-    and the version the query was run against. A few important notes:
+    and the version the query was run against. If slugging isn't enabled in the ckan config then
+    null is returned instead. A few other important notes:
 
         - the slug returned will always be unique even for the same search parameter combinations
 
@@ -889,7 +890,8 @@ def datastore_multisearch(context, data_dict):
 
 def datastore_create_slug(context, data_dict):
     '''
-    Create a query slug based on the provided query parameters.
+    Create a query slug based on the provided query parameters. If slugging isn't enabled in the
+    ckan config then null is returned.
 
     This action returns a slug which can be used to retrieve the query parameters passed (not the
     query results) at a later time. This slug will return, if resolved using the

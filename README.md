@@ -79,6 +79,14 @@ Name|Description|Example
 `ckanext.versioned_datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
 `ckanext.versioned_datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
 
+## **[OPTIONAL]**
+
+Name|Description|Example
+--|--|--
+`ckanext.versioned_datastore.redis_host`|The redis server host. If this is provided slugging is enabled|`14.1.214.50`
+`ckanext.versioned_datastore.redis_port`|The port to use to connect to the redis host|`6379`
+`ckanext.versioned_datastore.redis_database`|The redis database index to use to store datastore multisearch slugs in|`1`
+
 
 # Further Setup
 

@@ -9,7 +9,6 @@ import abc
 import dicthash
 import itertools
 import os
-import redis
 import six
 from datetime import datetime
 from eevee.search import create_version_query
@@ -178,7 +177,9 @@ def create_search_and_slug(query, query_version, version, resource_ids, ttl=60 *
                            pretty_slug=True, attempts=10):
     '''
     Given the parameters required to create a query, validate it, translate it in an elasticsearch
-    query and create a slug for it so that it can be referred to later.
+    query and create a slug for it so that it can be referred to later. If the necessary redis
+    options haven't been provided in the ckan config then no slug will be generated and None will
+    be returned as the slug value.
 
     Unless a unique slug cannot be generated, a new slug is always returned even if the query has
     been seen before as this ensures individual slugs last only for their ttl even if accessed
@@ -200,34 +201,36 @@ def create_search_and_slug(query, query_version, version, resource_ids, ttl=60 *
     validate_query(query, query_version)
     search = translate_query(query, query_version)
 
-    # create a unique id for the query and store it along with the info about it in redis
-    query_id = generate_query_id(query, query_version, version, resource_ids)
-    query_info = {
-        u'query': query,
-        u'query_version': query_version,
-        u'version': version,
-        u'resource_ids': list(resource_ids),
-        u'search': search.to_dict(),
-    }
-    client = redis.Redis(host=u'localhost', port=6379, db=1)
-    # store the query info against the query id and set the ttl, if the key already exists then the
-    # effect of running this command is just that the ttl is reset (because the info should be the
-    # same)
-    client.setex(query_key_template.format(query_id), json.dumps(query_info), ttl)
-    # store a slug using the query id
-    client.setex(slug_key_template.format(query_id), query_id, ttl)
+    # with no redis client available, slugging is turned off via the config so set the slug to None
+    slug = None
+    if utils.REDIS_CLIENT is not None:
+        # create a unique id for the query and store it along with the info about it in redis
+        query_id = generate_query_id(query, query_version, version, resource_ids)
+        query_info = {
+            u'query': query,
+            u'query_version': query_version,
+            u'version': version,
+            u'resource_ids': list(resource_ids),
+            u'search': search.to_dict(),
+        }
+        # store the query info against the query id and set the ttl, if the key already exists then
+        # the effect of running this command is just that the ttl is reset (because the info should
+        # be the same)
+        utils.REDIS_CLIENT.setex(query_key_template.format(query_id), json.dumps(query_info), ttl)
+        # store a slug using the query id
+        utils.REDIS_CLIENT.setex(slug_key_template.format(query_id), query_id, ttl)
 
-    # use the query id as the slug by default so that if we can't generate a slug we'll always be
-    # able to return a slug to the caller
-    slug = query_id
+        # use the query id as the slug by default so that if we can't generate a slug we'll always
+        # be able to return a slug to the caller
+        slug = query_id
 
-    slug_generator_function = generate_slug if pretty_slug else lambda: unicode(uuid.uuid4())
-    while attempts:
-        attempts -= 1
-        slug = slug_generator_function()
-        if client.setnx(slug_key_template.format(slug), query_id):
-            client.expire(slug_key_template.format(slug), ttl)
-            break
+        slug_generator_function = generate_slug if pretty_slug else lambda: unicode(uuid.uuid4())
+        while attempts:
+            attempts -= 1
+            slug = slug_generator_function()
+            if utils.REDIS_CLIENT.setnx(slug_key_template.format(slug), query_id):
+                utils.REDIS_CLIENT.expire(slug_key_template.format(slug), ttl)
+                break
 
     # if the version wasn't provided, default it to now
     if version is None:
@@ -248,10 +251,9 @@ def resolve_slug(slug):
     :param slug: the slug
     :return: a dict of query info or None if the slug couldn't be resolved
     '''
-    client = redis.Redis(host=u'localhost', port=6379, db=1)
-    query_id = client.get(u'slug:{}'.format(slug))
+    query_id = utils.REDIS_CLIENT.get(u'slug:{}'.format(slug))
     if query_id:
-        query_info = client.get(u'query:{}'.format(query_id))
+        query_info = utils.REDIS_CLIENT.get(u'query:{}'.format(query_id))
         if query_info is not None:
             return json.loads(query_info)
     return None
