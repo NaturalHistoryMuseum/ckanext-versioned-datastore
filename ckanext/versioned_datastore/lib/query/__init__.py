@@ -173,8 +173,8 @@ def generate_slug(word_lists=(adjectives, adjectives, animals)):
     return u'{}-{}-{}'.format(*map(random.choice, word_lists))
 
 
-def create_search_and_slug(query, query_version, version, resource_ids, ttl=utils.SLUG_TTL,
-                           pretty_slug=True, attempts=10):
+def create_search_and_slug(query, query_version, version, resource_ids, pretty_slug=True,
+                           attempts=10):
     '''
     Given the parameters required to create a query, validate it, translate it in an elasticsearch
     query and create a slug for it so that it can be referred to later. If the necessary redis
@@ -191,7 +191,6 @@ def create_search_and_slug(query, query_version, version, resource_ids, ttl=util
     :param query_version: the query version
     :param version: the data version
     :param resource_ids: the ids of the resources under search
-    :param ttl: the length of time a query slug should be valid for in seconds (default: 7 days)
     :param pretty_slug: whether to create a pretty slug or not. If this is turned off then UUID 4
                         slugs are returned. Default: True
     :param attempts: the number of attempts at generating a unique slug that are allowed, default 10
@@ -213,6 +212,7 @@ def create_search_and_slug(query, query_version, version, resource_ids, ttl=util
             u'resource_ids': list(resource_ids),
             u'search': search.to_dict(),
         }
+        ttl = utils.SLUG_TTL
         # store the query info against the query id and set the ttl, if the key already exists then
         # the effect of running this command is just that the ttl is reset (because the info should
         # be the same)
