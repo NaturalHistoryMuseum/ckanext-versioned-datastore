@@ -993,15 +993,16 @@ def datastore_resolve_slug(context, data_dict):
 def datastore_field_autocomplete(context, data_dict):
     '''
     Returns a dictionary of available fields in the datastore which contain the passed text. The
-    fields will be retrieved from the given public resources or all public resources if no
-    resource_ids option is provided.
+    fields will be retrieved from resources available to the user. If a list of resource ids is
+    passed as a parameter then the resources from that list that the user has access to will be
+    used.
 
     Params:
 
     :param text: prefix to match the fields against. Optional, by default all fields are matched
     :type text: string
-    :param resource_ids: the resources to find the fields in. Optional, by default all public
-                         resources are used
+    :param resource_ids: the resources to find the fields in. Optional, by default all resources
+                         available to the user are used
     :type resource_ids: list of string resource ids, separated by commas
     :param lowercase: whether to do a case insensitive prefix match. Optional, default: False
     :type lowercase: bool
@@ -1033,18 +1034,20 @@ def datastore_field_autocomplete(context, data_dict):
     # TODO: support case sensitive prefixing, maybe?
     # TODO: allow choice of prefix searching on nested field name as a whole or as parts
     text = data_dict.get(u'text', u'')
-    resource_ids = data_dict.get(u'resource_ids', [])
+    requested_resource_ids = data_dict.get(u'resource_ids', [])
     lowercase = data_dict.get(u'lowercase', False)
 
-    if len(resource_ids) == 0:
-        # get all public index mappings
-        target = utils.get_public_alias_name(u'*')
-    else:
-        # just get the public index mappings for the requested resource ids
-        target = u','.join(map(utils.get_public_alias_name, resource_ids))
+    # figure out which resources should be searched
+    resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
+    if not resource_ids:
+        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+
+    # just get the public index mappings for the requested resource ids
+    resource_ids = u','.join(map(utils.prefix_resource, resource_ids))
+    mappings = utils.CLIENT.indices.get_mapping(resource_ids)
 
     fields = defaultdict(dict)
-    mappings = utils.CLIENT.indices.get_mapping(target)
+
     for index, mapping in mappings.items():
         resource_id = utils.unprefix_index(index)
 
