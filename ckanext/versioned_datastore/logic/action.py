@@ -9,8 +9,8 @@ from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
-from ckanext.versioned_datastore.lib.query import translate_query, validate_query, \
-    get_latest_query_version, InvalidQuerySchemaVersionError
+from ckanext.versioned_datastore.lib.query import get_latest_query_version, \
+    InvalidQuerySchemaVersionError, create_search_and_slug, resolve_slug
 from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
 from ckanext.versioned_datastore.lib.search import create_search, prefix_field
 from ckanext.versioned_datastore.logic import schema
@@ -740,6 +740,25 @@ def datastore_multisearch(context, data_dict):
     '''
     This action allows you to search data in multiple resources.
 
+    As well as returning the results of the search, this action also returns a slug which can be
+    used to retrieve the query (not the query results) at a later time. This slug will return, if
+    resolved using the datastore_resolve_slug action) the query, the query version, the resource ids
+    and the version the query was run against. A few important notes:
+
+        - the slug returned will always be unique even for the same search parameter combinations
+
+        - the slugs can be reused after they expire
+
+        - there is a small chance the returned slug will be the same as one already created, but
+          this does not effect the underlying query the slug points to, it simply means that the
+          slug may last longer than the default ttl
+
+        - if the version parameter is missing or null/None, the resolved slug will reflect this and
+          not provide a version value
+
+        - the resource ids associated with the slug will always be the list of resources actually
+          searched by the query, not just the list of resources passed as the resources parameter
+
     Params:
 
     :param query: the search JSON
@@ -750,11 +769,11 @@ def datastore_multisearch(context, data_dict):
     :param query_version: the query language version (for example v1.0.0)
     :type query_version: string
     :param resource_ids: a list of resource ids to search. If no resources ids are specified (either
-                     because the parameter is missing or because an empty list is passed) then
-                     all resources in the datastore that the user can access are searched. Any
-                     resources that the user cannot access or that aren't datastore resources are
-                     skipped. If this means that no resources are available from the provided list
-                     then a ValidationError is raised.
+                         because the parameter is missing or because an empty list is passed) then
+                         all resources in the datastore that the user can access are searched. Any
+                         resources that the user cannot access or that aren't datastore resources
+                         are skipped. If this means that no resources are available from the
+                         provided list then a ValidationError is raised.
     :type resource_ids: a list of strings
     :param after: provides pagination. By passing a previous result set's after value, the next
                   page's results can be found. If not provided then the first page is retrieved
@@ -765,6 +784,8 @@ def datastore_multisearch(context, data_dict):
     :type size: int
     :param top_resources: whether to include the top 10 resources in the query result, default False
     :type top_resources: bool
+    :param pretty_slug: whether to return a pretty slug with words or a uuid. Default: True
+    :type pretty_slug: bool
 
     **Results:**
 
@@ -800,8 +821,8 @@ def datastore_multisearch(context, data_dict):
     query = data_dict.get(u'query', {})
     # the query version defaults to the latest available version
     query_version = data_dict.get(u'query_version', get_latest_query_version())
-    # the version defaults to the current time
-    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    # the version, if not passed then this will be defaulted to the current epoch time later
+    version = data_dict.get(u'version', None)
     # the requested resources defaults to all of them (an empty list)
     requested_resource_ids = data_dict.get(u'resource_ids', [])
     # the after parameter if there is one
@@ -810,22 +831,20 @@ def datastore_multisearch(context, data_dict):
     size = max(0, min(data_dict.get(u'size', 100), 1000))
     # the top_resources parameter if there is one
     top_resources = data_dict.get(u'top_resources', False)
+    # whether to create a pretty slug or not
+    pretty_slug = data_dict.get(u'pretty_slug', True)
 
     # figure out which resources should be searched
     resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
-
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
     try:
-        # validate and then translate the query into an elasticsearch-dsl search object
-        validate_query(query, query_version)
-        search = translate_query(query, query_version)
+        search, slug = create_search_and_slug(query, query_version, version, resource_ids,
+                                              pretty_slug=pretty_slug)
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
-    # add the version filter
-    search = search.filter(create_version_query(version))
     # add a simple default sort to ensure we get an after value for pagination
     search = search.sort({u'data._id': u'desc'})
     # add the after if there is one
@@ -838,13 +857,9 @@ def datastore_multisearch(context, data_dict):
         # gather the number of hits in the top 10 most frequently represented indexes if requested
         search.aggs.bucket(u'indexes', u'terms', field=u'_index')
 
-    # add the indexes to the search
-    search = search.index([utils.prefix_resource(resource_id) for resource_id in resource_ids])
-
     # create a multisearch for this one query - this ensures there aren't any issues with the length
     # of the URL as the index list is passed as a part of the body
     multisearch = MultiSearch(using=utils.CLIENT).add(search)
-
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
 
@@ -859,6 +874,7 @@ def datastore_multisearch(context, data_dict):
         } for hit in result.hits],
         # note that resource_ids is a set and therefore the in check is speedy
         u'skipped_resources': [rid for rid in requested_resource_ids if rid not in resource_ids],
+        u'slug': slug,
     }
 
     if top_resources:
@@ -869,6 +885,108 @@ def datastore_multisearch(context, data_dict):
         ]
 
     return response
+
+
+def datastore_create_slug(context, data_dict):
+    '''
+    Create a query slug based on the provided query parameters.
+
+    This action returns a slug which can be used to retrieve the query parameters passed (not the
+    query results) at a later time. This slug will return, if resolved using the
+    datastore_resolve_slug action) the query, the query version, the resource ids and the version
+    the query was run against. A few important notes:
+
+        - the slug returned will always be unique even for the same search parameter combinations
+
+        - the slugs can be reused after they expire
+
+        - there is a small chance the returned slug will be the same as one already created, but
+          this does not effect the underlying query the slug points to, it simply means that the
+          slug may last longer than the default ttl
+
+        - if the version parameter is missing or null/None, the resolved slug will reflect this and
+          not provide a version value
+
+        - the resource ids associated with the slug will always be the list of resources actually
+          searched by the query, not just the list of resources passed as the resources parameter
+
+    Params:
+
+    :param query: the search JSON
+    :type query: dict
+    :param version: version to search at, if this value is null or missing then the slug will not
+                    include version information
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+    :param query_version: the query language version (for example v1.0.0)
+    :type query_version: string
+    :param resource_ids: a list of resource ids to search. If no resources ids are specified (either
+                         because the parameter is missing or because an empty list is passed) then
+                         all resources in the datastore that the user can access are searched. Any
+                         resources that the user cannot access or that aren't datastore resources
+                         are skipped. If this means that no resources are available from the
+                         provided list then a ValidationError is raised.
+    :type resource_ids: a list of strings
+    :param pretty_slug: whether to return a pretty slug with words or a uuid. Default: True
+    :type pretty_slug: bool
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_create_slug())
+
+    # extract the parameters
+    query = data_dict.get(u'query', {})
+    # the query version defaults to the latest available version
+    query_version = data_dict.get(u'query_version', get_latest_query_version())
+    # the version defaults to the current time
+    version = data_dict.get(u'version', None)
+    # the requested resources defaults to all of them (an empty list)
+    requested_resource_ids = data_dict.get(u'resource_ids', [])
+    # whether to create a pretty slug or not
+    pretty_slug = data_dict.get(u'pretty_slug', True)
+
+    # figure out which resources should be searched
+    resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
+    if not resource_ids:
+        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+
+    try:
+        _search, slug = create_search_and_slug(query, query_version, version, resource_ids,
+                                               pretty_slug=pretty_slug)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    return slug
+
+
+@toolkit.side_effect_free
+def datastore_resolve_slug(context, data_dict):
+    '''
+    Given a slug, resolves it and returns the query information associated with it.
+
+    Params:
+
+    :param slug: the slug to resolve
+    :type slug: string
+
+    **Results:**
+
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param query: the query body
+    :type query: dict
+    :param query_version: the query version in use
+    :type query_version: string
+    :param version: the version the query is using
+    :type version: integer
+    :param resource_ids: the resource ids under search in the query
+    :type resource_ids: a list of strings
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_resolve_slug())
+    slug_info = resolve_slug(data_dict[u'slug'])
+    if slug_info is None:
+        raise toolkit.ValidationError(u'Slug not found')
+
+    # only return the query, query_version, version and resource_ids
+    return {k: slug_info[k] for k in (u'query', u'query_version', u'version', u'resource_ids')}
 
 
 @toolkit.side_effect_free

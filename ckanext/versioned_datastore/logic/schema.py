@@ -214,7 +214,8 @@ def datastore_multisearch_schema():
         u'resource_ids': [ignore_missing, list_of_strings()],
         u'after': [ignore_missing, list_validator],
         u'size': [ignore_missing, int_validator],
-        u'top_resources': [ignore_missing, boolean_validator]
+        u'top_resources': [ignore_missing, boolean_validator],
+        u'pretty_slug': [ignore_missing, boolean_validator],
     }
 
 
@@ -223,4 +224,20 @@ def datastore_field_autocomplete_schema():
         u'prefix': [ignore_missing, unicode],
         u'resource_ids': [ignore_missing, list_of_strings()],
         u'lowercase': [ignore_missing, boolean_validator],
+    }
+
+
+def datastore_create_slug():
+    return {
+        u'query': [ignore_missing, json_validator],
+        u'version': [ignore_missing, int_validator],
+        u'query_version': [ignore_missing, unicode],
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'pretty_slug': [ignore_missing, boolean_validator],
+    }
+
+
+def datastore_resolve_slug():
+    return {
+        u'slug': [unicode],
     }
