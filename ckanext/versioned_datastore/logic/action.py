@@ -992,18 +992,19 @@ def datastore_resolve_slug(context, data_dict):
 @toolkit.side_effect_free
 def datastore_field_autocomplete(context, data_dict):
     '''
-    Returns a dictionary of available fields in the datastore which match the passed prefix. The
+    Returns a dictionary of available fields in the datastore which contain the passed text. The
     fields will be retrieved from the given public resources or all public resources if no
     resource_ids option is provided.
 
     Params:
 
-    :param prefix: prefix to match the fields against. Optional, by default all fields are matched
-    :type prefix: string
+    :param text: prefix to match the fields against. Optional, by default all fields are matched
+    :type text: string
     :param resource_ids: the resources to find the fields in. Optional, by default all public
                          resources are used
-    :type version: list of string resource ids, separated by commas
+    :type resource_ids: list of string resource ids, separated by commas
     :param lowercase: whether to do a case insensitive prefix match. Optional, default: False
+    :type lowercase: bool
 
     **Results:**
 
@@ -1031,7 +1032,7 @@ def datastore_field_autocomplete(context, data_dict):
 
     # TODO: support case sensitive prefixing, maybe?
     # TODO: allow choice of prefix searching on nested field name as a whole or as parts
-    prefix = data_dict.get(u'prefix', u'')
+    text = data_dict.get(u'text', u'')
     resource_ids = data_dict.get(u'resource_ids', [])
     lowercase = data_dict.get(u'lowercase', False)
 
@@ -1048,7 +1049,7 @@ def datastore_field_autocomplete(context, data_dict):
         resource_id = utils.unprefix_index(index)
 
         for field_path, config in utils.iter_data_fields(mapping):
-            if any((part.lower() if lowercase else part).startswith(prefix) for part in field_path):
+            if any(text in (part.lower() if lowercase else part) for part in field_path):
                 fields[u'.'.join(field_path)][resource_id] = {
                     u'type': config[u'type'],
                     u'fields': {f: c[u'type'] for f, c in config.get(u'fields', {}).items()}
