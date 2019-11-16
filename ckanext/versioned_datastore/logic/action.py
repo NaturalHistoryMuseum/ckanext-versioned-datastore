@@ -1031,8 +1031,6 @@ def datastore_field_autocomplete(context, data_dict):
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_field_autocomplete_schema())
 
-    # TODO: support case sensitive prefixing, maybe?
-    # TODO: allow choice of prefix searching on nested field name as a whole or as parts
     text = data_dict.get(u'text', u'')
     requested_resource_ids = data_dict.get(u'resource_ids', [])
     lowercase = data_dict.get(u'lowercase', False)
