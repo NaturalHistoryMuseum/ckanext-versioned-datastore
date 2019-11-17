@@ -538,15 +538,15 @@ def get_available_datastore_resources(context, only=None):
     return resource_ids
 
 
-def get_last_after(result):
+def get_last_after(hits):
     '''
-    Retrieves the "after" value from the last record in the list of hits.
+    Retrieves the "sort" value from the last record in passed the list of hits.
 
-    :param result: the result object from elasticsearch
+    :param hits: a list of hits from an elasticsearch response
     :return: a list or None
     '''
-    if result.hits and u'sort' in result.hits[-1].meta:
-        return list(result.hits[-1].meta[u'sort'])
+    if hits and u'sort' in hits[-1].meta:
+        return list(hits[-1].meta[u'sort'])
     else:
         return None
 

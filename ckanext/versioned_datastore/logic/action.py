@@ -157,7 +157,7 @@ def datastore_search(context, data_dict):
             u'facets': utils.format_facets(result.aggs.to_dict()),
             u'fields': fields,
             u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
-            u'after': utils.get_last_after(result),
+            u'after': utils.get_last_after(result.hits),
             u'_backend': u'versioned-datastore',
         }
 
@@ -678,7 +678,7 @@ def datastore_search_raw(context, data_dict):
             u'facets': utils.format_facets(result.aggs.to_dict()),
             u'fields': fields,
             u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
-            u'after': utils.get_last_after(result),
+            u'after': utils.get_last_after(result.hits),
             u'_backend': u'versioned-datastore',
         }
     except RequestError as e:
@@ -851,8 +851,9 @@ def datastore_multisearch(context, data_dict):
     # add the after if there is one
     if after is not None:
         search = search.extra(search_after=after)
-    # add the size parameter
-    search = search.extra(size=size)
+    # add the size parameter. We pass the requested size + 1 to allow us to determine if the results
+    # we find represent the last page of results or not
+    search = search.extra(size=size + 1)
 
     if top_resources:
         # gather the number of hits in the top 10 most frequently represented indexes if requested
@@ -864,15 +865,25 @@ def datastore_multisearch(context, data_dict):
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
 
+    # work out if there are any more results after this page of results or not
+    if len(result.hits) > size:
+        # there are more results, trim off the last hit as it wasn't requested
+        hits = result.hits[:-1]
+        next_after = utils.get_last_after(hits)
+    else:
+        # there are no more results beyond the ones we're going to pass back
+        next_after = None
+        hits = result.hits
+
     response = {
         u'total': result.hits.total,
-        u'after': utils.get_last_after(result),
+        u'after': next_after,
         u'records': [{
             u'data': hit.data.to_dict(),
             # should we provide the name too? If so cache a map of id -> name, then update it if we
             # don't find the id in the map
             u'resource': utils.trim_index_name(hit.meta.index),
-        } for hit in result.hits],
+        } for hit in hits],
         # note that resource_ids is a set and therefore the in check is speedy
         u'skipped_resources': [rid for rid in requested_resource_ids if rid not in resource_ids],
         u'slug': slug,
