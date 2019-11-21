@@ -7,7 +7,7 @@ import os
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Bool, Q
 
-from ..query import Schema, load_core_schema, schema_base_path
+from .schema import Schema, load_core_schema, schema_base_path
 from ..utils import prefix_field
 
 

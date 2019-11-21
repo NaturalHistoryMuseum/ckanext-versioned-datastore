@@ -8,7 +8,7 @@ from eevee.utils import to_timestamp
 from . import routes, helpers
 from .interfaces import IVersionedDatastoreQuerySchema
 from .lib import utils
-from .lib.query import register_schema
+from .lib.query.schema import register_schema
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .lib.utils import is_datastore_resource, setup
 from .logic import action, auth

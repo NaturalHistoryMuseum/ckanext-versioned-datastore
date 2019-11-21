@@ -19,7 +19,7 @@ from .jsonl import jsonl_writer
 from .sv import sv_writer
 from .utils import calculate_field_counts
 from .. import utils
-from ..query import generate_query_hash
+from ..query.slugs import generate_query_hash
 
 format_registry = {
     u'csv': functools.partial(sv_writer, dialect=u'excel', extension=u'csv'),

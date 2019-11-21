@@ -18,8 +18,9 @@ from ..lib import utils, stats
 from ..lib.downloads.download import queue_download
 from ..lib.importing import check_version_is_valid
 from ..lib.indexing.indexing import DatastoreIndex
-from ..lib.query import get_latest_query_version, InvalidQuerySchemaVersionError, create_slug, \
-    resolve_slug, validate_query, translate_query
+from ..lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
+    validate_query, translate_query
+from ..lib.query.slugs import create_slug, resolve_slug
 from ..lib.queuing import queue_index, queue_import, queue_deletion
 from ..lib.search import create_search, prefix_field
 
