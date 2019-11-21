@@ -7,6 +7,7 @@ import jsonschema
 from ckan.plugins import toolkit, PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
+from ckanext.versioned_datastore.lib.downloads.download import queue_download
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
 from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
 from ckanext.versioned_datastore.lib.query import get_latest_query_version, \
@@ -1098,4 +1099,104 @@ def datastore_field_autocomplete(context, data_dict):
     return {
         u'count': len(fields),
         u'fields': fields,
+    }
+
+
+def datastore_queue_download(context, data_dict):
+    '''
+    Queues a task to generate a downloadable zip containing the data produced by the given query
+    and then sends a link for the zip to the provided email address.
+
+    All parameters are optional except the email address which is required.
+
+    The resources that are searched for the download and the version they are searched at are both
+    extracted from the resource_ids_and_versions in the first instance, and if no information in
+    there is found then the resource_ids and version parameters are used as fall backs. Regardless
+    of where the resource ids list comes from though, it is always checked against permissions to
+    ensure the user has the right to access the given resources.
+
+
+    Params:
+
+    :param email_address: the email address to send the zip too (required)
+    :type email_address: string
+    :param query: the query to run to find the records to include in the zip
+    :type query: dict
+    :param query_version: the query version schema in use by the given query
+    :type query_version: string
+    :param version: the version to query the data at
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+    :param resource_ids_and_versions: a dict mapping the resource ids to include in the download to
+                                      the specific version of that resource's data that should be
+                                      searched
+    :type resource_ids_and_versions: a dict of strings -> ints (number of milliseconds (not
+                                     seconds!) since UNIX epoch)
+    :param resource_ids: the resource ids to search
+    :type resource_ids: list of strings
+    :param separate_files: whether to write the records into per-resource files or output them all
+                           in one file. Default: True
+    :type separate_files: boolean
+    :param format: the format to output each file in. Default: csv
+    :type format: string
+    :param ignore_empty_fields: whether to ignore fields with no values in the result set when
+                                writing records out. If set to True, fields found in the result set
+                                to not contain any values will not be included in the download zip.
+                                Default: True.
+    :type ignore_empty_fields: bool
+
+    **Results:**
+
+    :returns: details about the job that has been submitted to fulfill the upsert request.
+    :rtype: dict
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_queue_download())
+
+    # try the resource_ids_and_versions dict first over the resource_ids and version params
+    requested_resource_ids_and_versions = data_dict.get(u'resource_ids_and_versions', {})
+    if requested_resource_ids_and_versions:
+        # cool we can use this, we need the resource ids specified as a list though
+        requested_resource_ids = list(requested_resource_ids_and_versions.keys())
+    else:
+        # fall back on the resource_ids param, if indeed one was passed
+        requested_resource_ids = data_dict.get(u'resource_ids', [])
+
+    # figure out which resources should be searched
+    resource_ids = utils.get_available_datastore_resources(context, requested_resource_ids)
+    if not resource_ids:
+        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+
+    resource_ids_and_versions = {}
+    # see if a version was provided, we'll use this is a resource id we're searching doesn't have a
+    # directly assigned version (i.e. it was absent from the requested_resource_ids_and_versions
+    # dict, or that parameter wasn't provided
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    for resource_id in resource_ids:
+        # try to get the target version from the requested_resource_ids_and_versions dict, but if
+        # it's not in there, default to the version variable
+        target_version = requested_resource_ids_and_versions.get(resource_id, version)
+        index = utils.prefix_resource(resource_id)
+        # round the version down to ensure we search the exact version requested
+        rounded_version = utils.SEARCH_HELPER.get_rounded_versions([index], target_version)[index]
+        if rounded_version is not None:
+            # resource ids without a rounded version are skipped
+            resource_ids_and_versions[resource_id] = rounded_version
+
+    # setup the query
+    query = data_dict.get(u'query', {})
+    query_version = data_dict.get(u'query_version', get_latest_query_version())
+    validate_query(query, query_version)
+    search = translate_query(query, query_version)
+
+    job = queue_download(data_dict[u'email_address'],
+                         query,
+                         query_version,
+                         search.to_dict(),
+                         resource_ids_and_versions,
+                         data_dict.get(u'separate_files', True),
+                         data_dict.get(u'format', u'csv'),
+                         data_dict.get(u'ignore_empty_fields', True))
+
+    return {
+        u'queued_at': job.enqueued_at.isoformat(),
+        u'job_id': job.id,
     }

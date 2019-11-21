@@ -11,6 +11,7 @@ not_missing = toolkit.get_validator(u'not_missing')
 not_empty = toolkit.get_validator(u'not_empty')
 resource_id_exists = toolkit.get_validator(u'resource_id_exists')
 OneOf = toolkit.get_validator(u'OneOf')
+email_validator = toolkit.get_validator(u'email_validator')
 
 
 def list_of_dicts_validator(value, context):
@@ -233,6 +234,7 @@ def datastore_create_slug():
         u'version': [ignore_missing, int_validator],
         u'query_version': [ignore_missing, unicode],
         u'resource_ids': [ignore_missing, list_of_strings()],
+        u'resource_ids_and_versions': [ignore_missing, json_validator],
         u'pretty_slug': [ignore_missing, boolean_validator],
     }
 
@@ -240,4 +242,18 @@ def datastore_create_slug():
 def datastore_resolve_slug():
     return {
         u'slug': [unicode],
+    }
+
+
+def datastore_queue_download():
+    return {
+        u'email_address': [not_missing, not_empty, email_validator],
+        u'query': [ignore_missing, json_validator],
+        u'version': [ignore_missing, int_validator],
+        u'resource_ids_and_versions': [ignore_missing, json_validator],
+        u'query_version': [ignore_missing, unicode],
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'separate_files': [ignore_missing, boolean_validator],
+        u'format': [ignore_missing, unicode],
+        u'ignore_empty_fields': [ignore_missing, boolean_validator],
     }

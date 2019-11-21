@@ -46,6 +46,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_field_autocomplete': action.datastore_field_autocomplete,
             u'datastore_create_slug': action.datastore_create_slug,
             u'datastore_resolve_slug': action.datastore_resolve_slug,
+            u'datastore_queue_download': action.datastore_queue_download,
         }
 
     # IAuthFunctions
@@ -67,6 +68,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_field_autocomplete': auth.datastore_field_autocomplete,
             u'datastore_create_slug': auth.datastore_create_slug,
             u'datastore_resolve_slug': auth.datastore_resolve_slug,
+            u'datastore_queue_download': auth.datastore_queue_download,
         }
 
     # ITemplateHelpers
