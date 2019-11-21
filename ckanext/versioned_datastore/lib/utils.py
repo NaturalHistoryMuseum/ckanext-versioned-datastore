@@ -1,13 +1,14 @@
 from ckan import model
 from ckan.lib.search import SearchIndexError
 from ckan.plugins import toolkit, PluginImplementations
-from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib.details import get_all_details
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search import SearchHelper, create_version_query
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import Search, MultiSearch
+
+from .details import get_all_details
+from ..interfaces import IVersionedDatastore
 
 # if the resource has been side loaded into the datastore then this should be its URL
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'

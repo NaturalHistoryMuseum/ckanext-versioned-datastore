@@ -10,15 +10,16 @@ import os
 import rq
 from ckan.lib import jobs, mailer
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.downloads.jsonl import jsonl_writer
-from ckanext.versioned_datastore.lib.downloads.sv import sv_writer
-from ckanext.versioned_datastore.lib.downloads.utils import calculate_field_counts
-from ckanext.versioned_datastore.lib.query import generate_query_hash
 from datetime import datetime
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
+
+from .jsonl import jsonl_writer
+from .sv import sv_writer
+from .utils import calculate_field_counts
+from .. import utils
+from ..query import generate_query_hash
 
 format_registry = {
     u'csv': functools.partial(sv_writer, dialect=u'excel', extension=u'csv'),

@@ -7,7 +7,7 @@
 from flask import Blueprint
 
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.stats import get_all_stats
+from ..lib.stats import get_all_stats
 
 blueprint = Blueprint(name=u'datastore', import_name=__name__, url_prefix=u'')
 

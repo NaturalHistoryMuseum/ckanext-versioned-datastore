@@ -1,10 +1,11 @@
 import logging
 
-from ckanext.versioned_datastore.lib import utils, stats
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
 from eevee.ingestion.ingesters import Ingester
 from eevee.mongo import get_mongo
+
+from .. import utils, stats
 
 log = logging.getLogger(__name__)
 

@@ -1,9 +1,9 @@
 from ckan import model
 from ckan.plugins import toolkit
 
-from ckanext.versioned_datastore.model.details import datastore_resource_details_table
-from ckanext.versioned_datastore.model.slugs import datastore_slugs_table
-from ckanext.versioned_datastore.model.stats import import_stats_table
+from .model.details import datastore_resource_details_table
+from .model.slugs import datastore_slugs_table
+from .model.stats import import_stats_table
 
 
 class VersionedDatastoreCommands(toolkit.CkanCommand):

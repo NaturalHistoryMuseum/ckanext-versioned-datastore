@@ -1,12 +1,12 @@
 import logging
+
 from datetime import datetime
 
-from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.indexing.indexing import index_resource
-from ckanext.versioned_datastore.lib.ingestion import deletion
-from ckanext.versioned_datastore.lib.ingestion.ingesting import ingest_resource
-from ckanext.versioned_datastore.lib.indexing.indexing import ResourceIndexRequest
-from ckanext.versioned_datastore.lib.stats import get_last_ingest
+from . import utils
+from .indexing.indexing import ResourceIndexRequest, index_resource
+from .ingestion import deletion
+from .ingestion.ingesting import ingest_resource
+from .stats import get_last_ingest
 
 log = logging.getLogger(__name__)
 

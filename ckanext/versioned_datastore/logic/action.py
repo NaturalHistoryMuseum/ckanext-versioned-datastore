@@ -5,22 +5,23 @@ from collections import defaultdict
 
 import jsonschema
 from ckan.plugins import toolkit, PluginImplementations
-from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib import utils, stats
-from ckanext.versioned_datastore.lib.downloads.download import queue_download
-from ckanext.versioned_datastore.lib.importing import check_version_is_valid
-from ckanext.versioned_datastore.lib.indexing.indexing import DatastoreIndex
-from ckanext.versioned_datastore.lib.query import get_latest_query_version, \
-    InvalidQuerySchemaVersionError, create_slug, resolve_slug, validate_query, translate_query
-from ckanext.versioned_datastore.lib.queuing import queue_index, queue_import, queue_deletion
-from ckanext.versioned_datastore.lib.search import create_search, prefix_field
-from ckanext.versioned_datastore.logic import schema
 from datetime import datetime
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search import create_version_query, create_index_specific_version_filter
 from eevee.utils import to_timestamp
 from elasticsearch import RequestError
 from elasticsearch_dsl import A, Search, MultiSearch
+
+from . import schema
+from ..interfaces import IVersionedDatastore
+from ..lib import utils, stats
+from ..lib.downloads.download import queue_download
+from ..lib.importing import check_version_is_valid
+from ..lib.indexing.indexing import DatastoreIndex
+from ..lib.query import get_latest_query_version, InvalidQuerySchemaVersionError, create_slug, \
+    resolve_slug, validate_query, translate_query
+from ..lib.queuing import queue_index, queue_import, queue_deletion
+from ..lib.search import create_search, prefix_field
 
 log = logging.getLogger(__name__)
 # stop elasticsearch from showing warning logs

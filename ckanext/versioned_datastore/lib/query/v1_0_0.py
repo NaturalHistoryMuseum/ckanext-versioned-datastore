@@ -4,11 +4,11 @@ import string
 from collections import defaultdict
 
 import os
-from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.query import Schema, load_core_schema, schema_base_path
-from ckanext.versioned_datastore.lib.utils import prefix_field
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Bool, Q
+
+from ..query import Schema, load_core_schema, schema_base_path
+from ..utils import prefix_field
 
 
 class v1_0_0Schema(Schema):

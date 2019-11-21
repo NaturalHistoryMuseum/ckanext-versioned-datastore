@@ -2,11 +2,12 @@ import copy
 
 import operator
 from ckan.plugins import PluginImplementations
-from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib.geo import add_geo_search
-from ckanext.versioned_datastore.lib.utils import validate, prefix_field
-from ckanext.versioned_datastore.logic.schema import datastore_search_schema
 from elasticsearch_dsl import Search
+
+from .geo import add_geo_search
+from .utils import validate, prefix_field
+from ..interfaces import IVersionedDatastore
+from ..logic.schema import datastore_search_schema
 
 
 def _find_version(data_dict):

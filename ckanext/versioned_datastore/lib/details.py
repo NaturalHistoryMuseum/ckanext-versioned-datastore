@@ -2,7 +2,8 @@ import json
 from collections import OrderedDict
 
 from ckan import model
-from ckanext.versioned_datastore.model.details import DatastoreResourceDetails
+
+from ..model.details import DatastoreResourceDetails
 
 
 def create_details(resource_id, version, columns, file_hash=None):

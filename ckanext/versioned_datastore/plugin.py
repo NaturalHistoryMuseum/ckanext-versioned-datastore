@@ -1,17 +1,17 @@
 import logging
 
-from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.query import register_schema
-from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
+from ckan import model
+from ckan.model import DomainObjectOperation
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from eevee.utils import to_timestamp
 
-from ckan import model
-from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
-from ckan.model import DomainObjectOperation
-from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup
-from ckanext.versioned_datastore.logic import action, auth
-from ckanext.versioned_datastore import routes, helpers
-from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
+from . import routes, helpers
+from .interfaces import IVersionedDatastoreQuerySchema
+from .lib import utils
+from .lib.query import register_schema
+from .lib.query.v1_0_0 import v1_0_0Schema
+from .lib.utils import is_datastore_resource, setup
+from .logic import action, auth
 
 log = logging.getLogger(__name__)
 

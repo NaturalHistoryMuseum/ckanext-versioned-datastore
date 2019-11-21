@@ -2,14 +2,15 @@ import numbers
 
 import abc
 import openpyxl
-import unicodecsv
 import six
+import unicodecsv
 import xlrd
 from cchardet import UniversalDetector
-from ckanext.versioned_datastore.lib import utils
-from ckanext.versioned_datastore.lib.ingestion.utils import ensure_reset, iter_universal_lines
-from openpyxl.cell.read_only import EmptyCell
 from ckanext.versioned_datastore.lib.ingestion import exceptions
+from openpyxl.cell.read_only import EmptyCell
+
+from . import utils
+from .utils import ensure_reset, iter_universal_lines
 
 
 def get_reader(resource_format):

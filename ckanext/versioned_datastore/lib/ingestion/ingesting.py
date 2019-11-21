@@ -11,21 +11,21 @@ import math
 import os
 import simplejson
 import unicodedata
-from ckanext.versioned_datastore.lib import stats
-from ckanext.versioned_datastore.lib.details import create_details, get_last_file_hash
-from ckanext.versioned_datastore.lib.ingestion import exceptions
-from ckanext.versioned_datastore.lib.ingestion.deletion import ReplaceDeletionFeeder
-from ckanext.versioned_datastore.lib.ingestion.readers import get_reader, APIReader
-from ckanext.versioned_datastore.lib.ingestion.records import DatastoreRecord
-from ckanext.versioned_datastore.lib.ingestion.utils import download_to_temp_file, compute_hash, \
-    InclusionTracker
-from ckanext.versioned_datastore.model.stats import ImportStats
 from contextlib2 import suppress
 from datetime import datetime
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.feeders import IngestionFeeder
 from eevee.ingestion.ingesters import Ingester
 from eevee.mongo import get_mongo
+
+from . import exceptions
+from .deletion import ReplaceDeletionFeeder
+from .readers import get_reader, APIReader
+from .records import DatastoreRecord
+from .utils import download_to_temp_file, compute_hash, InclusionTracker
+from .. import stats
+from ..details import create_details, get_last_file_hash
+from ...model.stats import ImportStats
 
 log = logging.getLogger(__name__)
 

@@ -1,9 +1,10 @@
 from traceback import format_exception_only
 
 from ckan import model
-from ckanext.versioned_datastore.model.stats import ImportStats
 from datetime import datetime
 from sqlalchemy import desc
+
+from ..model.stats import ImportStats
 
 PREP = u'prep'
 INGEST = u'ingest'

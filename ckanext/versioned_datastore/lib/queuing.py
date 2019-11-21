@@ -1,10 +1,10 @@
 import rq
-
-from ckan.plugins import toolkit
 from ckan.lib import jobs
-from ckanext.versioned_datastore.lib.importing import import_resource_data, ResourceImportRequest, \
-    ResourceDeletionRequest, delete_resource_data
-from ckanext.versioned_datastore.lib.indexing.indexing import index_resource, ResourceIndexRequest
+from ckan.plugins import toolkit
+
+from .importing import import_resource_data, ResourceImportRequest, ResourceDeletionRequest, \
+    delete_resource_data
+from .indexing.indexing import index_resource, ResourceIndexRequest
 
 
 def ensure_importing_queue_exists():

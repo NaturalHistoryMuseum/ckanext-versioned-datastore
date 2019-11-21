@@ -1,5 +1,6 @@
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib import stats
+
+from .lib import stats
 
 
 def is_duplicate_ingestion(stat):

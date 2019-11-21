@@ -7,8 +7,8 @@ from eevee.indexing.indexers import Indexer
 from eevee.indexing.indexes import Index
 from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
 
-from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib import stats, utils
+from .. import stats, utils
+from ...interfaces import IVersionedDatastore
 
 log = logging.getLogger(__name__)
 
