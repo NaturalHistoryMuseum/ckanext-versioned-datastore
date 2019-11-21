@@ -22,7 +22,7 @@ from ..lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersi
     validate_query, translate_query
 from ..lib.query.slugs import create_slug, resolve_slug
 from ..lib.queuing import queue_index, queue_import, queue_deletion
-from ..lib.search import create_search, prefix_field
+from ..lib.basic_query.search import create_search
 
 log = logging.getLogger(__name__)
 # stop elasticsearch from showing warning logs
@@ -400,10 +400,10 @@ def datastore_autocomplete(context, data_dict):
     index_name = utils.prefix_resource(data_dict[u'resource_id'])
 
     # add the autocompletion query part which takes the form of a prefix search
-    search = search.filter(u'prefix', **{prefix_field(field): term})
+    search = search.filter(u'prefix', **{utils.prefix_field(field): term})
     # modify the search so that it has the aggregation required to get the autocompletion results
     search.aggs.bucket(u'field_values', u'composite', size=size,
-                       sources={field: A(u'terms', field=prefix_field(field), order=u'asc')})
+                       sources={field: A(u'terms', field=utils.prefix_field(field), order=u'asc')})
     # if there's an after included, add it into the aggregation
     if after:
         search.aggs[u'field_values'].after = {field: after}

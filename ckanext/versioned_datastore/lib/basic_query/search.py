@@ -5,9 +5,9 @@ from ckan.plugins import PluginImplementations
 from elasticsearch_dsl import Search
 
 from .geo import add_geo_search
-from .utils import validate, prefix_field
-from ..interfaces import IVersionedDatastore
-from ..logic.schema import datastore_search_schema
+from ..utils import validate, prefix_field
+from ...interfaces import IVersionedDatastore
+from ...logic.schema import datastore_search_schema
 
 
 def _find_version(data_dict):
