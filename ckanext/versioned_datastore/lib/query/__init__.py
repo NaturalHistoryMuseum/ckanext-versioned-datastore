@@ -2,7 +2,6 @@ import hashlib
 import io
 import json
 import random
-import uuid
 from collections import OrderedDict
 
 import abc
@@ -10,13 +9,15 @@ import dicthash
 import itertools
 import os
 import six
-from datetime import datetime
-from eevee.search import create_version_query
-from eevee.utils import to_timestamp
+from ckan import model
+from ckan.plugins import toolkit
 from jsonschema.validators import validator_for, RefResolver
+from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 
 from .slug_words import adjectives, animals
 from .. import utils
+from ...model.slugs import DatastoreSlug
 
 schemas = OrderedDict()
 schema_base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), u'..', u'..', u'theme',
@@ -137,7 +138,7 @@ class Schema(object):
         pass
 
 
-def generate_query_id(query, query_version, version, resource_ids):
+def generate_query_hash(query, query_version, version, resource_ids, resource_ids_and_versions):
     '''
     Given a query and the parameters required to run it, create a unique id for it (a hash) and
     returns it. The hashing algorithm used is sha1 and the output will be a 40 character hexidecimal
@@ -147,19 +148,22 @@ def generate_query_id(query, query_version, version, resource_ids):
     :param query_version: the query version
     :param version: the data version
     :param resource_ids: the ids of the resources under search
+    :param resource_ids_and_versions: the resource ids and specific versions to search at for them
     :return: a unique id for the query, which is a hash of the query and parameters
     '''
     to_hash = {
         u'query': query,
         u'query_version': query_version,
         u'version': version,
-        u'resource_ids': resource_ids,
+        # sort the resources to ensure the hash doesn't change unnecessarily
+        u'resource_ids': sorted(resource_ids) if resource_ids is not None else resource_ids,
+        u'resource_ids_and_versions': resource_ids_and_versions,
     }
     raw = dicthash.generate_hash_from_dict(to_hash, raw=True)
     return hashlib.sha1(raw.encode(u'utf-8')).hexdigest()
 
 
-def generate_slug(word_lists=(adjectives, adjectives, animals)):
+def generate_pretty_slug(word_lists=(adjectives, adjectives, animals)):
     '''
     Generate a new slug using the adjective and animal lists available. The default word_lists value
     is a trio of lists: (adjectives, adjectives, animals). This produces 31,365,468 unique
@@ -173,87 +177,83 @@ def generate_slug(word_lists=(adjectives, adjectives, animals)):
     return u'{}-{}-{}'.format(*map(random.choice, word_lists))
 
 
-def create_search_and_slug(query, query_version, version, resource_ids, pretty_slug=True,
-                           attempts=10):
+def create_slug(context, query, query_version, version=None, resource_ids=None,
+                resource_ids_and_versions=None, pretty_slug=True, attempts=5):
     '''
-    Given the parameters required to create a query, validate it, translate it in an elasticsearch
-    query and create a slug for it so that it can be referred to later. If the necessary redis
-    options haven't been provided in the ckan config then no slug will be generated and None will
-    be returned as the slug value.
+    Creates a new slug in the database and returns the saved DatastoreSlug object. If a slug already
+    exists under the query hash then the existing slug entry is returned. In addition to the slug
+    object, also returned is information about whether the slug was new or not.
 
-    Unless a unique slug cannot be generated, a new slug is always returned even if the query has
-    been seen before as this ensures individual slugs last only for their ttl even if accessed
-    multiple times after creation. If a new slug cannot be generated then the query id is returned.
-    If the query id is returned as the slug more than once from this function then the slug will
-    last longer than the ttl, but this is an accepted risk (and a low one too).
+    Only valid queries get a slug, otherwise we raise a ValidationError.
 
+    Only valid resource ids included in the list will be stored, any invalid ones will be excluded.
+    If a list of resource ids is provided and none of the requested resource ids are valid, then a
+    ValidationError is raised.
+
+    :param context: the context dict so that we can check the validity of any resources
     :param query: the query dict
-    :param query_version: the query version
-    :param version: the data version
-    :param resource_ids: the ids of the resources under search
-    :param pretty_slug: whether to create a pretty slug or not. If this is turned off then UUID 4
-                        slugs are returned. Default: True
-    :param attempts: the number of attempts at generating a unique slug that are allowed, default 10
-    :return: a 2-tuple containing the elasticsearch-dsl object and the slug
+    :param query_version: the query version in use
+    :param version: the version to search at
+    :param resource_ids: the resources to search (a list)
+    :param resource_ids_and_versions: the resources and versions to search at (a dict)
+    :param pretty_slug: whether to generate a pretty slug or just use the uuid id of the slug, by
+                        default this is True
+    :param attempts: how many times to try creating a pretty slug, default: 5
+    :return: a 2-tuple containing a boolean indicating whether the slug object returned was newly
+             created and the DatastoreSlug object itself. If we couldn't create a slug object for
+             some reason then (False, None) is returned.
     '''
-    # validate and translate the query into an elasticsearch-dsl Search object
+    # only store valid queries!
     validate_query(query, query_version)
-    search = translate_query(query, query_version)
 
-    # with no redis client available, slugging is turned off via the config so set the slug to None
-    slug = None
-    if utils.REDIS_CLIENT is not None:
-        # create a unique id for the query and store it along with the info about it in redis
-        query_id = generate_query_id(query, query_version, version, resource_ids)
-        query_info = {
-            u'query': query,
-            u'query_version': query_version,
-            u'version': version,
-            u'resource_ids': list(resource_ids),
-            u'search': search.to_dict(),
-        }
-        ttl = utils.SLUG_TTL
-        # store the query info against the query id and set the ttl, if the key already exists then
-        # the effect of running this command is just that the ttl is reset (because the info should
-        # be the same)
-        utils.REDIS_CLIENT.setex(query_key_template.format(query_id), json.dumps(query_info), ttl)
-        # store a slug using the query id
-        utils.REDIS_CLIENT.setex(slug_key_template.format(query_id), query_id, ttl)
+    if resource_ids:
+        resource_ids = list(utils.get_available_datastore_resources(context, resource_ids))
+        if not resource_ids:
+            raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
-        # use the query id as the slug by default so that if we can't generate a slug we'll always
-        # be able to return a slug to the caller
-        slug = query_id
+    query_hash = generate_query_hash(query, query_version, version, resource_ids,
+                                     resource_ids_and_versions)
 
-        slug_generator_function = generate_slug if pretty_slug else lambda: unicode(uuid.uuid4())
-        while attempts:
-            attempts -= 1
-            slug = slug_generator_function()
-            if utils.REDIS_CLIENT.setnx(slug_key_template.format(slug), query_id):
-                utils.REDIS_CLIENT.expire(slug_key_template.format(slug), ttl)
-                break
+    existing_slug = model.Session.query(DatastoreSlug) \
+        .filter(DatastoreSlug.query_hash == query_hash) \
+        .first()
 
-    # if the version wasn't provided, default it to now
-    if version is None:
-        version = to_timestamp(datetime.now())
-    # add the version filter for the data to the search object
-    search = search.filter(create_version_query(version))
+    if existing_slug is not None:
+        return False, existing_slug
 
-    # prefix the resources to get the index names and add them to the search object
-    search = search.index([utils.prefix_resource(resource_id) for resource_id in resource_ids])
+    while attempts:
+        attempts -= 1
+        new_slug = DatastoreSlug(query_hash=query_hash, query=query, query_version=query_version,
+                                 version=version, resource_ids=resource_ids,
+                                 resource_ids_and_versions=resource_ids_and_versions)
 
-    return search, slug
+        if pretty_slug:
+            new_slug.pretty_slug = u'visual-dark-ant'
+
+        try:
+            new_slug.save()
+            break
+        except IntegrityError:
+            if pretty_slug:
+                # assume this failed because of the pretty slug needing to be unique and try again
+                model.Session.rollback()
+                continue
+            else:
+                # something else has happened here
+                raise
+    else:
+        return False, None
+
+    return True, new_slug
 
 
 def resolve_slug(slug):
     '''
-    Resolves the given slug and returns the query info stored against it.
+    Resolves the given slug and returns it if it's found, otherwise None is returned.
 
     :param slug: the slug
-    :return: a dict of query info or None if the slug couldn't be resolved
+    :return: a DatastoreSlug object or None if the slug couldn't be found
     '''
-    query_id = utils.REDIS_CLIENT.get(u'slug:{}'.format(slug))
-    if query_id:
-        query_info = utils.REDIS_CLIENT.get(u'query:{}'.format(query_id))
-        if query_info is not None:
-            return json.loads(query_info)
-    return None
+    return model.Session.query(DatastoreSlug) \
+        .filter(or_(DatastoreSlug.id == slug, DatastoreSlug.pretty_slug == slug)) \
+        .first()

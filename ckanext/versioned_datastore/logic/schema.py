@@ -215,7 +215,7 @@ def datastore_multisearch_schema():
         u'after': [ignore_missing, list_validator],
         u'size': [ignore_missing, int_validator],
         u'top_resources': [ignore_missing, boolean_validator],
-        u'pretty_slug': [ignore_missing, boolean_validator],
+        u'resource_ids_and_versions': [ignore_missing, json_validator],
     }
 
 
