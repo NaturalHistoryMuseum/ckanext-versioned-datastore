@@ -12,6 +12,7 @@
     },
     "term": {
       "type": "object",
+      "additionalProperties": false,
       "oneOf": [
         {
           "required": [
@@ -58,6 +59,7 @@
         "string_equals": {
           "description": "Term which finds records where at least one of the fields specified has the value given. The check is case-insensitive",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "fields",
             "value"
@@ -74,6 +76,7 @@
         "string_contains": {
           "description": "Term which finds records where at least one of the fields specified has a value that matches the given value. This matching is not a simple equality, nor is it a simple contains check, it is a full-text search which uses stemming and other analysis techniques to match values",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "fields",
             "value"
@@ -96,6 +99,7 @@
         "number_equals": {
           "description": "Term which finds records where at least one of the fields specified has the value given. The equality check is only performed on fields with numbers in them.",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "fields",
             "value"
@@ -112,6 +116,7 @@
         "number_range": {
           "description": "Term which finds records where at least one of the fields specified has a value that falls within the given numerical bounds.",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "fields"
           ],
@@ -150,6 +155,7 @@
         "geo_point": {
           "description": "Term which finds records which are positioned at the given or within a given radius from the point",
           "type": "object",
+          "additionalProperties": false,
           "required": [
             "latitude",
             "longitude"
@@ -193,6 +199,7 @@
         "geo_named_area": {
           "description": "Term which finds records which are positioned within the area defined by the provided name. All names are sourced from [Natural Earth Data](https://www.naturalearthdata.com/).",
           "type": "object",
+          "additionalProperties": false,
           "maxProperties": 1,
           "oneOf": [
             {
@@ -244,6 +251,7 @@
         "exists": {
           "description": "Term which finds records where at least one of the fields specified exists and has a non-`null` value. The `fields` property can be omitted and the `geo_field` property included instead to find records that have geographic data stored with them.",
           "type": "object",
+          "additionalProperties": false,
           "maxProperties": 1,
           "oneOf": [
             {
@@ -289,6 +297,7 @@
         }
       ],
       "type": "object",
+      "additionalProperties": false,
       "properties": {
         "and": {
           "description": "Finds records that meet all of its member's requirements",
@@ -340,6 +349,7 @@
     }
   },
   "type": "object",
+  "additionalProperties": false,
   "properties": {
     "search": {
       "type": "string",
