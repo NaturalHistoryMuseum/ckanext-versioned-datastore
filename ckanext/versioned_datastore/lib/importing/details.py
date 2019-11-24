@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 from ckan import model
 
-from ..model.details import DatastoreResourceDetails
+from ...model.details import DatastoreResourceDetails
 
 
 def create_details(resource_id, version, columns, file_hash=None):
@@ -13,14 +13,15 @@ def create_details(resource_id, version, columns, file_hash=None):
     :param resource_id: the resource id of the ingested resource
     :param version: the version being ingested
     :param columns: the columns present in the ingested resource
+    :param file_hash: the computed file hash of the uploaded data
     :return: the id of the created row
     '''
     columns_str = json.dumps(columns)
-    deets = DatastoreResourceDetails(resource_id=resource_id, version=version, columns=columns_str,
-                                     file_hash=file_hash)
-    deets.add()
-    deets.commit()
-    return deets.id
+    details = DatastoreResourceDetails(resource_id=resource_id, version=version,
+                                       columns=columns_str, file_hash=file_hash)
+    details.add()
+    details.commit()
+    return details.id
 
 
 def get_details(resource_id, version):

@@ -5,11 +5,11 @@ import json
 
 import jsonschema
 import os
-
-from ckanext.versioned_datastore.lib.query import schema_base_path
-from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 from ckantest.models import TestBase
 from nose.tools import assert_equal, assert_raises
+
+from ..lib.query.schema import schema_base_path
+from ..lib.query.v1_0_0 import v1_0_0Schema
 
 
 class TestV1_0_0Translator(TestBase):

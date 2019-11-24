@@ -4,7 +4,7 @@ from ckan.plugins import toolkit
 
 from .importing import import_resource_data, ResourceImportRequest, ResourceDeletionRequest, \
     delete_resource_data
-from .indexing.indexing import index_resource, ResourceIndexRequest
+from .indexing import index_resource, ResourceIndexRequest
 
 
 def ensure_importing_queue_exists():

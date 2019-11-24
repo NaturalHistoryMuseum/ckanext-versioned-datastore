@@ -25,7 +25,7 @@ from .records import DatastoreRecord
 from .utils import download_to_temp_file, compute_hash, InclusionTracker
 from .. import stats
 from ..details import create_details, get_last_file_hash
-from ...model.stats import ImportStats
+from ....model.stats import ImportStats
 
 log = logging.getLogger(__name__)
 

@@ -5,7 +5,8 @@ from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
 from eevee.ingestion.ingesters import Ingester
 from eevee.mongo import get_mongo
 
-from .. import utils, stats
+from .. import stats
+from ... import common
 
 log = logging.getLogger(__name__)
 
@@ -83,7 +84,7 @@ class DeletionFeeder(IngestionFeeder):
 
         :return: yields DeletionRecords
         '''
-        with get_mongo(utils.CONFIG, collection=self.resource_id) as mongo:
+        with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # loop through records in mongo
             for record in mongo.find(projection=[u'id', u'data']):
                 # only delete the record if it hasn't already been deleted
@@ -111,7 +112,7 @@ def delete_resource_data(resource_id, version, start):
     # create a converter object to actually create the updates that are run on the mongo collection
     converter = RecordToMongoConverter(version, start)
     # create an ingester using our deletion feeder and the converter
-    ingester = Ingester(version, feeder, converter, utils.CONFIG)
+    ingester = Ingester(version, feeder, converter, common.CONFIG)
     # setup monitoring on the ingester so that we can update the database with stats about the
     # ingestion as it progresses
     stats.monitor_ingestion(stats_id, ingester)
@@ -155,7 +156,7 @@ class ReplaceDeletionFeeder(IngestionFeeder):
 
         :return: yields DeletionRecords
         '''
-        with get_mongo(utils.CONFIG, collection=self.resource_id) as mongo:
+        with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # this finds all the records that haven't been updated in the given version
             for mongo_doc in mongo.find({u'latest_version': {u'$lt': self.version}}):
                 if not self.tracker.was_included(mongo_doc[u'id']):

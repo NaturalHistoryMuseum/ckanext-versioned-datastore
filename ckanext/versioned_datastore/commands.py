@@ -83,7 +83,7 @@ class VersionedDatastoreCommands(toolkit.CkanCommand):
         for resource_id in resource_ids:
             try:
                 result = toolkit.get_action(u'datastore_reindex')(context,
-                                                                {u'resource_id': resource_id})
+                                                                  {u'resource_id': resource_id})
                 print u'Queued reindex of {} as job {}'.format(resource_id, result[u'job_id'])
             except toolkit.ValidationError as e:
                 print u'Failed to reindex {} due to validation error: {}'.format(resource_id, e)

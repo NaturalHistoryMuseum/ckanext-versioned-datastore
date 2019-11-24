@@ -6,11 +6,11 @@ import six
 import unicodecsv
 import xlrd
 from cchardet import UniversalDetector
-from ckanext.versioned_datastore.lib.ingestion import exceptions
 from openpyxl.cell.read_only import EmptyCell
 
-from . import utils
+from .exceptions import InvalidId
 from .utils import ensure_reset, iter_universal_lines
+from ... import common
 
 
 def get_reader(resource_format):
@@ -22,13 +22,13 @@ def get_reader(resource_format):
     :return: a ResourceReader instance or None
     '''
     resource_format = resource_format.lower()
-    if resource_format in utils.CSV_FORMATS:
+    if resource_format in common.CSV_FORMATS:
         return SVReader(u'excel')
-    if resource_format in utils.TSV_FORMATS:
+    if resource_format in common.TSV_FORMATS:
         return SVReader(u'excel-tab')
-    if resource_format in utils.XLS_FORMATS:
+    if resource_format in common.XLS_FORMATS:
         return XLSReader()
-    if resource_format in utils.XLSX_FORMATS:
+    if resource_format in common.XLSX_FORMATS:
         return XLSXReader()
 
     return None
@@ -90,7 +90,7 @@ class ResourceReader(object):
                 try:
                     row[u'_id'] = int(row[u'_id'])
                 except ValueError as e:
-                    raise exceptions.InvalidId(row_number, row, cause=e)
+                    raise InvalidId(row_number, row, cause=e)
             yield row
 
 

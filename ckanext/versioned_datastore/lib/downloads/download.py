@@ -18,7 +18,8 @@ from elasticsearch_dsl import Search
 from .jsonl import jsonl_writer
 from .sv import sv_writer
 from .utils import calculate_field_counts
-from .. import utils
+from .. import common
+from ..datastore_utils import trim_index_name, prefix_resource
 from ..query.slugs import generate_query_hash
 
 format_registry = {
@@ -100,7 +101,7 @@ def download(request):
 
     :param request: the DownloadRequest object, see that for parameter details
     '''
-    es_client = get_elasticsearch_client(utils.CONFIG, sniff_on_start=True, sniffer_timeout=60,
+    es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True, sniffer_timeout=60,
                                          sniff_on_connection_fail=True, sniff_timeout=10,
                                          http_compress=False)
     target_dir = tempfile.mkdtemp()
@@ -126,14 +127,14 @@ def download(request):
             # have to use the multisearch endpoint on es and that doesn't support the scroll api
             for resource_id, version in request.resource_ids_and_versions.items():
                 search = Search.from_dict(request.search) \
-                    .index(utils.prefix_resource(resource_id)) \
+                    .index(prefix_resource(resource_id)) \
                     .using(es_client) \
                     .filter(create_version_query(version))
 
                 total_records = 0
                 for hit in search.scan():
                     data = hit.data.to_dict()
-                    resource_id = utils.trim_index_name(hit.meta.index)
+                    resource_id = trim_index_name(hit.meta.index)
                     # call the write function returned by our format specific writer context manager
                     writer(hit, data, resource_id)
                     total_records += 1

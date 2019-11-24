@@ -3,7 +3,8 @@ from collections import defaultdict
 
 import os
 import unicodecsv
-from ckanext.versioned_datastore.lib.downloads.utils import get_fields
+
+from .utils import get_fields
 
 
 def flatten_dict(data, path=None, separator=u' | '):

@@ -4,10 +4,10 @@
 # This file is part of ckanext-versioned-datastore
 # Created by the Natural History Museum in London, UK
 
+from ckan.plugins import toolkit
 from flask import Blueprint
 
-from ckan.plugins import toolkit
-from ..lib.stats import get_all_stats
+from ..lib.importing.stats import get_all_stats
 
 blueprint = Blueprint(name=u'datastore', import_name=__name__, url_prefix=u'')
 

@@ -1,12 +1,13 @@
 import json
 
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.geo import add_point_filter, FIELD, add_multipolygon_filter, \
-    add_polygon_filter, add_geo_search
 from ckantest.models import TestBase
 from elasticsearch_dsl.query import GeoPolygon, Bool
 from mock import MagicMock, call, patch
 from nose.tools import assert_equals, assert_raises
+
+from ..lib.basic_query.geo import add_point_filter, FIELD, add_multipolygon_filter, \
+    add_polygon_filter, add_geo_search
 
 
 class TestAddPointFilter(TestBase):
@@ -141,7 +142,7 @@ class TestAddPolygonFilter(TestBase):
         coordinates = [[[u'-16', u'44'], [u'-13.1', u'34.8'], [u'15.99', u'35'], [u'5', u'49']]]
         mock_add_multipolygon_filter = MagicMock()
 
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_multipolygon_filter',
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
                    mock_add_multipolygon_filter):
             add_polygon_filter(search, coordinates)
 
@@ -160,7 +161,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_point_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
             add_geo_search(search, geo_filter)
 
         assert_equals(add_mock.call_count, 1)
@@ -177,7 +178,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_point_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert_equals(add_mock.call_count, 1)
@@ -209,7 +210,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_multipolygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter', add_mock):
             add_geo_search(search, geo_filter)
 
         assert_equals(add_mock.call_count, 1)
@@ -224,7 +225,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_multipolygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter', add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert_equals(add_mock.call_count, 1)
@@ -247,7 +248,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_polygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
             add_geo_search(search, geo_filter)
 
         assert_equals(add_mock.call_count, 1)
@@ -262,7 +263,7 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.geo.add_polygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert_equals(add_mock.call_count, 1)

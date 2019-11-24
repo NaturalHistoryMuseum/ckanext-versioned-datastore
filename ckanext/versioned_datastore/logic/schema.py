@@ -10,7 +10,6 @@ int_validator = toolkit.get_validator(u'int_validator')
 not_missing = toolkit.get_validator(u'not_missing')
 not_empty = toolkit.get_validator(u'not_empty')
 resource_id_exists = toolkit.get_validator(u'resource_id_exists')
-OneOf = toolkit.get_validator(u'OneOf')
 email_validator = toolkit.get_validator(u'email_validator')
 
 
@@ -78,13 +77,7 @@ def list_validator(value, context):
         raise toolkit.Invalid(u'Value must be a list')
 
 
-def datastore_search_schema():
-    '''
-    Returns the schema for the datastore_search action. This is based on the datastore_search from
-    the core ckanext-datastore extension, with some parameters removed and others added.
-
-    :return: a dict
-    '''
+def datastore_search():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'q': [ignore_missing, unicode_or_json_validator],
@@ -106,45 +99,36 @@ def datastore_search_schema():
     }
 
 
-def datastore_create_schema():
+def datastore_create():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
 
 
-def datastore_upsert_schema():
+def datastore_upsert():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'replace': [not_missing, boolean_validator],
         u'version': [ignore_missing, int_validator],
+        # u'records': [ignore_missing, list_of_dicts_validator],
     }
 
 
-def datastore_delete_schema():
+def datastore_delete():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
         u'version': [ignore_missing, int_validator],
     }
 
 
-def datastore_get_record_versions_schema():
-    """
-    Returns the schema for the datastore_get_record_versions action.
-
-    :return: a dict
-    """
+def datastore_get_record_versions():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'id': [not_empty, int],
     }
 
 
-def datastore_autocomplete_schema():
-    """
-    Returns the schema for the datastore_autocomplete action.
-
-    :return: a dict
-    """
+def datastore_autocomplete():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'q': [ignore_missing, unicode_or_json_validator],
@@ -159,34 +143,19 @@ def datastore_autocomplete_schema():
 
 
 def datastore_reindex():
-    """
-    Returns the schema for the datastore_reindex action.
-
-    :return: a dict
-    """
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
     }
 
 
-def datastore_get_rounded_version_schema():
-    """
-    Returns the schema for the datastore_get_rounded_version action.
-
-    :return: a dict
-    """
+def datastore_get_rounded_version():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'version': [ignore_missing, int_validator],
     }
 
 
-def datastore_search_raw_schema():
-    """
-    Returns the schema for the datastore_search_raw action.
-
-    :return: a dict
-    """
+def datastore_search_raw():
     return {
         u'resource_id': [not_empty, unicode, resource_id_exists],
         u'search': [ignore_missing, json_validator],
@@ -196,18 +165,13 @@ def datastore_search_raw_schema():
     }
 
 
-def datastore_ensure_privacy_schema():
-    '''
-    Returns the schema for the datastore_ensure_privacy action.
-
-    :return: a dict
-    '''
+def datastore_ensure_privacy():
     return {
         u'resource_id': [ignore_missing, unicode, resource_id_exists],
     }
 
 
-def datastore_multisearch_schema():
+def datastore_multisearch():
     return {
         u'query': [ignore_missing, json_validator],
         u'version': [ignore_missing, int_validator],
@@ -220,7 +184,7 @@ def datastore_multisearch_schema():
     }
 
 
-def datastore_field_autocomplete_schema():
+def datastore_field_autocomplete():
     return {
         u'text': [ignore_missing, unicode],
         u'resource_ids': [ignore_missing, list_of_strings()],

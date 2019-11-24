@@ -1,6 +1,7 @@
-from ckanext.versioned_datastore.lib.ingestion.records import DatastoreRecord
 from mock import MagicMock
 from nose.tools import assert_equal
+
+from ..lib.importing.ingestion.records import DatastoreRecord
 
 
 def test_convert_empty():

@@ -7,11 +7,14 @@ from eevee.utils import to_timestamp
 
 from . import routes, helpers
 from .interfaces import IVersionedDatastoreQuerySchema
-from .lib import utils
+from .lib.common import setup
+from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
+    InvalidVersionException, update_resources_privacy
 from .lib.query.schema import register_schema
 from .lib.query.v1_0_0 import v1_0_0Schema
-from .lib.utils import is_datastore_resource, setup
-from .logic import action, auth
+from .logic import auth
+from .logic.actions import basic_search, crud, downloads, extras, multisearch
+from .logic.actions.utils import create_actions
 
 log = logging.getLogger(__name__)
 
@@ -29,25 +32,7 @@ class VersionedSearchPlugin(SingletonPlugin):
 
     # IActions
     def get_actions(self):
-        return {
-            u'datastore_create': action.datastore_create,
-            u'datastore_upsert': action.datastore_upsert,
-            u'datastore_delete': action.datastore_delete,
-            u'datastore_search': action.datastore_search,
-            u'datastore_get_record_versions': action.datastore_get_record_versions,
-            u'datastore_get_resource_versions': action.datastore_get_resource_versions,
-            u'datastore_autocomplete': action.datastore_autocomplete,
-            u'datastore_reindex': action.datastore_reindex,
-            u'datastore_query_extent': action.datastore_query_extent,
-            u'datastore_get_rounded_version': action.datastore_get_rounded_version,
-            u'datastore_search_raw': action.datastore_search_raw,
-            u'datastore_ensure_privacy': action.datastore_ensure_privacy,
-            u'datastore_multisearch': action.datastore_multisearch,
-            u'datastore_field_autocomplete': action.datastore_field_autocomplete,
-            u'datastore_create_slug': action.datastore_create_slug,
-            u'datastore_resolve_slug': action.datastore_resolve_slug,
-            u'datastore_queue_download': action.datastore_queue_download,
-        }
+        return create_actions(basic_search, crud, downloads, extras, multisearch)
 
     # IAuthFunctions
     def get_auth_functions(self):
@@ -106,7 +91,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
             # if a package is the target entity and it's been changed ensure the privacy is applied
             # correctly to its resource indexes
-            utils.update_resources_privacy(entity)
+            update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
             data_dict = {u'resource_id': entity.id}
@@ -130,7 +115,7 @@ class VersionedSearchPlugin(SingletonPlugin):
                     data_dict[u'replace'] = True
                     try:
                         toolkit.get_action(u'datastore_upsert')(context, data_dict)
-                    except (utils.ReadOnlyResourceException, utils.InvalidVersionException):
+                    except (ReadOnlyResourceException, InvalidVersionException):
                         # this is fine, just swallow
                         pass
 

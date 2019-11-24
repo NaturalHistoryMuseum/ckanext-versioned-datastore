@@ -2,31 +2,14 @@ import logging
 
 from datetime import datetime
 
-from . import utils
-from .indexing.indexing import ResourceIndexRequest, index_resource
+from .indexing import ResourceIndexRequest, index_resource
 from .ingestion import deletion
 from .ingestion.ingesting import ingest_resource
-from .stats import get_last_ingest
+from .utils import check_version_is_valid
+from .. import common
+from ..datastore_utils import get_latest_version
 
 log = logging.getLogger(__name__)
-
-
-def check_version_is_valid(resource_id, version):
-    '''
-    Checks that the given version is valid for the given resource id. Note that we check the ingest
-    version not the indexed version as this is the source of truth about the versions of the
-    resource we know about.
-
-    The version must be greater than the latest ingested version or there must not be any ingested
-    versions available.
-
-    :param resource_id: the resource's id
-    :param version: the version to check
-    '''
-    # retrieve the latest ingested version
-    ingest_version = get_last_ingest(resource_id)
-    # if there is a current version of the resource data the proposed version must be newer
-    return ingest_version is None or version > ingest_version.version
 
 
 class ResourceImportRequest(object):
@@ -89,11 +72,11 @@ def import_resource_data(request):
                                                                  request.version))
 
     # ingest the resource into mongo
-    did_ingest = ingest_resource(request.version, utils.CONFIG, request.resource, request.records,
+    did_ingest = ingest_resource(request.version, common.CONFIG, request.resource, request.records,
                                  request.replace, request.api_key)
     if did_ingest:
         # find out what the latest version in the index is
-        latest_index_version = utils.get_latest_version(request.resource_id)
+        latest_index_version = get_latest_version(request.resource_id)
 
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version
@@ -158,7 +141,7 @@ def delete_resource_data(request):
     did_delete = deletion.delete_resource_data(request.resource_id, request.version, start)
     if did_delete:
         # find out what the latest version in the index is
-        latest_index_version = utils.get_latest_version(request.resource_id)
+        latest_index_version = get_latest_version(request.resource_id)
 
         # index the resource from mongo into elasticsearch. This will only index the records that
         # have changed between the latest index version and the newly ingested version

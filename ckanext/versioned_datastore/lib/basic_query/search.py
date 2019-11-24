@@ -1,13 +1,10 @@
-import copy
-
 import operator
 from ckan.plugins import PluginImplementations
 from elasticsearch_dsl import Search
 
 from .geo import add_geo_search
-from ..utils import validate, prefix_field
+from ..datastore_utils import prefix_field
 from ...interfaces import IVersionedDatastore
-from ...logic.schema import datastore_search_schema
 
 
 def _find_version(data_dict):
@@ -42,7 +39,7 @@ def _find_version(data_dict):
     return None
 
 
-def create_search(context, data_dict):
+def create_search(context, data_dict, original_data_dict):
     '''
     Create the search object based on the parameters in the data_dict. This function will call
     plugins that implement the datastore_modify_data_dict and datastore_modify_search interface
@@ -54,13 +51,6 @@ def create_search(context, data_dict):
                                    data_dict after modification by other plugins and finally the
                                    elasticsearch-dsl Search object
     '''
-    # make a copy of the data dict so that we can pass it to the various plugin interface
-    # implementor functions
-    original_data_dict = copy.deepcopy(data_dict)
-
-    # validate the data dict against our schema
-    data_dict = validate(context, data_dict, datastore_search_schema())
-
     # allow other extensions implementing our interface to modify the data_dict
     for plugin in PluginImplementations(IVersionedDatastore):
         data_dict = plugin.datastore_modify_data_dict(context, data_dict)

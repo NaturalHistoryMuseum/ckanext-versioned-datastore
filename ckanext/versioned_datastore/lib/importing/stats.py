@@ -4,7 +4,7 @@ from ckan import model
 from datetime import datetime
 from sqlalchemy import desc
 
-from ..model.stats import ImportStats
+from ...model.stats import ImportStats
 
 PREP = u'prep'
 INGEST = u'ingest'
@@ -80,6 +80,7 @@ def monitor_ingestion(stats_id, ingester):
     :param stats_id: the database id of the object to update
     :param ingester: the Ingester object to monitor
     '''
+
     @ingester.totals_signal.connect_via(ingester)
     def on_ingest(_sender, total, inserted, updated):
         # this function is called each time a batch of records is ingested from the feeder into
@@ -107,6 +108,7 @@ def monitor_indexing(stats_id, indexer, update_frequency=1000):
                              low will cause the database written to a lot which could cause
                              performance issues.
     '''
+
     @indexer.index_signal.connect_via(indexer)
     def update_progress(_sender, indexing_stats, **kwargs):
         # this function is called each time a record is queued to be indexed into elasticsearch.

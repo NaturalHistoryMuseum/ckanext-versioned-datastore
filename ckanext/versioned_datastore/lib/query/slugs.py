@@ -9,7 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .schema import validate_query
 from .slug_words import adjectives, animals
-from .. import utils
+from .utils import get_available_datastore_resources
 from ...model.slugs import DatastoreSlug
 
 
@@ -82,7 +82,7 @@ def create_slug(context, query, query_version, version=None, resource_ids=None,
     validate_query(query, query_version)
 
     if resource_ids:
-        resource_ids = list(utils.get_available_datastore_resources(context, resource_ids))
+        resource_ids = list(get_available_datastore_resources(context, resource_ids))
         if not resource_ids:
             raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 

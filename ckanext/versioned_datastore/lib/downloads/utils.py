@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from ckanext.versioned_datastore.lib import utils
+from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search, MultiSearch
 
@@ -46,7 +46,7 @@ def calculate_field_counts(request, es_client):
     '''
     field_counts = defaultdict(dict)
     for resource_id, version in request.resource_ids_and_versions.items():
-        index_name = utils.prefix_resource(resource_id)
+        index_name = prefix_resource(resource_id)
         # get the base field mapping for the index so that we know which fields to look up, this
         # will get all fields from all versions and therefore isn't usable straight off the bat, we
         # have to then go and see which fields are present in the search at this version
@@ -62,11 +62,11 @@ def calculate_field_counts(request, es_client):
             .filter(create_version_query(version))
 
         # get all the fields names and use dot notation for nested fields
-        fields = [u'.'.join(parts) for parts, _config in utils.iter_data_fields(mapping)]
+        fields = [u'.'.join(parts) for parts, _config in iter_data_fields(mapping)]
         for field in fields:
             # add a search which finds the documents that have a value for the given field at the
             # right version
-            search = search.add(base_search.filter(u'exists', field=utils.prefix_field(field)))
+            search = search.add(base_search.filter(u'exists', field=prefix_field(field)))
 
         responses = search.execute()
         for field, response in zip(fields, responses):

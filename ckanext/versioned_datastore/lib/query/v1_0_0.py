@@ -8,7 +8,7 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Bool, Q
 
 from .schema import Schema, load_core_schema, schema_base_path
-from ..utils import prefix_field
+from ..datastore_utils import prefix_field
 
 
 class v1_0_0Schema(Schema):

@@ -7,7 +7,8 @@ from eevee.indexing.indexers import Indexer
 from eevee.indexing.indexes import Index
 from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
 
-from .. import stats, utils
+from . import stats
+from .. import common
 from ...interfaces import IVersionedDatastore
 
 log = logging.getLogger(__name__)
@@ -155,14 +156,14 @@ def index_resource(request):
                                                                  request.upper_version))
 
     # create an index feeder, this gets the records out of MongoDB and presents them for indexing
-    feeder = SimpleIndexFeeder(utils.CONFIG, resource_id, request.lower_version,
+    feeder = SimpleIndexFeeder(common.CONFIG, resource_id, request.lower_version,
                                request.upper_version)
     # create the index object which will process the documents from the feeder
-    index = DatastoreIndex(utils.CONFIG, resource_id, request.upper_version,
+    index = DatastoreIndex(common.CONFIG, resource_id, request.upper_version,
                            latitude_field=request.resource.get(u'_latitude_field', None),
                            longitude_field=request.resource.get(u'_longitude_field', None))
     # create an indexer object to do the indexing
-    indexer = Indexer(request.upper_version, utils.CONFIG, [(feeder, index)])
+    indexer = Indexer(request.upper_version, common.CONFIG, [(feeder, index)])
 
     # create a stats entry so that progress can be tracked
     stats_id = stats.start_operation(resource_id, stats.INDEX, request.upper_version, indexer.start)
