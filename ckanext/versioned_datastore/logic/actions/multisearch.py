@@ -67,8 +67,8 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
 
     # figure out which resources we're searching
     resource_ids, skipped_resource_ids = determine_resources_to_search(context,
-                                                                       resource_ids_and_versions,
-                                                                       resource_ids)
+                                                                       resource_ids,
+                                                                       resource_ids_and_versions)
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
