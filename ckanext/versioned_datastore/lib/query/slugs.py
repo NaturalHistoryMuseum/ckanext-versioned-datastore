@@ -103,7 +103,7 @@ def create_slug(context, query, query_version, version=None, resource_ids=None,
                                  resource_ids_and_versions=resource_ids_and_versions)
 
         if pretty_slug:
-            new_slug.pretty_slug = u'visual-dark-ant'
+            new_slug.pretty_slug = generate_pretty_slug()
 
         try:
             new_slug.save()

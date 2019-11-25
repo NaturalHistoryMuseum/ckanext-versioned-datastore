@@ -3,3 +3,6 @@
 .noseids
 .pytest_cache
 .coverage
+build/
+
+dist/
