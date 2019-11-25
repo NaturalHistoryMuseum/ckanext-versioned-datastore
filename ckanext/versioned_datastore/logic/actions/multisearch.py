@@ -16,7 +16,8 @@ from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fi
 from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
     validate_query, translate_query
 from ...lib.query.slugs import create_slug, resolve_slug
-from ...lib.query.utils import get_available_datastore_resources
+from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
+    determine_version_filter, calculate_after
 
 
 @action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
@@ -64,37 +65,16 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
-    # validate the resource_ids passed in. If the resource_ids_and_versions parameter is in use then
-    # it is taken as the resource_ids source and resource_ids is ignored
-    if resource_ids_and_versions:
-        requested_resource_ids = list(resource_ids_and_versions.keys())
-    else:
-        requested_resource_ids = resource_ids
-    # this will return the subset of the requested resource ids that the user can search over
-    resource_ids = get_available_datastore_resources(context, requested_resource_ids)
+    # figure out which resources we're searching
+    resource_ids, skipped_resource_ids = determine_resources_to_search(context,
+                                                                       resource_ids_and_versions,
+                                                                       resource_ids)
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
-    # add the appropriate version filter to the search
-    if not resource_ids_and_versions:
-        # default the version to now if necessary
-        if version is None:
-            version = to_timestamp(datetime.now())
-        # just use a single version filter if we don't have any resource specific versions
-        search = search.filter(create_version_query(version))
-    else:
-        # run through the resource specific versions provided and ensure they're rounded down
-        indexes_and_versions = {}
-        for resource_id in resource_ids:
-            target_version = resource_ids_and_versions[resource_id]
-            if target_version is None:
-                raise toolkit.ValidationError(u"Valid version not given for {}".format(resource_id))
-            index = prefix_resource(resource_id)
-            rounded_version = common.SEARCH_HELPER.get_rounded_versions([index],
-                                                                        target_version)[index]
-            indexes_and_versions[index] = rounded_version
-
-        search = search.filter(create_index_specific_version_filter(indexes_and_versions))
+    # add the version filter necessary given the parameters and the resources we're searching
+    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    search = search.filter(version_filter)
 
     # add a simple default sort to ensure we get an after value for pagination. We use a combination
     # of the id of the record and the index it's in so that we get a unique sort
@@ -116,15 +96,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
 
-    # work out if there are any more results after this page of results or not
-    if len(result.hits) > size:
-        # there are more results, trim off the last hit as it wasn't requested
-        hits = result.hits[:-1]
-        next_after = get_last_after(hits)
-    else:
-        # there are no more results beyond the ones we're going to pass back
-        next_after = None
-        hits = result.hits
+    hits, next_after = calculate_after(result, size)
 
     response = {
         u'total': result.hits.total,
@@ -135,8 +107,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
             # don't find the id in the map
             u'resource': trim_index_name(hit.meta.index),
         } for hit in hits],
-        # note that resource_ids is a set and therefore the in check is speedy
-        u'skipped_resources': [rid for rid in requested_resource_ids if rid not in resource_ids],
+        u'skipped_resources': skipped_resource_ids,
     }
 
     if top_resources:

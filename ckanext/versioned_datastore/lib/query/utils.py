@@ -1,8 +1,12 @@
 from ckan import model
 from ckan.plugins import toolkit
+from datetime import datetime
+from eevee.search import create_version_query, create_index_specific_version_filter
+from eevee.utils import to_timestamp
 from elasticsearch_dsl import Search
 
 from .. import common
+from ..datastore_utils import prefix_resource, get_last_after
 
 
 def get_available_datastore_resources(context, only=None):
@@ -70,3 +74,82 @@ def get_available_datastore_resources(context, only=None):
             continue
 
     return resource_ids
+
+
+def determine_resources_to_search(context, resource_ids=None, resource_ids_and_versions=None):
+    '''
+    Determines the resources to search from the given parameters. The set of resource ids returned
+    contains only the resources that the user has access to (this is determined using the context)
+    and are datastore active. If resource ids are provided through either the resource_ids or
+    resource_ids_and_versions parameters then only these resource ids will be returned, if indeed
+    they are accessible to the user.
+
+    :param context: the context dict allowing us to determine the user and do auth on the resources
+    :param resource_ids: a list of resources to search
+    :param resource_ids_and_versions: a dict of resources and versions to search at
+    :return: 2-tuple containing a list of resource ids to search and a list of resource ids that
+             have been skipped because the user doesn't have access to them or they aren't datastore
+             resources
+    '''
+    # validate the resource_ids passed in. If the resource_ids_and_versions parameter is in use then
+    # it is taken as the resource_ids source and resource_ids is ignored
+    if resource_ids_and_versions:
+        requested_resource_ids = list(resource_ids_and_versions.keys())
+    else:
+        requested_resource_ids = resource_ids
+    # this will return the subset of the requested resource ids that the user can search over
+    resource_ids = get_available_datastore_resources(context, requested_resource_ids)
+
+    return list(resource_ids), [rid for rid in requested_resource_ids if rid not in resource_ids]
+
+
+def determine_version_filter(version=None, resource_ids=None, resource_ids_and_versions=None):
+    '''
+    Determine and return the elasticsearch-dsl filter which can filter on the version extracted from
+    the given parameters.
+
+    :param version: the version to filter on across all resources
+    :param resource_ids: the resource to search
+    :param resource_ids_and_versions: a dict of resource ids -> versions providing resource specific
+                                      versions for search
+    :return: an elasticsearch-dsl object
+    '''
+    if not resource_ids_and_versions:
+        # default the version to now if necessary
+        if version is None:
+            version = to_timestamp(datetime.now())
+        # just use a single version filter if we don't have any resource specific versions
+        return create_version_query(version)
+    else:
+        # run through the resource specific versions provided and ensure they're rounded down
+        indexes_and_versions = {}
+        for resource_id in resource_ids:
+            target_version = resource_ids_and_versions[resource_id]
+            if target_version is None:
+                raise toolkit.ValidationError(u"Valid version not given for {}".format(resource_id))
+            index = prefix_resource(resource_id)
+            rounded_version = common.SEARCH_HELPER.get_rounded_versions([index],
+                                                                        target_version)[index]
+            indexes_and_versions[index] = rounded_version
+
+        return create_index_specific_version_filter(indexes_and_versions)
+
+
+def calculate_after(result, size):
+    '''
+    Calculate the after value for the given search result. It is assumed that the size used when the
+    search was completed is 1 larger than the size passed as a parameter to this function.
+
+    :param result: the elasticsearch result object
+    :param size: the number of results
+    :return: a 2-tuple containing the list of hits and the next after value
+    '''
+    if len(result.hits) > size:
+        # there are more results, trim off the last hit as it wasn't requested
+        hits = result.hits[:-1]
+        next_after = get_last_after(hits)
+    else:
+        # there are no more results beyond the ones we're going to pass back
+        next_after = None
+        hits = result.hits
+    return hits, next_after
