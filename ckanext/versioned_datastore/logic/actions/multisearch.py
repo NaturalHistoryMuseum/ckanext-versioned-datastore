@@ -85,6 +85,8 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     # add the size parameter. We pass the requested size + 1 to allow us to determine if the results
     # we find represent the last page of results or not
     search = search.extra(size=size + 1)
+    # add the resource indexes we're searching on
+    search = search.index([prefix_resource(resource_id) for resource_id in resource_ids])
 
     if top_resources:
         # gather the number of hits in the top 10 most frequently represented indexes if requested
