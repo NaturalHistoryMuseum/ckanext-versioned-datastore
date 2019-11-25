@@ -4,9 +4,9 @@ import random
 import dicthash
 from ckan import model
 from ckan.plugins import toolkit
-from sqlalchemy import or_
 from sqlalchemy.exc import IntegrityError
 
+from .schema import get_latest_query_version
 from .schema import validate_query
 from .slug_words import adjectives, animals
 from .utils import get_available_datastore_resources
@@ -129,6 +129,82 @@ def resolve_slug(slug):
     :param slug: the slug
     :return: a DatastoreSlug object or None if the slug couldn't be found
     '''
-    return model.Session.query(DatastoreSlug) \
-        .filter(or_(DatastoreSlug.id == slug, DatastoreSlug.pretty_slug == slug)) \
-        .first()
+    return model.Session.query(DatastoreSlug).filter(DatastoreSlug.on_slug(slug)).first()
+
+
+class DuplicateSlugException(Exception):
+    pass
+
+
+def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=None,
+                 resource_ids=None, resource_ids_and_versions=None):
+    '''
+    This function can be used to reserve a slug using a specific string. This should probably only
+    be called during this extension's initialisation via the datastore_reserve_slugs interface
+    function.
+
+    If a slug already exists in the database with the same reserved pretty slug and the same
+    query parameters then nothing happens.
+
+    If a slug already exists in the database with the same reserved pretty slug but a different
+    set of query parameters then a DuplicateSlugException is raised.
+
+    If a slug already exists in the database with the same query parameters but no reserved
+    pretty slug then the reserved pretty slug is added to the slug.
+
+    :param reserved_pretty_slug: the slug string to reserve
+    :param query: the query dict
+    :param query_version: the query schema version
+    :param version: the version of the data
+    :param resource_ids: the resource ids to search
+    :param resource_ids_and_versions: the resources ids and specific versions for each to search
+    :return: a DatastoreSlug object that has either been found (if it already existed), created (if
+             no slug existed) or updated (if a slug existed for the query parameters, but no
+             reserved query string was associated with it).
+    '''
+    # default some parameters and then assert they are all the right types. We do this because if
+    # there are problems they're going to be reported back to the developer not the user
+    if query is None:
+        query = {}
+    if query_version is None:
+        query_version = get_latest_query_version()
+    assert isinstance(query, dict)
+    assert isinstance(query_version, basestring)
+    if version is not None:
+        assert isinstance(version, int)
+    if resource_ids is not None:
+        assert isinstance(resource_ids, list)
+    if resource_ids_and_versions is not None:
+        assert isinstance(resource_ids_and_versions, dict)
+
+    slug = resolve_slug(reserved_pretty_slug)
+    if slug is not None:
+        # a slug with this reserved pretty slug already exists
+        return slug
+    else:
+        # there is no slug associated with this reserved pretty slug so let's see if there's a slug
+        # using the query parameters
+        query_hash = generate_query_hash(query, query_version, version, resource_ids,
+                                         resource_ids_and_versions)
+        slug = model.Session.query(DatastoreSlug).filter(
+            DatastoreSlug.query_hash == query_hash).first()
+        if slug is None:
+            # we need to make a new slug
+            context = {u'ignore_auth': True}
+            success, slug = create_slug(context, query, query_version, version, resource_ids,
+                                        resource_ids_and_versions, pretty_slug=False)
+            if not success:
+                # this should never really happen
+                raise Exception(u'Failed to create new reserved slug')
+            slug.reserved_pretty_slug = reserved_pretty_slug
+            slug.save()
+            return slug
+        else:
+            # see if we can update the slug that already exists
+            if slug.reserved_pretty_slug is None:
+                slug.reserved_pretty_slug = reserved_pretty_slug
+                slug.save()
+                return slug
+            else:
+                raise DuplicateSlugException(u'The query parameters are already associated with a '
+                                             u'different slug: {}'.format(slug.get_slug_string()))

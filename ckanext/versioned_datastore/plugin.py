@@ -6,11 +6,12 @@ from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, Plugi
 from eevee.utils import to_timestamp
 
 from . import routes, helpers
-from .interfaces import IVersionedDatastoreQuerySchema
+from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
 from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
     InvalidVersionException, update_resources_privacy
 from .lib.query.schema import register_schema
+from .lib.query.slugs import reserve_slug
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .logic import auth
 from .logic.actions import basic_search, crud, downloads, extras, multisearch
@@ -139,6 +140,11 @@ class VersionedSearchPlugin(SingletonPlugin):
         for plugin in PluginImplementations(IVersionedDatastoreQuerySchema):
             for version, schema in plugin.get_query_schemas():
                 register_schema(version, schema)
+
+        # reserve any requested slugs
+        for plugin in PluginImplementations(IVersionedDatastore):
+            for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+                reserve_slug(reserved_pretty_slug, **query_parameters)
 
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):

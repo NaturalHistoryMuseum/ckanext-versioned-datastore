@@ -160,6 +160,30 @@ class IVersionedDatastore(interfaces.Interface):
         '''
         pass
 
+    def datastore_reserve_slugs(self):
+        '''
+        Allows implementors to reserve queries using reserved pretty slugs. Implementors should
+        return a dict made up of reserved pretty slugs as keys and then the slug parameters as the
+        values. These values should be another dict containing the following optional keys:
+
+            - query, a dict query (defaults to {})
+            - query_version, the query schema version (defaults to the latest query schema version)
+            - version, the version of the data to search at (defaults to None)
+            - resource_ids, a list of resource ids to search (defaults to all resource ids)
+            - resource_ids_and_versions, a dict of resource ids and specific versions to search at
+                                         (defaults to an empty dict)
+
+        If a slug already exists in the database with the same reserved pretty slug and the same
+        query parameters then nothing happens.
+
+        If a slug already exists in the database with the same reserved pretty slug but a different
+        set of query parameters then a DuplicateSlugException is raised.
+
+        If a slug already exists in the database with the same query parameters but no reserved
+        pretty slug then the reserved pretty slug is added to the slug.
+        '''
+        pass
+
 
 class IVersionedDatastoreQuerySchema(interfaces.Interface):
 

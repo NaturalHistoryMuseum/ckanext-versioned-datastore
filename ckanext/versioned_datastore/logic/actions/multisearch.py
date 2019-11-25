@@ -192,7 +192,7 @@ def datastore_create_slug(context, query=None, query_version=None, version=None,
         raise toolkit.ValidationError(u'Failed to generate new slug')
 
     return {
-        u'slug': slug.pretty_slug if pretty_slug else slug.id,
+        u'slug': slug.get_slug_string(),
         u'is_new': is_new,
     }
 
