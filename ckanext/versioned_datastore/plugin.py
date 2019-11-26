@@ -4,6 +4,7 @@ from ckan import model
 from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from eevee.utils import to_timestamp
+from sqlalchemy.exc import ProgrammingError
 
 from . import routes, helpers
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
@@ -11,7 +12,6 @@ from .lib.common import setup
 from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
     InvalidVersionException, update_resources_privacy
 from .lib.query.schema import register_schema
-from .lib.query.slugs import reserve_slug
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .logic import auth
 from .logic.actions import basic_search, crud, downloads, extras, multisearch
@@ -142,9 +142,13 @@ class VersionedSearchPlugin(SingletonPlugin):
                 register_schema(version, schema)
 
         # reserve any requested slugs
-        for plugin in PluginImplementations(IVersionedDatastore):
-            for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
-                reserve_slug(reserved_pretty_slug, **query_parameters)
+        try:
+            from .lib.query.slugs import reserve_slug
+            for plugin in PluginImplementations(IVersionedDatastore):
+                for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+                    reserve_slug(reserved_pretty_slug, **query_parameters)
+        except ProgrammingError:
+            pass
 
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):
