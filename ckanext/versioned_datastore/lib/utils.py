@@ -1,16 +1,11 @@
-import tempfile
-from contextlib import contextmanager, closing
-
-import requests
+from ckan import model
+from ckan.plugins import toolkit, PluginImplementations
+from ckanext.versioned_datastore.interfaces import IVersionedDatastore
+from ckanext.versioned_datastore.lib.details import get_all_details
 from eevee.config import Config
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search.search import Searcher
 from elasticsearch_dsl import Search, MultiSearch
-
-from ckan import plugins, model
-from ckan.lib.navl import dictization_functions
-from ckanext.versioned_datastore.interfaces import IVersionedDatastore
-from ckanext.versioned_datastore.lib.details import get_all_details
 
 # if the resource has been side loaded into the datastore then this should be its URL
 DATASTORE_ONLY_RESOURCE = u'_datastore_only_resource'
@@ -73,9 +68,9 @@ def validate(context, data_dict, default_schema):
     :param default_schema: the default schema to use if the context doesn't have one
     '''
     schema = context.get(u'schema', default_schema)
-    data_dict, errors = dictization_functions.validate(data_dict, schema, context)
+    data_dict, errors = toolkit.navl_validate(data_dict, schema, context)
     if errors:
-        raise plugins.toolkit.ValidationError(errors)
+        raise toolkit.ValidationError(errors)
     return data_dict
 
 
@@ -284,41 +279,19 @@ def is_ingestible(resource):
     Returns True if the resource can be ingested into the datastore and False if not. To be
     ingestible the resource must either be a datastore only resource (signified by the url being
     set to _datastore_only_resource) or have a format that we can ingest (the format field on the
-    resource is used for this, not the URL).
+    resource is used for this, not the URL). If the url is None, False is returned. This is technically
+    not possible due to a Resource model constraint but it's worth covering off anyway.
 
     :param resource: the resource dict
     :return: True if it is, False if not
     """
+    if resource.get(u'url', None) is None:
+        return False
+
     resource_format = resource.get(u'format', None)
     return (is_datastore_only_resource(resource[u'url']) or
-            (resource_format is not None and resource_format.lower() in ALL_FORMATS))
-
-
-@contextmanager
-def download_to_temp_file(url, headers=None):
-    """
-    Streams the data from the given URL and saves it in a temporary file. The (named) temporary file
-    is then yielded to the caller for use. Once the context collapses the temporary file is removed.
-
-    :param url: the url to stream the data from
-    :param headers: a dict of headers to pass with the request
-    """
-    headers = headers if headers else {}
-    # open up the url for streaming
-    with closing(requests.get(url, stream=True, headers=headers)) as r:
-        # check that we got a response we can use!
-        r.raise_for_status()
-        # create a temporary file to store the data in
-        with tempfile.NamedTemporaryFile() as temp:
-            # iterate over the data from the url stream in chunks
-            for chunk in r.iter_content(chunk_size=1024):
-                # only write chunks with data in them
-                if chunk:
-                    # write the chunk to the file
-                    temp.write(chunk)
-            # the url has been completely downloaded to the temp file, so yield it for use
-            temp.seek(0)
-            yield temp
+            (resource_format is not None and resource_format.lower() in ALL_FORMATS) or
+            (resource_format is not None and resource_format.lower() == u'zip'))
 
 
 def get_public_alias_prefix():
@@ -352,9 +325,8 @@ def update_resources_privacy(package):
 
     :param package: the package model object (not the dict!)
     '''
-    for resource_group in package.resource_groups_all:
-        for resource in resource_group.resources_all:
-            update_privacy(resource.id, package.private)
+    for resource in package.resources:
+        update_privacy(resource.id, package.private)
 
 
 def update_privacy(resource_id, is_private=None):
@@ -366,14 +338,15 @@ def update_privacy(resource_id, is_private=None):
     :param is_private: whether the package the resource is in is private or not. This is an optional
                        parameter, if it is left out we look up the resource's package in the
                        database and find out the private setting that way.
+    :return: True if modifications were required to update the resource data's privacy, False if not
     '''
     if is_private is None:
         resource = model.Resource.get(resource_id)
-        is_private = resource.resource_group.package.private
+        is_private = resource.package.private
     if is_private:
-        make_private(resource_id)
+        return make_private(resource_id)
     else:
-        make_public(resource_id)
+        return make_public(resource_id)
 
 
 def make_private(resource_id):
@@ -383,12 +356,15 @@ def make_private(resource_id):
     doesn't exist, nothing happens.
 
     :param resource_id: the resource's id
+    :return: True if modifications were required to make the resource's data private, False if not
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
     if SEARCHER.elasticsearch.indices.exists(index_name):
         if SEARCHER.elasticsearch.indices.exists_alias(index_name, public_index_name):
             SEARCHER.elasticsearch.indices.delete_alias(index_name, public_index_name)
+            return True
+    return False
 
 
 def make_public(resource_id):
@@ -398,6 +374,7 @@ def make_public(resource_id):
     nothing happens.
 
     :param resource_id: the resource's id
+    :return: True if modifications were required to make the resource's data public, False if not
     '''
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
@@ -409,6 +386,8 @@ def make_public(resource_id):
                 ]
             }
             SEARCHER.elasticsearch.indices.update_aliases(actions)
+            return True
+    return False
 
 
 def is_resource_read_only(resource_id):
@@ -418,5 +397,13 @@ def is_resource_read_only(resource_id):
 
     :return: True if the resource should be treated as read only, False if not
     '''
-    implementations = plugins.PluginImplementations(IVersionedDatastore)
+    implementations = PluginImplementations(IVersionedDatastore)
     return any(plugin.datastore_is_read_only_resource(resource_id) for plugin in implementations)
+
+
+class ReadOnlyResourceException(toolkit.ValidationError):
+    pass
+
+
+class InvalidVersionException(toolkit.ValidationError):
+    pass

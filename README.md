@@ -68,25 +68,16 @@ Path variables used below:
 There are a number of options that can be specified in your .ini config file.
 All configuration options are currently required.
 
-```ini
-ckanext.versioned_datastore.elasticsearch_hosts = ...
-ckanext.versioned_datastore.elasticsearch_port = ...
-ckanext.versioned_datastore.elasticsearch_index_prefix = ...
-ckanext.versioned_datastore.mongo_host = ...
-ckanext.versioned_datastore.mongo_port = ...
-ckanext.versioned_datastore.mongo_database = ...
-```
-
-Configuration details:
+## **[REQUIRED]**
 
 Name|Description|Example
---|---|--
-`ckanext.versioned.datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
-`ckanext.versioned.datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
-`ckanext.versioned.datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
-`ckanext.versioned.datastore.mongo_host`|The mongo server host|`10.54.24.10`
-`ckanext.versioned.datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
-`ckanext.versioned.datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
+--|--|--
+`ckanext.versioned_datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
+`ckanext.versioned_datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
+`ckanext.versioned_datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
+`ckanext.versioned_datastore.mongo_host`|The mongo server host|`10.54.24.10`
+`ckanext.versioned_datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
+`ckanext.versioned_datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
 
 
 # Further Setup
@@ -99,6 +90,7 @@ At the version of Eevee this plugin uses, you will also need to:
 See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
 
 This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
+
 
 # Usage
 
@@ -127,28 +119,65 @@ Once data has been added to the datastore it can be searched using the `datastor
 The `datastore_search` action closely mirrors the default CKAN datastore action of the same name.
 The `datastore_search_raw` action allows users to query the datastore using raw Elasticsearch queries, unlocking the full range of features it provides.
 
-There are a bunch of other actions available, details of them can be found in the help text for each.
+## Actions
 
-## Action API
-Here is a brief overview of the available actions:
+All of this extension's actions are fully documented inline, including all parameters and results.
 
-  - `datastore_search` - search a resource's data using a similar API to CKAN's default `datastore_search` action
-  - `datastore_create` - adds a resource to the versioned datastore (note that this doesn't add any data, it just does setup work. This is different to CKAN's default `datastore_create` action)
-  - `datastore_upsert` - upserts data into the datastore for the resource. The data can be provided in the data_dict using the key 'records' or, if data is not specified, the URL on the resource is used
-  - `datastore_delete` - deletes the data in the datastore against the given resource ID
-  - `datastore_get_record_versions` - given a record id and a resource it appears in, returns the version timestamps available for that record in ascending order
-  - `datastore_get_resource_versions` - given a resource id, returns the version timestamps available for that resource in ascending order along with the number of records modified in the version and the number of records at that version
-  - `datastore_autocomplete` - provides autocompletion results against a specific field in a specific resource
-  - `datastore_reindex` - triggers a reindex of the given resource's data
-  - `datastore_query_extent` - return the geospatial extent of the results of a given datastore search query
-  - `datastore_get_rounded_version` - round the requested version of this query down to the nearest actual version of the resource
-  - `datastore_search_raw` - this action allows you to search data in a resource using a raw elasticsearch query
+### `datastore_create`
+Adds a resource to the versioned datastore (note that this doesn't add any data, it just does setup work. This is different to CKAN's default `datastore_create` action).
+
+### `datastore_upsert`
+Upserts data into the datastore for the resource. The data can be provided in the data_dict using the key 'records' or, if data is not specified, the URL on the resource is used.
+
+### `datastore_delete`
+Deletes the data in the datastore against the given resource ID.
+
+### `datastore_search`
+Search a resource's data using a similar API to CKAN's default `datastore_search` action.
+
+### `datastore_get_record_versions`
+Given a record id and a resource it appears in, returns the version timestamps available for that record in ascending order.
+
+### `datastore_get_resource_versions`
+Given a resource id, returns the version timestamps available for that resource in ascending order along with the number of records modified in the version and the number of records at that version.
+
+### `datastore_autocomplete`
+Provides autocompletion results against a specific field in a specific resource.
+
+### `datastore_reindex`
+Triggers a reindex of the given resource's data.
+
+### `datastore_query_extent`
+Return the geospatial extent of the results of a given datastore search query.
+
+### `datastore_get_rounded_version`
+Round the requested version of this query down to the nearest actual version of the resource.
+
+### `datastore_search_raw`
+This action allows you to search data in a resource using a raw elasticsearch query.
+
+### `datastore_ensure_privacy`
+This action runs through all resources (or handles a specific resource if a resource id is provided) and makes sure that the privacy set on each resource's package is reflected in the datastore.
+
+## Commands
+
+### `vds`
+
+1. `initdb`: ensure the tables needed by this plugin exist.
+    ```bash
+    paster --plugin=ckanext-versioned-datastore vds initdb -c $CONFIG_FILE
+    ```
+
+2. `reindex`: reindex either a specific resource or all resources.
+    ```bash
+    paster --plugin=ckanext-versioned-datastore vds reindex $OPTIONAL_RESOURCE_ID -c $CONFIG_FILE
+    ```
 
 ## Interfaces
 
 One interface is made available through this plugin: `IVersionedDatastore`.
 
-Here is a brief overview of its (fairly poorly named) functions:
+Here is a brief overview of its functions:
 
   - `datastore_modify_data_dict` - allows modification of the data dict before it is validated and used to create the search object
   - `datastore_modify_search` - allows modifications to the search before it is made. This is kind of analogous to `IDatastore.datastore_search` however instead of passing around a query dict, instead an elasticsearch-dsl `Search` object is passed around
@@ -166,5 +195,5 @@ _Test coverage is currently extremely limited._
 
 To run the tests, use nosetests inside your virtualenv. The `--nocapture` flag will allow you to see the debug statements.
 ```bash
-nosetests --ckan --with-pylons=/path/to/your/test.ini --where=/path/to/your/install/directory/ckanext-versioned-datastore --nologcapture --nocapture
+nosetests --ckan --with-pylons=$TEST_CONFIG_FILE --where=$INSTALL_FOLDER/src/ckanext-versioned-datastore --nologcapture --nocapture
 ```

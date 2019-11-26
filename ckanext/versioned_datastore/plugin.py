@@ -3,24 +3,25 @@ import logging
 from ckanext.versioned_datastore.lib import utils
 from eevee.utils import to_timestamp
 
-from ckan import plugins, model, logic
+from ckan import model
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
 from ckan.model import DomainObjectOperation
-from ckanext.versioned_datastore.controllers.datastore import ResourceDataController
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
 from ckanext.versioned_datastore.logic import action, auth
+from ckanext.versioned_datastore import routes, helpers
 
 log = logging.getLogger(__name__)
 
 
-class VersionedSearchPlugin(plugins.SingletonPlugin):
-    plugins.implements(plugins.IActions)
-    plugins.implements(plugins.IAuthFunctions)
-    plugins.implements(plugins.ITemplateHelpers)
-    plugins.implements(plugins.IResourceController)
-    plugins.implements(plugins.IDomainObjectModification)
-    plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IConfigurable)
-    plugins.implements(plugins.IRoutes, inherit=True)
+class VersionedSearchPlugin(SingletonPlugin):
+    implements(interfaces.IActions)
+    implements(interfaces.IAuthFunctions)
+    implements(interfaces.ITemplateHelpers, inherit=True)
+    implements(interfaces.IResourceController, inherit=True)
+    implements(interfaces.IDomainObjectModification, inherit=True)
+    implements(interfaces.IConfigurer)
+    implements(interfaces.IConfigurable)
+    implements(interfaces.IBlueprint, inherit=True)
 
     # IActions
     def get_actions(self):
@@ -36,6 +37,8 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             u'datastore_query_extent': action.datastore_query_extent,
             u'datastore_get_rounded_version': action.datastore_get_rounded_version,
             u'datastore_search_raw': action.datastore_search_raw,
+            u'datastore_ensure_privacy': action.datastore_ensure_privacy,
+            u'datastore_count': action.datastore_count,
         }
 
     # IAuthFunctions
@@ -52,17 +55,24 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
             u'datastore_query_extent': auth.datastore_query_extent,
             u'datastore_get_rounded_version': auth.datastore_get_rounded_version,
             u'datastore_search_raw': auth.datastore_search_raw,
+            u'datastore_ensure_privacy': auth.datastore_ensure_privacy,
+            u'datastore_count': auth.datastore_count,
         }
 
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            u'is_datastore_resource': is_datastore_resource
+            u'is_datastore_resource': is_datastore_resource,
+            u'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
+            u'get_human_duration': helpers.get_human_duration,
+            u'get_stat_icon': helpers.get_stat_icon,
+            u'get_stat_activity_class': helpers.get_stat_activity_class,
+            u'get_stat_title': helpers.get_stat_title,
         }
 
     # IResourceController
     def before_show(self, resource_dict):
-        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict['id'])
+        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict[u'id'])
         return resource_dict
 
     # IDomainObjectModification
@@ -83,44 +93,44 @@ class VersionedSearchPlugin(plugins.SingletonPlugin):
         '''
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
             # if a package is the target entity and it's been changed ensure the privacy is applied
-            # correctly to it's resource indexes
+            # correctly to its resource indexes
             utils.update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
             data_dict = {u'resource_id': entity.id}
-            do_upsert = False
-
-            # use the entities' last modified data if there is one, otherwise don't pass
-            # one and let the action default it
-            last_modifed = getattr(entity, u'last_modified', None)
-            if last_modifed is not None:
-                data_dict[u'version'] = to_timestamp(last_modifed)
 
             if operation == DomainObjectOperation.deleted:
-                logic.get_action(u'datastore_delete')(context, {u'resource_id': entity.id})
-            elif operation == DomainObjectOperation.new:
-                # datastore_create returns True when the resource looks like it's ingestible
-                do_upsert = logic.get_action(u'datastore_create')(context, data_dict)
-            elif operation == DomainObjectOperation.changed:
-                # only do the upsert on changed events if the URL has changed
-                do_upsert = getattr(entity, u'url_changed', False)
+                toolkit.get_action(u'datastore_delete')(context, data_dict)
+            else:
+                do_upsert = False
 
-            if do_upsert:
-                # use replace True to replace the existing data (this is what users would expect)
-                data_dict[u'replace'] = True
-                logic.get_action(u'datastore_upsert')(context, data_dict)
+                if operation == DomainObjectOperation.new:
+                    # datastore_create returns True when the resource looks like it's ingestible
+                    do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
+                elif operation == DomainObjectOperation.changed:
+                    # always try the upsert if the resource has changed
+                    do_upsert = True
+
+                if do_upsert:
+                    # use the revision version as the version
+                    data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
+                    # use replace to overwrite the existing data (this is what users would expect)
+                    data_dict[u'replace'] = True
+                    try:
+                        toolkit.get_action(u'datastore_upsert')(context, data_dict)
+                    except (utils.ReadOnlyResourceException, utils.InvalidVersionException):
+                        # this is fine, just swallow
+                        pass
 
     # IConfigurer
     def update_config(self, config):
         # add templates
-        plugins.toolkit.add_template_directory(config, u'theme/templates')
+        toolkit.add_template_directory(config, u'theme/templates')
+        toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
 
-    # IRoutes
-    def before_map(self, map):
-        map.connect(u'resource_data', u'/dataset/{package_name}/resource_data/{resource_id}',
-                    controller=ResourceDataController.path, action=u'resource_data',
-                    ckan_icon=u'cloud-upload')
-        return map
+    ## IBlueprint
+    def get_blueprint(self):
+        return routes.blueprints
 
     # IConfigurable
     def configure(self, ckan_config):

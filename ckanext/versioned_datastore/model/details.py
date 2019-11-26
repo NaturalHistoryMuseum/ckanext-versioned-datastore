@@ -17,6 +17,9 @@ datastore_resource_details_table = Table(
     Column(u'version', BigInteger, nullable=False),
     # the detailed operation breakdown returned by eevee
     Column(u'columns', UnicodeText, nullable=False),
+    # a hash of the ingested file - can be None and will be if records are directly added using the
+    # API
+    Column(u'file_hash', UnicodeText),
 )
 
 

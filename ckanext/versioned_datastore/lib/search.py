@@ -1,12 +1,12 @@
 import copy
 
-from elasticsearch_dsl import Search
-
-from ckan import plugins
+import operator
+from ckan.plugins import PluginImplementations
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib.geo import add_geo_search
 from ckanext.versioned_datastore.lib.utils import validate, prefix_field
 from ckanext.versioned_datastore.logic.schema import datastore_search_schema
+from elasticsearch_dsl import Search
 
 
 def _find_version(data_dict):
@@ -22,18 +22,20 @@ def _find_version(data_dict):
     :return: the version found as an integer, or None if no version was found
     '''
     version = data_dict.get(u'version', None)
+
     # TODO: __version__ support should be removed once the frontend is capable of using the param
     # pop the __version__ to avoid including it in the normal search filters
     filter_version = data_dict.get(u'filters', {}).pop(u'__version__', None)
+    # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
+    if isinstance(filter_version, list):
+        # just use the first value
+        filter_version = filter_version[0]
+
     # use the version parameter's value first if it exists
     if version is not None:
         return int(version)
     # otherwise fallback on __version__
     if filter_version is not None:
-        # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
-        if isinstance(filter_version, list):
-            # just use the first value
-            filter_version = filter_version[0]
         return int(filter_version)
     # no version found, return None
     return None
@@ -59,7 +61,7 @@ def create_search(context, data_dict):
     data_dict = validate(context, data_dict, datastore_search_schema())
 
     # allow other extensions implementing our interface to modify the data_dict
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+    for plugin in PluginImplementations(IVersionedDatastore):
         data_dict = plugin.datastore_modify_data_dict(context, data_dict)
 
     # extract the version
@@ -69,7 +71,7 @@ def create_search(context, data_dict):
     search = build_search_object(**data_dict)
 
     # allow other extensions implementing our interface to modify the search object
-    for plugin in plugins.PluginImplementations(IVersionedDatastore):
+    for plugin in PluginImplementations(IVersionedDatastore):
         search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
 
     return original_data_dict, data_dict, version, search
@@ -124,18 +126,18 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     # add a free text query across all fields if there is one. This searches against meta.all which
     # is a copy field created by adding the values of each data.* field
     if q is not None and q is not u'' and q is not {}:
-        if isinstance(q, basestring):
+        if isinstance(q, (str, unicode, int, float)):
             search = search.query(u'match', **{u'meta.all': {u'query': q, u'operator': u'and'}})
-        else:
-            for field, query in q.items():
+        elif isinstance(q, dict):
+            for field, query in sorted(q.items(), key=operator.itemgetter(0)):
                 # TODO: change this to __all__ to match __geo__?
                 if field == u'':
                     field = u'meta.all'
                 else:
                     field = prefix_field(field)
-                search = search.query(u'match', **{field: query})
+                search = search.query(u'match', **{field: {u'query': query, u'operator': u'and'}})
     if filters is not None:
-        for field, values in filters.items():
+        for field, values in sorted(filters.items(), key=operator.itemgetter(0)):
             if not isinstance(values, list):
                 values = [values]
             if field == u'__geo__':
@@ -179,9 +181,10 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
             if not field_and_sort.endswith(u' desc') and not field_and_sort.endswith(u' asc'):
                 # default the sort direction to ascending if nothing is provided
                 field_and_sort += u' asc'
-            field, direction = prefix_field(field_and_sort).rsplit(u' ', 1)
+            field, direction = field_and_sort.rsplit(u' ', 1)
             # set the id_in_sort boolean to True if we see the _id field in the caller defined sort
             id_in_sort = not id_in_sort and field == u'_id'
+            field = prefix_field(field)
             # if the sort direction is desc we need to add a minus sign in front of the field name,
             # otherwise we can just use the field name on its own as the default sort is asc
             sorts.append(u'-{}'.format(field) if direction == u'desc' else field)

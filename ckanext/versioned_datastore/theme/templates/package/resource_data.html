@@ -1,5 +1,19 @@
 {% extends "package/resource_edit_base.html" %}
 
+{# if there is an operation in progress, refresh the page every 30 seconds #}
+{% if stats and stats[-1].in_progress %}
+{% set refresh_interval = 30 %}
+{% else %}
+{% set refresh_interval = 0 %}
+{% endif %}
+
+{% block meta %}
+    {{ super() }}
+    {% if refresh_interval > 0 %}
+        <meta http-equiv="refresh" content="{{ refresh_interval }}"/>
+    {% endif %}
+{% endblock %}
+
 {% block subtitle %}{{ h.dataset_display_name(pkg) }} - {{ h.resource_display_name(res) }}{% endblock %}
 
 {% block primary_content_inner %}
@@ -9,55 +23,62 @@
 
         <form method="post" action="{{ reindex_action }}">
             <button class="btn btn-primary" name="save" type="submit">
-                <i class="icon-cloud-upload"></i> {{ _('Reindex DataStore data') }}
+                <i class="fas fa-cloud-upload-alt"></i> {{ _('Reindex DataStore data') }}
             </button>
         </form>
     {% endblock %}
 
     {% block datastore_history %}
-        <h3>{{ _('History') }}</h3>
-        <table class="table table-bordered">
-            <tr>
-                <th>{{ _('Status') }}</th>
-                <th>{{ _('Operation') }}</th>
-                <th>{{ _('Version') }}</th>
-                <th>{{ _('Start') }}</th>
-                <th>{{ _('End') }}</th>
-                <th>{{ _('Duration') }}</th>
-                <th>{{ _('Count') }}</th>
-            </tr>
-            {% for stat in stats %}
-                <tr>
-                    <td>
-                        {% if stat.in_progress %}
-                            <i class="icon icon-spinner"></i>
-                        {% elif stat.error %}
-                            <i class="icon icon-exclamation"></i>
-                        {% else %}
-                            <i class="icon icon-ok"></i>
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if stat.type == 'ingest' %}
-                            <i class="icon icon-tasks"></i>
-                        {% elif stat.type == 'index' %}
-                            <i class="icon icon-search"></i>
-                        {% endif %}
-                        {{ stat.type }}
-                    </td>
-                    <td>{{ stat.version }}</td>
-                    <td>{{ h.render_datetime(stat.start, with_hours=True) }}</td>
-                    <td>{{ h.render_datetime(stat.end, with_hours=True) }}</td>
-                    <td>
-                        {% if stat.duration %}
-                            {{ stat.duration }} seconds
-                        {% endif %}
-                    </td>
-                    <td>{{ stat.count }}</td>
-                </tr>
-            {% endfor %}
-        </table>
+        {% resource 'ckanext-versioned_datastore/css/datastore-activities.css' %}
 
+        <h3>{{ _('Datastore Activity') }}</h3>
+
+        <ul class="activity">
+            {% for stat in stats %}
+                <li class="item {{ h.get_stat_activity_class(stat) }}">
+                <i class="fa icon {{ h.get_stat_icon(stat) }}"></i>
+                <p>
+                    <span class="datastore_activity_title">{{ h.get_stat_title(stat) }}</span>
+                    <span class="date" title="{{ h.render_datetime(stat.start, with_hours=True) }}">{{ h.time_ago_from_timestamp(stat.start) }}</span>
+                </p>
+                <p>
+                    {% snippet 'package/snippets/' + stat.type + '_message.html', stat=stat %}
+                </p>
+                <a data-toggle="collapse" href="#collapseDetails{{ loop.index }}">
+                    {{ _("Show more details") }} <i class="fas fa-caret-down"></i>
+                </a>
+                <div class="collapse collapseDetails" id="collapseDetails{{ loop.index }}">
+                    <table class="detailsTable">
+                        <tr>
+                            <th>{{ _("Type") }}</th>
+                            <td>{{ stat.type }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("Version") }}</th>
+                            <td>{{ stat.version }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("Start") }}</th>
+                            <td>{{ stat.start }}</td>
+                        </tr>
+                        <tr>
+                            <th>{{ _("End") }}</th>
+                            <td>{{ stat.end }}</td>
+                        </tr>
+                    </table>
+                </div>
+                </li>
+            {% endfor %}
+        </ul>
     {% endblock %}
 
+    {% block refresh_warning %}
+        {% if refresh_interval > 0 %}
+            <i>
+            {% trans %}
+            This page will refresh every {{ refresh_interval }} seconds as there is an operation in progress
+            {% endtrans %}
+            </i>
+        {% endif %}
+    {% endblock %}
 {% endblock %}

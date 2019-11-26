@@ -1,4 +1,4 @@
-import ckan.plugins.interfaces as interfaces
+from ckan.plugins import interfaces
 
 
 class IVersionedDatastore(interfaces.Interface):

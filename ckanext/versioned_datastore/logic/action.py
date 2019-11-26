@@ -4,12 +4,12 @@ import logging
 
 from datetime import datetime
 from eevee.utils import to_timestamp
+from eevee.indexing.utils import DOC_TYPE
 from elasticsearch import NotFoundError, RequestError
 from elasticsearch_dsl import A, Search
 
-from ckan import logic, plugins
+from ckan.plugins import toolkit, PluginImplementations
 from ckan.lib.search import SearchIndexError
-from ckan.logic import ActionError
 from ckanext.versioned_datastore.interfaces import IVersionedDatastore
 from ckanext.versioned_datastore.lib import utils, stats
 from ckanext.versioned_datastore.lib.importing import check_version_is_valid
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 logging.getLogger(u'elasticsearch').setLevel(logging.ERROR)
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_search(context, data_dict):
     '''
     This action allows you to search data in a resource. It is designed to function in a similar way
@@ -137,7 +137,7 @@ def datastore_search(context, data_dict):
             raise SearchIndexError(e.error)
 
         # allow other extensions implementing our interface to modify the result object
-        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        for plugin in PluginImplementations(IVersionedDatastore):
             result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
 
         # add the actual result object to the context in case the caller is an extension and they
@@ -148,7 +148,7 @@ def datastore_search(context, data_dict):
         # get the fields
         mapping, fields = utils.get_fields(resource_id, version)
         # allow other extensions implementing our interface to modify the field definitions
-        for plugin in plugins.PluginImplementations(IVersionedDatastore):
+        for plugin in PluginImplementations(IVersionedDatastore):
             fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
 
         # return a dictionary containing the results and other details
@@ -157,6 +157,7 @@ def datastore_search(context, data_dict):
             u'records': [hit.data for hit in result.results()],
             u'facets': utils.format_facets(result.aggregations),
             u'fields': fields,
+            u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'],
             u'after': result.last_after,
             u'_backend': u'versioned-datastore',
         }
@@ -179,7 +180,7 @@ def datastore_create(context, data_dict):
     :rtype: boolean
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_create_schema())
-    plugins.toolkit.check_access(u'datastore_create', context, data_dict)
+    toolkit.check_access(u'datastore_create', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
 
@@ -187,7 +188,7 @@ def datastore_create(context, data_dict):
         return False
 
     # lookup the resource dict
-    resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
     # only create the index if the resource is ingestable
     if utils.is_ingestible(resource):
         # note that the version parameter doesn't matter when creating the index so we can safely
@@ -227,12 +228,12 @@ def datastore_upsert(context, data_dict):
     # data dict is flattened during validation, but why this happens is unclear.
     records = data_dict.get(u'records', None)
     data_dict = utils.validate(context, data_dict, schema.datastore_upsert_schema())
-    plugins.toolkit.check_access(u'datastore_upsert', context, data_dict)
+    toolkit.check_access(u'datastore_upsert', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
 
     if utils.is_resource_read_only(resource_id):
-        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
+        raise utils.ReadOnlyResourceException(u'This resource has been marked as read only')
 
     replace = data_dict[u'replace']
     # these 3 parameters are all optional and have the defaults defined below
@@ -240,13 +241,14 @@ def datastore_upsert(context, data_dict):
 
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
-        raise plugins.toolkit.ValidationError(u'The new version must be newer than current version')
+        raise utils.InvalidVersionException(u'The new version must be newer than current version')
 
     # get the current user
-    user = plugins.toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})
+    user = toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})
 
     # queue the resource import job
-    job = queue_import(resource_id, version, replace, records, user[u'apikey'])
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    job = queue_import(resource, version, replace, records, user[u'apikey'])
 
     return {
         u'queued_at': job.enqueued_at.isoformat(),
@@ -267,24 +269,25 @@ def datastore_delete(context, data_dict):
     :type version: integer
     '''
     data_dict = utils.validate(context, data_dict, schema.datastore_delete_schema())
-    plugins.toolkit.check_access(u'datastore_delete', context, data_dict)
+    toolkit.check_access(u'datastore_delete', context, data_dict)
 
     resource_id = data_dict[u'resource_id']
     # get the requested deletion version, or default to now
     version = data_dict.get(u'version', to_timestamp(datetime.now()))
 
     if utils.is_resource_read_only(resource_id):
-        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
+        raise toolkit.ValidationError(u'This resource has been marked as read only')
 
     # queue the job
-    job = queue_deletion(resource_id, version)
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    job = queue_deletion(resource, version)
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
     }
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_get_record_versions(context, data_dict):
     '''
     Given a record id and an resource it appears in, returns the version timestamps available for
@@ -306,7 +309,7 @@ def datastore_get_record_versions(context, data_dict):
     return utils.SEARCHER.get_record_versions(index_name, int(data_dict[u'id']))
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_get_resource_versions(context, data_dict):
     '''
     Given a resource id, returns the version timestamps available for that resource in ascending
@@ -341,7 +344,7 @@ def datastore_get_resource_versions(context, data_dict):
     return data
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_autocomplete(context, data_dict):
     '''
     Provides autocompletion results against a specific field in a specific resource.
@@ -434,20 +437,18 @@ def datastore_reindex(context, data_dict):
     # validate the data dict
     data_dict = utils.validate(context, data_dict, schema.datastore_reindex())
     # check auth
-    plugins.toolkit.check_access(u'datastore_reindex', context, data_dict)
+    toolkit.check_access(u'datastore_reindex', context, data_dict)
     # retrieve the resource id
     resource_id = data_dict[u'resource_id']
 
     if utils.is_resource_read_only(resource_id):
-        raise plugins.toolkit.ValidationError(u'This resource has been marked as read only')
-
-    # retrieve the resource itself
-    resource = logic.get_action(u'resource_show')(context, {u'id': resource_id})
+        raise toolkit.ValidationError(u'This resource has been marked as read only')
 
     last_ingested_version = stats.get_last_ingest(resource_id)
     if last_ingested_version is None:
-        raise plugins.toolkit.ValidationError(u'There is no ingested data for this version')
+        raise toolkit.ValidationError(u'There is no ingested data for this version')
 
+    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
     job = queue_index(resource, None, last_ingested_version.version)
 
     return {
@@ -456,7 +457,7 @@ def datastore_reindex(context, data_dict):
     }
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_query_extent(context, data_dict):
     '''
     Return the geospatial extent of the results of a given datastore search query. The data_dict
@@ -507,7 +508,7 @@ def datastore_query_extent(context, data_dict):
     return to_return
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_get_rounded_version(context, data_dict):
     '''
     Round the requested version of this query down to the nearest actual version of the
@@ -554,7 +555,7 @@ def datastore_get_rounded_version(context, data_dict):
     return utils.SEARCHER.get_rounded_versions([index_name], version)[index_name]
 
 
-@logic.side_effect_free
+@toolkit.side_effect_free
 def datastore_search_raw(context, data_dict):
     '''
     This action allows you to search data in a resource using a raw elasticsearch query. This action
@@ -663,7 +664,7 @@ def datastore_search_raw(context, data_dict):
             result = utils.SEARCHER.search(indexes=[index_name], search=search, version=version)
 
             # allow other extensions implementing our interface to modify the result object
-            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            for plugin in PluginImplementations(IVersionedDatastore):
                 result = plugin.datastore_modify_result(context, original_data_dict, data_dict,
                                                         result)
 
@@ -675,7 +676,7 @@ def datastore_search_raw(context, data_dict):
             # get the fields
             mapping, fields = utils.get_fields(resource_id, version)
             # allow other extensions implementing our interface to modify the field definitions
-            for plugin in plugins.PluginImplementations(IVersionedDatastore):
+            for plugin in PluginImplementations(IVersionedDatastore):
                 fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
 
             # return a dictionary containing the results and other details
@@ -684,10 +685,95 @@ def datastore_search_raw(context, data_dict):
                 u'records': [hit.data for hit in result.results()],
                 u'facets': utils.format_facets(result.aggregations),
                 u'fields': fields,
+                u'raw_fields': mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][
+                    u'properties'],
                 u'after': result.last_after,
                 u'_backend': u'versioned-datastore',
             }
     except RequestError as e:
-        raise plugins.toolkit.ValidationError(str(e))
+        raise toolkit.ValidationError(str(e))
     except NotFoundError as e:
         raise SearchIndexError(e.error)
+
+
+def datastore_ensure_privacy(context, data_dict):
+    '''
+    Ensure that the privacy settings are correct across all resources in the datastore or for just
+    one resource.
+
+    Params:
+    :param resource_id: optionally, the id of a specific resource to update. If this is present then
+                        only the resource provided will have it's privacy updated. If it is not
+                        present, all resources are updated.
+    :type resource_id: string
+
+
+    **Results:**
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: A dict with the following keys
+    :param modified: the number of resources that had their privacy setting modified
+    :type ensured: integer
+    :param total: the total number of resources examined
+    :type total: integer
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_ensure_privacy_schema())
+
+    modified = 0
+    total = 0
+    if u'resource_id' in data_dict:
+        # just do this one
+        utils.update_privacy(data_dict[u'resource_id'])
+        ensured = 1
+    else:
+        package_data_dict = {u'limit': 50, u'offset': 0}
+        while True:
+            # iteratively retrieve all packages and ensure their resources
+            packages = toolkit.get_action(u'current_package_list_with_resources')(context,
+                                                                                  package_data_dict)
+            if not packages:
+                # we've ensured all the packages that are available
+                break
+            else:
+                package_data_dict[u'offset'] += len(packages)
+                for package in packages:
+                    for resource in package.get(u'resources', []):
+                        if resource[u'datastore_active']:
+                            total += 1
+                            if utils.update_privacy(resource[u'id'], package[u'private']):
+                                modified += 1
+
+    return {u'modified': modified, u'total': total}
+
+
+@toolkit.side_effect_free
+def datastore_count(context, data_dict):
+    '''
+    Count the number of records available at a specific version across a set of resources. This
+    allows quick counting of total records without any query, if you want to count with a query,
+    use the search actions with a limit of 0.
+
+    Params:
+    :param resource_ids: optionally, the ids of specific resources to count. Only public resources
+                         can be counted. If this parameter is not provided, then all public
+                         resources are counted.
+    :type resource_id: string, list of comma separated strings
+    :param version: version to count at, if not provided the current timestamp is used
+    :type version: int, number of milliseconds (not seconds!) since UNIX epoch
+
+    **Results:**
+    The result of this action is a dictionary with the following keys:
+
+    :rtype: an integer count
+
+    '''
+    data_dict = utils.validate(context, data_dict, schema.datastore_count_schema())
+
+    version = data_dict.get(u'version', to_timestamp(datetime.now()))
+    resource_ids = data_dict.get(u'resource_ids', [u'*'])
+
+    indexes = [utils.get_public_alias_name(resource_id) for resource_id in resource_ids]
+    search = Search(using=utils.SEARCHER.elasticsearch, index=indexes)\
+        .filter(u'term', **{u'meta.versions': version})
+
+    return search.count()

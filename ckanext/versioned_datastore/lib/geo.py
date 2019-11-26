@@ -2,7 +2,7 @@ import json
 
 from elasticsearch_dsl import Q
 
-from ckan import plugins
+from ckan.plugins import toolkit
 
 # the geo field is always meta.geo
 FIELD = u'meta.geo'
@@ -49,8 +49,7 @@ def add_multipolygon_filter(search, coordinates):
     for group in coordinates:
         points = group[0]
         if len(points) < 3:
-            raise plugins.toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or '
-                                                  u'more')
+            raise toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or more')
 
         options = {
             FIELD: {
@@ -81,14 +80,6 @@ def add_polygon_filter(search, coordinates):
     return add_multipolygon_filter(search, [coordinates])
 
 
-# we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
-QUERY_TYPE_MAP = {
-    u'Point': (add_point_filter, {u'distance', u'coordinates'}),
-    u'MultiPolygon': (add_multipolygon_filter, {u'coordinates'}),
-    u'Polygon': (add_polygon_filter, {u'coordinates'}),
-}
-
-
 def add_geo_search(search, geo_filter):
     '''
     Updates the given search DSL object with the geo filter specified in the geo_filter dict.
@@ -101,23 +92,30 @@ def add_geo_search(search, geo_filter):
                        elasticsearch understands (for example, 10km).
     :return: a search DSL object
     '''
+    # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
+    query_type_map = {
+        u'Point': (add_point_filter, {u'distance', u'coordinates'}),
+        u'MultiPolygon': (add_multipolygon_filter, {u'coordinates'}),
+        u'Polygon': (add_polygon_filter, {u'coordinates'}),
+    }
+
     try:
         # if it hasn't been parsed, parse the geo_filter as JSON
         if not isinstance(geo_filter, dict):
             geo_filter = json.loads(geo_filter)
         # fetch the function which will build the query into the search object
-        add_function, required_params = QUERY_TYPE_MAP[geo_filter[u'type']]
-    except TypeError or ValueError:
-        raise plugins.toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
+        add_function, required_params = query_type_map[geo_filter[u'type']]
+    except (TypeError, ValueError):
+        raise toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
     except KeyError:
-        raise plugins.toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
+        raise toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
 
     try:
         # try and pull out the required parameters for each type
         parameters = {param: geo_filter[param] for param in required_params}
     except KeyError:
-        raise plugins.toolkit.ValidationError(u'Missing parameters, must include {}'
-                                              .format(u', '.join(required_params)))
+        raise toolkit.ValidationError(u'Missing parameters, must include {}'
+                                      .format(u', '.join(required_params)))
 
     # call the function which will update the search object to include the geo filters and then
     # return the resulting search object
