@@ -221,3 +221,14 @@ def datastore_queue_download():
         u'format': [ignore_missing, unicode],
         u'ignore_empty_fields': [ignore_missing, boolean_validator],
     }
+
+
+def datastore_guess_fields():
+    return {
+        u'query': [ignore_missing, json_validator],
+        u'query_version': [ignore_missing, unicode],
+        u'version': [ignore_missing, int_validator],
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'resource_ids_and_versions': [ignore_missing, json_validator],
+        u'size': [ignore_missing, int_validator],
+    }

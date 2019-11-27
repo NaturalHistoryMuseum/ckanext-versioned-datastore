@@ -1,9 +1,8 @@
 from collections import defaultdict
+from datetime import datetime
 
 import jsonschema
 from ckan.plugins import toolkit
-from datetime import datetime
-from eevee.search import create_version_query, create_index_specific_version_filter
 from eevee.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch
 
@@ -15,6 +14,7 @@ from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fi
     get_last_after, trim_index_name
 from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
     validate_query, translate_query
+from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after
@@ -66,8 +66,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
-    resource_ids, skipped_resource_ids = determine_resources_to_search(context,
-                                                                       resource_ids,
+    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
                                                                        resource_ids_and_versions)
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
@@ -228,3 +227,66 @@ def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase
         u'count': len(fields),
         u'fields': fields,
     }
+
+
+@action(schema.datastore_guess_fields(), help.datastore_guess_fields, toolkit.side_effect_free)
+def datastore_guess_fields(context, query=None, query_version=None, version=None, resource_ids=None,
+                           resource_ids_and_versions=None, size=10):
+    '''
+    Guesses the fields that are most relevant to show with the given query.
+
+    If only one resource is included in the search then all the fields from the resource at the
+    required version are returned - in ingest order if the details are available.
+
+    If multiple resources are queried, the most common fields across the resource under search are
+    returned. The fields are grouped together in attempt to match the same field name in different
+    cases across different resources. The most common {size} groups are returned.
+
+    :param context: the context dict from the action call
+    :param query: the query
+    :param query_version: the query schema version
+    :param version: the version to search at
+    :param resource_ids: the resource ids to search in
+    :param resource_ids_and_versions: a dict of resource ids -> versions to search at
+    :param size: the number of groups to return, this is ignored if only one resource is searched
+    :return: a list of groups
+    '''
+    # provide some more complex defaults for some parameters if necessary
+    if query is None:
+        query = {}
+    if query_version is None:
+        query_version = get_latest_query_version()
+
+    try:
+        # validate and translate the query into an elasticsearch-dsl Search object
+        validate_query(query, query_version)
+        search = translate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    # figure out which resources we're searching
+    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
+                                                                       resource_ids_and_versions)
+    if not resource_ids:
+        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+
+    if version is None:
+        version = to_timestamp(datetime.now())
+    # add the version filter necessary given the parameters and the resources we're searching
+    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    search = search.filter(version_filter)
+
+    # add the size parameter, we don't want any records back
+    search = search.extra(size=0)
+
+    all_fields = get_all_fields(resource_ids)
+
+    if len(resource_ids) == 1:
+        if resource_ids_and_versions is None:
+            up_to_version = version
+        else:
+            up_to_version = resource_ids_and_versions[resource_ids[0]]
+        return get_single_resource_fields(all_fields, resource_ids[0], up_to_version, search)
+    else:
+        size = max(0, min(size, 25))
+        return select_fields(all_fields, search, resource_ids, number_of_groups=size)
