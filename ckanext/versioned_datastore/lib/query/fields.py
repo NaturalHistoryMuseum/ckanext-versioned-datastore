@@ -129,7 +129,7 @@ def select_fields(fields, search, resource_ids, number_of_groups):
                                   .filter(u'exists', field=prefix_field(variant))
                                   .index(indexes))
 
-        log.info(u'group: {} resources count: {}, fields: {}'.format(group, count, len(fields)))
+        log.info(u'group: "{}", resources count: {}, fields: {}'.format(group, count, len(fields)))
 
         # run the search
         responses = msearch.execute()
