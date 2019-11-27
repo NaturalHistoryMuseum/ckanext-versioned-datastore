@@ -77,7 +77,15 @@ def get_all_fields(resource_ids):
     :return: a Fields object
     '''
     index_names = [prefix_resource(resource_id) for resource_id in resource_ids]
-    mappings = common.ES_CLIENT.indices.get_mapping(u','.join(index_names))
+    mappings = {}
+    offset = 0
+    while True:
+        chunk = index_names[offset:offset + 5]
+        if not chunk:
+            break
+        mappings.update(common.ES_CLIENT.indices.get_mapping(u','.join(chunk)))
+        offset += len(chunk)
+
     fields = Fields()
     for index_name in index_names:
         resource_id = unprefix_index(index_name)
