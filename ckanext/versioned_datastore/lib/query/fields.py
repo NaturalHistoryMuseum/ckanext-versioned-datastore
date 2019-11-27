@@ -123,7 +123,7 @@ def select_fields(fields, search, resource_ids, number_of_groups):
     for group, count, fields in fields.top_groups():
         # create a multisearch to check existance on the fields in this group
         msearch = MultiSearch(using=common.ES_CLIENT)
-        for variant, resources_in_group in fields.keys():
+        for variant, resources_in_group in fields.items():
             indexes = [prefix_resource(resource_id) for resource_id in resources_in_group]
             msearch = msearch.add(search
                                   .filter(u'exists', field=prefix_field(variant))
