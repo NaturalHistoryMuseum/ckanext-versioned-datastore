@@ -1,11 +1,13 @@
-import itertools
 from collections import Counter, defaultdict
+from logging import getLogger
 
 from elasticsearch_dsl import MultiSearch
 
 from .. import common
 from ..datastore_utils import prefix_resource, iter_data_fields, unprefix_index, prefix_field
 from ..importing.details import get_all_details
+
+log = getLogger(__name__)
 
 
 class Fields(object):
@@ -111,12 +113,15 @@ def select_fields(fields, search, resource_ids, number_of_groups):
     # make sure we don't get any hits back, we're only interested in the counts
     search = search.extra(size=0)
     for group, count, fields in fields.top_groups():
-        resources_in_group = list(itertools.chain(*fields.values()))
-        indexes = [prefix_resource(resource_id) for resource_id in resources_in_group]
         # create a multisearch to check existance on the fields in this group
-        msearch = MultiSearch(using=common.ES_CLIENT, index=indexes)
-        for variant in fields.keys():
-            msearch = msearch.add(search.filter(u'exists', field=prefix_field(variant)))
+        msearch = MultiSearch(using=common.ES_CLIENT)
+        for variant, resources_in_group in fields.keys():
+            indexes = [prefix_resource(resource_id) for resource_id in resources_in_group]
+            msearch = msearch.add(search
+                                  .filter(u'exists', field=prefix_field(variant))
+                                  .index(indexes))
+
+        log.info(u'group: {} resources count: {}, fields: {}'.format(group, count, len(fields)))
 
         # run the search
         responses = msearch.execute()
