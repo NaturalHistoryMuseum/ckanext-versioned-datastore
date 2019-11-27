@@ -100,7 +100,11 @@ def determine_resources_to_search(context, resource_ids=None, resource_ids_and_v
     # this will return the subset of the requested resource ids that the user can search over
     resource_ids = get_available_datastore_resources(context, requested_resource_ids)
 
-    return list(resource_ids), [rid for rid in requested_resource_ids if rid not in resource_ids]
+    if requested_resource_ids is not None:
+        skipped_resources = [rid for rid in requested_resource_ids if rid not in resource_ids]
+    else:
+        skipped_resources = []
+    return list(resource_ids), skipped_resources
 
 
 def determine_version_filter(version=None, resource_ids=None, resource_ids_and_versions=None):
