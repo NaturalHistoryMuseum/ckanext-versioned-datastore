@@ -1,3 +1,4 @@
+import itertools
 from collections import Counter, defaultdict
 
 from elasticsearch_dsl import MultiSearch
@@ -109,8 +110,9 @@ def select_fields(fields, search, resource_ids, number_of_groups):
     selected_fields = []
     # make sure we don't get any hits back, we're only interested in the counts
     search = search.extra(size=0)
-    indexes = [prefix_resource(resource_id) for resource_id in resource_ids]
     for group, count, fields in fields.top_groups():
+        resources_in_group = list(itertools.chain(*fields.values()))
+        indexes = [prefix_resource(resource_id) for resource_id in resources_in_group]
         # create a multisearch to check existance on the fields in this group
         msearch = MultiSearch(using=common.ES_CLIENT, index=indexes)
         for variant in fields.keys():
