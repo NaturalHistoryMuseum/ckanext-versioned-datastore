@@ -157,3 +157,22 @@ def calculate_after(result, size):
         next_after = None
         hits = result.hits
     return hits, next_after
+
+
+def chunk_iterator(iterable, chunk_size):
+    """
+    Iterates over an iterable, yielding lists of size chunk_size until the iterable is exhausted.
+    The final list could be smaller than chunk_size but will always have a length > 0.
+
+    :param iterable: the iterable to chunk up
+    :param chunk_size: the maximum size of each yielded chunk
+    :return: a generator of list chunks
+    """
+    chunk = []
+    for element in iterable:
+        chunk.append(element)
+        if len(chunk) == chunk_size:
+            yield chunk
+            chunk = []
+    if chunk:
+        yield chunk

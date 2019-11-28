@@ -6,6 +6,7 @@ from elasticsearch_dsl.query import Bool
 from .. import common
 from ..datastore_utils import prefix_resource, iter_data_fields, unprefix_index, prefix_field
 from ..importing.details import get_all_details
+from .utils import chunk_iterator
 
 
 class Fields(object):
@@ -118,24 +119,24 @@ def select_fields(fields, search, resource_ids, number_of_groups):
     selected_fields = []
     # make sure we don't get any hits back, we're only interested in the counts
     search = search.extra(size=0)
-    for group, count, fields in fields.top_groups():
-        # create a multisearch to check existance on the fields in this group, again we use a
-        # multisearch here because of the nhm's bizarro firewall problems with long URLs (see main
-        # multisearch action for more info)
+    for group_chunk in chunk_iterator(fields.top_groups(), chunk_size=number_of_groups):
+        # we're going to build a multisearch which will contain a query per group as by sending them
+        # all to elasticsearch in one shot we gain some efficiency
         multisearch = MultiSearch(using=common.ES_CLIENT)
-        shoulds = []
-        indexes = []
-        for variant, resources_in_group in fields.items():
-            shoulds.append(Q(u'exists', field=prefix_field(variant)))
-            indexes.extend(prefix_resource(resource_id) for resource_id in resources_in_group)
+        for group, count, fields in group_chunk:
+            shoulds = []
+            indexes = []
+            for variant, resources_in_group in fields.items():
+                shoulds.append(Q(u'exists', field=prefix_field(variant)))
+                indexes.extend(prefix_resource(resource_id) for resource_id in resources_in_group)
 
-        multisearch = multisearch.add(search.index(indexes)
-                                      .filter(Bool(should=shoulds, minimum_should_match=1)))
+            multisearch = multisearch.add(search.index(indexes)
+                                          .filter(Bool(should=shoulds, minimum_should_match=1)))
 
-        result = next(iter(multisearch.execute()))
-        if result.hits.total > 0:
-            # a field from this group has values in the search result, add it to the selection
-            selected_fields.append(dict(group=group, count=count, fields=fields))
+        for (group, count, fields), response in zip(group_chunk, multisearch.execute()):
+            if response.hits.total > 0:
+                # a field from this group has values in the search result, add it to the selection
+                selected_fields.append(dict(group=group, count=count, fields=fields))
 
         if len(selected_fields) >= number_of_groups:
             break
