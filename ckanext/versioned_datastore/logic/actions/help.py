@@ -603,7 +603,8 @@ datastore_guess_fields = u'''
 This action allows you to retrieve a set of fields to display by default for a given search across
 potentially multiple resources. The returned list of groups of fields is ordered by the number of
 resources the fields in each group appears in under the provided query. Ties are handled by ordering
-the group with the fields that appear in the most records first.
+the group with the fields that appear in the most records first. If there is only one resource id
+passed then the groups returned are ordered in ingestion order, if available.
 
 The resources that are searched in this action and the version they are searched at are both
 extracted from the resource_ids_and_versions in the first instance, and if no information in there
@@ -636,6 +637,9 @@ Params:
              created by finding common fields across resources - fields are matched by comparing
              them case-insensitively. 
 :type size: int
+:param ignore_groups: names of groups to ignore from the returned list. Note that this is groups,
+                      not fields!
+:type ignore_groups: a list of strings
 
 **Results:**
 

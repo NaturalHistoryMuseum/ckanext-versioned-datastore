@@ -95,7 +95,7 @@ def get_all_fields(resource_ids):
     return fields
 
 
-def select_fields(fields, search, number_of_groups):
+def select_fields(fields, search, number_of_groups, ignore_groups):
     '''
     Selects the fields from the given Fields object which are most common across the given
     resource ids. The search parameter is used to limit the records that contribute fields to the
@@ -105,6 +105,7 @@ def select_fields(fields, search, number_of_groups):
     :param fields: a Fields object
     :param search: an elasticsearch-dsl search object
     :param number_of_groups: the number of groups to select from the Fields object and return
+    :param ignore_groups: a set of group names to ignore
     :return: a list of groups, each group is a dict containing:
                 - "group" - the group name
                 - "count" - the number of resources its fields appear in
@@ -115,21 +116,31 @@ def select_fields(fields, search, number_of_groups):
     selected_fields = []
     # make sure we don't get any hits back, we're only interested in the counts
     search = search.extra(size=0)
-    for group_chunk in chunk_iterator(fields.top_groups(), chunk_size=number_of_groups):
-        # we're going to build a multisearch which will contain a query per group as by sending them
-        # all to elasticsearch in one shot we gain some efficiency
-        multisearch = MultiSearch(using=common.ES_CLIENT)
-        for group, count, fields in group_chunk:
+
+    def search_iterator():
+        for group_name, resource_count, variants in fields.top_groups():
+            if group_name in ignore_groups:
+                continue
+
             shoulds = []
             indexes = []
-            for variant, resources_in_group in fields.items():
+            for variant, resources_in_group in variants.items():
                 shoulds.append(Q(u'exists', field=prefix_field(variant)))
                 indexes.extend(prefix_resource(resource_id) for resource_id in resources_in_group)
 
-            multisearch = multisearch.add(search.index(indexes)
-                                          .filter(Bool(should=shoulds, minimum_should_match=1)))
+            # yield the group tuple and an elasticsearch-dsl object for the group's fields
+            yield (group_name, resource_count, variants), \
+                search.index(indexes).filter(Bool(should=shoulds, minimum_should_match=1))
 
-        for (group, count, fields), response in zip(group_chunk, multisearch.execute()):
+    # iterate over the groups and searches in chunks
+    for chunk in chunk_iterator(search_iterator(), chunk_size=number_of_groups):
+        groups, searches = zip(*chunk)
+        # create a multisearch for all the searches in the group
+        multisearch = MultiSearch(using=common.ES_CLIENT)
+        for search in searches:
+            multisearch = multisearch.add(search)
+
+        for (group, count, fields), response in zip(groups, multisearch.execute()):
             if response.hits.total > 0:
                 # a field from this group has values in the search result, add it to the selection
                 selected_fields.append(dict(group=group, count=count, records=response.hits.total,
@@ -142,7 +153,7 @@ def select_fields(fields, search, number_of_groups):
     return sorted(selected_fields, key=lambda s: (s[u'count'], s[u'records']), reverse=True)
 
 
-def get_single_resource_fields(fields, resource_id, version, search):
+def get_single_resource_fields(fields, resource_id, version, search, ignore_groups):
     '''
     Retrieves the fields for a single given resource. The fields are returned in the same format as
     the select_fields function above.
@@ -152,6 +163,7 @@ def get_single_resource_fields(fields, resource_id, version, search):
     :param resource_id: the resource id to be searched in
     :param version: the version we're searching at
     :param search: an elasticsearch-dsl search object
+    :param ignore_groups: a set of group names to ignore
     :return: a list of groups, each group is a dict containing:
             - "group" - the group name
             - "count" - the number of resources its fields appear in (will always be 1)
@@ -181,6 +193,9 @@ def get_single_resource_fields(fields, resource_id, version, search):
         field_names.extend(sorted(field for field in fields.keys() if field not in seen_fields))
 
     if field_names:
+        # remove any fields which shouldn't be included in the response
+        field_names = [field for field in field_names if field.lower() not in ignore_groups]
+
         msearch = MultiSearch(using=common.ES_CLIENT, index=index)
         for field in field_names:
             msearch = msearch.add(search.filter(u'exists', field=prefix_field(field)))

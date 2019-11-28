@@ -231,7 +231,7 @@ def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase
 
 @action(schema.datastore_guess_fields(), help.datastore_guess_fields, toolkit.side_effect_free)
 def datastore_guess_fields(context, query=None, query_version=None, version=None, resource_ids=None,
-                           resource_ids_and_versions=None, size=10):
+                           resource_ids_and_versions=None, size=10, ignore_groups=None):
     '''
     Guesses the fields that are most relevant to show with the given query.
 
@@ -253,6 +253,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     :param resource_ids: the resource ids to search in
     :param resource_ids_and_versions: a dict of resource ids -> versions to search at
     :param size: the number of groups to return, this is ignored if only one resource is searched
+    :param ignore_groups: a list of groups to ignore from the results (default: None)
     :return: a list of groups
     '''
     # provide some more complex defaults for some parameters if necessary
@@ -260,6 +261,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
         query = {}
     if query_version is None:
         query_version = get_latest_query_version()
+    ignore_groups = set(g.lower() for g in ignore_groups) if ignore_groups is not None else set()
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
@@ -290,7 +292,8 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
             up_to_version = version
         else:
             up_to_version = resource_ids_and_versions[resource_ids[0]]
-        return get_single_resource_fields(all_fields, resource_ids[0], up_to_version, search)
+        return get_single_resource_fields(all_fields, resource_ids[0], up_to_version, search,
+                                          ignore_groups)
     else:
         size = max(0, min(size, 25))
-        return select_fields(all_fields, search, number_of_groups=size)
+        return select_fields(all_fields, search, size, ignore_groups)
