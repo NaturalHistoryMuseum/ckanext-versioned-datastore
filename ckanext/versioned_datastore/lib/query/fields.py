@@ -61,9 +61,8 @@ class Fields(object):
                  group name, the resource count and a dict of containing all the field names in the
                  group and the resources they appear in (field name -> list of resource ids)
         '''
-        # return a sorted list in reverse count order, secondarily sorted by group name ascending
-        # h/t https://stackoverflow.com/a/23033745
-        for group, count in sorted(self.group_counts.most_common(), key=lambda x: (-x[1], x[0])):
+        # return a sorted list in reverse count order
+        for group, count in self.group_counts.most_common():
             yield group, count, self.groups.get(group, {})
 
 
@@ -96,7 +95,7 @@ def get_all_fields(resource_ids):
     return fields
 
 
-def select_fields(fields, search, resource_ids, number_of_groups):
+def select_fields(fields, search, number_of_groups):
     '''
     Selects the fields from the given Fields object which are most common across the given
     resource ids. The search parameter is used to limit the records that contribute fields to the
@@ -105,11 +104,13 @@ def select_fields(fields, search, resource_ids, number_of_groups):
 
     :param fields: a Fields object
     :param search: an elasticsearch-dsl search object
-    :param resource_ids: the resource ids to be searched in
     :param number_of_groups: the number of groups to select from the Fields object and return
-    :return: a list of groups, each group is a dict containing the group name, the number of
-             resources its fields appear in and the fields that make up the group along with the
-             resource ids they come from
+    :return: a list of groups, each group is a dict containing:
+                - "group" - the group name
+                - "count" - the number of resources its fields appear in
+                - "records" - the number of records the group's fields appear in
+                - "fields" - the fields that make up the group along with the resource ids they come
+                             from
     '''
     selected_fields = []
     # make sure we don't get any hits back, we're only interested in the counts
@@ -131,12 +132,14 @@ def select_fields(fields, search, resource_ids, number_of_groups):
         for (group, count, fields), response in zip(group_chunk, multisearch.execute()):
             if response.hits.total > 0:
                 # a field from this group has values in the search result, add it to the selection
-                selected_fields.append(dict(group=group, count=count, fields=fields))
+                selected_fields.append(dict(group=group, count=count, records=response.hits.total,
+                                            fields=fields))
 
         if len(selected_fields) >= number_of_groups:
             break
 
-    return selected_fields
+    # sort the returned selected list by count and secondly records
+    return sorted(selected_fields, key=lambda s: (s[u'count'], s[u'records']), reverse=True)
 
 
 def get_single_resource_fields(fields, resource_id, version, search):
@@ -149,9 +152,12 @@ def get_single_resource_fields(fields, resource_id, version, search):
     :param resource_id: the resource id to be searched in
     :param version: the version we're searching at
     :param search: an elasticsearch-dsl search object
-    :return: a list of groups, each group is a dict containing the group name, the number of
-             resources its fields appear in and the fields that make up the group along with the
-             resource ids they come from
+    :return: a list of groups, each group is a dict containing:
+            - "group" - the group name
+            - "count" - the number of resources its fields appear in (will always be 1)
+            - "records" - the number of records the group's fields appear in
+            - "fields" - the fields that make up the group along with the resource ids they come
+                         from (the list of resource ids will always just be the one under search)
     '''
     index = prefix_resource(resource_id)
     # make sure we don't get any hits back, we're only interested in the counts
@@ -185,6 +191,7 @@ def get_single_resource_fields(fields, resource_id, version, search):
             if response.hits.total > 0:
                 field = field_names[i]
                 selected_fields.append(dict(group=field.lower(), count=1,
+                                            records=response.hits.total,
                                             fields={field: resource_id}))
 
     return selected_fields

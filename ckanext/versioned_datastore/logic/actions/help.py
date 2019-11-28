@@ -601,7 +601,9 @@ Params:
 
 datastore_guess_fields = u'''
 This action allows you to retrieve a set of fields to display by default for a given search across
-potentially multiple resources.
+potentially multiple resources. The returned list of groups of fields is ordered by the number of
+resources the fields in each group appears in under the provided query. Ties are handled by ordering
+the group with the fields that appear in the most records first.
 
 The resources that are searched in this action and the version they are searched at are both
 extracted from the resource_ids_and_versions in the first instance, and if no information in there
@@ -644,6 +646,8 @@ The result of this action is a list of dicts, each with the following keys:
 :type group: string
 :param count: the number of resources including fields in the group
 :type count: int
+:params records: the number of records the group's fields appear in
+:type records: int
 :param fields: a dict of field names -> list of resource ids representing the fields in the group
                and the resources they come from
 :type fields: dict

@@ -242,6 +242,10 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     returned. The fields are grouped together in attempt to match the same field name in different
     cases across different resources. The most common {size} groups are returned.
 
+    The groups returned are ordered firstly by the number of resources they appear in in descending
+    order, then if there are ties, the number of records the group finds is used and this again is
+    ordered in a descending fashion.
+
     :param context: the context dict from the action call
     :param query: the query
     :param query_version: the query schema version
@@ -289,4 +293,4 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
         return get_single_resource_fields(all_fields, resource_ids[0], up_to_version, search)
     else:
         size = max(0, min(size, 25))
-        return select_fields(all_fields, search, resource_ids, number_of_groups=size)
+        return select_fields(all_fields, search, number_of_groups=size)
