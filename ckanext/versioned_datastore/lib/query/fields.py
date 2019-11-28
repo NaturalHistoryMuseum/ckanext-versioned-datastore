@@ -77,13 +77,8 @@ def get_all_fields(resource_ids):
     '''
     index_names = [prefix_resource(resource_id) for resource_id in resource_ids]
     mappings = {}
-    offset = 0
-    while True:
-        chunk = index_names[offset:offset + 5]
-        if not chunk:
-            break
+    for chunk in chunk_iterator(index_names, 5):
         mappings.update(common.ES_CLIENT.indices.get_mapping(u','.join(chunk)))
-        offset += len(chunk)
 
     fields = Fields()
     for index_name in index_names:
