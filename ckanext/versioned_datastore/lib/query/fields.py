@@ -1,13 +1,11 @@
 from collections import Counter, defaultdict
-from logging import getLogger
 
-from elasticsearch_dsl import MultiSearch
+from elasticsearch_dsl import MultiSearch, Q
+from elasticsearch_dsl.query import Bool
 
 from .. import common
 from ..datastore_utils import prefix_resource, iter_data_fields, unprefix_index, prefix_field
 from ..importing.details import get_all_details
-
-log = getLogger(__name__)
 
 
 class Fields(object):
@@ -121,24 +119,23 @@ def select_fields(fields, search, resource_ids, number_of_groups):
     # make sure we don't get any hits back, we're only interested in the counts
     search = search.extra(size=0)
     for group, count, fields in fields.top_groups():
-        # create a multisearch to check existance on the fields in this group
-        msearch = MultiSearch(using=common.ES_CLIENT)
+        # create a multisearch to check existance on the fields in this group, again we use a
+        # multisearch here because of the nhm's bizarro firewall problems with long URLs (see main
+        # multisearch action for more info)
+        multisearch = MultiSearch(using=common.ES_CLIENT)
+        shoulds = []
+        indexes = []
         for variant, resources_in_group in fields.items():
-            indexes = [prefix_resource(resource_id) for resource_id in resources_in_group]
-            msearch = msearch.add(search
-                                  .filter(u'exists', field=prefix_field(variant))
-                                  .index(indexes))
+            shoulds.append(Q(u'exists', field=prefix_field(variant)))
+            indexes.extend(prefix_resource(resource_id) for resource_id in resources_in_group)
 
-        log.info(u'group: "{}", resources count: {}, fields: {}'.format(group, count, len(fields)))
+        multisearch = multisearch.add(search.index(indexes)
+                                      .filter(Bool(should=shoulds, minimum_should_match=1)))
 
-        # run the search
-        responses = msearch.execute()
-        for response in responses:
-            # a field from this group has values in the search result, add it to the selection and
-            # move on
-            if response.hits.total > 0:
-                selected_fields.append(dict(group=group, count=count, fields=fields))
-                break
+        result = next(iter(multisearch.execute()))
+        if result.hits.total > 0:
+            # a field from this group has values in the search result, add it to the selection
+            selected_fields.append(dict(group=group, count=count, fields=fields))
 
         if len(selected_fields) >= number_of_groups:
             break
