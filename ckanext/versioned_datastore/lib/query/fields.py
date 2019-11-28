@@ -61,8 +61,10 @@ class Fields(object):
                  group name, the resource count and a dict of containing all the field names in the
                  group and the resources they appear in (field name -> list of resource ids)
         '''
-        # return a sorted list in reverse count order
-        for group, count in self.group_counts.most_common():
+        # return a sorted list in reverse count order, secondarily sorted by group name ascending
+        # h/t https://stackoverflow.com/a/23033745. We sort by alphabetical secondarily to ensure
+        # there is a stable order of these groups
+        for group, count in sorted(self.group_counts.most_common(), key=lambda x: (-x[1], x[0])):
             yield group, count, self.groups.get(group, {})
 
 
@@ -209,4 +211,9 @@ def get_single_resource_fields(fields, resource_id, version, search, ignore_grou
                                             records=response.hits.total,
                                             fields={field: resource_id}))
 
-    return selected_fields
+    if all_details:
+        # if we got a field order from the details in the database use it
+        return selected_fields
+    else:
+        # otherwise, sort the returned selected list by count and secondly records
+        return sorted(selected_fields, key=lambda s: (s[u'count'], s[u'records']), reverse=True)
