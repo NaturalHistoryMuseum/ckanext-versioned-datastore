@@ -11,10 +11,11 @@ from .utils import action
 from .. import schema
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fields, \
-    get_last_after, trim_index_name
+    trim_index_name
 from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
     validate_query, translate_query
-from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields
+from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields, \
+    get_mappings
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after
@@ -207,9 +208,7 @@ def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
-    # just get the public index mappings for the requested resource ids
-    resource_ids = u','.join(map(prefix_resource, resource_ids))
-    mappings = common.ES_CLIENT.indices.get_mapping(resource_ids)
+    mappings = get_mappings(resource_ids)
 
     fields = defaultdict(dict)
 

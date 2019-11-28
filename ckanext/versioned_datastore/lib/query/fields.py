@@ -3,10 +3,24 @@ from collections import Counter, defaultdict
 from elasticsearch_dsl import MultiSearch, Q
 from elasticsearch_dsl.query import Bool
 
+from .utils import chunk_iterator
 from .. import common
 from ..datastore_utils import prefix_resource, iter_data_fields, unprefix_index, prefix_field
 from ..importing.details import get_all_details
-from .utils import chunk_iterator
+
+
+def get_mappings(resource_ids, chunk_size=5):
+    '''
+    Return a dict of mappings for the given resource ids.
+
+    :param resource_ids: a list of resource ids
+    :param chunk_size: the number of mappings to get at a time
+    :return: a dict of mappings
+    '''
+    mappings = {}
+    for chunk in chunk_iterator(map(prefix_resource, resource_ids), chunk_size):
+        mappings.update(common.ES_CLIENT.indices.get_mapping(u','.join(chunk)))
+    return mappings
 
 
 class Fields(object):
@@ -77,9 +91,7 @@ def get_all_fields(resource_ids):
     :return: a Fields object
     '''
     index_names = [prefix_resource(resource_id) for resource_id in resource_ids]
-    mappings = {}
-    for chunk in chunk_iterator(index_names, 5):
-        mappings.update(common.ES_CLIENT.indices.get_mapping(u','.join(chunk)))
+    mappings = get_mappings(resource_ids)
 
     fields = Fields()
     for index_name in index_names:
