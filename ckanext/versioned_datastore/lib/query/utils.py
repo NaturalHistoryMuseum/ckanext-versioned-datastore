@@ -1,12 +1,14 @@
+from copy import copy
+
 from ckan import model
 from ckan.plugins import toolkit
 from datetime import datetime
 from eevee.search import create_version_query, create_index_specific_version_filter
 from eevee.utils import to_timestamp
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Search, MultiSearch
 
 from .. import common
-from ..datastore_utils import prefix_resource, get_last_after
+from ..datastore_utils import prefix_resource, get_last_after, trim_index_name
 
 
 def get_available_datastore_resources(context, only=None):
@@ -176,3 +178,24 @@ def chunk_iterator(iterable, chunk_size):
             chunk = []
     if chunk:
         yield chunk
+
+
+def find_searched_resources(search, resource_ids):
+    '''
+    Given a search and a list of resource ids to search in, returns a list of the resources that are
+    actually included in the search results.
+
+    :param search: an elasticsearch-dsl object
+    :param resource_ids: a list of resource ids
+    :return: a list of resource ids
+    '''
+    # we have to make a copy as aggs don't return a clone :(
+    search_copy = copy(search)
+    search_copy = search_copy.index(prefix_resource(resource_id) for resource_id in resource_ids)
+    search_copy.aggs.bucket(u'indexes', u'terms', field=u'_index')
+    multisearch = MultiSearch(using=common.ES_CLIENT).add(search_copy)
+    result = next(iter(multisearch.execute()))
+    return [
+        trim_index_name(bucket[u'key'])
+        for bucket in result.aggs.to_dict()[u'indexes'][u'buckets'] if bucket[u'doc_count'] > 0
+    ]

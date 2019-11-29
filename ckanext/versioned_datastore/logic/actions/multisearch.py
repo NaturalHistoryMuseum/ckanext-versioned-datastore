@@ -18,7 +18,7 @@ from ...lib.query.fields import get_all_fields, select_fields, get_single_resour
     get_mappings
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
-    determine_version_filter, calculate_after
+    determine_version_filter, calculate_after, find_searched_resources
 
 
 @action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
@@ -284,14 +284,17 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     # add the size parameter, we don't want any records back
     search = search.extra(size=0)
 
+    resource_ids = find_searched_resources(search, resource_ids)
+
     all_fields = get_all_fields(resource_ids)
 
     if len(resource_ids) == 1:
+        resource_id = resource_ids[0]
         if resource_ids_and_versions is None:
             up_to_version = version
         else:
-            up_to_version = resource_ids_and_versions[resource_ids[0]]
-        return get_single_resource_fields(all_fields, resource_ids[0], up_to_version, search,
+            up_to_version = resource_ids_and_versions[resource_id]
+        return get_single_resource_fields(all_fields, resource_id, up_to_version, search,
                                           ignore_groups)
     else:
         size = max(0, min(size, 25))
