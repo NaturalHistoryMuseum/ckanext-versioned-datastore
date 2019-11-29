@@ -191,7 +191,7 @@ def find_searched_resources(search, resource_ids):
     '''
     # we have to make a copy as aggs don't return a clone :(
     search_copy = copy(search)
-    search_copy = search_copy.index(prefix_resource(resource_id) for resource_id in resource_ids)
+    search_copy = search_copy.index([prefix_resource(resource_id) for resource_id in resource_ids])
     search_copy.aggs.bucket(u'indexes', u'terms', field=u'_index')
     multisearch = MultiSearch(using=common.ES_CLIENT).add(search_copy)
     result = next(iter(multisearch.execute()))
