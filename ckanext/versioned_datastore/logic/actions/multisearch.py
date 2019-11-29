@@ -2,20 +2,21 @@ from collections import defaultdict
 from datetime import datetime
 
 import jsonschema
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit, PluginImplementations
 from eevee.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch
 
 from . import help
 from .utils import action
 from .. import schema
+from ...interfaces import IVersionedDatastore
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fields, \
     trim_index_name
-from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
-    validate_query, translate_query
 from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields, \
     get_mappings
+from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
+    validate_query, translate_query
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after, find_searched_resources
@@ -287,6 +288,10 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     resource_ids = find_searched_resources(search, resource_ids)
 
     all_fields = get_all_fields(resource_ids)
+
+    # allow plugins to modify the fields object
+    for plugin in PluginImplementations(IVersionedDatastore):
+        all_fields = plugin.datastore_modify_fields(resource_ids, all_fields)
 
     if len(resource_ids) == 1:
         resource_id = resource_ids[0]

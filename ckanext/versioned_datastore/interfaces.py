@@ -184,6 +184,17 @@ class IVersionedDatastore(interfaces.Interface):
         '''
         pass
 
+    def datastore_modify_fields(self, resource_ids, fields):
+        '''
+        Allows plugins to manipulate the Fields object used to figure out the groups that should be
+        returned by the datastore_guess_fields action.
+
+        :param resource_ids: a list of resource ids
+        :param fields: a Fields object
+        :return: the Fields object
+        '''
+        return fields
+
 
 class IVersionedDatastoreQuerySchema(interfaces.Interface):
 
@@ -195,4 +206,13 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
                  query schema version is a string of format v#.#.# and the schema object is an
                  instance of ckanext.versioned_datastore.lib.query.Schema
         '''
+        pass
+
+
+class IVersionedDatastoreDownloads(interfaces.Interface):
+
+    def before_download(self, download_request):
+        pass
+
+    def after_download(self):
         pass

@@ -66,6 +66,22 @@ class Fields(object):
             self.groups[group] = defaultdict(list)
         self.groups[group][field].append(resource_id)
 
+    def remove(self, group):
+        '''
+        Allows for the removal of groups from the fields object using either the name of the group
+        or a regex.
+
+        :param group: the group name or a regex
+        '''
+        if hasattr(group, u'match') and callable(group.match):
+            for group_name in list(self.groups.keys()):
+                if group.match(group_name):
+                    del self.groups[group_name]
+                    del self.group_counts[group_name]
+        else:
+            self.groups.pop(group.lower(), None)
+            self.group_counts.pop(group.lower(), None)
+
     def top_groups(self):
         '''
         Generator which yields the groups with the highest resource representation from highest to
