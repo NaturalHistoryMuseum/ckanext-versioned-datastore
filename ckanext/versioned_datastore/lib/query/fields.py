@@ -167,7 +167,7 @@ def select_fields(fields, search, number_of_groups, ignore_groups):
     return sorted(selected_fields, key=lambda s: (s[u'count'], s[u'records']), reverse=True)
 
 
-def get_single_resource_fields(fields, resource_id, version, search, ignore_groups):
+def get_single_resource_fields(fields, resource_id, version, search, size, ignore_groups):
     '''
     Retrieves the fields for a single given resource. The fields are returned in the same format as
     the select_fields function above.
@@ -177,6 +177,7 @@ def get_single_resource_fields(fields, resource_id, version, search, ignore_grou
     :param resource_id: the resource id to be searched in
     :param version: the version we're searching at
     :param search: an elasticsearch-dsl search object
+    :param size: the maximum number of groups to return
     :param ignore_groups: a set of group names to ignore
     :return: a list of groups, each group is a dict containing:
             - "group" - the group name
@@ -223,9 +224,8 @@ def get_single_resource_fields(fields, resource_id, version, search, ignore_grou
                                             records=response.hits.total,
                                             fields={field: resource_id}))
 
-    if all_details:
-        # if we got a field order from the details in the database use it
-        return selected_fields
-    else:
+    if not all_details:
         # otherwise, sort the returned selected list by count and secondly records
-        return sorted(selected_fields, key=lambda s: (s[u'count'], s[u'records']), reverse=True)
+        selected_fields.sort(key=lambda s: (s[u'count'], s[u'records']), reverse=True)
+
+    return selected_fields[:size]

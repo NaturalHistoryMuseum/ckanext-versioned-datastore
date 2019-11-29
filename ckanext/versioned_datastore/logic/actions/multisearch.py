@@ -234,12 +234,12 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     '''
     Guesses the fields that are most relevant to show with the given query.
 
-    If only one resource is included in the search then all the fields from the resource at the
-    required version are returned - in ingest order if the details are available.
+    If only one resource is included in the search then the requested number of fields from the
+    resource at the required version are returned in ingest order if the details are available.
 
     If multiple resources are queried, the most common fields across the resource under search are
-    returned. The fields are grouped together in attempt to match the same field name in different
-    cases across different resources. The most common {size} groups are returned.
+    returned. The fields are grouped together in an attempt to match the same field name in
+    different cases across different resources. The most common {size} groups are returned.
 
     The groups returned are ordered firstly by the number of resources they appear in in descending
     order, then if there are ties, the number of records the group finds is used and this again is
@@ -251,7 +251,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     :param version: the version to search at
     :param resource_ids: the resource ids to search in
     :param resource_ids_and_versions: a dict of resource ids -> versions to search at
-    :param size: the number of groups to return, this is ignored if only one resource is searched
+    :param size: the number of groups to return
     :param ignore_groups: a list of groups to ignore from the results (default: None)
     :return: a list of groups
     '''
@@ -294,7 +294,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
             up_to_version = version
         else:
             up_to_version = resource_ids_and_versions[resource_id]
-        return get_single_resource_fields(all_fields, resource_id, up_to_version, search,
+        return get_single_resource_fields(all_fields, resource_id, up_to_version, search, size,
                                           ignore_groups)
     else:
         size = max(0, min(size, 25))
