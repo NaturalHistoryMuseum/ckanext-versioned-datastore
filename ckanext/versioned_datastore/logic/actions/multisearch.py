@@ -16,7 +16,7 @@ from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fi
 from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields, \
     get_mappings
 from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
-    validate_query, translate_query
+    validate_query, translate_query, hash_query
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after, find_searched_resources
@@ -304,3 +304,25 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     else:
         size = max(0, min(size, 25))
         return select_fields(all_fields, search, size, ignore_groups)
+
+
+@action(schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free)
+def datastore_hash_query(query=None, query_version=None):
+    '''
+    Hashes the given query at the given query schema and returns the hex digest.
+
+    :param query: the query dict
+    :param query_version: the query version
+    :return: the hex digest of the query
+    '''
+    if query is None:
+        query = {}
+    if query_version is None:
+        query_version = get_latest_query_version()
+
+    try:
+        validate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    return hash_query(query, query_version)

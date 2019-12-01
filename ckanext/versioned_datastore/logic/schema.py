@@ -231,4 +231,12 @@ def datastore_guess_fields():
         u'resource_ids': [ignore_missing, list_of_strings()],
         u'resource_ids_and_versions': [ignore_missing, json_validator],
         u'size': [ignore_missing, int_validator],
+        u'ignore_groups': [ignore_missing, list_of_strings()]
+    }
+
+
+def datastore_hash_query():
+    return {
+        u'query': [ignore_missing, json_validator],
+        u'query_version': [ignore_missing, unicode],
     }

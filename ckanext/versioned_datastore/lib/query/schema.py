@@ -78,6 +78,20 @@ def translate_query(query, version, search=None):
         return schemas[version].translate(query, search=search)
 
 
+def hash_query(query, version):
+    '''
+    Hashes the given query at the given version and returns the unique digest.
+
+    :param query: the query dict
+    :param version: the query version
+    :return: the hash
+    '''
+    if version not in schemas:
+        raise InvalidQuerySchemaVersionError(version)
+    else:
+        return schemas[version].hash(query)
+
+
 def load_core_schema(version):
     '''
     Given a query schema version, loads the schema from the schema_base_path directory.
@@ -121,5 +135,15 @@ class Schema(object):
         :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
                        a fresh object. By default a new search object is created.
         :return: an instantiated elasticsearch-dsl object
+        '''
+        pass
+
+    @abc.abstractmethod
+    def hash(self, query):
+        '''
+        Hashes the query and returns the hex digest.
+
+        :param query: the whole query dict
+        :return: a string hex digest
         '''
         pass

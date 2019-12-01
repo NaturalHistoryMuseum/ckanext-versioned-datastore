@@ -120,3 +120,9 @@ def datastore_queue_download(context, data_dict):
 def datastore_guess_fields(context, data_dict):
     # allow access to everyone
     return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_hash_query(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}

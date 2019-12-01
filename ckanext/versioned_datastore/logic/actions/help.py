@@ -656,3 +656,18 @@ The result of this action is a list of dicts, each with the following keys:
                and the resources they come from
 :type fields: dict
 '''
+
+datastore_hash_query = u'''
+This action simply hashes the given query and returns the hex digest of it. The hash is produced
+using sha1 and a custom algorithm - it's not just a hash of the query dict.
+
+Params:
+
+:param query: the search JSON
+:type query: dict
+:param query_version: the query language version (for example v1.0.0)
+:type query_version: string
+
+Returns:
+:rtype: string
+'''

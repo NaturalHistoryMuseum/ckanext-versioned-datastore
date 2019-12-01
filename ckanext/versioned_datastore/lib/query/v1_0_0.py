@@ -1,3 +1,4 @@
+import hashlib
 import io
 import json
 import string
@@ -29,6 +30,7 @@ class v1_0_0Schema(Schema):
             u'geography': self.load_geojson(u'50m-geography-regions-v4.1.0.geojson',
                                             (u'name_en', u'name')),
         }
+        self.hasher = v1_0_0Hasher()
 
     def validate(self, query):
         '''
@@ -37,6 +39,15 @@ class v1_0_0Schema(Schema):
         :param query: the query to validate
         '''
         self.validator.validate(query)
+
+    def hash(self, query):
+        '''
+        Hashes the given query and returns the hex digest of it.
+
+        :param query: the query dict
+        :return: the hex digest of the hash of the query
+        '''
+        return self.hasher.hash_query(query)
 
     def translate(self, query, search=None):
         '''
@@ -366,3 +377,206 @@ class v1_0_0Schema(Schema):
                         lookup[name].append(polygon)
 
             return lookup
+
+
+class v1_0_0Hasher(object):
+    '''
+    Query hasher class for the v1.0.0 query schema.
+    '''
+
+    def hash_query(self, query):
+        '''
+        Stable hash function for v1.0.0 queries.
+
+        :param query: the query dict
+        :return: the hex digest
+        '''
+        query_hash = hashlib.sha1()
+        if u'search' in query:
+            query_hash.update(u'search:{}'.format(query[u'search']))
+        if u'filters' in query:
+            query_hash.update(u'filters:{}'.format(self.create_group_or_term(query[u'filters'])))
+        return query_hash.hexdigest()
+
+    def create_group_or_term(self, group_or_term):
+        '''
+        Creates and returns a string version of the given group or term dict and returns it.
+
+        :param group_or_term: a dict defining a single group or term
+        :return: a string representing the group or term
+        '''
+        # only one property is allowed so we can safely just extract the only name and options
+        group_or_term_type, group_or_term_options = next(iter(group_or_term.items()))
+        return getattr(self, u'create_{}'.format(group_or_term_type))(group_or_term_options)
+
+    def create_and(self, group):
+        '''
+        Creates and returns a string version of the given group as an and query.
+
+        :param group: the group to build the and from
+        :return: a string representing the group
+        '''
+        # sorting the members makes this stable
+        members = sorted(self.create_group_or_term(member) for member in group)
+        return u'{}:[{}]'.format(u'and', u'|'.join(members))
+
+    def create_or(self, group):
+        '''
+        Creates and returns a string version of the given group as an or query.
+
+        :param group: the group to build the or from
+        :return: a string representing the group
+        '''
+        # sorting the members makes this stable
+        members = sorted(self.create_group_or_term(member) for member in group)
+        return u'{}:[{}]'.format(u'or', u'|'.join(members))
+
+    def create_not(self, group):
+        '''
+        Creates and returns a string version of the given group as a not query.
+
+        :param group: the group to build the not from
+        :return: a string representing the group
+        '''
+        # sorting the members makes this stable
+        members = sorted(self.create_group_or_term(member) for member in group)
+        return u'{}:[{}]'.format(u'not', u'|'.join(members))
+
+    @staticmethod
+    def create_string_equals(options):
+        '''
+        Given the options for a string_equals term, creates and returns a string version of it.
+
+        :param options: the options for the string_equals query
+        :return: a string representing the term
+        '''
+        # sorting the fields makes this stable
+        fields = u','.join(sorted(options[u'fields']))
+        return u'string_equals:{};{}'.format(fields, options[u'value'])
+
+    @staticmethod
+    def create_string_contains(options):
+        '''
+        Given the options for a string_contains term, creates and returns a string version of it.
+
+        :param options: the options for the string_contains query
+        :return: a string representing the term
+        '''
+        # sorting the fields makes this stable
+        fields = u','.join(sorted(options[u'fields']))
+        return u'string_contains:{};{}'.format(fields, options[u'value'])
+
+    @staticmethod
+    def create_number_equals(options):
+        '''
+        Given the options for a number_equals term, creates and returns a string version of it.
+
+        :param options: the options for the number_equals query
+        :return: a string representing the term
+        '''
+        # sorting the fields makes this stable
+        fields = u','.join(sorted(options[u'fields']))
+        return u'number_equals:{};{}'.format(fields, options[u'value'])
+
+    @staticmethod
+    def create_number_range(options):
+        '''
+        Given the options for a number_range term, creates and returns a string version of it.
+
+        :param options: the options for the number_range query
+        :return: a string representing the term
+        '''
+        # sorting the fields makes this stable
+        fields = u','.join(sorted(options[u'fields']))
+        hash_value = u'number_range:{};'.format(fields)
+
+        less_than = options.get(u'less_than', None)
+        less_than_inclusive = options.get(u'less_than_inclusive', True)
+        if less_than is not None:
+            hash_value += u'<'
+            if less_than_inclusive:
+                hash_value += u'='
+            hash_value += unicode(less_than)
+
+        greater_than = options.get(u'greater_than', None)
+        greater_than_inclusive = options.get(u'greater_than_inclusive', True)
+        if greater_than is not None:
+            hash_value += u'>'
+            if greater_than_inclusive:
+                hash_value += u'='
+            hash_value += unicode(greater_than)
+
+        return hash_value
+
+    @staticmethod
+    def create_exists(options):
+        '''
+        Given the options for a exists term, creates and returns a string version of it.
+
+        :param options: the options for the exists query
+        :return: a string representing the term
+        '''
+        if options.get(u'geo_field', False):
+            return u'geo_exists'
+        else:
+            # sorting the fields makes this stable
+            fields = u','.join(sorted(options[u'fields']))
+            return u'exists:{}'.format(fields)
+
+    @staticmethod
+    def create_geo_point(options):
+        '''
+        Given the options for a geo_point term, creates and returns a string version of it.
+
+        :param options: the options for the geo_point query
+        :return: a string representing the term
+        '''
+        distance = u'{}{}'.format(options.get(u'radius', 0), options.get(u'radius_unit', u'm'))
+        return u'geo_point:{};{};{}'.format(distance, options[u'latitude'], options[u'longitude'])
+
+    @staticmethod
+    def create_geo_named_area(options):
+        '''
+        Given the options for a geo_named_area term, creates and returns a string version of it.
+
+        :param options: the options for the geo_named_area query
+        :return: a string representing the term
+        '''
+        return u'geo_named_area:{};{}'.format(*next(iter(options.items())))
+
+    def create_geo_custom_area(self, coordinates):
+        '''
+        Given the coordinates for a geo_custom_area term, creates and returns a string version of
+        it.
+
+        :param coordinates: the coordinates for the geo_custom_area query
+        :return: a string representing the term
+        '''
+        queries = []
+        # the first list is a list of GeoJSON Polygons
+        for polygon in coordinates:
+            # then the Polygon is a list containing at least one element. The first element is the
+            # outer boundary shape of the polygon and any other elements are holes in this shape
+            outer, holes = polygon[0], polygon[1:]
+            outer_query = self.build_geo_polygon_query(outer)
+
+            if holes:
+                # sort the holes to ensure stability
+                holes_queries = sorted(self.build_geo_polygon_query(hole) for hole in holes)
+                # create a query which filters the outer query but filters out the holes
+                queries.append(u'{}/{}'.format(outer_query, holes_queries))
+            else:
+                queries.append(outer_query)
+
+        return u'geo_custom_area:{}'.format(u';'.join(queries))
+
+    @staticmethod
+    def build_geo_polygon_query(points):
+        '''
+        Given a series of points, returns a string version of them. Note that we don't sort them as
+        that could change the meaning.
+
+        :param points: the points as lat lon pairs
+        :return: a string representing the points
+        '''
+        return u','.join(u'[{},{}]'.format(point[1], point[0]) for point in points)

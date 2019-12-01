@@ -56,6 +56,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_resolve_slug': auth.datastore_resolve_slug,
             u'datastore_queue_download': auth.datastore_queue_download,
             u'datastore_guess_fields': auth.datastore_guess_fields,
+            u'datastore_hash_query': auth.datastore_hash_query,
         }
 
     # ITemplateHelpers
