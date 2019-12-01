@@ -1,12 +1,11 @@
 import hashlib
 import random
 
-import dicthash
 from ckan import model
 from ckan.plugins import toolkit
 from sqlalchemy.exc import IntegrityError
 
-from .schema import get_latest_query_version
+from .schema import get_latest_query_version, hash_query
 from .schema import validate_query
 from .slug_words import adjectives, animals
 from .utils import get_available_datastore_resources
@@ -26,16 +25,18 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
     :param resource_ids_and_versions: the resource ids and specific versions to search at for them
     :return: a unique id for the query, which is a hash of the query and parameters
     '''
-    to_hash = {
-        u'query': query,
-        u'query_version': query_version,
-        u'version': version,
-        # sort the resources to ensure the hash doesn't change unnecessarily
-        u'resource_ids': sorted(resource_ids) if resource_ids is not None else resource_ids,
-        u'resource_ids_and_versions': resource_ids_and_versions,
-    }
-    raw = dicthash.generate_hash_from_dict(to_hash, raw=True)
-    return hashlib.sha1(raw.encode(u'utf-8')).hexdigest()
+    hash_value = hashlib.sha1()
+    bits = [
+        hash_query(query, query_version),
+        query_version,
+        version,
+        # sort the resource ids to ensure stability
+        sorted(resource_ids) if resource_ids is not None else None,
+        # sort the resource ids and versions to ensure stability
+        sorted(resource_ids_and_versions.items()) if resource_ids_and_versions is not None else None
+    ]
+    hash_value.update(u'|'.join(map(unicode, bits)))
+    return hash_value.hexdigest()
 
 
 def generate_pretty_slug(word_lists=(adjectives, adjectives, animals)):
