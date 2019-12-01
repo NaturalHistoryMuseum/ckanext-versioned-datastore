@@ -57,6 +57,9 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_queue_download': auth.datastore_queue_download,
             u'datastore_guess_fields': auth.datastore_guess_fields,
             u'datastore_hash_query': auth.datastore_hash_query,
+            u'datastore_is_datastore_resource': auth.datastore_hash_query,
+            u'datastore_get_latest_query_schema_version':
+                auth.datastore_get_latest_query_schema_version,
         }
 
     # ITemplateHelpers

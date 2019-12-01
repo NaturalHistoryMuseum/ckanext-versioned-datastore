@@ -240,3 +240,9 @@ def datastore_hash_query():
         u'query': [ignore_missing, json_validator],
         u'query_version': [ignore_missing, unicode],
     }
+
+
+def datastore_is_datastore_resource():
+    return {
+        u'resource_id': [not_missing, not_empty, unicode]
+    }

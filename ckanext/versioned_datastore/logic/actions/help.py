@@ -671,3 +671,24 @@ Params:
 Returns:
 :rtype: string
 '''
+
+datastore_is_datastore_resource = u'''
+This action checks whether the given resource is in the datastore.
+
+Params:
+
+:param resource_id: the resource id to check
+:type resource_id: string
+
+Returns:
+
+:rtype: boolean
+'''
+
+datastore_get_latest_query_schema_version = u'''
+This action simply returns the latest available query schema version.
+
+Returns:
+
+:rtype: string
+'''

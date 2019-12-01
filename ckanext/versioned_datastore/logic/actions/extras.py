@@ -6,7 +6,8 @@ from .utils import action
 from .. import schema
 from ...lib import common
 from ...lib.basic_query.search import create_search
-from ...lib.datastore_utils import prefix_resource
+from ...lib.datastore_utils import prefix_resource, is_datastore_resource
+from ...lib.query.schema import get_latest_query_version
 
 
 @action(schema.datastore_get_record_versions(), help.datastore_get_record_versions,
@@ -65,3 +66,25 @@ def datastore_get_rounded_version(resource_id, version=None):
     '''
     index_name = prefix_resource(resource_id)
     return common.SEARCH_HELPER.get_rounded_versions([index_name], version)[index_name]
+
+
+@action(schema.datastore_is_datastore_resource(), help.datastore_is_datastore_resource,
+        toolkit.side_effect_free)
+def datastore_is_datastore_resource(resource_id):
+    '''
+    Checks whether the given resource id is in the datastore or not.
+
+    :param resource_id: the resource to check
+    :return: True if it is, False if not
+    '''
+    return is_datastore_resource(resource_id)
+
+
+@action({}, help.datastore_get_latest_query_schema_version, toolkit.side_effect_free)
+def datastore_get_latest_query_schema_version():
+    '''
+    Simply returns the latest available query schema version.
+
+    :return: the query schema version
+    '''
+    return get_latest_query_version()
