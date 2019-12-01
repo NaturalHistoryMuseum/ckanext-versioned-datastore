@@ -184,7 +184,7 @@ class IVersionedDatastore(interfaces.Interface):
         '''
         pass
 
-    def datastore_modify_fields(self, resource_ids, fields):
+    def datastore_modify_guess_fields(self, resource_ids, fields):
         '''
         Allows plugins to manipulate the Fields object used to figure out the groups that should be
         returned by the datastore_guess_fields action.

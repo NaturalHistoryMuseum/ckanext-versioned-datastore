@@ -291,7 +291,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
 
     # allow plugins to modify the fields object
     for plugin in PluginImplementations(IVersionedDatastore):
-        all_fields = plugin.datastore_modify_fields(resource_ids, all_fields)
+        all_fields = plugin.datastore_modify_guess_fields(resource_ids, all_fields)
 
     if len(resource_ids) == 1:
         resource_id = resource_ids[0]
