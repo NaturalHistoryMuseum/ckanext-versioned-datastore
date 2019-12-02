@@ -1,16 +1,20 @@
 import functools
+import hashlib
 import io
 import json
 import shutil
 import socket
 import tempfile
 import zipfile
+from datetime import datetime
+from glob import iglob
+from traceback import format_exception_only
 
 import os
 import rq
+from ckan import model
 from ckan.lib import jobs, mailer
-from ckan.plugins import toolkit
-from datetime import datetime
+from ckan.plugins import toolkit, PluginImplementations
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
@@ -20,13 +24,24 @@ from .sv import sv_writer
 from .utils import calculate_field_counts
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
-from ..query.slugs import generate_query_hash
+from ...interfaces import IVersionedDatastoreDownloads
+from ...model.downloads import DatastoreDownload
 
 format_registry = {
     u'csv': functools.partial(sv_writer, dialect=u'excel', extension=u'csv'),
     u'tsv': functools.partial(sv_writer, dialect=u'excel-tab', extension=u'tsv'),
     u'jsonl': jsonl_writer,
 }
+
+# TODO: put this in the config/interface so that it can be overridden
+default_body = u'''
+Hello,
+
+The link to the resource data you requested on https://data.nhm.ac.uk is available at: {url}.
+{{extras}}
+Best Wishes,
+The NHM Data Portal Bot
+'''.strip()
 
 
 def ensure_download_queue_exists():
@@ -47,15 +62,15 @@ def ensure_download_queue_exists():
         jobs._queues[name] = queue
 
 
-def queue_download(email_address, query, query_version, search, resource_ids_and_versions,
-                   separate_files, file_format, ignore_empty_fields):
+def queue_download(email_address, download_id, query_hash, query, query_version, search,
+                   resource_ids_and_versions, separate_files, file_format, ignore_empty_fields):
     '''
     Queues a job which when run will download the data for the resource.
 
     :return: the queued job
     '''
     ensure_download_queue_exists()
-    request = DownloadRequest(email_address, query, query_version, search,
+    request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
                               resource_ids_and_versions, separate_files, file_format,
                               ignore_empty_fields)
     return toolkit.enqueue_job(download, args=[request], queue=u'download', title=unicode(request))
@@ -69,9 +84,11 @@ class DownloadRequest(object):
     large list of dicts this becomes insane.
     '''
 
-    def __init__(self, email_address, query, query_version, search, resource_ids_and_versions,
-                 separate_files, file_format, ignore_empty_fields):
+    def __init__(self, email_address, download_id, query_hash, query, query_version, search,
+                 resource_ids_and_versions, separate_files, file_format, ignore_empty_fields):
         self.email_address = email_address
+        self.download_id = download_id
+        self.query_hash = query_hash
         self.query = query
         self.query_version = query_version
         self.search = search
@@ -80,6 +97,34 @@ class DownloadRequest(object):
         self.file_format = file_format
         self.ignore_empty_fields = ignore_empty_fields
 
+    @property
+    def resource_ids(self):
+        return sorted(self.resource_ids_and_versions.keys())
+
+    def update_download(self, **kwargs):
+        '''
+        Update the DatastoreDownload object with the given database id with the given update dict.
+        The update dict will be passed directly to SQLAlchemy.
+
+        :param kwargs: a dict of fields to update with the corresponding values
+        '''
+        download_entry = model.Session.query(DatastoreDownload).get(self.download_id)
+        for field, value in kwargs.items():
+            setattr(download_entry, field, value)
+        download_entry.save()
+
+    def generate_download_hash(self):
+        to_hash = [
+            self.query_hash,
+            self.query_version,
+            sorted(self.resource_ids_and_versions.items()),
+            self.separate_files,
+            self.file_format,
+            self.ignore_empty_fields,
+        ]
+        download_hash = hashlib.sha1(u'|'.join(map(unicode, to_hash)))
+        return download_hash.hexdigest()
+
     def __repr__(self):
         return self.__str__()
 
@@ -87,12 +132,7 @@ class DownloadRequest(object):
         return unicode(self).encode(u'utf-8')
 
     def __unicode__(self):
-        return u'Download data from {} resources'.format(len(self.resource_ids_and_versions))
-
-    def generate_query_hash(self):
-        return generate_query_hash(self.query, self.query_version, None,
-                                   list(self.resource_ids_and_versions.keys()),
-                                   self.resource_ids_and_versions)
+        return u'Download data, id: {}'.format(self.download_id)
 
 
 def download(request):
@@ -101,16 +141,38 @@ def download(request):
 
     :param request: the DownloadRequest object, see that for parameter details
     '''
-    es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True, sniffer_timeout=60,
-                                         sniff_on_connection_fail=True, sniff_timeout=10,
-                                         http_compress=False)
+    download_dir = toolkit.config.get(u'ckanext.versioned_datastore.download_dir')
+    download_hash = request.generate_download_hash()
+    existing_file = next(iglob(os.path.join(download_dir, u'*_{}.zip'.format(download_hash))), None)
+    if existing_file is not None:
+        previous_download_id = os.path.split(existing_file)[1].split(u'_')[0]
+        existing_download = model.Session.query(DatastoreDownload).get(previous_download_id)
+        if existing_download is not None:
+            request.update_download(state=u'complete', total=existing_download.total,
+                                    resource_totals=existing_download.resource_totals)
+            zip_name = u'{}_{}.zip'.format(existing_download.id, download_hash)
+            send_email(request, zip_name)
+            return
+
+    zip_name = u'{}_{}.zip'.format(request.download_id, download_hash)
+    zip_path = os.path.join(download_dir, zip_name)
+
+    start = datetime.now()
+    request.update_download(state=u'processing')
     target_dir = tempfile.mkdtemp()
 
     try:
-        start = datetime.now()
+        es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True, sniffer_timeout=60,
+                                             sniff_on_connection_fail=True, sniff_timeout=10,
+                                             http_compress=False)
+
         # this manifest will be written out as JSON and put in the download zip
         manifest = {
+            u'download_id': request.download_id,
             u'resources': {},
+            u'separate_files': request.separate_files,
+            u'file_format': request.file_format,
+            u'ignore_empty_fields': request.ignore_empty_fields,
         }
         # calculate, per resource, the number of values for each field present in the search
         field_counts = calculate_field_counts(request, es_client)
@@ -118,6 +180,8 @@ def download(request):
         writer_function = format_registry[request.file_format]
         # we shouldn't auth anything
         context = {u'ignore_auth': True}
+        # keep track of the resource record counts
+        resource_counts = {}
 
         with writer_function(request, target_dir, field_counts) as writer:
             # handle each resource individually. We could search across all resources at the same
@@ -155,11 +219,17 @@ def download(request):
                     u'field_counts': field_counts[resource_id],
                     u'version': version,
                 }
+                resource_counts[resource_id] = total_records
+
+        overall_total = sum(resource_counts.values())
+        request.update_download(state=u'zipping', total=overall_total,
+                                resource_totals=resource_counts)
 
         # create a list of files that should be added to the zip, this should include the manifest
         files_to_zip = [u'manifest.json'] + os.listdir(target_dir)
 
         # add the final data to the manifest
+        manifest[u'total_records'] = overall_total
         manifest[u'files'] = files_to_zip
         end = datetime.now()
         manifest[u'start'] = start.isoformat()
@@ -172,38 +242,49 @@ def download(request):
             f.write(unicode(data))
 
         # zip up the files into the downloads directory
-        download_dir = toolkit.config.get(u'ckanext.versioned_datastore.download_dir')
-        zip_name = u'{}.zip'.format(request.generate_query_id())
-        zip_path = os.path.join(download_dir, zip_name)
-        # remove any existing zip under this name
-        if os.path.exists(zip_path):
-            os.remove(zip_path)
         with zipfile.ZipFile(zip_path, u'w', zipfile.ZIP_DEFLATED) as z:
             for filename in files_to_zip:
                 z.write(os.path.join(target_dir, filename), arcname=filename)
 
         # drop the user an email to let them know their download is ready
         try:
-            send_email(request.email_address, zip_name)
+            send_email(request, zip_name)
         except (mailer.MailerException, socket.error):
             raise
 
+        request.update_download(state=u'complete')
+    except Exception as error:
+        error_message = unicode(format_exception_only(type(error), error)[-1].strip())
+        request.update_download(state=u'failed', error=error_message)
+        raise
     finally:
         # remove the temp dir we were using
         shutil.rmtree(target_dir)
 
 
-def send_email(email_address, zip_name):
-    download_url = u'{}/downloads/{}'.format(toolkit.config.get(u'ckan.site_url'), zip_name)
-    body = u'Email! Zip: {}'.format(download_url)
-    mail_dict = {
-        u'recipient_email': email_address,
-        u'recipient_name': u'Downloader',
-        u'subject': u'Data download',
-        u'body': body,
-        # u'headers': {
-        #     u'reply-to': toolkit.config.get(u'smtp.mail_from')
-        # }
-    }
+def send_email(request, zip_name):
+    '''
+    Sends an email to the email address in the passed request informing them that a download has
+    completed and providing them with a link to go get it from.
 
-    mailer.mail_recipient(**mail_dict)
+    :param request: the DownloadRequest object
+    :param zip_name: the name of the zip file that has been created
+    '''
+    download_url = u'{}/downloads/{}'.format(toolkit.config.get(u'ckan.site_url'), zip_name)
+    # create the default download email body using the url
+    body = default_body.format(url=download_url)
+
+    # allow plugins to override the middle section of the email with any additional details
+    extras = []
+    for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+        extra_body = plugin.download_add_to_email_body(request)
+        if extra_body:
+            extras.append(extra_body)
+    if extras:
+        body = body.format(extras=u'\n{}\n'.format(u'\n\n'.join(extras)))
+    else:
+        # this is necessary as it removes the {extras} placeholder in the default body text
+        body = body.format(extras=u'')
+
+    mailer.mail_recipient(recipient_email=request.email_address, recipient_name=u'Downloader',
+                          subject=u'Data download', body=body)

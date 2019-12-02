@@ -4,6 +4,7 @@ from ckan.plugins import toolkit
 from .model.details import datastore_resource_details_table
 from .model.slugs import datastore_slugs_table
 from .model.stats import import_stats_table
+from .model.downloads import datastore_downloads_table
 
 
 class VersionedDatastoreCommands(toolkit.CkanCommand):
@@ -52,7 +53,8 @@ class VersionedDatastoreCommands(toolkit.CkanCommand):
         Ensure the tables needed by this plugin exist.
         '''
         # create the tables if they don't exist
-        for table in [import_stats_table, datastore_resource_details_table, datastore_slugs_table]:
+        for table in [import_stats_table, datastore_resource_details_table, datastore_slugs_table,
+                      datastore_downloads_table]:
             if not table.exists(model.meta.engine):
                 table.create(model.meta.engine)
 

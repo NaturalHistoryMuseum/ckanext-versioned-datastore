@@ -1,8 +1,9 @@
 from collections import defaultdict
 
-from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search, MultiSearch
+
+from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
 
 
 def get_fields(field_counts, ignore_empty_fields, resource_ids=None):

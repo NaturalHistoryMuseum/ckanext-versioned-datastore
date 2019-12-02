@@ -211,8 +211,12 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
 
-    def before_download(self, download_request):
-        pass
+    def download_add_to_email_body(self, request):
+        '''
+        Hook allowing other extensions to add extra text to the body of the email that is sent to
+        users on completion of a download.
 
-    def after_download(self):
-        pass
+        :param request: the DownloadRequest object
+        :return:
+        '''
+        return None

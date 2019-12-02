@@ -1,5 +1,7 @@
-from ckan.plugins import toolkit
 from datetime import datetime
+
+from ckan import model
+from ckan.plugins import toolkit
 from eevee.utils import to_timestamp
 
 from . import help
@@ -8,8 +10,10 @@ from .. import schema
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource
 from ...lib.downloads.download import queue_download
-from ...lib.query.schema import get_latest_query_version, validate_query, translate_query
+from ...lib.query.schema import get_latest_query_version, validate_query, translate_query, \
+    hash_query
 from ...lib.query.utils import get_available_datastore_resources
+from ...model.downloads import DatastoreDownload
 
 
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
@@ -42,7 +46,8 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     :param format: the format to download the data in. The default is csv.
     :param ignore_empty_fields: whether to ignore fields with no data in them in the result set
                                 and not write them into the download file(s). Default: True.
-    :return: a dict containing info about the background job that is doing the downloading
+    :return: a dict containing info about the background job that is doing the downloading and the
+             download id
     '''
     if resource_ids_and_versions is None:
         resource_ids_and_versions = {}
@@ -79,12 +84,24 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
         query_version = get_latest_query_version()
     validate_query(query, query_version)
     search = translate_query(query, query_version)
+    query_hash = hash_query(query, query_version)
 
-    job = queue_download(email_address, query, query_version, search.to_dict(),
-                         rounded_resource_ids_and_versions, separate_files, format,
-                         ignore_empty_fields)
+    options = {
+        u'separate_files': separate_files,
+        u'format': format,
+        u'ignore_empty_fields': ignore_empty_fields
+    }
+    download = DatastoreDownload(query_hash=query_hash, query=query, query_version=query_version,
+                                 resource_ids_and_versions=rounded_resource_ids_and_versions,
+                                 state=u'queued', options=options)
+    download.save()
+
+    job = queue_download(email_address, download.id, query_hash, query, query_version,
+                         search.to_dict(), rounded_resource_ids_and_versions, separate_files,
+                         format, ignore_empty_fields)
 
     return {
         u'queued_at': job.enqueued_at.isoformat(),
         u'job_id': job.id,
+        u'download_id': download.id,
     }
