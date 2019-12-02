@@ -244,5 +244,5 @@ def datastore_hash_query():
 
 def datastore_is_datastore_resource():
     return {
-        u'resource_id': [not_missing, not_empty, unicode]
+        u'resource_id': [not_missing, not_empty, resource_id_exists]
     }
