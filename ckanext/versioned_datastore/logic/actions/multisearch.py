@@ -288,6 +288,8 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     resource_ids = find_searched_resources(search, resource_ids)
 
     all_fields = get_all_fields(resource_ids)
+    for group in ignore_groups:
+        all_fields.ignore(group)
 
     # allow plugins to modify the fields object
     for plugin in PluginImplementations(IVersionedDatastore):
@@ -299,11 +301,10 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
             up_to_version = version
         else:
             up_to_version = resource_ids_and_versions[resource_id]
-        return get_single_resource_fields(all_fields, resource_id, up_to_version, search, size,
-                                          ignore_groups)
+        return get_single_resource_fields(all_fields, resource_id, up_to_version, search, size)
     else:
         size = max(0, min(size, 25))
-        return select_fields(all_fields, search, size, ignore_groups)
+        return select_fields(all_fields, search, size)
 
 
 @action(schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free)
