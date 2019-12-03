@@ -1,0 +1,11 @@
+{
+  "filters": {
+    "and": [
+      {
+        "exists": {
+          "geo_field": true
+        }
+      }
+    ]
+  }
+}

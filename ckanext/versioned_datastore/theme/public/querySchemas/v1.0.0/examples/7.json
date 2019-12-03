@@ -1,0 +1,22 @@
+{
+  "filters": {
+    "and": [
+      {
+        "string_equals": {
+          "fields": [
+            "genus"
+          ],
+          "value": "helix"
+        }
+      },
+      {
+        "geo_point": {
+          "latitude": 51.4712,
+          "longitude": -0.9421,
+          "radius": 10,
+          "radius_unit": "mi"
+        }
+      }
+    ]
+  }
+}

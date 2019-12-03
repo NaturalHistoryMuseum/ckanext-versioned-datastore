@@ -1,0 +1,13 @@
+{
+  "$id": "https://example.com/beans.schema.json",
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "required": [
+    "beans"
+  ],
+  "type": "object",
+  "properties": {
+    "beans": {
+      "type": "boolean"
+    }
+  }
+}

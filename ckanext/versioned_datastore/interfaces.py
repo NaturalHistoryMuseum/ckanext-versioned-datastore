@@ -63,10 +63,9 @@ class IVersionedDatastore(interfaces.Interface):
         Allows modifications to the result after the search.
 
         Each extension which implements this interface will be called in the order CKAN loaded them
-        in, The search parameter will be the output of the previous extension's interface
+        in, The result parameter will be the output of the previous extension's interface
         implementation, thus creating a chain of extensions, each getting a go at altering the
-        search object if necessary. The base datastore_search function provides the initial result
-        object.
+        result object if necessary.
 
         Implementors of this function should return the result object so that the datastore_search
         function can build the final return dict.
@@ -80,10 +79,10 @@ class IVersionedDatastore(interfaces.Interface):
         :type data_dict: dictionary
         :param result: the current result, as changed by the previous IVersionedDatastore extensions
                        in the chain
-        :type result: eevee SearchResults object
+        :type result: elasticsearch result object
 
         :returns: the result object with your modifications
-        :rtype: eevee SearchResults object
+        :rtype: elasticsearch result object
         '''
         return result
 
@@ -160,3 +159,64 @@ class IVersionedDatastore(interfaces.Interface):
         :param stats_id: the id of the statistics entry in the ImportStats database table
         '''
         pass
+
+    def datastore_reserve_slugs(self):
+        '''
+        Allows implementors to reserve queries using reserved pretty slugs. Implementors should
+        return a dict made up of reserved pretty slugs as keys and then the slug parameters as the
+        values. These values should be another dict containing the following optional keys:
+
+            - query, a dict query (defaults to {})
+            - query_version, the query schema version (defaults to the latest query schema version)
+            - version, the version of the data to search at (defaults to None)
+            - resource_ids, a list of resource ids to search (defaults to all resource ids)
+            - resource_ids_and_versions, a dict of resource ids and specific versions to search at
+                                         (defaults to an empty dict)
+
+        If a slug already exists in the database with the same reserved pretty slug and the same
+        query parameters then nothing happens.
+
+        If a slug already exists in the database with the same reserved pretty slug but a different
+        set of query parameters then a DuplicateSlugException is raised.
+
+        If a slug already exists in the database with the same query parameters but no reserved
+        pretty slug then the reserved pretty slug is added to the slug.
+        '''
+        pass
+
+    def datastore_modify_guess_fields(self, resource_ids, fields):
+        '''
+        Allows plugins to manipulate the Fields object used to figure out the groups that should be
+        returned by the datastore_guess_fields action.
+
+        :param resource_ids: a list of resource ids
+        :param fields: a Fields object
+        :return: the Fields object
+        '''
+        return fields
+
+
+class IVersionedDatastoreQuerySchema(interfaces.Interface):
+
+    def get_query_schemas(self):
+        '''
+        Hook to allow registering custom query schemas.
+
+        :return: a list of tuples of the format (query schema version, schema object) where the
+                 query schema version is a string of format v#.#.# and the schema object is an
+                 instance of ckanext.versioned_datastore.lib.query.Schema
+        '''
+        pass
+
+
+class IVersionedDatastoreDownloads(interfaces.Interface):
+
+    def download_add_to_email_body(self, request):
+        '''
+        Hook allowing other extensions to add extra text to the body of the email that is sent to
+        users on completion of a download.
+
+        :param request: the DownloadRequest object
+        :return:
+        '''
+        return None

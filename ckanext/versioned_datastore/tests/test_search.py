@@ -1,7 +1,7 @@
 import contextlib
 
-from ckanext.versioned_datastore.lib.search import _find_version, create_search, build_search_object
-from ckanext.versioned_datastore.lib.utils import prefix_field
+from ..lib.basic_query.search import _find_version, create_search, build_search_object
+from ..lib.datastore_utils import prefix_field
 from ckantest.models import TestBase
 from elasticsearch_dsl import Search
 from mock import MagicMock, patch
@@ -68,13 +68,15 @@ class TestCreateSearch(TestBase):
 
     @contextlib.contextmanager
     def _patch(self, target, replacement):
-        with patch(u'ckanext.versioned_datastore.lib.search.{}'.format(target), replacement):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.search.{}'.format(target),
+                   replacement):
             yield
 
     def test_onward_calls(self):
         # the params
         context = MagicMock()
         data_dict = MagicMock()
+        original_data_dict = MagicMock()
 
         # the returns of our various mocked functions
         mock_validate_return = MagicMock()
@@ -82,7 +84,6 @@ class TestCreateSearch(TestBase):
         find_version_return = MagicMock()
 
         # the mock functions
-        validate_mock = MagicMock(return_value=MagicMock())
         find_version_mock = MagicMock(return_value=find_version_return)
         build_search_object_mock = MagicMock(return_value=build_mock_return)
         mock_plugin = MagicMock(
@@ -90,21 +91,19 @@ class TestCreateSearch(TestBase):
             datastore_modify_search=MagicMock(return_value=build_mock_return),
         )
         impl_mock = MagicMock(return_value=[mock_plugin])
-        with self._patch(u'validate', validate_mock):
-            with self._patch(u'PluginImplementations', impl_mock):
-                with self._patch(u'_find_version', find_version_mock):
-                    with self._patch(u'build_search_object', build_search_object_mock):
-                        result = create_search(context, data_dict)
+        with self._patch(u'PluginImplementations', impl_mock):
+            with self._patch(u'_find_version', find_version_mock):
+                with self._patch(u'build_search_object', build_search_object_mock):
+                    result = create_search(context, data_dict, original_data_dict)
 
         # 4 values are returned
         assert_equal(len(result), 4)
         # check the values
-        assert_equal(result[0], data_dict)
+        assert_equal(result[0], original_data_dict)
         assert_equal(result[1], mock_validate_return)
         assert_equal(result[2], find_version_return)
         assert_equal(result[3], build_mock_return)
         # check the onward calls
-        assert_equal(validate_mock.call_count, 1)
         assert_equal(mock_plugin.datastore_modify_data_dict.call_count, 1)
         assert_equal(mock_plugin.datastore_modify_search.call_count, 1)
         assert_equal(find_version_mock.call_count, 1)
@@ -115,13 +114,14 @@ class TestCreateSearch(TestBase):
         # actual datastore search schema
         context = {u'schema': {u'q': [unicode], u'version': [int]}}
         data_dict = {u'q': u'banana', u'version': 23}
+        original_data_dict = {u'q': u'banana', u'version': 23, u'something_else': 29}
 
-        result = create_search(context, data_dict)
+        result = create_search(context, data_dict, original_data_dict)
 
         # 4 values are returned
         assert_equal(len(result), 4)
         # check the values
-        assert_equal(result[0], data_dict)
+        assert_equal(result[0], original_data_dict)
         assert_equal(result[1], data_dict)
         assert_equal(result[2], 23)
         # we don't care in this test if the Search has been created correctly, only that we get a
@@ -365,7 +365,8 @@ class TestBuildSearchObject(TestBase):
 
         add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
         mock_geo_value = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.search.add_geo_search', add_geo_search_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
+                   add_geo_search_mock):
             build_search_object(filters={u'__geo__': mock_geo_value})
         assert_equal(add_geo_search_mock.call_count, 1)
         search_object, filter_value = add_geo_search_mock.call_args[0]
@@ -462,7 +463,8 @@ class TestBuildSearchObject(TestBase):
         )
         add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
         mock_geo_value = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.search.add_geo_search', add_geo_search_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
+                   add_geo_search_mock):
             build_search_object(filters={u'__geo__': [mock_geo_value]})
         assert_equal(add_geo_search_mock.call_count, 1)
         search_object, filter_value = add_geo_search_mock.call_args[0]

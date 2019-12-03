@@ -1,0 +1,362 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "fields": {
+      "description": "Defines the fields to be queried by the term. If more than one field is specified in the array then the fields are treated as an `or` group where for a record to match at least one of the fields must match the term",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "term": {
+      "type": "object",
+      "additionalProperties": false,
+      "oneOf": [
+        {
+          "required": [
+            "string_equals"
+          ]
+        },
+        {
+          "required": [
+            "string_contains"
+          ]
+        },
+        {
+          "required": [
+            "number_equals"
+          ]
+        },
+        {
+          "required": [
+            "number_range"
+          ]
+        },
+        {
+          "required": [
+            "geo_point"
+          ]
+        },
+        {
+          "required": [
+            "geo_named_area"
+          ]
+        },
+        {
+          "required": [
+            "geo_custom_area"
+          ]
+        },
+        {
+          "required": [
+            "exists"
+          ]
+        }
+      ],
+      "properties": {
+        "string_equals": {
+          "description": "Term which finds records where at least one of the fields specified has the value given. The check is case-insensitive",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "string_contains": {
+          "description": "Term which finds records where at least one of the fields specified has a value that matches the given value. This matching is not a simple equality, nor is it a simple contains check, it is a full-text search which uses stemming and other analysis techniques to match values",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "description": "Defines the fields to be queried by the term. If more than one field is specified in the array then the fields are treated as an `or` group where for a record to match at least one of the fields must match the term. If no fields are provided (i.e. an empty array is used) then the value is matched against all fields (this therefore recreates the functionality of the `search` value at the root of the query object).",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "value": {
+              "type": "string"
+            }
+          }
+        },
+        "number_equals": {
+          "description": "Term which finds records where at least one of the fields specified has the value given. The equality check is only performed on fields with numbers in them.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields",
+            "value"
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "value": {
+              "type": "number"
+            }
+          }
+        },
+        "number_range": {
+          "description": "Term which finds records where at least one of the fields specified has a value that falls within the given numerical bounds.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "greater_than"
+              ]
+            },
+            {
+              "required": [
+                "less_than"
+              ]
+            }
+          ],
+          "properties": {
+            "fields": {
+              "$ref": "#/definitions/fields"
+            },
+            "greater_than": {
+              "type": "number"
+            },
+            "less_than": {
+              "type": "number"
+            },
+            "greater_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            },
+            "less_than_inclusive": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "geo_point": {
+          "description": "Term which finds records which are positioned at the given or within a given radius from the point",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "latitude",
+            "longitude"
+          ],
+          "dependencies": {
+            "radius": [
+              "radius_unit"
+            ]
+          },
+          "properties": {
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "radius": {
+              "type": "number",
+              "minimum": 0
+            },
+            "radius_unit": {
+              "type": "string",
+              "enum": [
+                "mi",
+                "yd",
+                "ft",
+                "in",
+                "km",
+                "m",
+                "cm",
+                "mm",
+                "nmi"
+              ]
+            }
+          }
+        },
+        "geo_named_area": {
+          "description": "Term which finds records which are positioned within the area defined by the provided name. All names are sourced from [Natural Earth Data](https://www.naturalearthdata.com/).",
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 1,
+          "oneOf": [
+            {
+              "required": [
+                "country"
+              ]
+            },
+            {
+              "required": [
+                "marine"
+              ]
+            },
+            {
+              "required": [
+                "geography"
+              ]
+            }
+          ],
+          "properties": {
+            "country": {
+              "$ref": "geojson/v1.0.0-countries.json#/definitions/country"
+            },
+            "marine": {
+              "$ref": "geojson/v1.0.0-marine.json#/definitions/marine"
+            },
+            "geography": {
+              "$ref": "geojson/v1.0.0-geography.json#/definitions/geography"
+            }
+          }
+        },
+        "geo_custom_area": {
+          "description": "Term which finds records which are positioned within the given area. The area must be a valid set of [GeoJSON MultiPolygon](https://dev.socrata.com/docs/datatypes/multipolygon.html) coordinates and can contain holes",
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 4,
+              "items": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "type": "number"
+                }
+              }
+            }
+          }
+        },
+        "exists": {
+          "description": "Term which finds records where at least one of the fields specified exists and has a non-`null` value. The `fields` property can be omitted and the `geo_field` property included instead to find records that have geographic data stored with them.",
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 1,
+          "oneOf": [
+            {
+              "required": [
+                "fields"
+              ]
+            },
+            {
+              "required": [
+                "geo_field"
+              ]
+            }
+          ],
+          "properties": {
+            "geo_field": {
+              "type": "boolean"
+            },
+            "fields": {
+              "$ref": "#/definitions/fields"
+            }
+          }
+        }
+      },
+      "maxProperties": 1
+    },
+    "group": {
+      "description": "Defines a group of terms or indeed other groups to filter the query results by. Each group combines its members in different ways and valid groups are `and`, `or` or `not`.",
+      "oneOf": [
+        {
+          "required": [
+            "and"
+          ]
+        },
+        {
+          "required": [
+            "or"
+          ]
+        },
+        {
+          "required": [
+            "not"
+          ]
+        }
+      ],
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "and": {
+          "description": "Finds records that meet all of its member's requirements",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/group"
+              },
+              {
+                "$ref": "#/definitions/term"
+              }
+            ]
+          },
+          "minItems": 1
+        },
+        "or": {
+          "description": "Finds records that meet at least one of its member's requirements",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/group"
+              },
+              {
+                "$ref": "#/definitions/term"
+              }
+            ]
+          },
+          "minItems": 2
+        },
+        "not": {
+          "description": "Finds records that meet none of its member's requirements",
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/group"
+              },
+              {
+                "$ref": "#/definitions/term"
+              }
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "maxProperties": 1
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "search": {
+      "type": "string",
+      "description": "A search term to match on all fields in each record. The terms provided will be searched together ensuring that all match or none match. The search is case-insensitive and terms will be stemmed if they can be"
+    },
+    "filters": {
+      "$ref": "#/definitions/group"
+    }
+  }
+}

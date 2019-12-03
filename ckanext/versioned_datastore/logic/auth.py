@@ -87,6 +87,59 @@ def datastore_ensure_privacy(context, data_dict):
 
 
 @toolkit.auth_allow_anonymous_access
+def datastore_multisearch(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_field_autocomplete(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_create_slug(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_resolve_slug(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_queue_download(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_guess_fields(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_hash_query(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_is_datastore_resource(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
+def datastore_get_latest_query_schema_version(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}
+
+@toolkit.auth_allow_anonymous_access
 def datastore_count(context, data_dict):
     # allow access to everyone
     return {u'success': True}

@@ -1,14 +1,21 @@
 import logging
 
-from ckanext.versioned_datastore.lib import utils
-from eevee.utils import to_timestamp
-
 from ckan import model
-from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements
 from ckan.model import DomainObjectOperation
-from ckanext.versioned_datastore.lib.utils import is_datastore_resource, setup_eevee
-from ckanext.versioned_datastore.logic import action, auth
-from ckanext.versioned_datastore import routes, helpers
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
+from eevee.utils import to_timestamp
+from sqlalchemy.exc import ProgrammingError
+
+from . import routes, helpers
+from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
+from .lib.common import setup
+from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
+    InvalidVersionException, update_resources_privacy
+from .lib.query.schema import register_schema
+from .lib.query.v1_0_0 import v1_0_0Schema
+from .logic import auth
+from .logic.actions import basic_search, crud, downloads, extras, multisearch
+from .logic.actions.utils import create_actions
 
 log = logging.getLogger(__name__)
 
@@ -22,24 +29,11 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IConfigurer)
     implements(interfaces.IConfigurable)
     implements(interfaces.IBlueprint, inherit=True)
+    implements(IVersionedDatastoreQuerySchema)
 
     # IActions
     def get_actions(self):
-        return {
-            u'datastore_create': action.datastore_create,
-            u'datastore_upsert': action.datastore_upsert,
-            u'datastore_delete': action.datastore_delete,
-            u'datastore_search': action.datastore_search,
-            u'datastore_get_record_versions': action.datastore_get_record_versions,
-            u'datastore_get_resource_versions': action.datastore_get_resource_versions,
-            u'datastore_autocomplete': action.datastore_autocomplete,
-            u'datastore_reindex': action.datastore_reindex,
-            u'datastore_query_extent': action.datastore_query_extent,
-            u'datastore_get_rounded_version': action.datastore_get_rounded_version,
-            u'datastore_search_raw': action.datastore_search_raw,
-            u'datastore_ensure_privacy': action.datastore_ensure_privacy,
-            u'datastore_count': action.datastore_count,
-        }
+        return create_actions(basic_search, crud, downloads, extras, multisearch)
 
     # IAuthFunctions
     def get_auth_functions(self):
@@ -57,6 +51,16 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_search_raw': auth.datastore_search_raw,
             u'datastore_ensure_privacy': auth.datastore_ensure_privacy,
             u'datastore_count': auth.datastore_count,
+            u'datastore_multisearch': auth.datastore_multisearch,
+            u'datastore_field_autocomplete': auth.datastore_field_autocomplete,
+            u'datastore_create_slug': auth.datastore_create_slug,
+            u'datastore_resolve_slug': auth.datastore_resolve_slug,
+            u'datastore_queue_download': auth.datastore_queue_download,
+            u'datastore_guess_fields': auth.datastore_guess_fields,
+            u'datastore_hash_query': auth.datastore_hash_query,
+            u'datastore_is_datastore_resource': auth.datastore_hash_query,
+            u'datastore_get_latest_query_schema_version':
+                auth.datastore_get_latest_query_schema_version,
         }
 
     # ITemplateHelpers
@@ -94,7 +98,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
             # if a package is the target entity and it's been changed ensure the privacy is applied
             # correctly to its resource indexes
-            utils.update_resources_privacy(entity)
+            update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
             context = {u'model': model, u'ignore_auth': True}
             data_dict = {u'resource_id': entity.id}
@@ -118,20 +122,42 @@ class VersionedSearchPlugin(SingletonPlugin):
                     data_dict[u'replace'] = True
                     try:
                         toolkit.get_action(u'datastore_upsert')(context, data_dict)
-                    except (utils.ReadOnlyResourceException, utils.InvalidVersionException):
+                    except (ReadOnlyResourceException, InvalidVersionException):
                         # this is fine, just swallow
                         pass
 
     # IConfigurer
     def update_config(self, config):
+        # add public folder containing schemas
+        toolkit.add_public_directory(config, u'theme/public')
         # add templates
         toolkit.add_template_directory(config, u'theme/templates')
         toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
 
-    ## IBlueprint
+    # IBlueprint
     def get_blueprint(self):
         return routes.blueprints
 
     # IConfigurable
     def configure(self, ckan_config):
-        setup_eevee(ckan_config)
+        setup(ckan_config)
+
+        # register all custom query schemas
+        for plugin in PluginImplementations(IVersionedDatastoreQuerySchema):
+            for version, schema in plugin.get_query_schemas():
+                register_schema(version, schema)
+
+        # reserve any requested slugs
+        try:
+            from .lib.query.slugs import reserve_slug
+            for plugin in PluginImplementations(IVersionedDatastore):
+                for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+                    reserve_slug(reserved_pretty_slug, **query_parameters)
+        except ProgrammingError:
+            pass
+
+    # IVersionedDatastoreQuerySchema
+    def get_query_schemas(self):
+        return [
+            (v1_0_0Schema.version, v1_0_0Schema())
+        ]
