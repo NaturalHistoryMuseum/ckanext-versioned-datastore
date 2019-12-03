@@ -1,12 +1,16 @@
+from datetime import datetime
+
 from ckan.plugins import toolkit
 from eevee.search import create_version_query
+from eevee.utils import to_timestamp
+from elasticsearch_dsl import Search
 
 from . import help
 from .utils import action
 from .. import schema
 from ...lib import common
 from ...lib.basic_query.search import create_search
-from ...lib.datastore_utils import prefix_resource, is_datastore_resource
+from ...lib.datastore_utils import prefix_resource, is_datastore_resource, get_public_alias_name
 from ...lib.query.schema import get_latest_query_version
 
 
@@ -88,3 +92,16 @@ def datastore_get_latest_query_schema_version():
     :return: the query schema version
     '''
     return get_latest_query_version()
+
+
+@action(schema.datastore_count(), help.datastore_count, toolkit.side_effect_free)
+def datastore_count(resource_ids=None, version=None):
+    if version is None:
+        version = to_timestamp(datetime.now())
+    if resource_ids is None:
+        resource_ids = [u'*']
+
+    indexes = [get_public_alias_name(resource_id) for resource_id in resource_ids]
+    search = Search(using=common.ES_CLIENT, index=indexes).filter(create_version_query(version))
+
+    return search.count()

@@ -50,6 +50,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'datastore_get_rounded_version': auth.datastore_get_rounded_version,
             u'datastore_search_raw': auth.datastore_search_raw,
             u'datastore_ensure_privacy': auth.datastore_ensure_privacy,
+            u'datastore_count': auth.datastore_count,
             u'datastore_multisearch': auth.datastore_multisearch,
             u'datastore_field_autocomplete': auth.datastore_field_autocomplete,
             u'datastore_create_slug': auth.datastore_create_slug,

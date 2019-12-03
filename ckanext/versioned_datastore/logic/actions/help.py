@@ -692,3 +692,23 @@ Returns:
 
 :rtype: string
 '''
+
+datastore_count = u'''
+Count the number of records available at a specific version across a set of resources. This
+allows quick counting of total records without any query, if you want to count with a query,
+use the search actions with a limit of 0.
+
+Params:
+
+:param resource_ids: optionally, the ids of specific resources to count. Only public resources
+                     can be counted. If this parameter is not provided, then all public
+                     resources are counted.
+:type resource_id: string, list of comma separated strings
+:param version: version to count at, if not provided the current timestamp is used
+:type version: int, number of milliseconds (not seconds!) since UNIX epoch
+
+**Results:**
+
+The result of this action is a dictionary with the following keys:
+:rtype: an integer count
+'''

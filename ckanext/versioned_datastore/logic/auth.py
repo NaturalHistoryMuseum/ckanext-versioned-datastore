@@ -138,3 +138,8 @@ def datastore_is_datastore_resource(context, data_dict):
 def datastore_get_latest_query_schema_version(context, data_dict):
     # allow access to everyone
     return {u'success': True}
+
+@toolkit.auth_allow_anonymous_access
+def datastore_count(context, data_dict):
+    # allow access to everyone
+    return {u'success': True}

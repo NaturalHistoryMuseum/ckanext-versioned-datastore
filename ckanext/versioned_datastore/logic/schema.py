@@ -209,6 +209,12 @@ def datastore_resolve_slug():
     }
 
 
+def datastore_count():
+    return {
+        u'resource_ids': [ignore_missing, list_of_strings()],
+        u'version': [ignore_missing, int_validator]
+    }
+
 def datastore_queue_download():
     return {
         u'email_address': [not_missing, not_empty, email_validator],
