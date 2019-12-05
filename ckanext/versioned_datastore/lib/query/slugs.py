@@ -50,7 +50,7 @@ def generate_pretty_slug(word_lists=(adjectives, adjectives, animals)):
     :param word_lists: a sequence of word lists to choose from
     :return: the slug
     '''
-    return u'{}-{}-{}'.format(*map(random.choice, word_lists))
+    return u'-'.join(map(random.choice, word_lists))
 
 
 def create_slug(context, query, query_version, version=None, resource_ids=None,
