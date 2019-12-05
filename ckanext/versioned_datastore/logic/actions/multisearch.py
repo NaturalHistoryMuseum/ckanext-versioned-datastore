@@ -20,6 +20,7 @@ from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVers
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after, find_searched_resources
+from ...lib.query.query_log import log_query
 
 
 @action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
@@ -119,6 +120,8 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
             {trim_index_name(bucket[u'key']): bucket[u'doc_count']}
             for bucket in result.aggs.to_dict()[u'indexes'][u'buckets']
         ]
+
+    log_query(query)
 
     return response
 
