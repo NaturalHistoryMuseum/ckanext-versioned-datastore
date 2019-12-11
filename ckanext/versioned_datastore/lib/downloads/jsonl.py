@@ -5,6 +5,8 @@ from collections import defaultdict
 
 import os
 
+from .utils import filter_data_fields
+
 
 @contextlib.contextmanager
 def jsonl_writer(request, target_dir, field_counts):
@@ -38,6 +40,9 @@ def jsonl_writer(request, target_dir, field_counts):
                 # lazily open the file for this resource id
                 resource_file_name = os.path.join(target_dir, u'{}.jsonl'.format(resource_id))
                 open_files[resource_id] = io.open(resource_file_name, u'w', encoding=u'utf-8')
+
+            if request.ignore_empty_fields:
+                data = filter_data_fields(data, field_counts[resource_id])
 
             if not request.separate_files:
                 # if the data is being written into one file we need to indicate which resource the

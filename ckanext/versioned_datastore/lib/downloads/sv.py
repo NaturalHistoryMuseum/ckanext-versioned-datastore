@@ -4,7 +4,7 @@ from collections import defaultdict
 import os
 import unicodecsv
 
-from .utils import get_fields
+from .utils import get_fields, filter_data_fields
 
 
 def flatten_dict(data, path=None, separator=u' | '):
@@ -122,6 +122,9 @@ def sv_writer(request, target_dir, field_counts, dialect, extension):
                                                      u'{}.{}'.format(resource_id, extension))
                 open_files.append(open_file)
                 writers[resource_id] = writer
+
+            if request.ignore_empty_fields:
+                data = filter_data_fields(data, field_counts[resource_id])
 
             # the data dict may be nested, flatten it out first
             row = flatten_dict(data)
