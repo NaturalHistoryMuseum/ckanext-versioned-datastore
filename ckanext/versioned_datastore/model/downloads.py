@@ -5,6 +5,12 @@ from ckan.model.types import make_uuid
 from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime
 from sqlalchemy.dialects.postgresql import JSONB
 
+state_complete = u'complete'
+state_failed = u'failed'
+state_processing = u'processing'
+state_zipping = u'zipping'
+
+
 # this table stores query slugs
 datastore_downloads_table = Table(
     u'versioned_datastore_downloads',

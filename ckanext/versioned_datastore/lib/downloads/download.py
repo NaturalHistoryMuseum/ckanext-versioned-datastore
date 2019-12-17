@@ -25,7 +25,9 @@ from .utils import calculate_field_counts
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
 from ...interfaces import IVersionedDatastoreDownloads
-from ...model.downloads import DatastoreDownload
+from ...model.downloads import DatastoreDownload, state_complete, state_failed, state_processing, \
+    state_zipping
+
 
 format_registry = {
     u'csv': functools.partial(sv_writer, dialect=u'excel', extension=u'csv'),
@@ -158,7 +160,7 @@ def download(request):
     zip_path = os.path.join(download_dir, zip_name)
 
     start = datetime.now()
-    request.update_download(state=u'processing')
+    request.update_download(state=state_processing)
     target_dir = tempfile.mkdtemp()
 
     try:
@@ -222,7 +224,7 @@ def download(request):
                 resource_counts[resource_id] = total_records
 
         overall_total = sum(resource_counts.values())
-        request.update_download(state=u'zipping', total=overall_total,
+        request.update_download(state=state_zipping, total=overall_total,
                                 resource_totals=resource_counts)
 
         # create a list of files that should be added to the zip, this should include the manifest
@@ -252,10 +254,10 @@ def download(request):
         except (mailer.MailerException, socket.error):
             raise
 
-        request.update_download(state=u'complete')
+        request.update_download(state=state_complete)
     except Exception as error:
         error_message = unicode(format_exception_only(type(error), error)[-1].strip())
-        request.update_download(state=u'failed', error=error_message)
+        request.update_download(state=state_failed, error=error_message)
         raise
     finally:
         # remove the temp dir we were using
