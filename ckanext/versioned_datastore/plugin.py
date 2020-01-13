@@ -4,6 +4,7 @@ from ckan import model
 from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from eevee.utils import to_timestamp
+from elasticsearch import NotFoundError
 from sqlalchemy.exc import ProgrammingError
 
 from . import routes, helpers
@@ -153,7 +154,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             for plugin in PluginImplementations(IVersionedDatastore):
                 for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
                     reserve_slug(reserved_pretty_slug, **query_parameters)
-        except ProgrammingError:
+        except (ProgrammingError, NotFoundError):
             pass
 
     # IVersionedDatastoreQuerySchema
