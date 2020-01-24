@@ -31,12 +31,16 @@ else:
     logger = None
 
 
-def log_query(query):
+def log_query(query, source):
     '''
     Call this to log a query dict to the query log file (if the config permits it). The query is
     simply json dumped. If query logging is disabled then nothing happens.
+
+    :param query: the query dict
+    :param source: the source of the query (e.g. multisearch or basicsearch)
     '''
     if is_enabled:
         # use suppress just to make sure nothing explodes whilst logging
         with suppress(Exception):
-            logger.info(json.dumps(query, sort_keys=True, ensure_ascii=False))
+            logger.info(u'{}: {}'.format(source, json.dumps(query, sort_keys=True,
+                                                            ensure_ascii=False)))

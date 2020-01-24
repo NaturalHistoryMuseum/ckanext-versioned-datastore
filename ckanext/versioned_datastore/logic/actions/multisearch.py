@@ -121,7 +121,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
             for bucket in result.aggs.to_dict()[u'indexes'][u'buckets']
         ]
 
-    log_query(query)
+    log_query(query, u'multisearch')
 
     return response
 
