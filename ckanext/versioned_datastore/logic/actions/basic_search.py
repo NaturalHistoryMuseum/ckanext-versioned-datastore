@@ -1,5 +1,6 @@
-from ckan.plugins import toolkit, PluginImplementations
 from datetime import datetime
+
+from ckan.plugins import toolkit, PluginImplementations
 from eevee.indexing.utils import DOC_TYPE
 from eevee.search import create_version_query
 from eevee.utils import to_timestamp
@@ -13,6 +14,11 @@ from ...interfaces import IVersionedDatastore
 from ...lib.basic_query.search import create_search
 from ...lib.basic_query.utils import run_search, get_fields, format_facets
 from ...lib.datastore_utils import prefix_field, prefix_resource, get_last_after
+from ...lib.query.query_log import log_query
+
+
+# these are the keys we're interested in logging from the data dict
+_query_log_keys = (u'q', u'filters')
 
 
 @action(schema.datastore_search(), help.datastore_search, toolkit.side_effect_free)
@@ -63,6 +69,12 @@ def datastore_search(context, data_dict, original_data_dict):
         # allow other extensions implementing our interface to modify the field definitions
         for plugin in PluginImplementations(IVersionedDatastore):
             fields = plugin.datastore_modify_fields(resource_id, mapping, fields)
+
+        query_for_logging = {}
+        for key in _query_log_keys:
+            if data_dict.get(key, None):
+                query_for_logging[key] = data_dict[key]
+        log_query(query_for_logging, u'basicsearch')
 
         # return a dictionary containing the results and other details
         return {
