@@ -153,7 +153,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         from .lib.query.slugs import reserve_slug
         for plugin in PluginImplementations(IVersionedDatastore):
             for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
-                with suppress(ProgrammingError, NotFoundError, toolkit.ValidationError):
+                with suppress(Exception):
                     reserve_slug(reserved_pretty_slug, **query_parameters)
 
     # IVersionedDatastoreQuerySchema
