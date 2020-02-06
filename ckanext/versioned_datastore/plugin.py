@@ -5,8 +5,6 @@ from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from contextlib2 import suppress
 from eevee.utils import to_timestamp
-from elasticsearch import NotFoundError
-from sqlalchemy.exc import ProgrammingError
 
 from . import routes, helpers
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
