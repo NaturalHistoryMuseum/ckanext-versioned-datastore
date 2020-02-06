@@ -3,6 +3,7 @@ import logging
 from ckan import model
 from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
+from contextlib2 import suppress
 from eevee.utils import to_timestamp
 from elasticsearch import NotFoundError
 from sqlalchemy.exc import ProgrammingError
@@ -149,13 +150,11 @@ class VersionedSearchPlugin(SingletonPlugin):
                 register_schema(version, schema)
 
         # reserve any requested slugs
-        try:
-            from .lib.query.slugs import reserve_slug
-            for plugin in PluginImplementations(IVersionedDatastore):
-                for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+        from .lib.query.slugs import reserve_slug
+        for plugin in PluginImplementations(IVersionedDatastore):
+            for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+                with suppress(ProgrammingError, NotFoundError, toolkit.ValidationError):
                     reserve_slug(reserved_pretty_slug, **query_parameters)
-        except (ProgrammingError, NotFoundError, toolkit.ValidationError):
-            pass
 
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):
