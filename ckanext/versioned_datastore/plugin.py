@@ -154,7 +154,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             for plugin in PluginImplementations(IVersionedDatastore):
                 for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
                     reserve_slug(reserved_pretty_slug, **query_parameters)
-        except (ProgrammingError, NotFoundError):
+        except (ProgrammingError, NotFoundError, toolkit.ValidationError):
             pass
 
     # IVersionedDatastoreQuerySchema
