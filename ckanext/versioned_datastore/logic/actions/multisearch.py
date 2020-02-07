@@ -7,7 +7,7 @@ from eevee.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch
 
 from . import help
-from .utils import action
+from .utils import action, Timer
 from .. import schema
 from ...interfaces import IVersionedDatastore
 from ...lib import common
@@ -26,7 +26,7 @@ from ...lib.query.query_log import log_query
 @action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
 def datastore_multisearch(context, query=None, query_version=None, version=None, resource_ids=None,
                           resource_ids_and_versions=None, size=100, after=None,
-                          top_resources=False):
+                          top_resources=False, timings=False):
     '''
     Performs a search across multiple resources at the same time and returns the results in
     descending _id and index name order (the index name is included to ensure unique sorting
@@ -52,6 +52,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
                   this parameter is ignored.
     :param top_resources: whether to include information about the resources with the most results
                           in them (defaults to False) in the result
+    :param timings: whether to include timing information in the result dict
     :return: a dict of results including the records and total
     '''
     # provide some more complex defaults for some parameters if necessary
@@ -61,22 +62,28 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
         query_version = get_latest_query_version()
     size = max(0, min(size, 1000))
 
+    timer = Timer()
+
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
         validate_query(query, query_version)
+        timer.add_event(u'validate')
         search = translate_query(query, query_version)
+        timer.add_event(u'translate')
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
     resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
                                                                        resource_ids_and_versions)
+    timer.add_event(u'determine_resources')
     if not resource_ids:
         raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
 
     # add the version filter necessary given the parameters and the resources we're searching
     version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
     search = search.filter(version_filter)
+    timer.add_event(u'version_filter')
 
     # add a simple default sort to ensure we get an after value for pagination. We use a combination
     # of the id of the record and the index it's in so that we get a unique sort
@@ -97,8 +104,11 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     # create a multisearch for this one query - this ensures there aren't any issues with the length
     # of the URL as the index list is passed as a part of the body
     multisearch = MultiSearch(using=common.ES_CLIENT).add(search)
+    timer.add_event(u'search_params')
+
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
+    timer.add_event(u'run')
 
     hits, next_after = calculate_after(result, size)
 
@@ -120,9 +130,13 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
             {trim_index_name(bucket[u'key']): bucket[u'doc_count']}
             for bucket in result.aggs.to_dict()[u'indexes'][u'buckets']
         ]
+    timer.add_event(u'response')
 
     log_query(query, u'multisearch')
+    timer.add_event(u'log')
 
+    if timings:
+        response[u'timings'] = timer.to_dict()
     return response
 
 

@@ -410,6 +410,9 @@ Params:
 :type size: int
 :param top_resources: whether to include the top 10 resources in the query result, default False
 :type top_resources: bool
+:param timings: whether to include timings in the result dict, default False. This is intended for
+                developer debugging.
+:type timings: bool
 
 **Results:**
 
@@ -436,6 +439,9 @@ The result of this action is a dictionary with the following keys:
                           user doesn't have access to the requested resource or the requested
                           resource isn't a datastore resource.
 :type skipped_resources: a list of strings
+:param timings: dict of events and how long they took as part of the response processing. This is
+                only included in the response if the timings parameter is True
+:type timings: dict
 '''
 
 datastore_create_slug = u'''
@@ -635,7 +641,7 @@ Params:
 :param size: the number of field groups to return in the search result. If not provided then the
              default is 10. Each group can have many fields in it from many resources. Each group is
              created by finding common fields across resources - fields are matched by comparing
-             them case-insensitively. 
+             them case-insensitively.
 :type size: int
 :param ignore_groups: names of groups to ignore from the returned list. Note that this is groups,
                       not fields!
