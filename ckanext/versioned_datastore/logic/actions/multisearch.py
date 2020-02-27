@@ -86,8 +86,13 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     timer.add_event(u'version_filter')
 
     # add a simple default sort to ensure we get an after value for pagination. We use a combination
-    # of the id of the record and the index it's in so that we get a unique sort
-    search = search.sort({u'data._id': u'desc'}, {u'_index': u'desc'})
+    # of the modified date, id of the record and the index it's in so that we get a unique sort
+    search = search.sort(
+        # not all indexes have a modified field so we need to provide the unmapped_type option
+        {u'data.modified': {u'order': u'desc', u'unmapped_type': u'date'}},
+        {u'data._id': u'desc'},
+        {u'_index': u'desc'}
+    )
     # add the after if there is one
     if after is not None:
         search = search.extra(search_after=after)
