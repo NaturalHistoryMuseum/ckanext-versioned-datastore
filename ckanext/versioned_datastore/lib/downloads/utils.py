@@ -74,3 +74,36 @@ def calculate_field_counts(request, es_client):
             field_counts[resource_id][field] = response.hits.total
 
     return field_counts
+
+
+def filter_data_fields(data, field_counts, prefix=None):
+    '''
+    Returns a new dict containing only the keys and values from the given data dict where the
+    corresponding field in the field_counts dict has a value greater than 0 - i.e. removes all
+    fields from the data dict that shouldn't be included.
+
+    Note that this may seem like a pointless exercise as surely if the field count is 0 for a field
+    then it won't appear in any of the data dicts - however, because the data returned from
+    elasticsearch is the source dict that was uploaded to it, it could contain nulls and empty
+    string values. The calculate_field_counts function above that generates the field counts does it
+    by using exist queries and because these count indexed values it skips nulls and empty strings.
+
+    :param data: the data dict
+    :param field_counts: a dict of field names and counts, the field names should be dot separated
+                         for nested fields
+    :param prefix: the prefix under which the fields in the passed data dict exist - this is used to
+                   produce the field names for nested fields
+    :return: a new dict containing only the fields from the original data dict that had a value
+             other than 0 in the fields_count dict
+    '''
+    filtered_data = {}
+    for field, value in data.items():
+        if prefix is not None:
+            field = u'{}.{}'.format(prefix, field)
+        if isinstance(value, dict):
+            filtered_value = filter_data_fields(value, field_counts, prefix=field)
+            if filtered_value:
+                filtered_data[field] = filtered_value
+        elif field_counts.get(field, 0):
+            filtered_data[field] = value
+    return filtered_data
