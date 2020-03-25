@@ -1,6 +1,7 @@
 from ckan.plugins import toolkit
 
 from .lib.importing import stats
+from .lib.common import ALL_FORMATS
 
 
 def is_duplicate_ingestion(stat):
@@ -96,3 +97,12 @@ def get_stat_title(stat):
     if stat.type == stats.PREP:
         return toolkit._(u'Validated and prepared the data for ingestion')
     return stat.type
+
+
+def get_available_formats():
+    '''
+    Simply returns all the formats that we can ingest.
+
+    :return: a list of formats
+    '''
+    return ALL_FORMATS

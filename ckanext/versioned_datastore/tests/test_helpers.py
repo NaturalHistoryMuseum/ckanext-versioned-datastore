@@ -5,7 +5,8 @@ from mock import MagicMock, patch
 from nose.tools import assert_equal, assert_true, assert_false, assert_not_equal
 
 from ..helpers import is_duplicate_ingestion, get_human_duration, get_stat_icon, \
-    get_stat_activity_class, get_stat_title
+    get_stat_activity_class, get_stat_title, get_available_formats
+from ..lib.common import ALL_FORMATS
 from ..lib.importing.ingestion.exceptions import DuplicateDataSource, UnsupportedDataSource
 from ..lib.importing.stats import INGEST, INDEX, PREP, ALL_TYPES
 
@@ -125,3 +126,9 @@ class TestHelpers(TestBase):
 
         fake_type = MagicMock()
         assert_equal(get_stat_title(MagicMock(type=fake_type)), fake_type)
+
+    def test_get_available_formats(self):
+        formats = get_available_formats()
+        assert_true(isinstance(formats, list))
+        for f in ALL_FORMATS:
+            assert_true(f in formats)
