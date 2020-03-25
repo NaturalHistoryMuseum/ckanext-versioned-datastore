@@ -72,6 +72,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             u'get_stat_icon': helpers.get_stat_icon,
             u'get_stat_activity_class': helpers.get_stat_activity_class,
             u'get_stat_title': helpers.get_stat_title,
+            u'get_available_formats': helpers.get_available_formats,
         }
 
     # IResourceController
