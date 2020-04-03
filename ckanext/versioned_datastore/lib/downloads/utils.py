@@ -99,11 +99,33 @@ def filter_data_fields(data, field_counts, prefix=None):
     filtered_data = {}
     for field, value in data.items():
         if prefix is not None:
-            field = u'{}.{}'.format(prefix, field)
-        if isinstance(value, dict):
-            filtered_value = filter_data_fields(value, field_counts, prefix=field)
+            path = u'{}.{}'.format(prefix, field)
+        else:
+            path = field
+
+        # if the field contains a list of dicts we need to recurse for each one
+        if isinstance(value, list) and value and isinstance(value[0], dict):
+            filtered_value = []
+            for element in value:
+                filtered_element = filter_data_fields(element, field_counts, prefix=path)
+                # if there is any data left in the element after filtering, add it to the temp list
+                if filtered_element:
+                    filtered_value.append(filtered_element)
+            # if there are any dicts left from the filtering, include them directly using the name
+            # of the field, not the path. We don't need to check if the field has any values because
+            # we know that it does because there are dicts left in the filtered list
             if filtered_value:
                 filtered_data[field] = filtered_value
-        elif field_counts.get(field, 0):
+        # if the field is a dict, recurse to filter
+        elif isinstance(value, dict):
+            filtered_value = filter_data_fields(value, field_counts, prefix=path)
+            # if there is any data left after the filtering, include the dict value directly, using
+            # the name of the field, not the path. We don't need to check if the field has any
+            # values because we know that it does because the filtered_value isn't empty
+            if filtered_value:
+                filtered_data[field] = filtered_value
+        # for everything else, just check that the path is in the fields_count dict
+        elif field_counts.get(path, 0):
             filtered_data[field] = value
+
     return filtered_data
