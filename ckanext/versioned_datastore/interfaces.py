@@ -182,7 +182,7 @@ class IVersionedDatastore(interfaces.Interface):
         If a slug already exists in the database with the same query parameters but no reserved
         pretty slug then the reserved pretty slug is added to the slug.
         '''
-        pass
+        return {}
 
     def datastore_modify_guess_fields(self, resource_ids, fields):
         '''
@@ -206,7 +206,7 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
                  query schema version is a string of format v#.#.# and the schema object is an
                  instance of ckanext.versioned_datastore.lib.query.Schema
         '''
-        pass
+        return []
 
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
