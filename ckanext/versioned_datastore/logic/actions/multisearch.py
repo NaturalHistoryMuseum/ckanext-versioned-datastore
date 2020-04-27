@@ -137,6 +137,11 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
         ]
     timer.add_event(u'response')
 
+    # allow plugins to modify the fields object
+    for plugin in PluginImplementations(IVersionedDatastore):
+        response = plugin.datastore_multisearch_modify_response(response)
+    timer.add_event(u'response_modifiers')
+
     log_query(query, u'multisearch')
     timer.add_event(u'log')
 

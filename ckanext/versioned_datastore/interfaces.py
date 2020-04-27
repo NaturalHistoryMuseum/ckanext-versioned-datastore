@@ -195,6 +195,16 @@ class IVersionedDatastore(interfaces.Interface):
         '''
         return fields
 
+    def datastore_multisearch_modify_response(self, response):
+        '''
+        Allows plugins to alter the response dict returned from the datastore_multisearch action
+        before it is returned.
+
+        :param response: the dict to be returned to the caller
+        :return: the response dict
+        '''
+        return response
+
 
 class IVersionedDatastoreQuerySchema(interfaces.Interface):
 
