@@ -4,7 +4,7 @@
 
 [![Travis](https://img.shields.io/travis/NaturalHistoryMuseum/ckanext-versioned-datastore/master.svg?style=flat-square)](https://travis-ci.org/NaturalHistoryMuseum/ckanext-versioned-datastore)
 [![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/master.svg?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
-[![CKAN](https://img.shields.io/badge/ckan-2.3a-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
+[![CKAN](https://img.shields.io/badge/ckan-2.9.0a-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
 
 _A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch._
 
