@@ -39,7 +39,9 @@
                 <i class="fa icon {{ h.get_stat_icon(stat) }}"></i>
                 <p>
                     <span class="datastore_activity_title">{{ h.get_stat_title(stat) }}</span>
-                    <span class="date" title="{{ h.render_datetime(stat.start, with_hours=True) }}">{{ h.time_ago_from_timestamp(stat.start) }}</span>
+                    <span class="date" title="{{ h.render_datetime(stat.start, with_hours=True) }}">
+                        {{ h.time_ago_from_timestamp(stat.start) }}
+                    </span>
                 </p>
                 <p>
                     {% snippet 'package/snippets/' + stat.type + '_message.html', stat=stat %}
