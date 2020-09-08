@@ -44,3 +44,7 @@
 .activity .collapseDetails .detailsTable td {
     padding-left: 12px;
 }
+
+.activity .item .date {
+    color: #656565;
+}
