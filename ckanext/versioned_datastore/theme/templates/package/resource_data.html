@@ -19,7 +19,7 @@
 {% block primary_content_inner %}
 
     {% block datastore_actions %}
-        <h3>{{ _('Actions') }}</h3>
+        <h2>{{ _('Actions') }}</h2>
 
         <form method="post" action="{{ reindex_action }}">
             <button class="btn btn-primary" name="save" type="submit">
@@ -31,7 +31,7 @@
     {% block datastore_history %}
         {% resource 'ckanext-versioned_datastore/datastore-activities' %}
 
-        <h3>{{ _('Datastore Activity') }}</h3>
+        <h2>{{ _('Datastore Activity') }}</h2>
 
         <ul class="activity">
             {% for stat in stats %}
@@ -39,7 +39,9 @@
                 <i class="fa icon {{ h.get_stat_icon(stat) }}"></i>
                 <p>
                     <span class="datastore_activity_title">{{ h.get_stat_title(stat) }}</span>
-                    <span class="date" title="{{ h.render_datetime(stat.start, with_hours=True) }}">{{ h.time_ago_from_timestamp(stat.start) }}</span>
+                    <span class="date" title="{{ h.render_datetime(stat.start, with_hours=True) }}">
+                        {{ h.time_ago_from_timestamp(stat.start) }}
+                    </span>
                 </p>
                 <p>
                     {% snippet 'package/snippets/' + stat.type + '_message.html', stat=stat %}
