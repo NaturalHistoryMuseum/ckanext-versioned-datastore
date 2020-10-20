@@ -244,7 +244,7 @@ def download(request):
             f.write(unicode(data))
 
         # zip up the files into the downloads directory
-        with zipfile.ZipFile(zip_path, u'w', zipfile.ZIP_DEFLATED) as z:
+        with zipfile.ZipFile(zip_path, u'w', zipfile.ZIP_DEFLATED, True) as z:
             for filename in files_to_zip:
                 z.write(os.path.join(target_dir, filename), arcname=filename)
 
