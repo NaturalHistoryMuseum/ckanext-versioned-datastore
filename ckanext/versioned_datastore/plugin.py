@@ -6,7 +6,7 @@ from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, Plugi
 from contextlib2 import suppress
 from eevee.utils import to_timestamp
 
-from . import routes, helpers
+from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
 from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
@@ -30,10 +30,15 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IConfigurable)
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
+    implements(interfaces.IClick)
 
     # IActions
     def get_actions(self):
         return create_actions(basic_search, crud, downloads, extras, multisearch)
+
+    # IClick
+    def get_commands(self):
+        return cli.get_commands()
 
     # IAuthFunctions
     def get_auth_functions(self):

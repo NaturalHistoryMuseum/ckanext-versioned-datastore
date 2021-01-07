@@ -11,7 +11,7 @@ __version__ = u'1.0.0-alpha'
 with open(u'README.md', u'r') as f:
     __long_description__ = f.read()
 
-dependencies = {'eevee': 'git+https://github.com/NaturalHistoryMuseum/eevee@v1.2.1#egg=eevee-1.2.1'}
+dependencies = {'eevee': 'git+https://github.com/NaturalHistoryMuseum/eevee@v1.2.3#egg=eevee-1.2.3'}
 
 setup(
     name=u'ckanext-versioned-datastore',
@@ -37,10 +37,10 @@ setup(
         'cchardet==2.1.4',
         'openpyxl==2.5.8',
         'requests',
-        'six==1.11.0',
+        'six>=1.11.0',
         'xlrd==1.1.0',
-        'elasticsearch==6.3.1',
-        'elasticsearch-dsl==6.2.1',
+        'elasticsearch>=6.0.0,<7.0.0',
+        'elasticsearch-dsl>=6.0.0,<7.0.0',
         'jsonschema>=3.0.0',
         ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),
@@ -48,8 +48,5 @@ setup(
         u'''
         [ckan.plugins]
             versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
-
-        [paste.paster_command]
-            vds=ckanext.versioned_datastore.commands:VersionedDatastoreCommands
         ''',
     )
