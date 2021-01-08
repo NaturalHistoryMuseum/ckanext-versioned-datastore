@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime
 
-from ckan import model
-from ckan.model import DomainObjectOperation
-from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from contextlib2 import suppress
 from eevee.utils import to_timestamp
 
+from ckan import model
+from ckan.model import DomainObjectOperation
+from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
 from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
