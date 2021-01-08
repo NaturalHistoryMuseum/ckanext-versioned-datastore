@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from ckan import model
 from ckan.model import DomainObjectOperation
@@ -122,8 +123,12 @@ class VersionedSearchPlugin(SingletonPlugin):
                     do_upsert = True
 
                 if do_upsert:
-                    # use the revision version as the version
-                    data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
+                    # in theory, last_modified should change when the resource file/url is changed
+                    # and metadata_modified should change when any other attributes are changed. To
+                    # cover off the possibility that this gets mixed up, we'll pick the max of them
+                    modified = list(filter(None, (entity.last_modified, entity.metadata_modified)))
+                    last_modified = max(modified) if modified else datetime.now()
+                    data_dict[u'version'] = to_timestamp(last_modified)
                     # use replace to overwrite the existing data (this is what users would expect)
                     data_dict[u'replace'] = True
                     try:
