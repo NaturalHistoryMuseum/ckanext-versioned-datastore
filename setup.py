@@ -35,6 +35,7 @@ setup(
     install_requires=[
         'backports.csv==1.0.6',
         'cchardet==2.1.4',
+        u'contextlib2>=0.6.0.post1',
         'openpyxl==2.5.8',
         'requests',
         'six>=1.11.0',
