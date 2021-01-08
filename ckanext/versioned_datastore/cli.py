@@ -65,19 +65,18 @@ def reindex(resource_ids):
         click.secho(u'No resources found to reindex', fg=u'green')
         return
 
-    click.secho(u'{} resources to reindex'.format(len(ids)), fg=u'yellow')
+    click.secho(u'Found {} resources to reindex'.format(len(ids)), fg=u'yellow')
 
-    with click.progressbar(sorted(ids)) as items:
-        for resource_id in items:
-            try:
-                result = toolkit.get_action(u'datastore_reindex')(context,
-                                                                  {u'resource_id': resource_id})
-                click.secho(
-                    u'Queued reindex of {} as job {}'.format(resource_id, result[u'job_id']),
-                    fg=u'cyan')
-            except toolkit.ValidationError as e:
-                click.secho(
-                    u'Failed to reindex {} due to validation error: {}'.format(resource_id, e),
-                    fg=u'red')
+    for resource_id in sorted(ids):
+        try:
+            result = toolkit.get_action(u'datastore_reindex')(context,
+                                                              {u'resource_id': resource_id})
+            click.secho(
+                u'Queued reindex of {} as job {}'.format(resource_id, result[u'job_id']),
+                fg=u'cyan')
+        except toolkit.ValidationError as e:
+            click.secho(
+                u'Failed to reindex {} due to validation error: {}'.format(resource_id, e),
+                fg=u'red')
 
     click.secho(u'Reindexing complete', fg=u'green')
