@@ -40,8 +40,13 @@ setup(
         'requests',
         'six>=1.11.0',
         'xlrd==1.1.0',
+        'elasticsearch==6.3.1',
+        'elasticsearch-dsl==6.2.1',
         'elasticsearch>=6.0.0,<7.0.0',
         'elasticsearch-dsl>=6.0.0,<7.0.0',
+        'elasticsearch==6.3.1',
+        'elasticsearch-dsl==6.2.1',
+        'pyrsistent>=0.14.0,<0.17.0'
         'jsonschema>=3.0.0',
         ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),

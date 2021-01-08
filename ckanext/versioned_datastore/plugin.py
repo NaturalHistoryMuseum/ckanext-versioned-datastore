@@ -138,7 +138,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         toolkit.add_public_directory(config, u'theme/public')
         # add templates
         toolkit.add_template_directory(config, u'theme/templates')
-        toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
+        toolkit.add_resource(u'theme/assets', u'ckanext-versioned-datastore')
 
     # IBlueprint
     def get_blueprint(self):
