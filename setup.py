@@ -42,7 +42,7 @@ setup(
         u'xlrd==1.1.0',
         u'elasticsearch>=6.0.0,<7.0.0',
         u'elasticsearch-dsl>=6.0.0,<7.0.0',
-        u'pyrsistent>=0.14.0,<0.17.0'
+        u'pyrsistent~=0.16.1',
         u'jsonschema>=3.0.0',
     ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),
