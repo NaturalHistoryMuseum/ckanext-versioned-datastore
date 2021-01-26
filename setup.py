@@ -43,7 +43,7 @@ setup(
         u'elasticsearch>=6.0.0,<7.0.0',
         u'elasticsearch-dsl>=6.0.0,<7.0.0',
         u'pyrsistent~=0.16.1',
-        u'jsonschema>=3.0.0',
+        u'jsonschema~=3.0.0',
     ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),
     entry_points= \
