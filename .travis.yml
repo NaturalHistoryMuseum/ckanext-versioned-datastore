@@ -5,11 +5,10 @@ language: python
 services:
   - docker
 
-# prevent travis from running pip install -r requirements.txt
-install: pip --version
+# we need coveralls and this also prevents travis from running pip install -r requirements.txt
+install: pip install coveralls
 
 script:
-  - pip install coveralls
   - docker-compose build
   - docker-compose run ckan
 
