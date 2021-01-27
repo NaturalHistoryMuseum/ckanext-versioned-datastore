@@ -5,6 +5,9 @@ language: python
 services:
   - docker
 
+# prevent travis from running pip install -r requirements.txt
+install: pip --version
+
 script:
   - pip install coveralls
   - docker-compose build
