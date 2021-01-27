@@ -1,17 +1,14 @@
 import json
 
+import pytest
 from ckan.plugins import toolkit
-from ckantest.models import TestBase
+from ckanext.versioned_datastore.lib.basic_query.geo import add_point_filter, FIELD, \
+    add_multipolygon_filter, add_polygon_filter, add_geo_search
 from elasticsearch_dsl.query import GeoPolygon, Bool
 from mock import MagicMock, call, patch
-from nose.tools import assert_equals, assert_raises
-
-from ..lib.basic_query.geo import add_point_filter, FIELD, add_multipolygon_filter, \
-    add_polygon_filter, add_geo_search
 
 
-class TestAddPointFilter(TestBase):
-    plugins = [u'versioned_datastore']
+class TestAddPointFilter(object):
 
     def test_simple(self):
         search = MagicMock(filter=MagicMock())
@@ -20,16 +17,16 @@ class TestAddPointFilter(TestBase):
 
         returned_search = add_point_filter(search, distance, coordinates)
 
-        assert_equals(returned_search, search.filter.return_value)
-        assert_equals(search.filter.call_count, 1)
-        assert_equals(search.filter.call_args, call(u'geo_distance',
-                                                    **{
-                                                        u'distance': distance,
-                                                        FIELD: {
-                                                            u'lat': coordinates[1],
-                                                            u'lon': coordinates[0],
-                                                        }
-                                                    }))
+        assert returned_search == search.filter.return_value
+        assert search.filter.call_count == 1
+        assert search.filter.call_args == call(u'geo_distance',
+                                               **{
+                                                   u'distance': distance,
+                                                   FIELD: {
+                                                       u'lat': coordinates[1],
+                                                       u'lon': coordinates[0],
+                                                   }
+                                               })
 
     def test_float_conversion(self):
         search = MagicMock(filter=MagicMock())
@@ -38,20 +35,19 @@ class TestAddPointFilter(TestBase):
 
         returned_search = add_point_filter(search, distance, coordinates)
 
-        assert_equals(returned_search, search.filter.return_value)
-        assert_equals(search.filter.call_count, 1)
-        assert_equals(search.filter.call_args, call(u'geo_distance',
-                                                    **{
-                                                        u'distance': distance,
-                                                        FIELD: {
-                                                            u'lat': float(coordinates[1]),
-                                                            u'lon': float(coordinates[0]),
-                                                        }
-                                                    }))
+        assert returned_search == search.filter.return_value
+        assert search.filter.call_count == 1
+        assert search.filter.call_args == call(u'geo_distance',
+                                               **{
+                                                   u'distance': distance,
+                                                   FIELD: {
+                                                       u'lat': float(coordinates[1]),
+                                                       u'lon': float(coordinates[0]),
+                                                   }
+                                               })
 
 
-class TestAddMultiPolygonFilter(TestBase):
-    plugins = [u'versioned_datastore']
+class TestAddMultiPolygonFilter(object):
 
     def test_simple(self):
         search = MagicMock(filter=MagicMock())
@@ -59,8 +55,8 @@ class TestAddMultiPolygonFilter(TestBase):
 
         returned_search = add_multipolygon_filter(search, coordinates)
 
-        assert_equals(returned_search, search.filter.return_value)
-        assert_equals(search.filter.call_count, 1)
+        assert returned_search == search.filter.return_value
+        assert search.filter.call_count == 1
 
         filters = [
             GeoPolygon(**{
@@ -86,14 +82,14 @@ class TestAddMultiPolygonFilter(TestBase):
                 }
             })
         ]
-        assert_equals(search.filter.call_args, call(Bool(should=filters, minimum_should_match=1)))
+        assert search.filter.call_args == call(Bool(should=filters, minimum_should_match=1))
 
     def test_validation_error(self):
         search = MagicMock(filter=MagicMock())
         # only two points!
         coordinates = [[[[-16, 44], [-13.1, 34.8]]]]
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             add_multipolygon_filter(search, coordinates)
 
     def test_float_conversion(self):
@@ -102,8 +98,8 @@ class TestAddMultiPolygonFilter(TestBase):
 
         returned_search = add_multipolygon_filter(search, coordinates)
 
-        assert_equals(returned_search, search.filter.return_value)
-        assert_equals(search.filter.call_count, 1)
+        assert returned_search == search.filter.return_value
+        assert search.filter.call_count == 1
 
         filters = [
             GeoPolygon(**{
@@ -129,11 +125,10 @@ class TestAddMultiPolygonFilter(TestBase):
                 }
             })
         ]
-        assert_equals(search.filter.call_args, call(Bool(should=filters, minimum_should_match=1)))
+        assert search.filter.call_args == call(Bool(should=filters, minimum_should_match=1))
 
 
-class TestAddPolygonFilter(TestBase):
-    plugins = [u'versioned_datastore']
+class TestAddPolygonFilter(object):
 
     def test_pass_off(self):
         # add_polygon_filter just uses add_multipolygon_filter which we already have a test for so
@@ -146,11 +141,10 @@ class TestAddPolygonFilter(TestBase):
                    mock_add_multipolygon_filter):
             add_polygon_filter(search, coordinates)
 
-        assert_equals(mock_add_multipolygon_filter.call_args, call(search, [coordinates]))
+        assert mock_add_multipolygon_filter.call_args == call(search, [coordinates])
 
 
-class TestAddGeoSearch(TestBase):
-    plugins = [u'versioned_datastore']
+class TestAddGeoSearch(object):
 
     def test_valid_point_dict(self):
         search = MagicMock()
@@ -164,9 +158,9 @@ class TestAddGeoSearch(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
             add_geo_search(search, geo_filter)
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, distance=geo_filter[u'distance'],
-                                               coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, distance=geo_filter[u'distance'],
+                                          coordinates=geo_filter[u'coordinates'])
 
     def test_valid_point_string(self):
         search = MagicMock()
@@ -181,21 +175,21 @@ class TestAddGeoSearch(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, distance=geo_filter[u'distance'],
-                                               coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, distance=geo_filter[u'distance'],
+                                          coordinates=geo_filter[u'coordinates'])
 
     def test_invalid_point(self):
         search = MagicMock()
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             geo_filter = {
                 u'type': u'Point',
             }
             add_geo_search(search, geo_filter)
 
         for param in (u'distance', u'coordinates'):
-            with assert_raises(toolkit.ValidationError):
+            with pytest.raises(toolkit.ValidationError):
                 geo_filter = {
                     u'type': u'Point',
                     param: MagicMock(),
@@ -210,11 +204,12 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
+                   add_mock):
             add_geo_search(search, geo_filter)
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, coordinates=geo_filter[u'coordinates'])
 
     def test_valid_multipolygon_string(self):
         search = MagicMock()
@@ -225,16 +220,17 @@ class TestAddGeoSearch(TestBase):
         }
 
         add_mock = MagicMock()
-        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter', add_mock):
+        with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
+                   add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, coordinates=geo_filter[u'coordinates'])
 
     def test_invalid_multipolygon(self):
         search = MagicMock()
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             geo_filter = {
                 u'type': u'MultiPolygon',
             }
@@ -251,8 +247,8 @@ class TestAddGeoSearch(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
             add_geo_search(search, geo_filter)
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, coordinates=geo_filter[u'coordinates'])
 
     def test_valid_polygon_string(self):
         search = MagicMock()
@@ -266,13 +262,13 @@ class TestAddGeoSearch(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
             add_geo_search(search, json.dumps(geo_filter))
 
-        assert_equals(add_mock.call_count, 1)
-        assert_equals(add_mock.call_args, call(search, coordinates=geo_filter[u'coordinates']))
+        assert add_mock.call_count == 1
+        assert add_mock.call_args == call(search, coordinates=geo_filter[u'coordinates'])
 
     def test_invalid_polygon(self):
         search = MagicMock()
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             geo_filter = {
                 u'type': u'Polygon',
             }
@@ -281,11 +277,11 @@ class TestAddGeoSearch(TestBase):
     def test_invalid_type(self):
         search = MagicMock()
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             # a type we don't support
             add_geo_search(search, {u'type': u'not a type we support'})
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             # no type
             add_geo_search(search, {})
 
@@ -300,5 +296,5 @@ class TestAddGeoSearch(TestBase):
         # but we're gonna add the word beans at the end to make it invalid
         geo_filter = json.dumps(geo_filter) + u'beans'
 
-        with assert_raises(toolkit.ValidationError):
+        with pytest.raises(toolkit.ValidationError):
             add_geo_search(search, geo_filter)

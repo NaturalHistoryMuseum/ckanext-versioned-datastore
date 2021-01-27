@@ -6,7 +6,7 @@
 
 from setuptools import find_packages, setup
 
-__version__ = u'1.0.0-alpha'
+__version__ = u'1.1.0'
 
 with open(u'README.md', u'r') as f:
     __long_description__ = f.read()
@@ -36,13 +36,20 @@ setup(
         u'backports.csv==1.0.6',
         u'cchardet==2.1.4',
         u'contextlib2>=0.6.0.post1',
+
+        # for openpyxl
+        u'et_xmlfile==1.0.0',
         u'openpyxl==2.5.8',
         u'requests',
         u'six>=1.11.0',
         u'xlrd==1.1.0',
         u'elasticsearch>=6.0.0,<7.0.0',
         u'elasticsearch-dsl>=6.0.0,<7.0.0',
+
+        # for jsonschema
         u'pyrsistent~=0.16.1',
+        # not sure why this isn't working on python2 considering this is a python2 only lib but ok
+        u'functools32==3.2.3-2',
         u'jsonschema==3.0.0',
     ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=dependencies.values(),

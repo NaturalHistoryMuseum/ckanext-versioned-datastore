@@ -1,70 +1,69 @@
 import contextlib
 
-from ..lib.basic_query.search import _find_version, create_search, build_search_object
-from ..lib.datastore_utils import prefix_field
-from ckantest.models import TestBase
+import pytest
+from ckanext.versioned_datastore.lib.basic_query.search import _find_version, create_search, \
+    build_search_object
+from ckanext.versioned_datastore.lib.datastore_utils import prefix_field
 from elasticsearch_dsl import Search
 from mock import MagicMock, patch
-from nose.tools import assert_equal, assert_raises, assert_true
 
 
-class TestFindVersion(TestBase):
+class TestFindVersion(object):
     plugins = [u'versioned_datastore']
 
     def test_none_found(self):
-        assert_equal(_find_version({}), None)
+        assert _find_version({}) == None
 
     def test_version_is_none(self):
-        assert_equal(_find_version({u'version': None}), None)
+        assert _find_version({u'version': None}) == None
 
     def test_version_exists(self):
-        assert_equal(_find_version({u'version': 10}), 10)
-        assert_equal(_find_version({u'version': u'10'}), 10)
+        assert _find_version({u'version': 10}) == 10
+        assert _find_version({u'version': u'10'}) == 10
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError):
             _find_version({u'version': u'aaaa'})
 
     def test_version_as_filter_is_none(self):
-        assert_equal(_find_version({u'filters': {u'__version__': None}}), None)
-        assert_equal(_find_version({u'filters': {u'__version__': [None]}}), None)
-        assert_equal(_find_version({u'filters': {u'__version__': [None, None]}}), None)
+        assert _find_version({u'filters': {u'__version__': None}}) == None
+        assert _find_version({u'filters': {u'__version__': [None]}}) == None
+        assert _find_version({u'filters': {u'__version__': [None, None]}}) == None
         # only the first value is used if there is a list, even if the first value is invalid
-        assert_equal(_find_version({u'filters': {u'__version__': [None, 10]}}), None)
+        assert _find_version({u'filters': {u'__version__': [None, 10]}}) == None
 
     def test_version_as_filter_exists(self):
-        assert_equal(_find_version({u'filters': {u'__version__': 10}}), 10)
-        assert_equal(_find_version({u'filters': {u'__version__': u'10'}}), 10)
-        assert_equal(_find_version({u'filters': {u'__version__': [10]}}), 10)
-        assert_equal(_find_version({u'filters': {u'__version__': [u'10']}}), 10)
+        assert _find_version({u'filters': {u'__version__': 10}}) == 10
+        assert _find_version({u'filters': {u'__version__': u'10'}}) == 10
+        assert _find_version({u'filters': {u'__version__': [10]}}) == 10
+        assert _find_version({u'filters': {u'__version__': [u'10']}}) == 10
         # only the first value is used
-        assert_equal(_find_version({u'filters': {u'__version__': [u'10', None]}}), 10)
+        assert _find_version({u'filters': {u'__version__': [u'10', None]}}) == 10
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError):
             _find_version({u'filters': {u'__version__': u'aaaaa'}})
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError):
             _find_version({u'filters': {u'__version__': [u'aaaaa']}})
 
-        with assert_raises(ValueError):
+        with pytest.raises(ValueError):
             _find_version({u'filters': {u'__version__': [u'aaaaa', None]}})
 
     def test_both_are_none(self):
-        assert_equal(_find_version({u'version': None, u'filters': {u'__version__': None}}), None)
-        assert_equal(_find_version({u'version': None, u'filters': {u'__version__': [None]}}), None)
+        assert _find_version({u'version': None, u'filters': {u'__version__': None}}) == None
+        assert _find_version({u'version': None, u'filters': {u'__version__': [None]}}) == None
 
     def test_version_takes_precedence(self):
-        assert_equal(_find_version({u'version': 10, u'filters': {u'__version__': 12}}), 10)
-        assert_equal(_find_version({u'version': 10, u'filters': {u'__version__': [12]}}), 10)
+        assert _find_version({u'version': 10, u'filters': {u'__version__': 12}}) == 10
+        assert _find_version({u'version': 10, u'filters': {u'__version__': [12]}}) == 10
 
     def test_both_mix(self):
-        assert_equal(_find_version({u'version': 10, u'filters': {u'__version__': None}}), 10)
-        assert_equal(_find_version({u'version': 10, u'filters': {u'__version__': [None]}}), 10)
-        assert_equal(_find_version({u'version': None, u'filters': {u'__version__': 12}}), 12)
-        assert_equal(_find_version({u'version': None, u'filters': {u'__version__': [12]}}), 12)
+        assert _find_version({u'version': 10, u'filters': {u'__version__': None}}) == 10
+        assert _find_version({u'version': 10, u'filters': {u'__version__': [None]}}) == 10
+        assert _find_version({u'version': None, u'filters': {u'__version__': 12}}) == 12
+        assert _find_version({u'version': None, u'filters': {u'__version__': [12]}}) == 12
 
 
-class TestCreateSearch(TestBase):
-    plugins = [u'versioned_datastore']
+class TestCreateSearch(object):
 
     @contextlib.contextmanager
     def _patch(self, target, replacement):
@@ -97,17 +96,17 @@ class TestCreateSearch(TestBase):
                     result = create_search(context, data_dict, original_data_dict)
 
         # 4 values are returned
-        assert_equal(len(result), 4)
+        assert len(result) == 4
         # check the values
-        assert_equal(result[0], original_data_dict)
-        assert_equal(result[1], mock_validate_return)
-        assert_equal(result[2], find_version_return)
-        assert_equal(result[3], build_mock_return)
+        assert result[0] == original_data_dict
+        assert result[1] == mock_validate_return
+        assert result[2] == find_version_return
+        assert result[3] == build_mock_return
         # check the onward calls
-        assert_equal(mock_plugin.datastore_modify_data_dict.call_count, 1)
-        assert_equal(mock_plugin.datastore_modify_search.call_count, 1)
-        assert_equal(find_version_mock.call_count, 1)
-        assert_equal(build_search_object_mock.call_count, 1)
+        assert mock_plugin.datastore_modify_data_dict.call_count == 1
+        assert mock_plugin.datastore_modify_search.call_count == 1
+        assert find_version_mock.call_count == 1
+        assert build_search_object_mock.call_count == 1
 
     def test_simple_usage(self):
         # create our own schema so that we don't have to mock a resource existing to pass the
@@ -119,26 +118,25 @@ class TestCreateSearch(TestBase):
         result = create_search(context, data_dict, original_data_dict)
 
         # 4 values are returned
-        assert_equal(len(result), 4)
+        assert len(result) == 4
         # check the values
-        assert_equal(result[0], original_data_dict)
-        assert_equal(result[1], data_dict)
-        assert_equal(result[2], 23)
+        assert result[0] == original_data_dict
+        assert result[1] == data_dict
+        assert result[2] == 23
         # we don't care in this test if the Search has been created correctly, only that we get a
         # Search object back
-        assert_true(isinstance(result[3], Search))
+        assert isinstance(result[3], Search)
 
 
-class TestBuildSearchObject(TestBase):
-    plugins = [u'versioned_datastore']
+class TestBuildSearchObject(object):
 
     def _run_test(self, kwargs, expected_result, add_size=True, add_sort=True):
         if add_size:
             expected_result[u'size'] = 100
         if add_sort:
             expected_result[u'sort'] = [prefix_field(u'_id')]
-        assert_equal(build_search_object(**kwargs).to_dict(), expected_result)
-        assert_equal(build_search_object(**kwargs), Search().from_dict(expected_result))
+        assert build_search_object(**kwargs).to_dict() == expected_result
+        assert build_search_object(**kwargs) == Search().from_dict(expected_result)
 
     def test_blank(self):
         self._run_test({}, {})
@@ -368,10 +366,10 @@ class TestBuildSearchObject(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
                    add_geo_search_mock):
             build_search_object(filters={u'__geo__': mock_geo_value})
-        assert_equal(add_geo_search_mock.call_count, 1)
+        assert add_geo_search_mock.call_count == 1
         search_object, filter_value = add_geo_search_mock.call_args[0]
-        assert_true(isinstance(search_object, Search))
-        assert_equal(mock_geo_value, filter_value)
+        assert isinstance(search_object, Search)
+        assert mock_geo_value == filter_value
 
     def test_filters_lists(self):
         self._run_test(
@@ -466,10 +464,10 @@ class TestBuildSearchObject(TestBase):
         with patch(u'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
                    add_geo_search_mock):
             build_search_object(filters={u'__geo__': [mock_geo_value]})
-        assert_equal(add_geo_search_mock.call_count, 1)
+        assert add_geo_search_mock.call_count == 1
         search_object, filter_value = add_geo_search_mock.call_args[0]
-        assert_true(isinstance(search_object, Search))
-        assert_equal(mock_geo_value, filter_value)
+        assert isinstance(search_object, Search)
+        assert mock_geo_value == filter_value
 
     def test_filters_mix(self):
         self._run_test(

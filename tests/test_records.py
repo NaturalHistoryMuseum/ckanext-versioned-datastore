@@ -1,7 +1,6 @@
 from mock import MagicMock
-from nose.tools import assert_equal
 
-from ..lib.importing.ingestion.records import DatastoreRecord
+from ckanext.versioned_datastore.lib.importing.ingestion.records import DatastoreRecord
 
 
 def test_convert_empty():
@@ -35,12 +34,12 @@ def test_convert_empty():
     for data, expected_result in scenarios:
         record = DatastoreRecord(MagicMock(), MagicMock(), data, MagicMock())
         converted = record.convert()
-        assert_equal(converted, expected_result)
+        assert converted == expected_result
 
 
 def test_simple_things():
     record_id = MagicMock()
     resource_id = MagicMock()
     record = DatastoreRecord(MagicMock(), record_id, MagicMock(), resource_id)
-    assert_equal(record.id, record_id)
-    assert_equal(record.mongo_collection, resource_id)
+    assert record.id == record_id
+    assert record.mongo_collection == resource_id

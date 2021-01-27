@@ -5,15 +5,13 @@ import json
 
 import jsonschema
 import os
-from ckantest.models import TestBase
-from nose.tools import assert_equal, assert_raises
 
-from ..lib.query.schema import schema_base_path
-from ..lib.query.v1_0_0 import v1_0_0Schema
+import pytest
+from ckanext.versioned_datastore.lib.query.schema import schema_base_path
+from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 
 
-class TestV1_0_0Translator(TestBase):
-    plugins = [u'versioned_datastore']
+class TestV1_0_0Translator(object):
 
     def test_validate_examples(self):
         schema = v1_0_0Schema()
@@ -28,7 +26,7 @@ class TestV1_0_0Translator(TestBase):
         # validate the query!
         schema.validate(query)
         # check that the translated version is correct compared to the expected search dict
-        assert_equal(schema.translate(query).to_dict(), search_dict)
+        assert schema.translate(query).to_dict() == search_dict
 
     def test_translate_1(self):
         query = {}
@@ -579,7 +577,7 @@ class TestV1_0_0Translator(TestBase):
                 ]
             }
         }
-        with assert_raises(jsonschema.ValidationError):
+        with pytest.raises(jsonschema.ValidationError):
             schema.validate(nope)
 
     def test_translate_ignores_additional_properties_in_geo_named_area(self):
@@ -597,5 +595,5 @@ class TestV1_0_0Translator(TestBase):
                 ]
             }
         }
-        with assert_raises(jsonschema.ValidationError):
+        with pytest.raises(jsonschema.ValidationError):
             schema.validate(nope)

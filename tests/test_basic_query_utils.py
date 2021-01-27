@@ -1,17 +1,34 @@
-import nose
-from ckantest.models import TestBase
+import pytest
 from eevee.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
-from ..lib.basic_query.utils import format_facets, get_fields
+from ckanext.versioned_datastore.lib.basic_query.utils import format_facets, get_fields
+from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 
 
-class TestBasicQueryUtils(TestBase):
-    plugins = [u'versioned_datastore']
+@pytest.fixture
+def with_versioned_datastore_tables(reset_db):
+    '''
+    Simple fixture which resets the database and creates the versioned-datastore tables.
+    '''
+    reset_db()
+    tables = [
+        stats.import_stats_table,
+        slugs.datastore_slugs_table,
+        details.datastore_resource_details_table,
+        downloads.datastore_downloads_table,
+    ]
+    # create the tables if they don't exist
+    for table in tables:
+        if not table.exists():
+            table.create()
+
+
+class TestBasicQueryUtils(object):
 
     def test_format_facets(self):
         # first, check it can deal with an empty aggregation result
-        nose.tools.assert_equal(format_facets({}), {})
+        assert format_facets({}) == {}
 
         facets = format_facets({
             u'facet1': {
@@ -52,21 +69,24 @@ class TestBasicQueryUtils(TestBase):
             }
         })
 
-        nose.tools.assert_equal(len(facets), 2)
-        nose.tools.assert_equal(facets[u'facet1'][u'details'][u'sum_other_doc_count'], 901)
-        nose.tools.assert_equal(facets[u'facet1'][u'details'][u'doc_count_error_upper_bound'], 12)
-        nose.tools.assert_equal(len(facets[u'facet1'][u'values']), 5)
-        nose.tools.assert_equal(facets[u'facet1'][u'values'][u'value1'], 43)
-        nose.tools.assert_equal(facets[u'facet1'][u'values'][u'value2'], 243)
-        nose.tools.assert_equal(facets[u'facet1'][u'values'][u'value3'], 543)
-        nose.tools.assert_equal(facets[u'facet1'][u'values'][u'value4'], 143)
-        nose.tools.assert_equal(facets[u'facet1'][u'values'][u'value5'], 743)
+        assert len(facets) == 2
+        assert facets[u'facet1'][u'details'][u'sum_other_doc_count'] == 901
+        assert facets[u'facet1'][u'details'][u'doc_count_error_upper_bound'] == 12
+        assert len(facets[u'facet1'][u'values']) == 5
+        assert facets[u'facet1'][u'values'][u'value1'] == 43
+        assert facets[u'facet1'][u'values'][u'value2'] == 243
+        assert facets[u'facet1'][u'values'][u'value3'] == 543
+        assert facets[u'facet1'][u'values'][u'value4'] == 143
+        assert facets[u'facet1'][u'values'][u'value5'] == 743
 
-        nose.tools.assert_equal(facets[u'facet2'][u'details'][u'sum_other_doc_count'], 0)
-        nose.tools.assert_equal(facets[u'facet2'][u'details'][u'doc_count_error_upper_bound'], 0)
-        nose.tools.assert_equal(len(facets[u'facet2'][u'values']), 1)
-        nose.tools.assert_equal(facets[u'facet2'][u'values'][u'value1'], 6)
+        assert facets[u'facet2'][u'details'][u'sum_other_doc_count'] == 0
+        assert facets[u'facet2'][u'details'][u'doc_count_error_upper_bound'] == 0
+        assert len(facets[u'facet2'][u'values']) == 1
+        assert facets[u'facet2'][u'values'][u'value1'] == 6
 
+    @pytest.mark.filterwarnings(u'ignore::sqlalchemy.exc.SADeprecationWarning')
+    @pytest.mark.ckan_config(u'ckan.plugins', u'versioned_datastore')
+    @pytest.mark.usefixtures(u'with_versioned_datastore_tables', u'with_plugins')
     def test_get_fields(self):
         mock_mapping = {
             u"beans-index": {
@@ -110,12 +130,9 @@ class TestBasicQueryUtils(TestBase):
             patch(u'ckanext.versioned_datastore.lib.basic_query.utils.MultiSearch',
                   new=multisearch_class_mock):
             mapping, fields = get_fields(u'index')
-            nose.tools.assert_equal(mapping, mock_mapping[u'beans-index'])
-            nose.tools.assert_equal(len(fields), 3)
+            assert mapping == mock_mapping[u'beans-index']
+            assert len(fields) == 3
             # the first field should always be the _id field and it should always be an integer type
-            nose.tools.assert_equal(fields[0], {
-                u'id': u'_id',
-                u'type': u'integer'
-            })
-            nose.tools.assert_true({u'id': u'field1', u'type': u'string'} in fields)
-            nose.tools.assert_true({u'id': u'field2', u'type': u'string'} in fields)
+            assert fields[0] == {u'id': u'_id', u'type': u'integer'}
+            assert {u'id': u'field1', u'type': u'string'} in fields
+            assert {u'id': u'field2', u'type': u'string'} in fields

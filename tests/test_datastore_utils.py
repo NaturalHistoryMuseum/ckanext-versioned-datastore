@@ -1,15 +1,12 @@
-import nose
-from ckantest.models import TestBase
 from eevee.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
-from ..lib.common import ALL_FORMATS, DATASTORE_ONLY_RESOURCE
-from ..lib.datastore_utils import is_datastore_resource, is_ingestible, \
+from ckanext.versioned_datastore.lib.common import ALL_FORMATS, DATASTORE_ONLY_RESOURCE
+from ckanext.versioned_datastore.lib.datastore_utils import is_datastore_resource, is_ingestible, \
     is_datastore_only_resource, iter_data_fields
 
 
-class TestDatastoreUtils(TestBase):
-    plugins = [u'versioned_datastore']
+class TestDatastoreUtils(object):
 
     def test_is_datastore_resource(self):
         scenarios = [
@@ -33,57 +30,34 @@ class TestDatastoreUtils(TestBase):
                 with patch(u'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
                            new=search_helper_mock):
                     with patch(u'ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock):
-                        nose.tools.assert_equal(expected_outcome, is_datastore_resource(u'banana'))
+                        assert expected_outcome == is_datastore_resource(u'banana')
 
     def test_is_datastore_only_resource(self):
         for yes in [DATASTORE_ONLY_RESOURCE, u'http://{}'.format(DATASTORE_ONLY_RESOURCE),
                     u'https://{}'.format(DATASTORE_ONLY_RESOURCE)]:
-            nose.tools.assert_true(is_datastore_only_resource(yes))
+            assert is_datastore_only_resource(yes)
 
         for no in [u'ftp://{}'.format(DATASTORE_ONLY_RESOURCE), u'this is datastore only',
                    None, u'{}/{}'.format(DATASTORE_ONLY_RESOURCE, DATASTORE_ONLY_RESOURCE),
                    u'https://{}/nope'.format(DATASTORE_ONLY_RESOURCE)]:
-            nose.tools.assert_false(is_datastore_only_resource(no))
+            assert not is_datastore_only_resource(no)
 
     def test_is_ingestible(self):
         # all formats should be ingestible (even in uppercase)
         for fmt in ALL_FORMATS:
-            nose.tools.assert_true(is_ingestible({
-                u'format': fmt,
-                u'url': MagicMock()
-            }))
-            nose.tools.assert_true(is_ingestible({
-                u'format': fmt.upper(),
-                u'url': MagicMock()
-            }))
+            assert is_ingestible({u'format': fmt, u'url': MagicMock()})
+            assert is_ingestible({u'format': fmt.upper(), u'url': MagicMock()})
         # zip should be ingestible (even in uppercase)
-        nose.tools.assert_true(is_ingestible({
-            u'format': u'ZIP',
-            u'url': MagicMock(),
-        }))
-        nose.tools.assert_true(is_ingestible({
-            u'format': u'zip',
-            u'url': MagicMock(),
-        }))
+        assert is_ingestible({u'format': u'ZIP', u'url': MagicMock()})
+        assert is_ingestible({u'format': u'zip', u'url': MagicMock()})
         # a datastore only resource should be ingestible
-        nose.tools.assert_true(is_ingestible({
-            u'format': None,
-            u'url': DATASTORE_ONLY_RESOURCE
-        }))
+        assert is_ingestible({u'format': None, u'url': DATASTORE_ONLY_RESOURCE})
 
         # if there's no url then the resource is not ingestible
-        nose.tools.assert_false(is_ingestible({
-            u'url': None,
-        }))
-        nose.tools.assert_false(is_ingestible({
-            u'format': u'csv',
-            u'url': None,
-        }))
+        assert not is_ingestible({u'url': None})
+        assert not is_ingestible({u'format': u'csv', u'url': None})
         # if there's no format and the resource is not datastore only then it is not ingestible
-        nose.tools.assert_false(is_ingestible({
-            u'format': None,
-            u'url': u'http://banana.com/test.csv'
-        }))
+        assert not is_ingestible({u'format': None, u'url': u'http://banana.com/test.csv'})
 
     def test_is_iter_data_fields(self):
         id_config = MagicMock()
@@ -113,7 +87,7 @@ class TestDatastoreUtils(TestBase):
         }
 
         fields_and_configs = dict(iter_data_fields(mapping))
-        nose.tools.assert_equal(fields_and_configs[(u'_id',)], id_config)
-        nose.tools.assert_equal(fields_and_configs[(u'nests', u'banana')], banana_config)
-        nose.tools.assert_equal(fields_and_configs[(u'nests', u'llama')], llama_config)
-        nose.tools.assert_equal(fields_and_configs[(u'cheese',)], cheese_config)
+        assert fields_and_configs[(u'_id',)] == id_config
+        assert fields_and_configs[(u'nests', u'banana')] == banana_config
+        assert fields_and_configs[(u'nests', u'llama')] == llama_config
+        assert fields_and_configs[(u'cheese',)] == cheese_config
