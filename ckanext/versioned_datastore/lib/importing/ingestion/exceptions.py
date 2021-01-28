@@ -16,7 +16,7 @@ class UnsupportedDataSource(IngestionException):
         :param res_format: the resource format
         '''
         super(UnsupportedDataSource, self).__init__(
-            u'Could not find ingest reader for {}'.format(res_format if res_format else u'n/a'))
+            f'Could not find ingest reader for {res_format if res_format else "n/a"}')
         self.res_format = res_format
 
 
@@ -30,11 +30,11 @@ class InvalidId(IngestionException):
         '''
         :param row_number: the row number (1-indexed, excluding the header)
         :param row: the row (this should be a dict
-        :param cause: optional cause exception, for example a ValueError thrown by int(row[u'_id')
+        :param cause: optional cause exception, for example a ValueError thrown by int(row['_id')
         '''
-        message = u'Row {} had an invalid integer id: "{}"'.format(row_number, row[u'_id'])
+        message = f'Row {row_number} had an invalid integer id: "{row["_id"]}"'
         if cause is not None:
-            message = u'{} [{}: {}]'.format(message, cause.__class__.__name__, unicode(cause))
+            message = f'{message} [{cause.__class__.__name__}: {str(cause)}]'
 
         super(InvalidId, self).__init__(message)
         self.row_number = row_number
@@ -53,7 +53,7 @@ class DuplicateDataSource(IngestionException):
         :param file_hash: the file hash that clashed
         '''
         super(DuplicateDataSource, self).__init__(
-            u'This file has been ingested before, ignoring [hash: {}]'.format(file_hash))
+            f'This file has been ingested before, ignoring [hash: {file_hash}]')
         self.file_hash = file_hash
 
 
@@ -73,7 +73,7 @@ class InvalidCharacterException(IngestionException):
         :param row_number: the row number (1-indexed, excluding the header)
         :param row: the row (this should be a dict
         '''
-        message = u'Row {} (excluding header) contained an invalid character'.format(row_number)
+        message = f'Row {row_number} (excluding header) contained an invalid character'
         super(InvalidCharacterException, self).__init__(message)
         self.row_number = row_number
         self.row = row

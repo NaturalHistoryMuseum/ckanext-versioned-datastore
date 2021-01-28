@@ -67,31 +67,31 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
         validate_query(query, query_version)
-        timer.add_event(u'validate')
+        timer.add_event('validate')
         search = translate_query(query, query_version)
-        timer.add_event(u'translate')
+        timer.add_event('translate')
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
     resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
                                                                        resource_ids_and_versions)
-    timer.add_event(u'determine_resources')
+    timer.add_event('determine_resources')
     if not resource_ids:
-        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
 
     # add the version filter necessary given the parameters and the resources we're searching
     version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
     search = search.filter(version_filter)
-    timer.add_event(u'version_filter')
+    timer.add_event('version_filter')
 
     # add a simple default sort to ensure we get an after value for pagination. We use a combination
     # of the modified date, id of the record and the index it's in so that we get a unique sort
     search = search.sort(
         # not all indexes have a modified field so we need to provide the unmapped_type option
-        {u'data.modified': {u'order': u'desc', u'unmapped_type': u'date'}},
-        {u'data._id': u'desc'},
-        {u'_index': u'desc'}
+        {'data.modified': {'order': 'desc', 'unmapped_type': 'date'}},
+        {'data._id': 'desc'},
+        {'_index': 'desc'}
     )
     # add the after if there is one
     if after is not None:
@@ -104,49 +104,49 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
 
     if top_resources:
         # gather the number of hits in the top 10 most frequently represented indexes if requested
-        search.aggs.bucket(u'indexes', u'terms', field=u'_index')
+        search.aggs.bucket('indexes', 'terms', field='_index')
 
     # create a multisearch for this one query - this ensures there aren't any issues with the length
     # of the URL as the index list is passed as a part of the body
     multisearch = MultiSearch(using=common.ES_CLIENT).add(search)
-    timer.add_event(u'search_params')
+    timer.add_event('search_params')
 
     # run the search and get the only result from the search results list
     result = next(iter(multisearch.execute()))
-    timer.add_event(u'run')
+    timer.add_event('run')
 
     hits, next_after = calculate_after(result, size)
 
     response = {
-        u'total': result.hits.total,
-        u'after': next_after,
-        u'records': [{
-            u'data': hit.data.to_dict(),
+        'total': result.hits.total,
+        'after': next_after,
+        'records': [{
+            'data': hit.data.to_dict(),
             # should we provide the name too? If so cache a map of id -> name, then update it if we
             # don't find the id in the map
-            u'resource': trim_index_name(hit.meta.index),
+            'resource': trim_index_name(hit.meta.index),
         } for hit in hits],
-        u'skipped_resources': skipped_resource_ids,
+        'skipped_resources': skipped_resource_ids,
     }
 
     if top_resources:
         # include the top resources if requested
-        response[u'top_resources'] = [
-            {trim_index_name(bucket[u'key']): bucket[u'doc_count']}
-            for bucket in result.aggs.to_dict()[u'indexes'][u'buckets']
+        response['top_resources'] = [
+            {trim_index_name(bucket['key']): bucket['doc_count']}
+            for bucket in result.aggs.to_dict()['indexes']['buckets']
         ]
-    timer.add_event(u'response')
+    timer.add_event('response')
 
     # allow plugins to modify the fields object
     for plugin in PluginImplementations(IVersionedDatastore):
         response = plugin.datastore_multisearch_modify_response(response)
-    timer.add_event(u'response_modifiers')
+    timer.add_event('response_modifiers')
 
-    log_query(query, u'multisearch')
-    timer.add_event(u'log')
+    log_query(query, 'multisearch')
+    timer.add_event('log')
 
     if timings:
-        response[u'timings'] = timer.to_dict()
+        response['timings'] = timer.to_dict()
     return response
 
 
@@ -190,11 +190,11 @@ def datastore_create_slug(context, query=None, query_version=None, version=None,
         raise toolkit.ValidationError(e.message)
 
     if slug is None:
-        raise toolkit.ValidationError(u'Failed to generate new slug')
+        raise toolkit.ValidationError('Failed to generate new slug')
 
     return {
-        u'slug': slug.get_slug_string(),
-        u'is_new': is_new,
+        'slug': slug.get_slug_string(),
+        'is_new': is_new,
     }
 
 
@@ -208,17 +208,17 @@ def datastore_resolve_slug(slug):
     '''
     found_slug = resolve_slug(slug)
     if found_slug is None:
-        raise toolkit.ValidationError(u'Slug not found')
+        raise toolkit.ValidationError('Slug not found')
 
-    result = {k: getattr(found_slug, k) for k in (u'query', u'query_version', u'version',
-                                                  u'resource_ids', u'resource_ids_and_versions')}
-    result[u'created'] = found_slug.created.isoformat()
+    result = {k: getattr(found_slug, k) for k in ('query', 'query_version', 'version',
+                                                  'resource_ids', 'resource_ids_and_versions')}
+    result['created'] = found_slug.created.isoformat()
     return result
 
 
 @action(schema.datastore_field_autocomplete(), help.datastore_field_autocomplete,
         toolkit.side_effect_free)
-def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase=False):
+def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=False):
     '''
     Given a text value, finds fields that contain the given text from the given resource (or all
     resource if no resources are passed).
@@ -234,7 +234,7 @@ def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase
     # figure out which resources should be searched
     resource_ids = get_available_datastore_resources(context, resource_ids)
     if not resource_ids:
-        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
 
     mappings = get_mappings(resource_ids)
 
@@ -245,14 +245,14 @@ def datastore_field_autocomplete(context, text=u'', resource_ids=None, lowercase
 
         for field_path, config in iter_data_fields(mapping):
             if any(text in (part.lower() if lowercase else part) for part in field_path):
-                fields[u'.'.join(field_path)][resource_id] = {
-                    u'type': config[u'type'],
-                    u'fields': {f: c[u'type'] for f, c in config.get(u'fields', {}).items()}
+                fields['.'.join(field_path)][resource_id] = {
+                    'type': config['type'],
+                    'fields': {f: c['type'] for f, c in config.get('fields', {}).items()}
                 }
 
     return {
-        u'count': len(fields),
-        u'fields': fields,
+        'count': len(fields),
+        'fields': fields,
     }
 
 
@@ -301,7 +301,7 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
                                                                        resource_ids_and_versions)
     if not resource_ids:
-        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
 
     if version is None:
         version = to_timestamp(datetime.now())

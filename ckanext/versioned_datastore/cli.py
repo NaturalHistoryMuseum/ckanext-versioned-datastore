@@ -19,7 +19,7 @@ def versioned_datastore():
     pass
 
 
-@versioned_datastore.command(name=u'initdb')
+@versioned_datastore.command(name='initdb')
 def init_db():
     '''
     Ensure the tables needed by this plugin exist.
@@ -34,17 +34,17 @@ def init_db():
     for table in tables:
         if not table.exists():
             table.create()
-    click.secho(u'Finished creating tables', fg=u'green')
+    click.secho('Finished creating tables', fg='green')
 
 
 @versioned_datastore.command()
-@click.option(u'-r', u'--resource_id', u'resource_ids', multiple=True)
+@click.option('-r', '--resource_id', 'resource_ids', multiple=True)
 def reindex(resource_ids):
     '''
     Reindex either a specific resource or all resources.
     '''
     ids = set()
-    context = {u'ignore_auth': True}
+    context = {'ignore_auth': True}
 
     if resource_ids:
         # the user has specified some resources to reindex
@@ -52,31 +52,26 @@ def reindex(resource_ids):
     else:
         # the user hasn't specified the resources to reindex so we should get a list of all
         # resources in the system
-        data_dict = {u'query': u'name:', u'offset': 0, u'limit': 100}
+        data_dict = {'query': 'name:', 'offset': 0, 'limit': 100}
         while True:
-            result = toolkit.get_action(u'resource_search')(context, data_dict)
-            if len(result[u'results']) > 0:
-                ids.update(resource[u'id'] for resource in result[u'results'])
-                data_dict[u'offset'] += data_dict[u'limit']
+            result = toolkit.get_action('resource_search')(context, data_dict)
+            if len(result['results']) > 0:
+                ids.update(resource['id'] for resource in result['results'])
+                data_dict['offset'] += data_dict['limit']
             else:
                 break
 
     if not ids:
-        click.secho(u'No resources found to reindex', fg=u'green')
+        click.secho('No resources found to reindex', fg='green')
         return
 
-    click.secho(u'Found {} resources to reindex'.format(len(ids)), fg=u'yellow')
+    click.secho(f'Found {len(ids)} resources to reindex', fg='yellow')
 
     for resource_id in sorted(ids):
         try:
-            result = toolkit.get_action(u'datastore_reindex')(context,
-                                                              {u'resource_id': resource_id})
-            click.secho(
-                u'Queued reindex of {} as job {}'.format(resource_id, result[u'job_id']),
-                fg=u'cyan')
+            result = toolkit.get_action('datastore_reindex')(context, {'resource_id': resource_id})
+            click.secho(f'Queued reindex of {resource_id} as job {result["job_id"]}', fg='cyan')
         except toolkit.ValidationError as e:
-            click.secho(
-                u'Failed to reindex {} due to validation error: {}'.format(resource_id, e),
-                fg=u'red')
+            click.secho(f'Failed to reindex {resource_id} due to validation error: {e}', fg='red')
 
-    click.secho(u'Reindexing complete', fg=u'green')
+    click.secho('Reindexing complete', fg='green')

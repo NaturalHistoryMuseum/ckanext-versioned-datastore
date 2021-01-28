@@ -3,7 +3,7 @@ from mock import patch, MagicMock, call
 
 
 class TestActionUtils(object):
-    validate_function = u'ckanext.versioned_datastore.logic.actions.utils.toolkit.navl_validate'
+    validate_function = 'ckanext.versioned_datastore.logic.actions.utils.toolkit.navl_validate'
 
     def test_validate_uses_context_schema(self):
         # mock the validate function to return a mock and False for errors
@@ -14,7 +14,7 @@ class TestActionUtils(object):
             data_dict = MagicMock()
             # create a context with a schema specified
             context = {
-                u'schema': context_schema
+                'schema': context_schema
             }
             # call validate
             validate(context, data_dict, default_schema)

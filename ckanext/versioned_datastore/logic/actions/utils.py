@@ -18,7 +18,7 @@ def validate(context, data_dict, default_schema):
     :param data_dict: the dict to validate
     :param default_schema: the default schema to use if the context doesn't have one
     '''
-    schema = context.get(u'schema', default_schema)
+    schema = context.get('schema', default_schema)
     data_dict, errors = toolkit.navl_validate(data_dict, schema, context)
     if errors:
         raise toolkit.ValidationError(errors)
@@ -58,7 +58,7 @@ def is_action(function):
     :param function: the function to check
     :return: True if the function is an action function, False if not
     '''
-    return getattr(function, u'is_action', False)
+    return getattr(function, 'is_action', False)
 
 
 def wrap_action_function(action_name, function):
@@ -96,7 +96,7 @@ def wrap_action_function(action_name, function):
     :param function: the action function itself that we will be wrapping
     :return: the wrapped action function
     '''
-    arg_spec = inspect.getargspec(function)
+    arg_spec = inspect.getfullargspec(function)
     if arg_spec.defaults is not None:
         # the default list is used to determine which args are required and which aren't
         required_args = arg_spec.args[:-len(arg_spec.defaults)]

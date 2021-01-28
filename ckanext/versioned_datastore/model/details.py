@@ -6,19 +6,19 @@ from sqlalchemy import Column, Table, BigInteger, UnicodeText
 # this table stores general details about each version of each resource. Currently it only stores
 # the column names and order.
 datastore_resource_details_table = Table(
-    u'versioned_datastore_resource_details',
+    'versioned_datastore_resource_details',
     meta.metadata,
-    Column(u'id', BigInteger, primary_key=True),
-    Column(u'resource_id', UnicodeText, nullable=False, index=True),
+    Column('id', BigInteger, primary_key=True),
+    Column('resource_id', UnicodeText, nullable=False, index=True),
     # the version this operation is creating (for ingestion this means the version it's adding to
     # mongo, for indexing this means the version it's pulling from mongo and putting into
     # elasticsearch)
-    Column(u'version', BigInteger, nullable=False),
+    Column('version', BigInteger, nullable=False),
     # the detailed operation breakdown returned by eevee
-    Column(u'columns', UnicodeText, nullable=False),
+    Column('columns', UnicodeText, nullable=False),
     # a hash of the ingested file - can be None and will be if records are directly added using the
     # API
-    Column(u'file_hash', UnicodeText),
+    Column('file_hash', UnicodeText),
 )
 
 
@@ -41,7 +41,7 @@ class DatastoreResourceDetails(DomainObject):
             if validate:
                 if not column:
                     continue
-                column = column.replace(u'.', u'_')
+                column = column.replace('.', '_')
             columns.append(column)
         return columns
 

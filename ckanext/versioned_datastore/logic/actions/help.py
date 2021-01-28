@@ -1,4 +1,4 @@
-datastore_search = u'''
+datastore_search = '''
 This action allows you to search data in a resource. It is designed to function in a similar way
 to CKAN's core datastore_search but with a few extra bells and whistles, most prominently
 versioning. This allows the resource to be searched at any moment in it's lifespan and have the
@@ -84,7 +84,7 @@ the context dict under the key "versioned_datastore_query_result". This isn't av
 the http action API however.
 '''
 
-datastore_create = u'''
+datastore_create = '''
 Adds a resource to the versioned datastore. This action doesn't take any data, it simply ensures
 any setup work is complete for the given resource in the search backend. To add data after
 creating a resource in the datastore, use the datastore_upsert action.
@@ -100,7 +100,7 @@ creating a resource in the datastore, use the datastore_upsert action.
 :rtype: boolean
 '''
 
-datastore_upsert = u'''
+datastore_upsert = '''
 Upserts data into the datastore for the resource. The data can be provided in the data_dict
 using the key 'records' or, if data is not specified, the URL on the resource is used.
 
@@ -123,7 +123,7 @@ using the key 'records' or, if data is not specified, the URL on the resource is
 :rtype: dict
 '''
 
-datastore_delete = u'''
+datastore_delete = '''
 Deletes the data in the datastore against the given resource_id. Note that this is achieved by
 setting all records to be empty in a new version and then indexing that new version. This
 ensures that the data is not available in the latest version but is in old ones.
@@ -135,7 +135,7 @@ ensures that the data is not available in the latest version but is in old ones.
 :type version: integer
 '''
 
-datastore_reindex = u'''
+datastore_reindex = '''
 Triggers a reindex of the given resource's data. This does not reingest the data to mongo, but
 it does reindex the data in mongo to elasticsearch. The intent of this action is to allow
 mapping changes (for example) to be picked up.
@@ -150,7 +150,7 @@ Data dict params:
 :rtype: dict
 '''
 
-datastore_ensure_privacy = u'''
+datastore_ensure_privacy = '''
 Ensure that the privacy settings are correct across all resources in the datastore or for just
 one resource.
 
@@ -171,7 +171,7 @@ The result of this action is a dictionary with the following keys:
 :type total: integer
 '''
 
-datastore_autocomplete = u'''
+datastore_autocomplete = '''
 Provides autocompletion results against a specific field in a specific resource.
 
 **Data dict params:**
@@ -204,7 +204,7 @@ Provides autocompletion results against a specific field in a specific resource.
 :rtype: dict
 '''
 
-datastore_query_extent = u'''
+datastore_query_extent = '''
 Return the geospatial extent of the results of a given datastore search query. The data_dict
 parameters are the same as the arguments for `datastore_search`.
 
@@ -221,7 +221,7 @@ parameters are the same as the arguments for `datastore_search`.
 :type bounds: list in the format [[lat min, long min], [lat max, long max]]
 '''
 
-datastore_search_raw = u'''
+datastore_search_raw = '''
 This action allows you to search data in a resource using a raw elasticsearch query. This action
 allows more flexibility over the search both in terms of querying using any of elasticsearch's
 different DSL queries as well as aspects like turning versioning on and off.
@@ -292,7 +292,7 @@ http action API however.
 If raw_result is True, then the elasticsearch response is returned without modification.
 '''
 
-datastore_get_record_versions = u'''
+datastore_get_record_versions = '''
 Given a record id and an resource it appears in, returns the version timestamps available for
 that record in ascending order.
 
@@ -308,7 +308,7 @@ Data dict params:
 :rtype: list
 '''
 
-datastore_get_resource_versions = u'''
+datastore_get_resource_versions = '''
 Given a resource id, returns the version timestamps available for that resource in ascending
 order along with the number of records modified in the version and the number of records at that
 version.
@@ -328,11 +328,11 @@ Data dict params:
 :rtype: list of dicts
 '''
 
-datastore_get_rounded_version = u'''
+datastore_get_rounded_version = '''
 Round the requested version of this query down to the nearest actual version of the
 resource. This is necessary because we work in a system where although you can just query at
 a timestamp you should round it down to the nearest known version. This guarantees that when
-you come back and search the data later you'll get the same data. If the version requested
+you come back and search the data later yo'll get the same data. If the version requested
 is older than the oldest version of the resource then the requested version itself is
 returned (this is just a choice I made, we could return 0 for example instead).
 
@@ -368,7 +368,7 @@ Data dict params:
 :rtype: integer or None
 '''
 
-datastore_multisearch = u'''
+datastore_multisearch = '''
 This action allows you to search data in multiple resources.
 
 The resources that are searched for the in this action and the version they are searched at are
@@ -444,7 +444,7 @@ The result of this action is a dictionary with the following keys:
 :type timings: dict
 '''
 
-datastore_create_slug = u'''
+datastore_create_slug = '''
 Create a query slug based on the provided query parameters.
 
 This action returns a slug which can be used to retrieve the query parameters passed (not the
@@ -492,7 +492,7 @@ The result of this action is a dictionary with the following keys:
 :type is_new: bool
 '''
 
-datastore_resolve_slug = u'''
+datastore_resolve_slug = '''
 Given a slug, resolves it and returns the query information associated with it.
 
 Params:
@@ -519,7 +519,7 @@ The result of this action is a dictionary with the following keys:
 :type created: datetime in isoformat
 '''
 
-datastore_field_autocomplete = u'''
+datastore_field_autocomplete = '''
 Returns a dictionary of available fields in the datastore which contain the passed text. The
 fields will be retrieved from resources available to the user. If a list of resource ids is
 passed as a parameter then the resources from that list that the user has access to will be
@@ -558,7 +558,7 @@ The result of this action is a dictionary with the following keys:
 :type count: int
 '''
 
-datastore_queue_download = u'''
+datastore_queue_download = '''
 Queues a task to generate a downloadable zip containing the data produced by the given query
 and then sends a link for the zip to the provided email address.
 
@@ -605,7 +605,7 @@ Params:
 :rtype: dict
 '''
 
-datastore_guess_fields = u'''
+datastore_guess_fields = '''
 This action allows you to retrieve a set of fields to display by default for a given search across
 potentially multiple resources. The returned list of groups of fields is ordered by the number of
 resources the fields in each group appears in under the provided query. Ties are handled by ordering
@@ -663,7 +663,7 @@ The result of this action is a list of dicts, each with the following keys:
 :type fields: dict
 '''
 
-datastore_hash_query = u'''
+datastore_hash_query = '''
 This action simply hashes the given query and returns the hex digest of it. The hash is produced
 using sha1 and a custom algorithm - it's not just a hash of the query dict.
 
@@ -678,7 +678,7 @@ Returns:
 :rtype: string
 '''
 
-datastore_is_datastore_resource = u'''
+datastore_is_datastore_resource = '''
 This action checks whether the given resource is in the datastore.
 
 Params:
@@ -691,7 +691,7 @@ Returns:
 :rtype: boolean
 '''
 
-datastore_get_latest_query_schema_version = u'''
+datastore_get_latest_query_schema_version = '''
 This action simply returns the latest available query schema version.
 
 Returns:
@@ -699,7 +699,7 @@ Returns:
 :rtype: string
 '''
 
-datastore_count = u'''
+datastore_count = '''
 Count the number of records available at a specific version across a set of resources. This
 allows quick counting of total records without any query, if you want to count with a query,
 use the search actions with a limit of 0.

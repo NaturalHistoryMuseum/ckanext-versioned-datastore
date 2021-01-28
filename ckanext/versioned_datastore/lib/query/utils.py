@@ -26,17 +26,17 @@ def get_available_datastore_resources(context, only=None):
     '''
     # retrieve all resource ids and associated package ids direct from the database for speed
     query = model.Session.query(model.Resource).join(model.Package) \
-        .filter(model.Resource.state == u'active') \
-        .filter(model.Package.state == u'active') \
+        .filter(model.Resource.state == 'active') \
+        .filter(model.Package.state == 'active') \
         .with_entities(model.Resource.id, model.Package.id)
     # retrieve the names in the status index
     status_search = Search(index=common.CONFIG.elasticsearch_status_index_name,
-                           using=common.ES_CLIENT).source([u'name'])
+                           using=common.ES_CLIENT).source(['name'])
 
     if only:
         # apply filters to only get the resources passed in the only list
         query = query.filter(model.Resource.id.in_(only))
-        status_search = status_search.filter(u'terms', name=only)
+        status_search = status_search.filter('terms', name=only)
 
     # complete the database query and the elasticsearch query
     resources_and_packages = list(query)
@@ -65,7 +65,7 @@ def get_available_datastore_resources(context, only=None):
             # if the result of looking in the cache is None then there is no value for this package
             # in the cache and we need to do the work
             try:
-                toolkit.check_access(u'package_show', context, {u'id': package_id})
+                toolkit.check_access('package_show', context, {'id': package_id})
                 package_access_cache[package_id] = True
                 # access allowed, add to the list
                 resource_ids.add(resource_id)
@@ -132,7 +132,7 @@ def determine_version_filter(version=None, resource_ids=None, resource_ids_and_v
         for resource_id in resource_ids:
             target_version = resource_ids_and_versions[resource_id]
             if target_version is None:
-                raise toolkit.ValidationError(u"Valid version not given for {}".format(resource_id))
+                raise toolkit.ValidationError(f'Valid version not given for {resource_id}')
             index = prefix_resource(resource_id)
             rounded_version = common.SEARCH_HELPER.get_rounded_versions([index],
                                                                         target_version)[index]
@@ -192,10 +192,10 @@ def find_searched_resources(search, resource_ids):
     # we have to make a copy as aggs don't return a clone :(
     search_copy = copy(search)
     search_copy = search_copy.index([prefix_resource(resource_id) for resource_id in resource_ids])
-    search_copy.aggs.bucket(u'indexes', u'terms', field=u'_index')
+    search_copy.aggs.bucket('indexes', 'terms', field='_index')
     multisearch = MultiSearch(using=common.ES_CLIENT).add(search_copy)
     result = next(iter(multisearch.execute()))
     return [
-        trim_index_name(bucket[u'key'])
-        for bucket in result.aggs.to_dict()[u'indexes'][u'buckets'] if bucket[u'doc_count'] > 0
+        trim_index_name(bucket['key'])
+        for bucket in result.aggs.to_dict()['indexes']['buckets'] if bucket['doc_count'] > 0
     ]

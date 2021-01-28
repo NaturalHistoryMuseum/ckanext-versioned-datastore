@@ -1,4 +1,5 @@
 import operator
+
 from ckan.plugins import PluginImplementations
 from elasticsearch_dsl import Search
 
@@ -19,11 +20,11 @@ def _find_version(data_dict):
                       be removed if present)
     :return: the version found as an integer, or None if no version was found
     '''
-    version = data_dict.get(u'version', None)
+    version = data_dict.get('version', None)
 
     # TODO: __version__ support should be removed once the frontend is capable of using the param
     # pop the __version__ to avoid including it in the normal search filters
-    filter_version = data_dict.get(u'filters', {}).pop(u'__version__', None)
+    filter_version = data_dict.get('filters', {}).pop('__version__', None)
     # it'll probably be a list cause it's a normal filter as far as the frontend is concerned
     if isinstance(filter_version, list):
         # just use the first value
@@ -116,29 +117,29 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     search = Search()
     # add a free text query across all fields if there is one. This searches against meta.all which
     # is a copy field created by adding the values of each data.* field
-    if q is not None and q is not u'' and q is not {}:
-        if isinstance(q, (str, unicode, int, float)):
-            search = search.query(u'match', **{u'meta.all': {u'query': q, u'operator': u'and'}})
+    if q is not None and q != '' and q != {}:
+        if isinstance(q, (str, int, float)):
+            search = search.query('match', **{'meta.all': {'query': q, 'operator': 'and'}})
         elif isinstance(q, dict):
             for field, query in sorted(q.items(), key=operator.itemgetter(0)):
                 # TODO: change this to __all__ to match __geo__?
-                if field == u'':
-                    field = u'meta.all'
+                if field == '':
+                    field = 'meta.all'
                 else:
                     field = prefix_field(field)
-                search = search.query(u'match', **{field: {u'query': query, u'operator': u'and'}})
+                search = search.query('match', **{field: {'query': query, 'operator': 'and'}})
     if filters is not None:
         for field, values in sorted(filters.items(), key=operator.itemgetter(0)):
             if not isinstance(values, list):
                 values = [values]
-            if field == u'__geo__':
+            if field == '__geo__':
                 # only pass through the first value
                 search = add_geo_search(search, values[0])
             else:
-                field = u'{}'.format(prefix_field(field))
+                field = '{}'.format(prefix_field(field))
                 for value in values:
                     # filter on the keyword version of the field
-                    search = search.filter(u'term', **{field: value})
+                    search = search.filter('term', **{field: value})
 
     # after and offset cannot be used together, prefer after over offset
     if after is not None:
@@ -149,14 +150,14 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     search = search.extra(size=int(limit) if limit is not None else 100)
 
     if fields is not None:
-        search = search.source(map(prefix_field, fields))
+        search = search.source(list(map(prefix_field, fields)))
     if facets is not None:
         facet_limits = facet_limits if facet_limits is not None else {}
         for facet in facets:
             # to produce the facet counts we use a bucket terms aggregation, note that using the
             # bucket function on the top level aggs attribute on the search object doesn't return a
             # copy of the search object like it does when adding queries etc
-            search.aggs.bucket(facet, u'terms',
+            search.aggs.bucket(facet, 'terms',
                                field=prefix_field(facet),
                                size=facet_limits.get(facet, 10))
 
@@ -169,20 +170,20 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     id_in_sort = False
     if sort is not None:
         for field_and_sort in sort:
-            if not field_and_sort.endswith(u' desc') and not field_and_sort.endswith(u' asc'):
+            if not field_and_sort.endswith(' desc') and not field_and_sort.endswith(' asc'):
                 # default the sort direction to ascending if nothing is provided
-                field_and_sort += u' asc'
-            field, direction = field_and_sort.rsplit(u' ', 1)
+                field_and_sort += ' asc'
+            field, direction = field_and_sort.rsplit(' ', 1)
             # set the id_in_sort boolean to True if we see the _id field in the caller defined sort
-            id_in_sort = not id_in_sort and field == u'_id'
+            id_in_sort = not id_in_sort and field == '_id'
             field = prefix_field(field)
             # if the sort direction is desc we need to add a minus sign in front of the field name,
             # otherwise we can just use the field name on its own as the default sort is asc
-            sorts.append(u'-{}'.format(field) if direction == u'desc' else field)
+            sorts.append('-{}'.format(field) if direction == 'desc' else field)
 
     # by default, sort by the _id field
     if not id_in_sort:
-        sorts.append(prefix_field(u'_id'))
+        sorts.append(prefix_field('_id'))
     search = search.sort(*sorts)
 
     return search

@@ -10,24 +10,24 @@ def test_convert_empty():
             {}
         ),
         (
-            {u'field1': u'beans', u'field2': [1, 2, 3, 4]},
-            {u'field1': u'beans', u'field2': [1, 2, 3, 4]}
+            {'field1': 'beans', 'field2': [1, 2, 3, 4]},
+            {'field1': 'beans', 'field2': [1, 2, 3, 4]}
         ),
         (
-            {u'field1.another': u'beans'},
-            {u'field1_another': u'beans'}
+            {'field1.another': 'beans'},
+            {'field1_another': 'beans'}
         ),
         (
-            {u'field1.another.more.moreagain': u'beans'},
-            {u'field1_another_more_moreagain': u'beans'}
+            {'field1.another.more.moreagain': 'beans'},
+            {'field1_another_more_moreagain': 'beans'}
         ),
         (
-            {u'': u'beans'},
+            {'': 'beans'},
             {}
         ),
         (
-            {u'field': {u'field1': u'beans', u'field2.field3': False, u'a': {u'': u'beans'}}},
-            {u'field': {u'field1': u'beans', u'field2_field3': False, u'a': {}}},
+            {'field': {'field1': 'beans', 'field2.field3': False, 'a': {'': 'beans'}}},
+            {'field': {'field1': 'beans', 'field2_field3': False, 'a': {}}},
         ),
     ]
 

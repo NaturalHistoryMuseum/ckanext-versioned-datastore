@@ -57,9 +57,9 @@ def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
         # create a temporary file to store the data in
         with tempfile.NamedTemporaryFile(delete=True) as temp:
             if compress:
-                with gzip.open(temp.name, mode=u'wb') as f:
+                with gzip.open(temp.name, mode='wb') as f:
                     download(f)
-                with gzip.open(temp.name, mode=u'rb') as g:
+                with gzip.open(temp.name, mode='rb') as g:
                     yield g
             else:
                 download(temp)
@@ -102,14 +102,14 @@ class InclusionTracker(object):
     def __enter__(self):
         self.temporary_file = tempfile.NamedTemporaryFile(delete=True)
         self.tracker_db = sqlite3.connect(self.temporary_file.name)
-        self.tracker_db.execute(u'create table ids (id integer primary key)')
+        self.tracker_db.execute('create table ids (id integer primary key)')
 
         @self.ingester.update_signal.connect_via(self.ingester)
         def on_update(_sender, record, doc):
             # this implies that the record update wasn't written to mongo because the record
             # hasn't changed in this new version
             if not doc:
-                self.tracker_db.execute(u'insert into ids(id) values (?)', (record.id,))
+                self.tracker_db.execute('insert into ids(id) values (?)', (record.id,))
 
         return self
 
@@ -128,7 +128,7 @@ class InclusionTracker(object):
         '''
         with self.tracker_db:
             cursor = self.tracker_db.cursor()
-            cursor.execute(u'select 1 from ids where id = ?', (record_id,))
+            cursor.execute('select 1 from ids where id = ?', (record_id,))
             return cursor.fetchone() is not None
 
 

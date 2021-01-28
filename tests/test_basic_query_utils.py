@@ -31,62 +31,62 @@ class TestBasicQueryUtils(object):
         assert format_facets({}) == {}
 
         facets = format_facets({
-            u'facet1': {
-                u'sum_other_doc_count': 901,
-                u'doc_count_error_upper_bound': 12,
-                u'buckets': [
+            'facet1': {
+                'sum_other_doc_count': 901,
+                'doc_count_error_upper_bound': 12,
+                'buckets': [
                     {
-                        u'key': u'value1',
-                        u'doc_count': 43
+                        'key': 'value1',
+                        'doc_count': 43
                     },
                     {
-                        u'key': u'value2',
-                        u'doc_count': 243
+                        'key': 'value2',
+                        'doc_count': 243
                     },
                     {
-                        u'key': u'value3',
-                        u'doc_count': 543
+                        'key': 'value3',
+                        'doc_count': 543
                     },
                     {
-                        u'key': u'value4',
-                        u'doc_count': 143
+                        'key': 'value4',
+                        'doc_count': 143
                     },
                     {
-                        u'key': u'value5',
-                        u'doc_count': 743
+                        'key': 'value5',
+                        'doc_count': 743
                     },
                 ]
             },
-            u'facet2': {
-                u'sum_other_doc_count': 0,
-                u'doc_count_error_upper_bound': 0,
-                u'buckets': [
+            'facet2': {
+                'sum_other_doc_count': 0,
+                'doc_count_error_upper_bound': 0,
+                'buckets': [
                     {
-                        u'key': u'value1',
-                        u'doc_count': 6
+                        'key': 'value1',
+                        'doc_count': 6
                     },
                 ]
             }
         })
 
         assert len(facets) == 2
-        assert facets[u'facet1'][u'details'][u'sum_other_doc_count'] == 901
-        assert facets[u'facet1'][u'details'][u'doc_count_error_upper_bound'] == 12
-        assert len(facets[u'facet1'][u'values']) == 5
-        assert facets[u'facet1'][u'values'][u'value1'] == 43
-        assert facets[u'facet1'][u'values'][u'value2'] == 243
-        assert facets[u'facet1'][u'values'][u'value3'] == 543
-        assert facets[u'facet1'][u'values'][u'value4'] == 143
-        assert facets[u'facet1'][u'values'][u'value5'] == 743
+        assert facets['facet1']['details']['sum_other_doc_count'] == 901
+        assert facets['facet1']['details']['doc_count_error_upper_bound'] == 12
+        assert len(facets['facet1']['values']) == 5
+        assert facets['facet1']['values']['value1'] == 43
+        assert facets['facet1']['values']['value2'] == 243
+        assert facets['facet1']['values']['value3'] == 543
+        assert facets['facet1']['values']['value4'] == 143
+        assert facets['facet1']['values']['value5'] == 743
 
-        assert facets[u'facet2'][u'details'][u'sum_other_doc_count'] == 0
-        assert facets[u'facet2'][u'details'][u'doc_count_error_upper_bound'] == 0
-        assert len(facets[u'facet2'][u'values']) == 1
-        assert facets[u'facet2'][u'values'][u'value1'] == 6
+        assert facets['facet2']['details']['sum_other_doc_count'] == 0
+        assert facets['facet2']['details']['doc_count_error_upper_bound'] == 0
+        assert len(facets['facet2']['values']) == 1
+        assert facets['facet2']['values']['value1'] == 6
 
-    @pytest.mark.filterwarnings(u'ignore::sqlalchemy.exc.SADeprecationWarning')
-    @pytest.mark.ckan_config(u'ckan.plugins', u'versioned_datastore')
-    @pytest.mark.usefixtures(u'with_versioned_datastore_tables', u'with_plugins')
+    @pytest.mark.filterwarnings('ignore::sqlalchemy.exc.SADeprecationWarning')
+    @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
+    @pytest.mark.usefixtures('with_versioned_datastore_tables', 'with_plugins')
     def test_get_fields(self):
         mock_mapping = {
             u"beans-index": {
@@ -96,7 +96,7 @@ class TestBasicQueryUtils(object):
                             u"data": {
                                 u"properties": {
                                     u"_id": {
-                                        u'type': u'long'
+                                        'type': 'long'
                                     },
                                     u"field1": {
                                         u"type": u"keyword",
@@ -113,7 +113,7 @@ class TestBasicQueryUtils(object):
         }
 
         mapping_mock_function = MagicMock(return_value=mock_mapping)
-        prefix_mock = lambda name: u'beans-{}'.format(name)
+        prefix_mock = lambda name: f'beans-{name}'
         client_mock = MagicMock(indices=MagicMock(get_mapping=mapping_mock_function))
         search_helper_mock = MagicMock()
         es_response = [MagicMock(hits=MagicMock(total=4)), MagicMock(hits=MagicMock(total=10))]
@@ -122,17 +122,17 @@ class TestBasicQueryUtils(object):
                                         execute=MagicMock(return_value=es_response))
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
-        with patch(u'ckanext.versioned_datastore.lib.basic_query.utils.prefix_resource',
+        with patch('ckanext.versioned_datastore.lib.basic_query.utils.prefix_resource',
                    new=prefix_mock), \
-            patch(u'ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock), \
-            patch(u'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
+            patch('ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock), \
+            patch('ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
                   new=search_helper_mock), \
-            patch(u'ckanext.versioned_datastore.lib.basic_query.utils.MultiSearch',
+            patch('ckanext.versioned_datastore.lib.basic_query.utils.MultiSearch',
                   new=multisearch_class_mock):
-            mapping, fields = get_fields(u'index')
-            assert mapping == mock_mapping[u'beans-index']
+            mapping, fields = get_fields('index')
+            assert mapping == mock_mapping['beans-index']
             assert len(fields) == 3
             # the first field should always be the _id field and it should always be an integer type
-            assert fields[0] == {u'id': u'_id', u'type': u'integer'}
-            assert {u'id': u'field1', u'type': u'string'} in fields
-            assert {u'id': u'field2', u'type': u'string'} in fields
+            assert fields[0] == {'id': '_id', 'type': 'integer'}
+            assert {'id': 'field1', 'type': 'string'} in fields
+            assert {'id': 'field2', 'type': 'string'} in fields

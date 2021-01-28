@@ -25,7 +25,7 @@ def prefix_resource(resource_id):
     :param resource_id: the resource id
     :return: the resource's index name
     '''
-    return u'{}{}'.format(common.CONFIG.elasticsearch_index_prefix, resource_id)
+    return f'{common.CONFIG.elasticsearch_index_prefix}{resource_id}'
 
 
 def unprefix_index(index_name):
@@ -48,7 +48,7 @@ def prefix_field(field):
     :param field: the field name
     :return: data.<field>
     '''
-    return u'data.{}'.format(field)
+    return f'data.{field}'
 
 
 def get_public_alias_prefix():
@@ -57,7 +57,7 @@ def get_public_alias_prefix():
 
     :return: the public prefix
     '''
-    return u'pub'
+    return 'pub'
 
 
 def get_public_alias_name(resource_id):
@@ -71,7 +71,7 @@ def get_public_alias_name(resource_id):
     :param resource_id: the resource's id
     :return: the name of the alias
     '''
-    return u'{}{}'.format(get_public_alias_prefix(), prefix_resource(resource_id))
+    return f'{get_public_alias_prefix()}{prefix_resource(resource_id)}'
 
 
 def trim_index_name(index_name):
@@ -148,8 +148,8 @@ def make_public(resource_id):
     if common.ES_CLIENT.indices.exists(index_name):
         if not common.ES_CLIENT.indices.exists_alias(index_name, public_index_name):
             actions = {
-                u'actions': [
-                    {u'add': {u'index': index_name, u'alias': public_index_name}}
+                'actions': [
+                    {'add': {'index': index_name, 'alias': public_index_name}}
                 ]
             }
             common.ES_CLIENT.indices.update_aliases(actions)
@@ -193,13 +193,13 @@ def iter_data_fields(mapping):
         if path is None:
             path = tuple()
         for field, config in props.items():
-            if u'properties' in config:
-                for result in iter_properties(config[u'properties'], path=path + (field,)):
+            if 'properties' in config:
+                for result in iter_properties(config['properties'], path=path + (field,)):
                     yield result
             else:
                 yield path + (field,), config
 
-    return iter_properties(mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties'])
+    return iter_properties(mapping['mappings'][DOC_TYPE]['properties']['data']['properties'])
 
 
 def get_last_after(hits):
@@ -209,8 +209,8 @@ def get_last_after(hits):
     :param hits: a list of hits from an elasticsearch response
     :return: a list or None
     '''
-    if hits and u'sort' in hits[-1].meta:
-        return list(hits[-1].meta[u'sort'])
+    if hits and 'sort' in hits[-1].meta:
+        return list(hits[-1].meta['sort'])
     else:
         return None
 
@@ -243,8 +243,8 @@ def is_datastore_only_resource(resource_url):
     :return: True if the resource is a datastore only resource, False if not
     '''
     return (resource_url == common.DATASTORE_ONLY_RESOURCE or
-            resource_url == u'http://{}'.format(common.DATASTORE_ONLY_RESOURCE) or
-            resource_url == u'https://{}'.format(common.DATASTORE_ONLY_RESOURCE))
+            resource_url == f'http://{common.DATASTORE_ONLY_RESOURCE}' or
+            resource_url == f'https://{common.DATASTORE_ONLY_RESOURCE}')
 
 
 def is_ingestible(resource):
@@ -258,10 +258,10 @@ def is_ingestible(resource):
     :param resource: the resource dict
     :return: True if it is, False if not
     """
-    if resource.get(u'url', None) is None:
+    if resource.get('url', None) is None:
         return False
 
-    resource_format = resource.get(u'format', None)
-    return (is_datastore_only_resource(resource[u'url']) or
+    resource_format = resource.get('format', None)
+    return (is_datastore_only_resource(resource['url']) or
             (resource_format is not None and resource_format.lower() in common.ALL_FORMATS) or
-            (resource_format is not None and resource_format.lower() == u'zip'))
+            (resource_format is not None and resource_format.lower() == 'zip'))

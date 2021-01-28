@@ -14,132 +14,132 @@ def check(access, context, data_dict):
              returned in this dict which contains a user-friendly message.
     '''
     data_dict_copy = data_dict.copy() if data_dict else {}
-    data_dict_copy[u'id'] = data_dict[u'resource_id']
+    data_dict_copy['id'] = data_dict['resource_id']
 
-    user = context.get(u'user')
+    user = context.get('user')
     authorized = toolkit.check_access(access, context, data_dict_copy)
 
     if authorized:
-        return {u'success': True}
+        return {'success': True}
     else:
         return {
-            u'success': False,
-            u'msg': toolkit._(u'User {} not authorized to alter resource {}'.format(
-                str(user), data_dict_copy[u'id']))
+            'success': False,
+            'msg': toolkit._(f'User {user} not authorized to alter resource {data_dict_copy["id"]}')
         }
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_search(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 def datastore_create(context, data_dict):
-    return check(u'resource_update', context, data_dict)
+    return check('resource_update', context, data_dict)
 
 
 def datastore_upsert(context, data_dict):
-    return check(u'resource_update', context, data_dict)
+    return check('resource_update', context, data_dict)
 
 
 def datastore_delete(context, data_dict):
-    return check(u'resource_update', context, data_dict)
+    return check('resource_update', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_get_record_versions(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_get_resource_versions(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_autocomplete(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 def datastore_reindex(context, data_dict):
-    return check(u'resource_update', context, data_dict)
+    return check('resource_update', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_query_extent(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_get_rounded_version(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_search_raw(context, data_dict):
-    return check(u'resource_show', context, data_dict)
+    return check('resource_show', context, data_dict)
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_ensure_privacy(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_multisearch(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_field_autocomplete(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_create_slug(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_resolve_slug(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_queue_download(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_guess_fields(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_hash_query(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_is_datastore_resource(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
 
 
 @toolkit.auth_allow_anonymous_access
 def datastore_get_latest_query_schema_version(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}
+
 
 @toolkit.auth_allow_anonymous_access
 def datastore_count(context, data_dict):
     # allow access to everyone
-    return {u'success': True}
+    return {'success': True}

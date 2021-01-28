@@ -1,10 +1,10 @@
 from ckan.plugins import toolkit
 from flask import Blueprint, send_from_directory
 
-blueprint = Blueprint(name=u'downloads', import_name=__name__)
+blueprint = Blueprint(name='downloads', import_name=__name__)
 
 
-@blueprint.route(u'/downloads/<zip_name>')
+@blueprint.route('/downloads/<zip_name>')
 def download(zip_name):
     '''
     Serves up the requested zip from the download directory. This is only registered with flask when
@@ -14,5 +14,5 @@ def download(zip_name):
     :param zip_name: the zip name
     :return: the send file response
     '''
-    download_dir = toolkit.config.get(u'ckanext.versioned_datastore.download_dir')
+    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
     return send_from_directory(download_dir, zip_name)

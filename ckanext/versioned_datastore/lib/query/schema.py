@@ -9,8 +9,8 @@ import six
 from jsonschema.validators import validator_for, RefResolver
 
 schemas = OrderedDict()
-schema_base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), u'..', u'..', u'theme',
-                                                u'public', u'querySchemas'))
+schema_base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'theme',
+                                                'public', 'querySchemas'))
 
 
 def register_schema(version, schema):
@@ -27,7 +27,7 @@ def register_schema(version, schema):
     # add the new version and re-sort the schemas by version in ascending order
     # (h/t https://stackoverflow.com/a/2574090)
     schemas = OrderedDict(sorted(itertools.chain([(version, schema)], schemas.items()),
-                                 key=lambda vs: [int(u) for u in vs[0][1:].split(u'.')]))
+                                 key=lambda vs: [int(u) for u in vs[0][1:].split('.')]))
 
 
 def get_latest_query_version():
@@ -42,7 +42,7 @@ def get_latest_query_version():
 class InvalidQuerySchemaVersionError(Exception):
 
     def __init__(self, version):
-        super(Exception, self).__init__(u'Invalid query version: {}'.format(version))
+        super(Exception, self).__init__(f'Invalid query version: {version}')
 
 
 def validate_query(query, version):
@@ -99,13 +99,13 @@ def load_core_schema(version):
     :param version: the version to load
     :return: the loaded schema (as a dict) and a jsonschmea validator object for the schema
     '''
-    schema_file = os.path.join(schema_base_path, version, u'{}.json'.format(version))
-    with io.open(schema_file, u'r', encoding=u'utf-8') as f:
+    schema_file = os.path.join(schema_base_path, version, f'{version}.json')
+    with io.open(schema_file, 'r', encoding='utf-8') as f:
         schema = json.load(f)
         validator_cls = validator_for(schema)
         validator_cls.check_schema(schema)
         # create a resolver which can resolve refs relative to the schema
-        resolver = RefResolver(base_uri='file://{}'.format(schema_file), referrer=schema)
+        resolver = RefResolver(base_uri=f'file://{schema_file}', referrer=schema)
         validator = validator_cls(schema, resolver=resolver)
         return schema, validator
 

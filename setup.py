@@ -6,55 +6,50 @@
 
 from setuptools import find_packages, setup
 
-__version__ = u'1.1.0'
+__version__ = '2.0.0'
 
-with open(u'README.md', u'r') as f:
+with open('README.md', 'r') as f:
     __long_description__ = f.read()
 
 dependencies = {'eevee': 'git+https://github.com/NaturalHistoryMuseum/eevee@v1.2.3#egg=eevee-1.2.3'}
 
 setup(
-    name=u'ckanext-versioned-datastore',
+    name='ckanext-versioned-datastore',
     version=__version__,
-    description=u'A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch.',
+    description='A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch.',
     long_description=__long_description__,
     classifiers=[
-        u'Development Status :: 3 - Alpha',
-        u'Framework :: Flask',
-        u'Programming Language :: Python :: 2.7'
+        'Development Status :: 5 - Production/Stable',
+        'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3 :: Only',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
-    keywords=u'CKAN data elastic versioning',
-    author=u'Natural History Museum',
-    author_email=u'data@nhm.ac.uk',
-    url=u'https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore',
-    license=u'GNU GPLv3',
-    packages=find_packages(exclude=[u'tests']),
-    namespace_packages=[u'ckanext', u'ckanext.versioned_datastore'],
+    keywords='CKAN data elastic versioning',
+    author='Natural History Museum',
+    author_email='data@nhm.ac.uk',
+    url='https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore',
+    license='GNU GPLv3',
+    packages=find_packages(exclude=['tests']),
+    namespace_packages=['ckanext', 'ckanext.versioned_datastore'],
     include_package_data=True,
     zip_safe=False,
     install_requires=[
-        u'backports.csv==1.0.6',
-        u'cchardet==2.1.4',
-        u'contextlib2>=0.6.0.post1',
-
-        # for openpyxl
-        u'et_xmlfile==1.0.0',
-        u'openpyxl==2.5.8',
-        u'requests',
-        u'six>=1.11.0',
-        u'xlrd==1.1.0',
-        u'elasticsearch>=6.0.0,<7.0.0',
-        u'elasticsearch-dsl>=6.0.0,<7.0.0',
-
-        # for jsonschema
-        u'pyrsistent~=0.16.1',
-        # not sure why this isn't working on python2 considering this is a python2 only lib but ok
-        u'functools32==3.2.3-2',
-        u'jsonschema==3.0.0',
-    ] + [u'{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
-    dependency_links=dependencies.values(),
+        'backports.csv==1.0.6',
+        'cchardet==2.1.4',
+        'openpyxl==2.5.8',
+        'requests',
+        'six>=1.11.0',
+        'xlrd==1.1.0',
+        'elasticsearch>=6.0.0,<7.0.0',
+        'elasticsearch-dsl>=6.0.0,<7.0.0',
+        'jsonschema==3.0.0',
+    ] + ['{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
+    dependency_links=list(dependencies.values()),
     entry_points= \
-        u'''
+        '''
         [ckan.plugins]
             versioned_datastore=ckanext.versioned_datastore.plugin:VersionedSearchPlugin
         ''',

@@ -35,7 +35,7 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
         # sort the resource ids and versions to ensure stability
         sorted(resource_ids_and_versions.items()) if resource_ids_and_versions is not None else None
     ]
-    hash_value.update(u'|'.join(map(unicode, bits)))
+    hash_value.update('|'.join(map(str, bits)))
     return hash_value.hexdigest()
 
 
@@ -50,7 +50,7 @@ def generate_pretty_slug(word_lists=(adjectives, adjectives, animals)):
     :param word_lists: a sequence of word lists to choose from
     :return: the slug
     '''
-    return u'-'.join(map(random.choice, word_lists))
+    return '-'.join(map(random.choice, word_lists))
 
 
 def create_slug(context, query, query_version, version=None, resource_ids=None,
@@ -170,7 +170,7 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
     if query_version is None:
         query_version = get_latest_query_version()
     assert isinstance(query, dict)
-    assert isinstance(query_version, basestring)
+    assert isinstance(query_version, str)
     if version is not None:
         assert isinstance(version, int)
     if resource_ids is not None:
@@ -191,12 +191,12 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
             DatastoreSlug.query_hash == query_hash).first()
         if slug is None:
             # we need to make a new slug
-            context = {u'ignore_auth': True}
+            context = {'ignore_auth': True}
             success, slug = create_slug(context, query, query_version, version, resource_ids,
                                         resource_ids_and_versions, pretty_slug=False)
             if not success:
                 # this should never really happen
-                raise Exception(u'Failed to create new reserved slug')
+                raise Exception('Failed to create new reserved slug')
             slug.reserved_pretty_slug = reserved_pretty_slug
             slug.save()
             return slug
@@ -207,5 +207,5 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
                 slug.save()
                 return slug
             else:
-                raise DuplicateSlugException(u'The query parameters are already associated with a '
-                                             u'different slug: {}'.format(slug.get_slug_string()))
+                raise DuplicateSlugException(f'The query parameters are already associated with a '
+                                             f'different slug: {slug.get_slug_string()}')
