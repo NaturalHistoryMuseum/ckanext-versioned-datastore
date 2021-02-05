@@ -378,7 +378,7 @@ class v1_0_0Schema(Schema):
             return lookup
 
 
-class v1_0_0Hasher(object):
+class v1_0_0Hasher:
     '''
     Query hasher class for the v1.0.0 query schema.
     '''
