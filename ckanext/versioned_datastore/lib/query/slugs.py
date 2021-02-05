@@ -35,7 +35,7 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
         # sort the resource ids and versions to ensure stability
         sorted(resource_ids_and_versions.items()) if resource_ids_and_versions is not None else None
     ]
-    hash_value.update('|'.join(map(str, bits)))
+    hash_value.update('|'.join(map(str, bits)).encode('utf-8'))
     return hash_value.hexdigest()
 
 
