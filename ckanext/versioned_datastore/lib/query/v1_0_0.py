@@ -392,9 +392,10 @@ class v1_0_0Hasher(object):
         '''
         query_hash = hashlib.sha1()
         if 'search' in query:
-            query_hash.update(f'search:{query["search"]}')
+            query_hash.update(f'search:{query["search"]}'.encode(u'utf-8'))
         if 'filters' in query:
-            query_hash.update(f'filters:{self.create_group_or_term(query["filters"])}')
+            data = f'filters:{self.create_group_or_term(query["filters"])}'.encode(u'utf-8')
+            query_hash.update(data)
         return query_hash.hexdigest()
 
     def create_group_or_term(self, group_or_term):
