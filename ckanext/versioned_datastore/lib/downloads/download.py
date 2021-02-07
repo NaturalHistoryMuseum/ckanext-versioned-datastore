@@ -122,7 +122,7 @@ class DownloadRequest(object):
             self.file_format,
             self.ignore_empty_fields,
         ]
-        download_hash = hashlib.sha1('|'.join(map(str, to_hash)))
+        download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
         return download_hash.hexdigest()
 
     def __repr__(self):
