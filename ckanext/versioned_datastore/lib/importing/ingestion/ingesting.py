@@ -311,7 +311,7 @@ class DatastoreFeeder(IngestionFeeder):
         '''
         Figure out what the current max id is in this resource's collection.
 
-        :return: the highest id in the collection currently (it'll be an int), or None if there
+        :return: the highest id in the collection currently (it'll be an int), or 0 if there
                 aren't any documents in the collection
         '''
         with get_mongo(self.config, collection=self.resource_id) as mongo:
@@ -319,7 +319,7 @@ class DatastoreFeeder(IngestionFeeder):
             doc_with_max_id = mongo.find_one(sort=[('id', -1)])
             # find_one returns None if there aren't any matching documents
             if doc_with_max_id is None:
-                return None
+                return 0
             else:
                 return doc_with_max_id['id']
 
