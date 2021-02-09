@@ -1,9 +1,8 @@
-import contextlib
-import io
 import json
+import os
 from collections import defaultdict
 
-import os
+import contextlib
 
 from .utils import filter_data_fields
 
@@ -29,7 +28,7 @@ def jsonl_writer(request, target_dir, field_counts):
         open_files = {}
     else:
         # open the single file we're going to write to
-        open_file = io.open(os.path.join(target_dir, 'data.jsonl'), 'w', encoding='utf-8')
+        open_file = open(os.path.join(target_dir, 'data.jsonl'), 'w', encoding='utf-8')
         # ensure that any request to get the open file for a given resource always returns the one
         # file we've opened
         open_files = defaultdict(lambda: open_file)
@@ -39,7 +38,7 @@ def jsonl_writer(request, target_dir, field_counts):
             if request.separate_files and resource_id not in open_files:
                 # lazily open the file for this resource id
                 resource_file_name = os.path.join(target_dir, f'{resource_id}.jsonl')
-                open_files[resource_id] = io.open(resource_file_name, 'w', encoding='utf-8')
+                open_files[resource_id] = open(resource_file_name, 'w', encoding='utf-8')
 
             if request.ignore_empty_fields:
                 data = filter_data_fields(data, field_counts[resource_id])
@@ -50,8 +49,7 @@ def jsonl_writer(request, target_dir, field_counts):
                 data['Source resource ID'] = resource_id
 
             # dump the data ensuring it works correctly as unicode
-            row = json.dumps(data, ensure_ascii=False)
-            open_files[resource_id].write(str(row))
+            open_files[resource_id].write(json.dumps(data, ensure_ascii=False))
             open_files[resource_id].write('\n')
 
         yield write
