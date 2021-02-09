@@ -130,35 +130,3 @@ class InclusionTracker(object):
             cursor = self.tracker_db.cursor()
             cursor.execute('select 1 from ids where id = ?', (record_id,))
             return cursor.fetchone() is not None
-
-
-def iter_universal_lines(fp, read_size=65536):
-    '''
-    Given a file object, read data from it, convert various newline types to \n and then yield
-    lines as strings (i.e. bytes in python2). This is a way round the problem of not being able to
-    reopen a file already opened in rb mode in rU mode. The line endings recognised by this function
-    are "\n", "\r" and "\r\n".
-
-    :param fp: the file object to read from, this must be open in rb mode
-    :param read_size: the number of bytes to read at a time from the file object (default: 65536)
-    :return: a generator which yields lines as strings
-    '''
-    cache = b''
-    while True:
-        chunk = fp.read(read_size)
-        if chunk:
-            # switch the \r\n and \r line endings for \n endings
-            chunk = chunk.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
-            for character in chunk:
-                cache += character
-                if character == b'\n':
-                    # if the cache isn't just a new line, yield it
-                    if cache != b'\n':
-                        yield cache
-                    # reset the cache for the next line
-                    cache = b''
-        else:
-            # if there's any data left in the cache, yield it
-            if cache:
-                yield cache
-            break

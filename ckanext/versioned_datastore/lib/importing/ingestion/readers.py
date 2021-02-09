@@ -1,15 +1,15 @@
-import numbers
-
 import abc
+
+import codecs
+import csv
+import numbers
 import openpyxl
-import six
-import unicodecsv
 import xlrd
 from cchardet import UniversalDetector
 from openpyxl.cell.read_only import EmptyCell
 
 from .exceptions import InvalidId
-from .utils import ensure_reset, iter_universal_lines
+from .utils import ensure_reset
 from ... import common
 
 
@@ -34,8 +34,7 @@ def get_reader(resource_format):
     return None
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ResourceReader(object):
+class ResourceReader(abc.ABC):
     '''
     Abstract class to read fields and rows from a resource.
     '''
@@ -135,8 +134,8 @@ class SVReader(ResourceReader):
                 self.encoding = 'utf-8'
 
         # create and return the dict reader
-        line_iterator = iter_universal_lines(resource_data_fp, self.encoding)
-        return unicodecsv.DictReader(line_iterator, dialect=self.dialect, encoding=self.encoding)
+        text_wrapper = codecs.getreader(self.encoding)(resource_data_fp)
+        return csv.DictReader(text_wrapper, dialect=self.dialect)
 
     def _get_rows(self, resource_data_fp):
         '''
@@ -162,7 +161,7 @@ class SVReader(ResourceReader):
         '''
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
-            return reader.unicode_fieldnames
+            return reader.fieldnames
 
     def modify_metadata(self, metadata):
         '''

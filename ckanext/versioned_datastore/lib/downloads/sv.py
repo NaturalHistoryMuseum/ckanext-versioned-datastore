@@ -2,7 +2,7 @@ import contextlib
 from collections import defaultdict
 
 import os
-import unicodecsv
+import csv
 
 from .utils import get_fields, filter_data_fields
 
@@ -71,8 +71,8 @@ def create_sv_writer(field_names, dialect, target_dir, filename):
     :return: a 2-tuple containing the open file and the DictWriter object
     '''
     path = os.path.join(target_dir, filename)
-    open_file = open(path, 'wb')
-    writer = unicodecsv.DictWriter(open_file, field_names, encoding='utf-8', dialect=dialect)
+    open_file = open(path, 'w', encoding='utf-8')
+    writer = csv.DictWriter(open_file, field_names, dialect=dialect)
     writer.writeheader()
     return open_file, writer
 
