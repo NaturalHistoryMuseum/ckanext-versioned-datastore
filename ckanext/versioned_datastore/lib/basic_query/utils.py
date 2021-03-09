@@ -25,7 +25,7 @@ def run_search(search, indexes, version=None):
     try:
         if version is not None:
             search = search.filter(create_version_query(version))
-        if isinstance(indexes, basestring):
+        if isinstance(indexes, str):
             indexes = [indexes]
         return search.index(indexes).using(common.ES_CLIENT).execute()
     except NotFoundError as e:
@@ -61,12 +61,12 @@ def format_facets(aggs):
     facets = {}
     for facet, details in aggs.items():
         facets[facet] = {
-            u'details': {
-                u'sum_other_doc_count': details[u'sum_other_doc_count'],
-                u'doc_count_error_upper_bound': details[u'doc_count_error_upper_bound'],
+            'details': {
+                'sum_other_doc_count': details['sum_other_doc_count'],
+                'doc_count_error_upper_bound': details['doc_count_error_upper_bound'],
             },
-            u'values': {value_details[u'key']: value_details[u'doc_count']
-                        for value_details in details[u'buckets']}
+            'values': {value_details['key']: value_details['doc_count']
+                       for value_details in details['buckets']}
         }
 
     return facets
@@ -117,7 +117,7 @@ def get_fields(resource_id, version=None):
         return field_cache[cache_key]
 
     # create a list of field details, starting with the always present _id field
-    fields = [{u'id': u'_id', u'type': u'integer'}]
+    fields = [{'id': '_id', 'type': 'integer'}]
     # lookup the mapping on elasticsearch to get all the field names
     mapping = common.ES_CLIENT.indices.get_mapping(index)[index]
     # if the rounded version response is None that means there are no versions available which
@@ -131,7 +131,7 @@ def get_fields(resource_id, version=None):
     all_details = get_all_details(resource_id, up_to_version=version)
     # this set is used to avoid duplicating fields, we preload it with the _id column because we
     # want to ignore that (it's already in the fields list defined above)
-    seen_fields = {u'_id'}
+    seen_fields = {'_id'}
     field_names = []
 
     if all_details:
@@ -143,7 +143,7 @@ def get_fields(resource_id, version=None):
             field_names.extend(columns)
             seen_fields.update(columns)
 
-    mapped_fields = mapping[u'mappings'][DOC_TYPE][u'properties'][u'data'][u'properties']
+    mapped_fields = mapping['mappings'][DOC_TYPE]['properties']['data']['properties']
     # add any unseen mapped fields to the list of names. If we have a details object for each
     # version this shouldn't add any additional fields and if not it ensures we don't miss any
     field_names.extend(field for field in sorted(mapped_fields) if field not in seen_fields)
@@ -155,8 +155,8 @@ def get_fields(resource_id, version=None):
             # create a search which finds the documents that have a value for the given field at the
             # rounded version. We're only interested in the counts though so set size to 0
             search = search.add(Search().extra(size=0)
-                                .filter(u'exists', **{u'field': prefix_field(field)})
-                                .filter(u'term', **{u'meta.versions': rounded_version}))
+                                .filter('exists', **{'field': prefix_field(field)})
+                                .filter('term', **{'meta.versions': rounded_version}))
 
         # run the search and get the response
         responses = search.execute()
@@ -164,9 +164,9 @@ def get_fields(resource_id, version=None):
             # if the field has documents then it should be included in the fields list
             if response.hits.total > 0:
                 fields.append({
-                    u'id': field_names[i],
+                    'id': field_names[i],
                     # by default everything is a string
-                    u'type': u'string',
+                    'type': 'string',
                 })
 
     # stick the result in the cache for next time

@@ -17,7 +17,7 @@ def ensure_importing_queue_exists():
 
     The queue is only added if not already in existance so this is safe to call multiple times.
     '''
-    name = jobs.add_queue_name_prefix(u'importing')
+    name = jobs.add_queue_name_prefix('importing')
     if name not in jobs._queues:
         # set the timeout to 12 hours
         queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
@@ -34,7 +34,7 @@ def queue(function, request):
     :return: the queued job
     '''
     ensure_importing_queue_exists()
-    return toolkit.enqueue_job(function, args=[request], queue=u'importing', title=unicode(request))
+    return toolkit.enqueue_job(function, args=[request], queue='importing', title=str(request))
 
 
 def queue_import(resource, version, replace, records=None, api_key=None):

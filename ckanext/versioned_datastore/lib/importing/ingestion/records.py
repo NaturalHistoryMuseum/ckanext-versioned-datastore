@@ -20,7 +20,7 @@ def _convert(data):
         if not field:
             continue
         # mongo doesn't allow dots in keys so replace them with underscores
-        field = field.replace(u'.', u'_')
+        field = field.replace('.', '_')
         if isinstance(value, dict):
             converted[field] = _convert(value)
         else:

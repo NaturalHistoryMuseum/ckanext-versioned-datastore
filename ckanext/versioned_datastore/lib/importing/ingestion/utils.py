@@ -57,9 +57,9 @@ def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
         # create a temporary file to store the data in
         with tempfile.NamedTemporaryFile(delete=True) as temp:
             if compress:
-                with gzip.open(temp.name, mode=u'wb') as f:
+                with gzip.open(temp.name, mode='wb') as f:
                     download(f)
-                with gzip.open(temp.name, mode=u'rb') as g:
+                with gzip.open(temp.name, mode='rb') as g:
                     yield g
             else:
                 download(temp)
@@ -102,14 +102,14 @@ class InclusionTracker(object):
     def __enter__(self):
         self.temporary_file = tempfile.NamedTemporaryFile(delete=True)
         self.tracker_db = sqlite3.connect(self.temporary_file.name)
-        self.tracker_db.execute(u'create table ids (id integer primary key)')
+        self.tracker_db.execute('create table ids (id integer primary key)')
 
         @self.ingester.update_signal.connect_via(self.ingester)
         def on_update(_sender, record, doc):
             # this implies that the record update wasn't written to mongo because the record
             # hasn't changed in this new version
             if not doc:
-                self.tracker_db.execute(u'insert into ids(id) values (?)', (record.id,))
+                self.tracker_db.execute('insert into ids(id) values (?)', (record.id,))
 
         return self
 
@@ -128,37 +128,5 @@ class InclusionTracker(object):
         '''
         with self.tracker_db:
             cursor = self.tracker_db.cursor()
-            cursor.execute(u'select 1 from ids where id = ?', (record_id,))
+            cursor.execute('select 1 from ids where id = ?', (record_id,))
             return cursor.fetchone() is not None
-
-
-def iter_universal_lines(fp, read_size=65536):
-    '''
-    Given a file object, read data from it, convert various newline types to \n and then yield
-    lines as strings (i.e. bytes in python2). This is a way round the problem of not being able to
-    reopen a file already opened in rb mode in rU mode. The line endings recognised by this function
-    are "\n", "\r" and "\r\n".
-
-    :param fp: the file object to read from, this must be open in rb mode
-    :param read_size: the number of bytes to read at a time from the file object (default: 65536)
-    :return: a generator which yields lines as strings
-    '''
-    cache = b''
-    while True:
-        chunk = fp.read(read_size)
-        if chunk:
-            # switch the \r\n and \r line endings for \n endings
-            chunk = chunk.replace(b'\r\n', b'\n').replace(b'\r', b'\n')
-            for character in chunk:
-                cache += character
-                if character == b'\n':
-                    # if the cache isn't just a new line, yield it
-                    if cache != b'\n':
-                        yield cache
-                    # reset the cache for the next line
-                    cache = b''
-        else:
-            # if there's any data left in the cache, yield it
-            if cache:
-                yield cache
-            break

@@ -11,7 +11,7 @@ import math
 import os
 import simplejson
 import unicodedata
-from contextlib2 import suppress
+from contextlib import suppress
 from datetime import datetime
 from eevee.ingestion.converters import RecordToMongoConverter
 from eevee.ingestion.feeders import IngestionFeeder
@@ -44,9 +44,9 @@ def ingest_resource(version, config, resource, data, replace, api_key):
     :return: True if the ingest was successful, False if not
     '''
     # cache the resource id as we use it a few times
-    resource_id = resource[u'id']
+    resource_id = resource['id']
 
-    log.info(u'Starting validation for {}'.format(resource_id))
+    log.info(f'Starting validation for {resource_id}')
     # create a stats entry so that preparation progress can be tracked
     prep_stats_id = stats.start_operation(resource_id, stats.PREP, version)
     try:
@@ -54,18 +54,16 @@ def ingest_resource(version, config, resource, data, replace, api_key):
                                                               data, api_key)
     except Exception as e:
         stats.mark_error(prep_stats_id, e)
-        log.info(u'Prep failed for resource {} due to {}: {}'.format(resource_id,
-                                                                     e.__class__.__name__,
-                                                                     unicode(e)))
+        log.info(f'Prep failed for resource {resource_id} due to {e.__class__.__name__}: {str(e)}')
         if isinstance(e, exceptions.IngestionException):
             # these exceptions are expected (validation problems for example)
             return False
         else:
             raise
     else:
-        stats.finish_operation(prep_stats_id, data_file_metadata[u'record_count'])
+        stats.finish_operation(prep_stats_id, data_file_metadata['record_count'])
 
-    log.info(u'Starting ingest for {}'.format(resource_id))
+    log.info(f'Starting ingest for {resource_id}')
     start = datetime.now()
     # create a stats entry so that progress can be tracked
     stats_id = stats.start_operation(resource_id, stats.INGEST, version, start)
@@ -89,13 +87,13 @@ def ingest_resource(version, config, resource, data, replace, api_key):
         # we really don't care about errors
         with suppress(Exception):
             # create a details row
-            create_details(resource_id, version, data_file_metadata[u'fields'],
-                           data_file_metadata[u'file_hash'])
+            create_details(resource_id, version, data_file_metadata['fields'],
+                           data_file_metadata['file_hash'])
 
         return True
     except Exception as e:
         stats.mark_error(stats_id, e)
-        log.exception(u'An error occurred during ingestion of {}'.format(resource_id))
+        log.exception(f'An error occurred during ingestion of {resource_id}')
         return False
     finally:
         # make sure we clean up the intermediate data file
@@ -131,13 +129,13 @@ def prepare_resource(resource, version, stats_id, data=None, api_key=None, updat
                          to be written to a lot which could cause performance issues
     :return: the name of the intermediate file and the metadata dict
     '''
-    name = os.path.join(tempfile.gettempdir(), u'{}_{}.jsonl.gz'.format(resource[u'id'], version))
+    name = os.path.join(tempfile.gettempdir(), f'{resource["id"]}_{version}.jsonl.gz')
 
     try:
         with get_fp_and_reader_for_resource_data(resource, data, api_key) as (fp, reader):
             # first of all compute a hash of the file so that we can test to see if it's different
             # from the last file we ingested
-            last_file_hash = get_last_file_hash(resource[u'id'])
+            last_file_hash = get_last_file_hash(resource['id'])
             if fp is not None:
                 file_hash = compute_hash(fp)
             else:
@@ -152,42 +150,42 @@ def prepare_resource(resource, version, stats_id, data=None, api_key=None, updat
             # the maximum id is (if there is one). If there are validation errors in the data then
             # they will come out here
             record_count = 0
-            max_id = -float(u'inf')
+            max_id = -float('inf')
             for row in reader.iter_rows(fp):
                 record_count += 1
-                if u'_id' in row:
-                    max_id = max(row[u'_id'], max_id)
+                if '_id' in row:
+                    max_id = max(row['_id'], max_id)
 
             # this metadata dict will be written out as the first row of the intermediate file
             metadata = {
-                u'fields': reader.get_fields(fp),
-                u'file_hash': file_hash,
-                u'record_count': record_count,
-                u'resource_id': resource[u'id'],
-                u'source': resource[u'url'] if data is None else u'API',
-                u'version': version,
+                'fields': reader.get_fields(fp),
+                'file_hash': file_hash,
+                'record_count': record_count,
+                'resource_id': resource['id'],
+                'source': resource['url'] if data is None else 'API',
+                'version': version,
             }
             if not math.isinf(max_id):
                 # add the max id present if we found one
-                metadata[u'max_id'] = max_id
+                metadata['max_id'] = max_id
             # allow the reader to modify the metadata before we write it out
             reader.modify_metadata(metadata)
 
             # create the intermediate file
-            with gzip.open(name, mode=u'wb') as gzip_file:
+            with gzip.open(name, mode='wb') as gzip_file:
                 # ensure the data is written out in utf-8
-                writer = codecs.getwriter(u'utf-8')(gzip_file)
+                writer = codecs.getwriter('utf-8')(gzip_file)
                 # write the metadata out as a single line first
-                writer.write(simplejson.dumps(metadata, ensure_ascii=False) + u'\n')
+                writer.write(simplejson.dumps(metadata, ensure_ascii=False) + '\n')
                 # then write the rows out as single lines
                 for count, row in enumerate(reader.iter_rows(fp), start=1):
                     row_data = simplejson.dumps(row, ensure_ascii=False)
                     # check that the unicode produced doesn't contain any crap characters that we
                     # won't be able to read during ingestion
-                    if any(unicodedata.category(character)[0] == u'C' for character in row_data):
+                    if any(unicodedata.category(character)[0] == 'C' for character in row_data):
                         raise exceptions.InvalidCharacterException(count, row)
 
-                    writer.write(row_data + u'\n')
+                    writer.write(row_data + '\n')
 
                     if count % update_every == 0:
                         stats.update_stats(stats_id, {
@@ -222,17 +220,17 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
     handled = False
     if data is None:
         # there will be a url in the resource dict
-        url = resource[u'url']
+        url = resource['url']
         # there may not be a format in the resource dict
-        resource_format = resource.get(u'format', None)
+        resource_format = resource.get('format', None)
         if resource_format is not None:
             resource_format = resource_format.lower()
         # headers for the download request, note that we only incldue the auth in the request if
         # the url is for an uploaded file, this prevents leaking the credentials
-        headers = {u'Authorization': api_key} if (resource.get(u'url_type', None) == u'upload'
-                                                  and api_key) else {}
+        headers = {'Authorization': api_key} if (resource.get('url_type', None) == 'upload'
+                                                 and api_key) else {}
 
-        if resource_format != u'zip':
+        if resource_format != 'zip':
             reader = get_reader(resource_format)
             if reader is not None:
                 # if we got a reader, download the resource data to a temporary file
@@ -250,13 +248,13 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
                         # use the file extension of the file to see if there's a reader we can use
                         reader = get_reader(os.path.splitext(name)[1][1:])
                         if reader is not None:
-                            with temp_zip.open(name, u'r') as zipped_file:
-                                with tempfile.NamedTemporaryFile(mode=u'w+b', delete=True) as temp:
+                            with temp_zip.open(name, 'r') as zipped_file:
+                                with tempfile.NamedTemporaryFile(mode='w+b', delete=True) as temp:
                                     # extract the file data from the zip
                                     if reader.compressible:
-                                        with gzip.open(temp.name, mode=u'wb') as g:
+                                        with gzip.open(temp.name, mode='wb') as g:
                                             shutil.copyfileobj(zipped_file, g)
-                                        with gzip.open(temp.name, mode=u'rb') as g:
+                                        with gzip.open(temp.name, mode='rb') as g:
                                             yield g, reader
                                     else:
                                         shutil.copyfileobj(zipped_file, temp)
@@ -269,7 +267,7 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
         handled = True
 
     if not handled:
-        raise exceptions.UnsupportedDataSource(resource.get(u'format', None))
+        raise exceptions.UnsupportedDataSource(resource.get('format', None))
 
 
 class DatastoreFeeder(IngestionFeeder):
@@ -300,9 +298,9 @@ class DatastoreFeeder(IngestionFeeder):
         :param skip_header_row: whether to skip the header row or yield it as if it was a normal row
         :return: a generator of dicts
         '''
-        with gzip.open(self.data_file_name, u'rb') as gzip_file:
+        with gzip.open(self.data_file_name, 'rb') as gzip_file:
             # the data file is always in utf-8 format
-            reader = codecs.getreader(u'utf-8')(gzip_file)
+            reader = codecs.getreader('utf-8')(gzip_file)
             if skip_header_row:
                 # skip the first line
                 next(reader)
@@ -313,17 +311,17 @@ class DatastoreFeeder(IngestionFeeder):
         '''
         Figure out what the current max id is in this resource's collection.
 
-        :return: the highest id in the collection currently (it'll be an int), or None if there
+        :return: the highest id in the collection currently (it'll be an int), or 0 if there
                 aren't any documents in the collection
         '''
         with get_mongo(self.config, collection=self.resource_id) as mongo:
             # sort by id descending to get the highest
-            doc_with_max_id = mongo.find_one(sort=[(u'id', -1)])
+            doc_with_max_id = mongo.find_one(sort=[('id', -1)])
             # find_one returns None if there aren't any matching documents
             if doc_with_max_id is None:
-                return None
+                return 0
             else:
-                return doc_with_max_id[u'id']
+                return doc_with_max_id['id']
 
     @property
     def header(self):
@@ -345,7 +343,7 @@ class DatastoreFeeder(IngestionFeeder):
 
         :return: the source name
         '''
-        return self.header[u'source']
+        return self.header['source']
 
     def records(self):
         '''
@@ -371,13 +369,13 @@ class DatastoreFeeder(IngestionFeeder):
         :return: a generator of DatastoreRecords
         '''
         # calculate the highest id we know about
-        highest_id = max(self.get_existing_max_id(), self.header.get(u'max_id', 0))
+        highest_id = max(self.get_existing_max_id(), self.header.get('max_id', 0))
         # create a generator which starts at the next number after the highest id
         new_id_generator = itertools.count(start=highest_id + 1, step=1)
 
         for data in self.iter_rows(skip_header_row=True):
             # see if there's an id defined by the row
-            record_id = data.pop(u'_id', None)
+            record_id = data.pop('_id', None)
             if record_id is None:
                 # create a new id for this record
                 record_id = next(new_id_generator)

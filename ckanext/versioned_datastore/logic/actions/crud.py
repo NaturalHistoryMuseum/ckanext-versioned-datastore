@@ -28,7 +28,7 @@ def datastore_create(resource_id, context):
         return False
 
     # lookup the resource dict
-    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
     # only create the index if the resource is ingestable
     if is_ingestible(resource):
         # note that the version parameter doesn't matter when creating the index so we can safely
@@ -57,28 +57,28 @@ def datastore_upsert(resource_id, replace, context, original_data_dict, version=
     '''
     # this comes through as junk if it's not removed before validating. This happens because the
     # data dict is flattened during validation, but why this happens is unclear.
-    records = original_data_dict.get(u'records', None)
+    records = original_data_dict.get('records', None)
 
     if is_resource_read_only(resource_id):
-        raise ReadOnlyResourceException(u'This resource has been marked as read only')
+        raise ReadOnlyResourceException('This resource has been marked as read only')
 
     if version is None:
         version = to_timestamp(datetime.now())
 
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
-        raise InvalidVersionException(u'The new version must be newer than current version')
+        raise InvalidVersionException('The new version must be newer than current version')
 
     # get the current user
-    user = toolkit.get_action(u'user_show')(context, {u'id': context[u'user']})
+    user = toolkit.get_action('user_show')(context, {'id': context['user']})
 
     # queue the resource import job
-    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
-    job = queue_import(resource, version, replace, records, user[u'apikey'])
+    resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
+    job = queue_import(resource, version, replace, records, user['apikey'])
 
     return {
-        u'queued_at': job.enqueued_at.isoformat(),
-        u'job_id': job.id,
+        'queued_at': job.enqueued_at.isoformat(),
+        'job_id': job.id,
     }
 
 
@@ -101,14 +101,14 @@ def datastore_delete(resource_id, context, version=None):
         version = to_timestamp(datetime.now())
 
     if is_resource_read_only(resource_id):
-        raise toolkit.ValidationError(u'This resource has been marked as read only')
+        raise toolkit.ValidationError('This resource has been marked as read only')
 
     # queue the job
-    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
     job = queue_deletion(resource, version)
     return {
-        u'queued_at': job.enqueued_at.isoformat(),
-        u'job_id': job.id,
+        'queued_at': job.enqueued_at.isoformat(),
+        'job_id': job.id,
     }
 
 
@@ -124,18 +124,18 @@ def datastore_reindex(resource_id, context):
     :return: a dict containing info about the background job that is doing the reindexing
     '''
     if is_resource_read_only(resource_id):
-        raise toolkit.ValidationError(u'This resource has been marked as read only')
+        raise toolkit.ValidationError('This resource has been marked as read only')
 
     last_ingested_version = stats.get_last_ingest(resource_id)
     if last_ingested_version is None:
-        raise toolkit.ValidationError(u'There is no ingested data for this version')
+        raise toolkit.ValidationError('There is no ingested data for this version')
 
-    resource = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
+    resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
     job = queue_index(resource, None, last_ingested_version.version)
 
     return {
-        u'queued_at': job.enqueued_at.isoformat(),
-        u'job_id': job.id,
+        'queued_at': job.enqueued_at.isoformat(),
+        'job_id': job.id,
     }
 
 
@@ -159,22 +159,22 @@ def datastore_ensure_privacy(context, resource_id=None):
             if update_privacy(resource_id):
                 modified += 1
     else:
-        package_data_dict = {u'limit': 50, u'offset': 0}
+        package_data_dict = {'limit': 50, 'offset': 0}
         while True:
             # iteratively retrieve all packages and ensure their resources
-            packages = toolkit.get_action(u'current_package_list_with_resources')(context,
+            packages = toolkit.get_action('current_package_list_with_resources')(context,
                                                                                   package_data_dict)
             if not packages:
                 # we've ensured all the packages that are available
                 break
             else:
                 # setup the next loop so that we get the next page of results
-                package_data_dict[u'offset'] += len(packages)
+                package_data_dict['offset'] += len(packages)
                 for package in packages:
-                    for resource in package.get(u'resources', []):
-                        if resource[u'datastore_active']:
+                    for resource in package.get('resources', []):
+                        if resource['datastore_active']:
                             total += 1
-                            if update_privacy(resource[u'id'], package[u'private']):
+                            if update_privacy(resource['id'], package['private']):
                                 modified += 1
 
-    return {u'modified': modified, u'total': total}
+    return {'modified': modified, 'total': total}

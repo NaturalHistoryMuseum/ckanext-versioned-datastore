@@ -5,21 +5,19 @@ import json
 
 import jsonschema
 import os
-from ckantest.models import TestBase
-from nose.tools import assert_equal, assert_raises
 
-from ..lib.query.schema import schema_base_path
-from ..lib.query.v1_0_0 import v1_0_0Schema
+import pytest
+from ckanext.versioned_datastore.lib.query.schema import schema_base_path
+from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 
 
-class TestV1_0_0Translator(TestBase):
-    plugins = [u'versioned_datastore']
+class TestV1_0_0Translator(object):
 
     def test_validate_examples(self):
         schema = v1_0_0Schema()
-        path = os.path.join(schema_base_path, schema.version, u'examples')
+        path = os.path.join(schema_base_path, schema.version, 'examples')
         for filename in os.listdir(path):
-            with io.open(os.path.join(path, filename), u'r', encoding=u'utf-8') as f:
+            with io.open(os.path.join(path, filename), 'r', encoding='utf-8') as f:
                 schema.validate(json.load(f))
 
     @staticmethod
@@ -28,7 +26,7 @@ class TestV1_0_0Translator(TestBase):
         # validate the query!
         schema.validate(query)
         # check that the translated version is correct compared to the expected search dict
-        assert_equal(schema.translate(query).to_dict(), search_dict)
+        assert schema.translate(query).to_dict() == search_dict
 
     def test_translate_1(self):
         query = {}
@@ -37,14 +35,14 @@ class TestV1_0_0Translator(TestBase):
 
     def test_translate_2(self):
         query = {
-            u'search': u'mollusca'
+            'search': 'mollusca'
         }
         search_dict = {
-            u'query': {
-                u'match': {
-                    u'meta.all': {
-                        u'query': u'mollusca',
-                        u'operator': u'and'
+            'query': {
+                'match': {
+                    'meta.all': {
+                        'query': 'mollusca',
+                        'operator': 'and'
                     }
                 }
             }
@@ -75,19 +73,19 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'filter': [
+            'query': {
+                'bool': {
+                    'filter': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         },
                         {
-                            u'match': {
-                                u'data.higherGeography.full': {
-                                    u'query': u'europe',
-                                    u'operator': u'and'
+                            'match': {
+                                'data.higherGeography.full': {
+                                    'query': 'europe',
+                                    'operator': 'and'
                                 }
                             }
                         }
@@ -99,7 +97,7 @@ class TestV1_0_0Translator(TestBase):
 
     def test_translate_4(self):
         query = {
-            u'search': u'italy',
+            'search': 'italy',
             u"filters": {
                 u"and": [
                     {
@@ -122,29 +120,29 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'filter': [
+            'query': {
+                'bool': {
+                    'filter': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         },
                         {
-                            u'match': {
-                                u'data.higherGeography.full': {
-                                    u'query': u'europe',
-                                    u'operator': u'and'
+                            'match': {
+                                'data.higherGeography.full': {
+                                    'query': 'europe',
+                                    'operator': 'and'
                                 }
                             }
                         }
                     ],
-                    u'must': [
+                    'must': [
                         {
-                            u'match': {
-                                u'meta.all': {
-                                    u'query': u'italy',
-                                    u'operator': u'and'
+                            'match': {
+                                'meta.all': {
+                                    'query': 'italy',
+                                    'operator': 'and'
                                 }
                             }
                         }
@@ -198,39 +196,39 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'filter': [
+            'query': {
+                'bool': {
+                    'filter': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         },
                         {
-                            u'bool': {
-                                u'minimum_should_match': 1,
-                                u'should': [
+                            'bool': {
+                                'minimum_should_match': 1,
+                                'should': [
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'italy',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'italy',
+                                                'operator': 'and'
                                             }
                                         }
                                     },
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'spain',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'spain',
+                                                'operator': 'and'
                                             }
                                         }
                                     },
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'portugal',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'portugal',
+                                                'operator': 'and'
                                             }
                                         }
                                     }
@@ -298,47 +296,47 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'filter': [
+            'query': {
+                'bool': {
+                    'filter': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         },
                         {
-                            u'range': {
-                                u'data.year.number': {
-                                    u'gte': 2000,
-                                    u'lte': 2010
+                            'range': {
+                                'data.year.number': {
+                                    'gte': 2000,
+                                    'lte': 2010
                                 }
                             }
                         },
                         {
-                            u'bool': {
-                                u'minimum_should_match': 1,
-                                u'should': [
+                            'bool': {
+                                'minimum_should_match': 1,
+                                'should': [
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'italy',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'italy',
+                                                'operator': 'and'
                                             }
                                         }
                                     },
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'spain',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'spain',
+                                                'operator': 'and'
                                             }
                                         }
                                     },
                                     {
-                                        u'match': {
-                                            u'data.higherGeography.full': {
-                                                u'query': u'portugal',
-                                                u'operator': u'and'
+                                        'match': {
+                                            'data.higherGeography.full': {
+                                                'query': 'portugal',
+                                                'operator': 'and'
                                             }
                                         }
                                     }
@@ -375,21 +373,21 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'filter': [
+            'query': {
+                'bool': {
+                    'filter': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         },
                         {
-                            u'geo_distance': {
-                                u'meta.geo': {
-                                    u'lat': 51.4712,
-                                    u'lon': -0.9421
+                            'geo_distance': {
+                                'meta.geo': {
+                                    'lat': 51.4712,
+                                    'lon': -0.9421
                                 },
-                                u'distance': u'10mi'
+                                'distance': '10mi'
                             }
                         }
                     ]
@@ -413,9 +411,9 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'exists': {
-                    u'field': u'data.associatedMedia'
+            'query': {
+                'exists': {
+                    'field': 'data.associatedMedia'
                 }
             }
         }
@@ -434,17 +432,17 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'exists': {
-                    u'field': u'meta.geo'
+            'query': {
+                'exists': {
+                    'field': 'meta.geo'
                 }
             }
         }
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_10(self):
-        country = u'Curaçao'
-        multipolygon = v1_0_0Schema().geojson[u'country'][country]
+        country = 'Curaçao'
+        multipolygon = v1_0_0Schema().geojson['country'][country]
         query = {
             u"filters": {
                 u"and": [
@@ -457,11 +455,11 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'geo_polygon': {
-                    u'meta.geo': {
-                        u'points': [
-                            {u'lat': point[1], u'lon': point[0]} for point in multipolygon[0][0]
+            'query': {
+                'geo_polygon': {
+                    'meta.geo': {
+                        'points': [
+                            {'lat': point[1], 'lon': point[0]} for point in multipolygon[0][0]
                         ]
                     }
                 }
@@ -475,7 +473,7 @@ class TestV1_0_0Translator(TestBase):
         a_hole = [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]
 
         def to_points(points):
-            return [{u'lat': point[1], u'lon': point[0]} for point in points]
+            return [{'lat': point[1], 'lon': point[0]} for point in points]
 
         query = {
             u"filters": {
@@ -547,12 +545,12 @@ class TestV1_0_0Translator(TestBase):
             }
         }
         search_dict = {
-            u'query': {
-                u'bool': {
-                    u'must_not': [
+            'query': {
+                'bool': {
+                    'must_not': [
                         {
-                            u'term': {
-                                u'data.genus': u'helix'
+                            'term': {
+                                'data.genus': 'helix'
                             }
                         }
                     ]
@@ -566,7 +564,7 @@ class TestV1_0_0Translator(TestBase):
 
         nope = {
             u"filters": {
-                u'something_else': {},
+                'something_else': {},
                 u"not": [
                     {
                         u"string_equals": {
@@ -579,7 +577,7 @@ class TestV1_0_0Translator(TestBase):
                 ]
             }
         }
-        with assert_raises(jsonschema.ValidationError):
+        with pytest.raises(jsonschema.ValidationError):
             schema.validate(nope)
 
     def test_translate_ignores_additional_properties_in_geo_named_area(self):
@@ -597,5 +595,5 @@ class TestV1_0_0Translator(TestBase):
                 ]
             }
         }
-        with assert_raises(jsonschema.ValidationError):
+        with pytest.raises(jsonschema.ValidationError):
             schema.validate(nope)

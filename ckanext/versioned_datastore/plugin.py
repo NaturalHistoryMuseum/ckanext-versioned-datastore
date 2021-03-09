@@ -1,12 +1,13 @@
 import logging
+from contextlib import suppress
+from datetime import datetime
+
+from eevee.utils import to_timestamp
 
 from ckan import model
 from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
-from contextlib2 import suppress
-from eevee.utils import to_timestamp
-
-from . import routes, helpers
+from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
 from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
@@ -30,54 +31,59 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IConfigurable)
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
+    implements(interfaces.IClick)
 
     # IActions
     def get_actions(self):
         return create_actions(basic_search, crud, downloads, extras, multisearch)
 
+    # IClick
+    def get_commands(self):
+        return cli.get_commands()
+
     # IAuthFunctions
     def get_auth_functions(self):
         return {
-            u'datastore_create': auth.datastore_create,
-            u'datastore_upsert': auth.datastore_upsert,
-            u'datastore_delete': auth.datastore_delete,
-            u'datastore_search': auth.datastore_search,
-            u'datastore_get_record_versions': auth.datastore_get_record_versions,
-            u'datastore_get_resource_versions': auth.datastore_get_resource_versions,
-            u'datastore_autocomplete': auth.datastore_autocomplete,
-            u'datastore_reindex': auth.datastore_reindex,
-            u'datastore_query_extent': auth.datastore_query_extent,
-            u'datastore_get_rounded_version': auth.datastore_get_rounded_version,
-            u'datastore_search_raw': auth.datastore_search_raw,
-            u'datastore_ensure_privacy': auth.datastore_ensure_privacy,
-            u'datastore_count': auth.datastore_count,
-            u'datastore_multisearch': auth.datastore_multisearch,
-            u'datastore_field_autocomplete': auth.datastore_field_autocomplete,
-            u'datastore_create_slug': auth.datastore_create_slug,
-            u'datastore_resolve_slug': auth.datastore_resolve_slug,
-            u'datastore_queue_download': auth.datastore_queue_download,
-            u'datastore_guess_fields': auth.datastore_guess_fields,
-            u'datastore_hash_query': auth.datastore_hash_query,
-            u'datastore_is_datastore_resource': auth.datastore_hash_query,
-            u'datastore_get_latest_query_schema_version':
+            'datastore_create': auth.datastore_create,
+            'datastore_upsert': auth.datastore_upsert,
+            'datastore_delete': auth.datastore_delete,
+            'datastore_search': auth.datastore_search,
+            'datastore_get_record_versions': auth.datastore_get_record_versions,
+            'datastore_get_resource_versions': auth.datastore_get_resource_versions,
+            'datastore_autocomplete': auth.datastore_autocomplete,
+            'datastore_reindex': auth.datastore_reindex,
+            'datastore_query_extent': auth.datastore_query_extent,
+            'datastore_get_rounded_version': auth.datastore_get_rounded_version,
+            'datastore_search_raw': auth.datastore_search_raw,
+            'datastore_ensure_privacy': auth.datastore_ensure_privacy,
+            'datastore_count': auth.datastore_count,
+            'datastore_multisearch': auth.datastore_multisearch,
+            'datastore_field_autocomplete': auth.datastore_field_autocomplete,
+            'datastore_create_slug': auth.datastore_create_slug,
+            'datastore_resolve_slug': auth.datastore_resolve_slug,
+            'datastore_queue_download': auth.datastore_queue_download,
+            'datastore_guess_fields': auth.datastore_guess_fields,
+            'datastore_hash_query': auth.datastore_hash_query,
+            'datastore_is_datastore_resource': auth.datastore_hash_query,
+            'datastore_get_latest_query_schema_version':
                 auth.datastore_get_latest_query_schema_version,
         }
 
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            u'is_datastore_resource': is_datastore_resource,
-            u'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
-            u'get_human_duration': helpers.get_human_duration,
-            u'get_stat_icon': helpers.get_stat_icon,
-            u'get_stat_activity_class': helpers.get_stat_activity_class,
-            u'get_stat_title': helpers.get_stat_title,
-            u'get_available_formats': helpers.get_available_formats,
+            'is_datastore_resource': is_datastore_resource,
+            'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
+            'get_human_duration': helpers.get_human_duration,
+            'get_stat_icon': helpers.get_stat_icon,
+            'get_stat_activity_class': helpers.get_stat_activity_class,
+            'get_stat_title': helpers.get_stat_title,
+            'get_available_formats': helpers.get_available_formats,
         }
 
     # IResourceController
     def before_show(self, resource_dict):
-        resource_dict[u'datastore_active'] = is_datastore_resource(resource_dict[u'id'])
+        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
         return resource_dict
 
     # IDomainObjectModification
@@ -101,39 +107,41 @@ class VersionedSearchPlugin(SingletonPlugin):
             # correctly to its resource indexes
             update_resources_privacy(entity)
         elif isinstance(entity, model.Resource):
-            context = {u'model': model, u'ignore_auth': True}
-            data_dict = {u'resource_id': entity.id}
+            context = {'model': model, 'ignore_auth': True}
+            data_dict = {'resource_id': entity.id}
 
             if operation == DomainObjectOperation.deleted:
-                toolkit.get_action(u'datastore_delete')(context, data_dict)
+                toolkit.get_action('datastore_delete')(context, data_dict)
             else:
                 do_upsert = False
 
                 if operation == DomainObjectOperation.new:
                     # datastore_create returns True when the resource looks like it's ingestible
-                    do_upsert = toolkit.get_action(u'datastore_create')(context, data_dict)
+                    do_upsert = toolkit.get_action('datastore_create')(context, data_dict)
                 elif operation == DomainObjectOperation.changed:
                     # always try the upsert if the resource has changed
                     do_upsert = True
 
                 if do_upsert:
-                    # use the revision version as the version
-                    data_dict[u'version'] = to_timestamp(entity.revision.timestamp)
+                    # in theory, last_modified should change when the resource file/url is changed
+                    # and metadata_modified should change when any other attributes are changed. To
+                    # cover off the possibility that this gets mixed up, we'll pick the max of them
+                    modified = list(filter(None, (entity.last_modified, entity.metadata_modified)))
+                    last_modified = max(modified) if modified else datetime.now()
+                    data_dict['version'] = to_timestamp(last_modified)
                     # use replace to overwrite the existing data (this is what users would expect)
-                    data_dict[u'replace'] = True
-                    try:
-                        toolkit.get_action(u'datastore_upsert')(context, data_dict)
-                    except (ReadOnlyResourceException, InvalidVersionException):
-                        # this is fine, just swallow
-                        pass
+                    data_dict['replace'] = True
+                    # these exceptions are fine to swallow
+                    with suppress(ReadOnlyResourceException, InvalidVersionException):
+                        toolkit.get_action('datastore_upsert')(context, data_dict)
 
     # IConfigurer
     def update_config(self, config):
         # add public folder containing schemas
-        toolkit.add_public_directory(config, u'theme/public')
+        toolkit.add_public_directory(config, 'theme/public')
         # add templates
-        toolkit.add_template_directory(config, u'theme/templates')
-        toolkit.add_resource(u'theme/fanstatic', u'ckanext-versioned_datastore')
+        toolkit.add_template_directory(config, 'theme/templates')
+        toolkit.add_resource('theme/assets', 'ckanext-versioned-datastore')
 
     # IBlueprint
     def get_blueprint(self):

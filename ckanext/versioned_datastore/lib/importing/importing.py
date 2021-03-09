@@ -1,5 +1,4 @@
 import logging
-
 from datetime import datetime
 
 from .indexing import ResourceIndexRequest, index_resource
@@ -32,22 +31,18 @@ class ResourceImportRequest(object):
         self.replace = replace
         self.records = records
         self.api_key = api_key
-        self.resource_id = self.resource[u'id']
+        self.resource_id = self.resource['id']
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return unicode(self).encode(u'utf-8')
-
-    def __unicode__(self):
         if self.records is not None:
             records = len(self.records)
         else:
             records = 0
-        return u'Import on {}, version {}, replace: {}, records: {}'.format(self.resource_id,
-                                                                            self.version,
-                                                                            self.replace, records)
+        return f'Import on {self.resource_id}, version {self.version}, replace: {self.replace}, ' \
+               f'records: {records}'
 
 
 def import_resource_data(request):
@@ -64,12 +59,11 @@ def import_resource_data(request):
     # first, double check that the version is valid
     if not check_version_is_valid(request.resource_id, request.version):
         # log and silently skip this import
-        log.info(u'Skipped importing data for {} at version {} as the version is invalid'.format(
-            request.resource_id, request.version))
+        log.info(f'Skipped importing data for {request.resource_id} at version {request.version} '
+                 f'as the version is invalid')
         return
 
-    log.info(u'Starting data import for {} at version {}'.format(request.resource_id,
-                                                                 request.version))
+    log.info(f'Starting data import for {request.resource_id} at version {request.version}')
 
     # ingest the resource into mongo
     did_ingest = ingest_resource(request.version, common.CONFIG, request.resource, request.records,
@@ -83,11 +77,11 @@ def import_resource_data(request):
         index_resource(ResourceIndexRequest(request.resource, latest_index_version,
                                             request.version))
 
-        log.info(u'Ingest and index complete for {} at version {}'.format(request.resource_id,
-                                                                          request.version))
+        log.info(f'Ingest and index complete for {request.resource_id} at version '
+                 f'{request.version}')
 
 
-class ResourceDeletionRequest(object):
+class ResourceDeletionRequest:
     '''
     Class representing a request to delete all of a resource's data. We use a class like this for
     two reasons, firstly to avoid having a long list of arguments passed through to queued
@@ -102,16 +96,13 @@ class ResourceDeletionRequest(object):
         '''
         self.resource = resource
         self.version = version
-        self.resource_id = resource[u'id']
+        self.resource_id = resource['id']
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return unicode(self).encode(u'utf-8')
-
-    def __unicode__(self):
-        return u'Deletion of {} at version {}'.format(self.resource_id, self.version)
+        return f'Deletion of {self.resource_id} at version {self.version}'
 
 
 def delete_resource_data(request):
@@ -128,12 +119,11 @@ def delete_resource_data(request):
     # first, double check that the version is valid
     if not check_version_is_valid(request.resource_id, request.version):
         # log and silently skip this import
-        log.info(u'Skipped importing data for {} at version {} as the version is invalid'.format(
-            request.resource_id, request.version))
+        log.info(f'Skipped importing data for {request.resource_id} at version {request.version} '
+                 f'as the version is invalid')
         return
 
-    log.info(u'Starting data deletion for {} at version {}'.format(request.resource_id,
-                                                                   request.version))
+    log.info(f'Starting data deletion for {request.resource_id} at version {request.version}')
 
     # store a start time, this will be used as the ingestion time of the records
     start = datetime.now()
@@ -148,5 +138,4 @@ def delete_resource_data(request):
         index_resource(ResourceIndexRequest(request.resource, latest_index_version,
                                             request.version))
 
-        log.info(u'Deletion complete for {} at version {}'.format(request.resource_id,
-                                                                  request.version))
+        log.info(f'Deletion complete for {request.resource_id} at version {request.version}')

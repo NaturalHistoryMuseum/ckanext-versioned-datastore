@@ -9,10 +9,10 @@ from flask import Blueprint
 
 from ..lib.importing.stats import get_all_stats
 
-blueprint = Blueprint(name=u'datastore', import_name=__name__, url_prefix=u'')
+blueprint = Blueprint(name='datastore', import_name=__name__, url_prefix='')
 
 
-@blueprint.route(u'/dataset/<package_name>/resource_data/<resource_id>', methods=[u'GET', u'POST'])
+@blueprint.route('/dataset/<package_name>/resource_data/<resource_id>', methods=['GET', 'POST'])
 def resource_data(package_name, resource_id):
     '''
     Produces the DataStore page on a resource. This page contains details of the resource's
@@ -20,37 +20,37 @@ def resource_data(package_name, resource_id):
     '''
     try:
         # first, check access
-        toolkit.check_access(u'resource_update', {}, {
-            u'id': resource_id
+        toolkit.check_access('resource_update', {}, {
+            'id': resource_id
         })
         # then retrieve the package and resource data
-        toolkit.c.pkg_dict = toolkit.get_action(u'package_show')({}, {
-            u'id': package_name
+        toolkit.c.pkg_dict = toolkit.get_action('package_show')({}, {
+            'id': package_name
         })
-        toolkit.c.resource = toolkit.get_action(u'resource_show')({}, {
-            u'id': resource_id
+        toolkit.c.resource = toolkit.get_action('resource_show')({}, {
+            'id': resource_id
         })
     except toolkit.ObjectNotFound:
-        toolkit.abort(404, toolkit._(u'Resource not found'))
+        toolkit.abort(404, toolkit._('Resource not found'))
     except toolkit.NotAuthorized:
-        toolkit.abort(401, toolkit._(u'Unauthorized to edit this resource'))
+        toolkit.abort(401, toolkit._('Unauthorized to edit this resource'))
 
-    if toolkit.request.method == u'POST':
-        toolkit.get_action(u'datastore_reindex')({}, {
-            u'resource_id': resource_id
+    if toolkit.request.method == 'POST':
+        toolkit.get_action('datastore_reindex')({}, {
+            'resource_id': resource_id
         })
-        toolkit.h.flash_success(toolkit._(u'Reindexing submitted, this may take a few minutes. You'
-                                          u'can monitor progress below'))
+        toolkit.h.flash_success(toolkit._('Reindexing submitted, this may take a few minutes. Yo'
+                                          'can monitor progress below'))
         # redirect the user back to the page. This ensures they can do things like reload
         # without getting a pesky "would you like to resubmit this form" notice
-        return toolkit.redirect_to(u'datastore.resource_data', package_name=package_name,
+        return toolkit.redirect_to('datastore.resource_data', package_name=package_name,
                                    resource_id=resource_id, _code=303)
     else:
         extra_vars = {
-            u'stats': get_all_stats(resource_id),
-            u'reindex_action': toolkit.url_for(u'datastore.resource_data',
-                                               package_name=package_name, resource_id=resource_id),
-            u'pkg_dict': toolkit.c.pkg_dict,
-            u'resource': toolkit.c.resource
+            'stats': get_all_stats(resource_id),
+            'reindex_action': toolkit.url_for('datastore.resource_data',
+                                              package_name=package_name, resource_id=resource_id),
+            'pkg_dict': toolkit.c.pkg_dict,
+            'resource': toolkit.c.resource
         }
-        return toolkit.render(u'package/resource_data.html', extra_vars=extra_vars)
+        return toolkit.render('package/resource_data.html', extra_vars=extra_vars)

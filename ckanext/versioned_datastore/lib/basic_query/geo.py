@@ -1,11 +1,9 @@
 import json
-
+from ckan.plugins import toolkit
 from elasticsearch_dsl import Q
 
-from ckan.plugins import toolkit
-
 # the geo field is always meta.geo
-FIELD = u'meta.geo'
+FIELD = 'meta.geo'
 
 
 def add_point_filter(search, distance, coordinates):
@@ -21,13 +19,13 @@ def add_point_filter(search, distance, coordinates):
     :return: a search object
     '''
     options = {
-        u'distance': distance,
+        'distance': distance,
         FIELD: {
-            u'lat': float(coordinates[1]),
-            u'lon': float(coordinates[0]),
+            'lat': float(coordinates[1]),
+            'lon': float(coordinates[0]),
         },
     }
-    return search.filter(u'geo_distance', **options)
+    return search.filter('geo_distance', **options)
 
 
 def add_multipolygon_filter(search, coordinates):
@@ -49,17 +47,17 @@ def add_multipolygon_filter(search, coordinates):
     for group in coordinates:
         points = group[0]
         if len(points) < 3:
-            raise toolkit.ValidationError(u'Not enough points in the polygon, must be 3 or more')
+            raise toolkit.ValidationError('Not enough points in the polygon, must be 3 or more')
 
         options = {
             FIELD: {
                 # format the polygon point data appropriately
-                u'points': [{u'lat': float(point[1]), u'lon': float(point[0])} for point in points],
+                'points': [{'lat': float(point[1]), 'lon': float(point[0])} for point in points],
             },
         }
-        filters.append(Q(u'geo_polygon', **options))
+        filters.append(Q('geo_polygon', **options))
     # add the filter to the search as an or
-    return search.filter(Q(u'bool', should=filters, minimum_should_match=1))
+    return search.filter(Q('bool', should=filters, minimum_should_match=1))
 
 
 def add_polygon_filter(search, coordinates):
@@ -94,9 +92,9 @@ def add_geo_search(search, geo_filter):
     '''
     # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
     query_type_map = {
-        u'Point': (add_point_filter, {u'distance', u'coordinates'}),
-        u'MultiPolygon': (add_multipolygon_filter, {u'coordinates'}),
-        u'Polygon': (add_polygon_filter, {u'coordinates'}),
+        'Point': (add_point_filter, {'distance', 'coordinates'}),
+        'MultiPolygon': (add_multipolygon_filter, {'coordinates'}),
+        'Polygon': (add_polygon_filter, {'coordinates'}),
     }
 
     try:
@@ -104,18 +102,18 @@ def add_geo_search(search, geo_filter):
         if not isinstance(geo_filter, dict):
             geo_filter = json.loads(geo_filter)
         # fetch the function which will build the query into the search object
-        add_function, required_params = query_type_map[geo_filter[u'type']]
+        add_function, required_params = query_type_map[geo_filter['type']]
     except (TypeError, ValueError):
-        raise toolkit.ValidationError(u'Invalid geo filter information, must be JSON')
+        raise toolkit.ValidationError('Invalid geo filter information, must be JSON')
     except KeyError:
-        raise toolkit.ValidationError(u'Invalid query type, must be point, box or polygon')
+        raise toolkit.ValidationError('Invalid query type, must be point, box or polygon')
 
     try:
         # try and pull out the required parameters for each type
         parameters = {param: geo_filter[param] for param in required_params}
     except KeyError:
-        raise toolkit.ValidationError(u'Missing parameters, must include {}'
-                                      .format(u', '.join(required_params)))
+        required = ', '.join(required_params)
+        raise toolkit.ValidationError(f'Missing parameters, must include {required}')
 
     # call the function which will update the search object to include the geo filters and then
     # return the resulting search object

@@ -1,7 +1,7 @@
 import functools
 import hashlib
-import io
 import json
+import os
 import shutil
 import socket
 import tempfile
@@ -10,7 +10,6 @@ from datetime import datetime
 from glob import iglob
 from traceback import format_exception_only
 
-import os
 import rq
 from ckan import model
 from ckan.lib import jobs, mailer
@@ -28,15 +27,14 @@ from ...interfaces import IVersionedDatastoreDownloads
 from ...model.downloads import DatastoreDownload, state_complete, state_failed, state_processing, \
     state_zipping
 
-
 format_registry = {
-    u'csv': functools.partial(sv_writer, dialect=u'excel', extension=u'csv'),
-    u'tsv': functools.partial(sv_writer, dialect=u'excel-tab', extension=u'tsv'),
-    u'jsonl': jsonl_writer,
+    'csv': functools.partial(sv_writer, dialect='excel', extension='csv'),
+    'tsv': functools.partial(sv_writer, dialect='excel-tab', extension='tsv'),
+    'jsonl': jsonl_writer,
 }
 
 # TODO: put this in the config/interface so that it can be overridden
-default_body = u'''
+default_body = '''
 Hello,
 
 The link to the resource data you requested on https://data.nhm.ac.uk is available at: {url}.
@@ -56,7 +54,7 @@ def ensure_download_queue_exists():
 
     The queue is only added if not already in existence so this is safe to call multiple times.
     '''
-    name = jobs.add_queue_name_prefix(u'download')
+    name = jobs.add_queue_name_prefix('download')
     if name not in jobs._queues:
         # set the timeout to 12 hours
         queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
@@ -75,7 +73,7 @@ def queue_download(email_address, download_id, query_hash, query, query_version,
     request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
                               resource_ids_and_versions, separate_files, file_format,
                               ignore_empty_fields)
-    return toolkit.enqueue_job(download, args=[request], queue=u'download', title=unicode(request))
+    return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request))
 
 
 class DownloadRequest(object):
@@ -124,17 +122,14 @@ class DownloadRequest(object):
             self.file_format,
             self.ignore_empty_fields,
         ]
-        download_hash = hashlib.sha1(u'|'.join(map(unicode, to_hash)))
+        download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
         return download_hash.hexdigest()
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return unicode(self).encode(u'utf-8')
-
-    def __unicode__(self):
-        return u'Download data, id: {}'.format(self.download_id)
+        return f'Download data, id: {self.download_id}'
 
 
 def download(request):
@@ -143,20 +138,20 @@ def download(request):
 
     :param request: the DownloadRequest object, see that for parameter details
     '''
-    download_dir = toolkit.config.get(u'ckanext.versioned_datastore.download_dir')
+    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
     download_hash = request.generate_download_hash()
-    existing_file = next(iglob(os.path.join(download_dir, u'*_{}.zip'.format(download_hash))), None)
+    existing_file = next(iglob(os.path.join(download_dir, f'*_{download_hash}.zip')), None)
     if existing_file is not None:
-        previous_download_id = os.path.split(existing_file)[1].split(u'_')[0]
+        previous_download_id = os.path.split(existing_file)[1].split('_')[0]
         existing_download = model.Session.query(DatastoreDownload).get(previous_download_id)
         if existing_download is not None:
-            request.update_download(state=u'complete', total=existing_download.total,
+            request.update_download(state='complete', total=existing_download.total,
                                     resource_totals=existing_download.resource_totals)
-            zip_name = u'{}_{}.zip'.format(existing_download.id, download_hash)
+            zip_name = f'{existing_download.id}_{download_hash}.zip'
             send_email(request, zip_name)
             return
 
-    zip_name = u'{}_{}.zip'.format(request.download_id, download_hash)
+    zip_name = f'{request.download_id}_{download_hash}.zip'
     zip_path = os.path.join(download_dir, zip_name)
 
     start = datetime.now()
@@ -170,18 +165,18 @@ def download(request):
 
         # this manifest will be written out as JSON and put in the download zip
         manifest = {
-            u'download_id': request.download_id,
-            u'resources': {},
-            u'separate_files': request.separate_files,
-            u'file_format': request.file_format,
-            u'ignore_empty_fields': request.ignore_empty_fields,
+            'download_id': request.download_id,
+            'resources': {},
+            'separate_files': request.separate_files,
+            'file_format': request.file_format,
+            'ignore_empty_fields': request.ignore_empty_fields,
         }
         # calculate, per resource, the number of values for each field present in the search
         field_counts = calculate_field_counts(request, es_client)
         # choose the writer function based on the requested file format
         writer_function = format_registry[request.file_format]
         # we shouldn't auth anything
-        context = {u'ignore_auth': True}
+        context = {'ignore_auth': True}
         # keep track of the resource record counts
         resource_counts = {}
 
@@ -210,16 +205,16 @@ def download(request):
                     continue
 
                 # retrieve information about the resource and package and add it to the manifest
-                resource_dict = toolkit.get_action(u'resource_show')(context, {u'id': resource_id})
-                package_id = resource_dict[u'package_id']
-                package_dict = toolkit.get_action(u'package_show')(context, {u'id': package_id})
-                manifest[u'resources'][resource_id] = {
-                    u'name': resource_dict[u'name'],
-                    u'package_id': package_id,
-                    u'package_title': package_dict[u'title'],
-                    u'total_records': total_records,
-                    u'field_counts': field_counts[resource_id],
-                    u'version': version,
+                resource_dict = toolkit.get_action('resource_show')(context, {'id': resource_id})
+                package_id = resource_dict['package_id']
+                package_dict = toolkit.get_action('package_show')(context, {'id': package_id})
+                manifest['resources'][resource_id] = {
+                    'name': resource_dict['name'],
+                    'package_id': package_id,
+                    'package_title': package_dict['title'],
+                    'total_records': total_records,
+                    'field_counts': field_counts[resource_id],
+                    'version': version,
                 }
                 resource_counts[resource_id] = total_records
 
@@ -228,23 +223,22 @@ def download(request):
                                 resource_totals=resource_counts)
 
         # create a list of files that should be added to the zip, this should include the manifest
-        files_to_zip = [u'manifest.json'] + os.listdir(target_dir)
+        files_to_zip = ['manifest.json'] + os.listdir(target_dir)
 
         # add the final data to the manifest
-        manifest[u'total_records'] = overall_total
-        manifest[u'files'] = files_to_zip
+        manifest['total_records'] = overall_total
+        manifest['files'] = files_to_zip
         end = datetime.now()
-        manifest[u'start'] = start.isoformat()
-        manifest[u'end'] = end.isoformat()
-        manifest[u'duration_in_seconds'] = (end - start).total_seconds()
+        manifest['start'] = start.isoformat()
+        manifest['end'] = end.isoformat()
+        manifest['duration_in_seconds'] = (end - start).total_seconds()
 
         # write the manifest out
-        with io.open(os.path.join(target_dir, u'manifest.json'), u'w', encoding=u'utf8') as f:
-            data = json.dumps(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
-            f.write(unicode(data))
+        with open(os.path.join(target_dir, 'manifest.json'), 'w', encoding='utf8') as f:
+            json.dump(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
 
         # zip up the files into the downloads directory
-        with zipfile.ZipFile(zip_path, u'w', zipfile.ZIP_DEFLATED, True) as z:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
             for filename in files_to_zip:
                 z.write(os.path.join(target_dir, filename), arcname=filename)
 
@@ -256,7 +250,7 @@ def download(request):
 
         request.update_download(state=state_complete)
     except Exception as error:
-        error_message = unicode(format_exception_only(type(error), error)[-1].strip())
+        error_message = str(format_exception_only(type(error), error)[-1].strip())
         request.update_download(state=state_failed, error=error_message)
         raise
     finally:
@@ -272,7 +266,7 @@ def send_email(request, zip_name):
     :param request: the DownloadRequest object
     :param zip_name: the name of the zip file that has been created
     '''
-    download_url = u'{}/downloads/{}'.format(toolkit.config.get(u'ckan.site_url'), zip_name)
+    download_url = f'{toolkit.config.get("ckan.site_url")}/downloads/{zip_name}'
     # create the default download email body using the url
     body = default_body.format(url=download_url)
 
@@ -283,10 +277,10 @@ def send_email(request, zip_name):
         if extra_body:
             extras.append(extra_body)
     if extras:
-        body = body.format(extras=u'\n{}\n'.format(u'\n\n'.join(extras)))
+        body = body.format(extras='\n{}\n'.format('\n\n'.join(extras)))
     else:
         # this is necessary as it removes the {extras} placeholder in the default body text
-        body = body.format(extras=u'')
+        body = body.format(extras='')
 
-    mailer.mail_recipient(recipient_email=request.email_address, recipient_name=u'Downloader',
-                          subject=u'Data download', body=body)
+    mailer.mail_recipient(recipient_email=request.email_address, recipient_name='Downloader',
+                          subject='Data download', body=body)

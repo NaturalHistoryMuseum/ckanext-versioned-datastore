@@ -63,11 +63,11 @@ def calculate_field_counts(request, es_client):
             .filter(create_version_query(version))
 
         # get all the fields names and use dot notation for nested fields
-        fields = [u'.'.join(parts) for parts, _config in iter_data_fields(mapping)]
+        fields = ['.'.join(parts) for parts, _config in iter_data_fields(mapping)]
         for field in fields:
             # add a search which finds the documents that have a value for the given field at the
             # right version
-            search = search.add(base_search.filter(u'exists', field=prefix_field(field)))
+            search = search.add(base_search.filter('exists', field=prefix_field(field)))
 
         responses = search.execute()
         for field, response in zip(fields, responses):
@@ -99,7 +99,7 @@ def filter_data_fields(data, field_counts, prefix=None):
     filtered_data = {}
     for field, value in data.items():
         if prefix is not None:
-            path = u'{}.{}'.format(prefix, field)
+            path = f'{prefix}.{field}'
         else:
             path = field
 

@@ -21,7 +21,7 @@ def get_mappings(resource_ids, chunk_size=5):
     '''
     mappings = {}
     for chunk in chunk_iterator(map(prefix_resource, resource_ids), chunk_size):
-        mappings.update(common.ES_CLIENT.indices.get_mapping(u','.join(chunk)))
+        mappings.update(common.ES_CLIENT.indices.get_mapping(','.join(chunk)))
     return mappings
 
 
@@ -58,10 +58,10 @@ class Fields(object):
                            field.
         :param resource_id: the resource id the field belongs to
         '''
-        if self.skip_ids and field_path[-1] == u'_id':
+        if self.skip_ids and field_path[-1] == '_id':
             return
 
-        field = u'.'.join(field_path)
+        field = '.'.join(field_path)
         group = field.lower()
 
         self.group_counts[group] += 1
@@ -71,7 +71,7 @@ class Fields(object):
         self.groups[group][field].append(resource_id)
 
     def ignore(self, group):
-        if hasattr(group, u'match') and callable(group.match):
+        if hasattr(group, 'match') and callable(group.match):
             self.ignore_groups.add(group)
         else:
             self.ignore_groups.add(re.compile(group, re.IGNORECASE))
@@ -114,7 +114,7 @@ class Fields(object):
             shoulds = []
             indexes = []
             for variant, resources_in_group in variants.items():
-                shoulds.append(Q(u'exists', field=prefix_field(variant)))
+                shoulds.append(Q('exists', field=prefix_field(variant)))
                 indexes.extend(prefix_resource(resource_id) for resource_id in resources_in_group)
 
             # yield the group tuple and an elasticsearch-dsl object for the group's fields
@@ -145,7 +145,7 @@ def get_all_fields(resource_ids):
             # field, we only get the nested field names and not the root name back from
             # iter_data_fields but if no values have been set the object type field will not have
             # any properties and it itself is returned
-            if config[u'type'] == u'object':
+            if config['type'] == 'object':
                 continue
             fields.add(field_path, resource_id)
 
@@ -195,11 +195,11 @@ def select_fields(all_fields, search, number_of_groups):
     def group_sorter(the_group):
         # this sorts the groups ensuring forced groups are first, in the order they were forced,
         # then the groups with highest count and then the ones with the highest number of records
-        if the_group[u'forced']:
+        if the_group['forced']:
             # use 0 0 to ensure that the base order of the groups is maintained for forced groups
             return True, 0, 0
         else:
-            return False, the_group[u'count'], the_group[u'records']
+            return False, the_group['count'], the_group['records']
 
     # sort the returned selected list by count and secondly records
     return sorted(selected_fields, key=group_sorter, reverse=True)

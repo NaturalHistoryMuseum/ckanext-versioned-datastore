@@ -41,14 +41,14 @@ class DatastoreIndex(Index):
         '''
         if self.latitude_field and self.longitude_field:
             # extract the latitude and longitude values
-            latitude = index_doc[u'data'].get(self.latitude_field, None)
-            longitude = index_doc[u'data'].get(self.longitude_field, None)
+            latitude = index_doc['data'].get(self.latitude_field, None)
+            longitude = index_doc['data'].get(self.longitude_field, None)
             if latitude is not None and longitude is not None:
                 try:
                     # check that the values are valid
                     if -90 <= float(latitude) <= 90 and -180 <= float(longitude) <= 180:
                         # update the meta.geo key to hold the latitude longitude pair
-                        index_doc[u'meta'][u'geo'] = u'{},{}'.format(latitude, longitude)
+                        index_doc['meta']['geo'] = f'{latitude},{longitude}'
                 except ValueError:
                     pass
 
@@ -69,7 +69,7 @@ class DatastoreIndex(Index):
             to_index = copy.deepcopy(data)
             # copy over the id of the record into the correctly named field and convert it to an
             # integer
-            to_index[u'_id'] = int(mongo_doc[u'id'])
+            to_index['_id'] = int(mongo_doc['id'])
 
             for key, value in to_index.items():
                 if isinstance(value, bool):
@@ -78,7 +78,7 @@ class DatastoreIndex(Index):
                     # just convert it to a string here. Note that records with boolean values can
                     # only come from the API as if you upload a CSV we won't convert the value to
                     # a boolean ever
-                    to_index[key] = unicode(value).lower()
+                    to_index[key] = str(value).lower()
                 else:
                     # everything else can pass on through
                     to_index[key] = value
@@ -104,11 +104,11 @@ class DatastoreIndex(Index):
         :return: a dict
         '''
         body = super(DatastoreIndex, self).get_index_create_body()
-        body.setdefault(u'mappings', {}).setdefault(DOC_TYPE, {}).setdefault(
-            u'properties', {}).update({
+        body.setdefault('mappings', {}).setdefault(DOC_TYPE, {}).setdefault(
+            'properties', {}).update({
                 # the id field should be an integer
-                u'data._id': {
-                    u'type': u'long'
+                'data._id': {
+                    'type': 'long'
                 },
             })
         return body
@@ -129,18 +129,14 @@ class ResourceIndexRequest(object):
         self.resource = resource
         self.lower_version = lower_version
         self.upper_version = upper_version
-        self.resource_id = self.resource[u'id']
+        self.resource_id = self.resource['id']
 
     def __repr__(self):
         return self.__str__()
 
     def __str__(self):
-        return unicode(self).encode(u'utf-8')
-
-    def __unicode__(self):
-        return u'Index on {}, lower version: {}, upper version: {}'.format(self.resource_id,
-                                                                           self.lower_version,
-                                                                           self.upper_version)
+        return f'Index on {self.resource_id}, lower version: {self.lower_version}, ' \
+               f'upper version: {self.upper_version}'
 
 
 def index_resource(request):
@@ -150,18 +146,18 @@ def index_resource(request):
     :param request: the request
     :return: True if the index took place successfully, False if not
     '''
-    resource_id = request.resource[u'id']
+    resource_id = request.resource['id']
 
-    log.info(u'Starting index of {}: {} > versions <= {}'.format(resource_id, request.lower_version,
-                                                                 request.upper_version))
+    log.info(f'Starting index of {resource_id}: {request.lower_version} > versions <= '
+             f'{request.upper_version}')
 
     # create an index feeder, this gets the records out of MongoDB and presents them for indexing
     feeder = SimpleIndexFeeder(common.CONFIG, resource_id, request.lower_version,
                                request.upper_version)
     # create the index object which will process the documents from the feeder
     index = DatastoreIndex(common.CONFIG, resource_id, request.upper_version,
-                           latitude_field=request.resource.get(u'_latitude_field', None),
-                           longitude_field=request.resource.get(u'_longitude_field', None))
+                           latitude_field=request.resource.get('_latitude_field', None),
+                           longitude_field=request.resource.get('_longitude_field', None))
     # create an indexer object to do the indexing
     indexer = Indexer(request.upper_version, common.CONFIG, [(feeder, index)])
 
@@ -177,7 +173,7 @@ def index_resource(request):
     except Exception as e:
         # if there's a problem, mark it in the stats
         stats.mark_error(stats_id, e)
-        log.exception(u'An error occurred during indexing of {}'.format(resource_id))
+        log.exception(f'An error occurred during indexing of {resource_id}')
         return False
 
     # otherwise, we're all good, let the plugins do stuff if they want
@@ -185,6 +181,6 @@ def index_resource(request):
         try:
             plugin.datastore_after_indexing(request, indexing_stats, stats_id)
         except Exception as e:
-            log.error(u'Error during after indexing hook handling in plugin {}'.format(plugin), e)
+            log.error(f'Error during after indexing hook handling in plugin {plugin}', e)
     # done, return True to indicate all went successfully
     return True

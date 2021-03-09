@@ -1,15 +1,15 @@
-import numbers
-
 import abc
+
+import codecs
+import csv
+import numbers
 import openpyxl
-import six
-import unicodecsv
 import xlrd
 from cchardet import UniversalDetector
 from openpyxl.cell.read_only import EmptyCell
 
 from .exceptions import InvalidId
-from .utils import ensure_reset, iter_universal_lines
+from .utils import ensure_reset
 from ... import common
 
 
@@ -23,9 +23,9 @@ def get_reader(resource_format):
     '''
     resource_format = resource_format.lower()
     if resource_format in common.CSV_FORMATS:
-        return SVReader(u'excel')
+        return SVReader('excel')
     if resource_format in common.TSV_FORMATS:
-        return SVReader(u'excel-tab')
+        return SVReader('excel-tab')
     if resource_format in common.XLS_FORMATS:
         return XLSReader()
     if resource_format in common.XLSX_FORMATS:
@@ -34,8 +34,7 @@ def get_reader(resource_format):
     return None
 
 
-@six.add_metaclass(abc.ABCMeta)
-class ResourceReader(object):
+class ResourceReader(abc.ABC):
     '''
     Abstract class to read fields and rows from a resource.
     '''
@@ -86,9 +85,9 @@ class ResourceReader(object):
         :return: a generator of row dicts
         '''
         for row_number, row in enumerate(self._get_rows(resource_data_fp)):
-            if u'_id' in row:
+            if '_id' in row:
                 try:
-                    row[u'_id'] = int(row[u'_id'])
+                    row['_id'] = int(row['_id'])
                 except ValueError as e:
                     raise InvalidId(row_number, row, cause=e)
             yield row
@@ -128,15 +127,15 @@ class SVReader(ResourceReader):
                         detector.close()
                         break
 
-            self.encoding = detector.result[u'encoding']
+            self.encoding = detector.result['encoding']
             # if the detector failed to work out the encoding (unlikely) or if the encoding it
             # comes up with is ASCII, just default to UTF-8 (UTF-8 is a superset of ASCII)
-            if self.encoding is None or self.encoding == u'ASCII':
-                self.encoding = u'utf-8'
+            if self.encoding is None or self.encoding == 'ASCII':
+                self.encoding = 'utf-8'
 
         # create and return the dict reader
-        line_iterator = iter_universal_lines(resource_data_fp, self.encoding)
-        return unicodecsv.DictReader(line_iterator, dialect=self.dialect, encoding=self.encoding)
+        text_wrapper = codecs.getreader(self.encoding)(resource_data_fp)
+        return csv.DictReader(text_wrapper, dialect=self.dialect)
 
     def _get_rows(self, resource_data_fp):
         '''
@@ -162,7 +161,7 @@ class SVReader(ResourceReader):
         '''
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
-            return reader.unicode_fieldnames
+            return reader.fieldnames
 
     def modify_metadata(self, metadata):
         '''
@@ -170,7 +169,7 @@ class SVReader(ResourceReader):
 
         :param metadata: the current metadata as a dict
         '''
-        metadata[u'original_encoding'] = self.encoding
+        metadata['original_encoding'] = self.encoding
 
 
 class XLSReader(ResourceReader):
@@ -207,26 +206,26 @@ class XLSReader(ResourceReader):
         '''
         rows = self._iter_rows(resource_data_fp)
         # assume the first row is the header
-        header = [unicode(cell.value) for cell in next(rows)]
+        header = [str(cell.value) for cell in next(rows)]
         # then read all the other rows as data
         for row in rows:
             data = {}
             for field, cell in zip(header, row):
                 # if the cell is the id column, it contains a number and the number is an
                 # integer, convert it from a float to an int
-                if field == u'_id':
+                if field == '_id':
                     if cell.ctype == xlrd.XL_CELL_NUMBER and cell.value.is_integer():
                         data[field] = int(cell.value)
                     else:
-                        raise Exception(u'_id not int')
+                        raise Exception('_id not int')
                 elif cell == xlrd.XL_CELL_EMPTY:
                     # ignore empty cells
                     continue
                 else:
                     # otherwise just use the value (if it's not an empty string)
-                    value = unicode(cell.value)
+                    value = str(cell.value)
                     if value:
-                        data[field] = unicode(cell.value)
+                        data[field] = str(cell.value)
             # yield the row
             yield data
 
@@ -239,7 +238,7 @@ class XLSReader(ResourceReader):
         :return: a list of field names
         '''
         # assume the first row is the header
-        return [unicode(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
+        return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
 
 
 class XLSXReader(ResourceReader):
@@ -273,24 +272,24 @@ class XLSXReader(ResourceReader):
         # get a generator for the rows in the first worksheet
         rows = self._iter_rows(resource_data_fp)
         # assume the first row is a header
-        header = [unicode(cell.value) for cell in next(rows)]
+        header = [str(cell.value) for cell in next(rows)]
         # then read all the other rows as data
         for row in rows:
             data = {}
             for field, cell in zip(header, row):
                 # if the cell is the id column and it contains a number make sure it stays a
                 # number
-                if field == u'_id':
+                if field == '_id':
                     if isinstance(cell.value, numbers.Integral):
                         data[field] = cell.value
                     else:
-                        raise Exception(u'_id not int')
+                        raise Exception('_id not int')
                 # ignore empty cells
                 elif isinstance(cell, EmptyCell):
                     continue
                 else:
                     # convert everything else to unicode
-                    value = unicode(cell.value)
+                    value = str(cell.value)
                     if value:
                         data[field] = value
             # yield the row
@@ -305,7 +304,7 @@ class XLSXReader(ResourceReader):
         :return: a list of field names
         '''
         # assume the first row is the header
-        return [unicode(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
+        return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
 
 
 class APIReader(ResourceReader):

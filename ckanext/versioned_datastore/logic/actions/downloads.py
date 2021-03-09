@@ -19,7 +19,7 @@ from ...model.downloads import DatastoreDownload
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
 def datastore_queue_download(email_address, context, query=None, query_version=None, version=None,
                              resource_ids=None, resource_ids_and_versions=None, separate_files=True,
-                             format=u'csv', ignore_empty_fields=True):
+                             format='csv', ignore_empty_fields=True):
     '''
     Starts a download of the data found by the given query parameters. This download is created
     asynchronously using the rq background job queue and a link to the results is emailed to the
@@ -58,7 +58,7 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     # figure out which resources should be searched
     resource_ids = get_available_datastore_resources(context, resource_ids)
     if not resource_ids:
-        raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
 
     rounded_resource_ids_and_versions = {}
     # see if a version was provided, we'll use this is a resource id we're searching doesn't have a
@@ -87,13 +87,13 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     query_hash = hash_query(query, query_version)
 
     options = {
-        u'separate_files': separate_files,
-        u'format': format,
-        u'ignore_empty_fields': ignore_empty_fields
+        'separate_files': separate_files,
+        'format': format,
+        'ignore_empty_fields': ignore_empty_fields
     }
     download = DatastoreDownload(query_hash=query_hash, query=query, query_version=query_version,
                                  resource_ids_and_versions=rounded_resource_ids_and_versions,
-                                 state=u'queued', options=options)
+                                 state='queued', options=options)
     download.save()
 
     job = queue_download(email_address, download.id, query_hash, query, query_version,
@@ -101,7 +101,7 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
                          format, ignore_empty_fields)
 
     return {
-        u'queued_at': job.enqueued_at.isoformat(),
-        u'job_id': job.id,
-        u'download_id': download.id,
+        'queued_at': job.enqueued_at.isoformat(),
+        'job_id': job.id,
+        'download_id': download.id,
     }

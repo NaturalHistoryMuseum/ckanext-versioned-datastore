@@ -14,7 +14,7 @@ def is_duplicate_ingestion(stat):
     :param stat: the ImportStats object
     :return: True if the error on this stat is a duplicate ingestion error, False if not
     '''
-    return stat.error and u'this file has been ingested before' in stat.error.lower()
+    return stat.error and 'this file has been ingested before' in stat.error.lower()
 
 
 def get_human_duration(stat):
@@ -29,11 +29,11 @@ def get_human_duration(stat):
     :return: a nicely formatted duration string
     '''
     if stat.duration < 60:
-        return toolkit._(u'{:.2f} seconds'.format(stat.duration))
+        return toolkit._(f'{stat.duration:.2f} seconds')
     elif stat.duration < 60 * 60:
-        return toolkit._(u'{:.0f} minutes'.format(stat.duration / 60))
+        return toolkit._(f'{stat.duration / 60:.0f} minutes')
     else:
-        return toolkit._(u'{:.0f} hours'.format(stat.duration / (60 * 60)))
+        return toolkit._(f'{stat.duration / (60 * 60):.0f} hours')
 
 
 def get_stat_icon(stat):
@@ -47,21 +47,21 @@ def get_stat_icon(stat):
     '''
     if stat.in_progress:
         # a spinner, that spins
-        return u'fa-spinner fa-pulse'
+        return 'fa-spinner fa-pulse'
     if stat.error:
         if is_duplicate_ingestion(stat):
             # we don't want this to look like an error
-            return u'fa-copy'
-        return u'fa-exclamation'
+            return 'fa-copy'
+        return 'fa-exclamation'
 
     if stat.type == stats.INGEST:
-        return u'fa-tasks'
+        return 'fa-tasks'
     if stat.type == stats.INDEX:
-        return u'fa-search'
+        return 'fa-search'
     if stat.type == stats.PREP:
-        return u'fa-cogs'
+        return 'fa-cogs'
     # shouldn't get here, just use some default tick thing
-    return u'fa-check'
+    return 'fa-check'
 
 
 def get_stat_activity_class(stat):
@@ -74,11 +74,11 @@ def get_stat_activity_class(stat):
     :return: a string
     '''
     if stat.in_progress:
-        return u'in_progress'
+        return 'in_progress'
     if stat.error:
         if is_duplicate_ingestion(stat):
-            return u'duplicate'
-        return u'failure'
+            return 'duplicate'
+        return 'failure'
     return stat.type
 
 
@@ -91,11 +91,11 @@ def get_stat_title(stat):
     :return: the title for the activity item as a unicode string
     '''
     if stat.type == stats.INGEST:
-        return toolkit._(u'Ingested new resource data')
+        return toolkit._('Ingested new resource data')
     if stat.type == stats.INDEX:
-        return toolkit._(u'Updated search index with resource data')
+        return toolkit._('Updated search index with resource data')
     if stat.type == stats.PREP:
-        return toolkit._(u'Validated and prepared the data for ingestion')
+        return toolkit._('Validated and prepared the data for ingestion')
     return stat.type
 
 

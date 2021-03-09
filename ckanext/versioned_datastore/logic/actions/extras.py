@@ -51,9 +51,9 @@ def datastore_get_resource_versions(resource_id, context, data_dict, original_da
 
     search = search.using(common.ES_CLIENT).index(index_name)[0:0]
     for result in data:
-        version = result[u'version']
+        version = result['version']
         count = search.filter(create_version_query(version)).count()
-        result[u'count'] = count
+        result['count'] = count
     return data
 
 
@@ -99,7 +99,7 @@ def datastore_count(resource_ids=None, version=None):
     if version is None:
         version = to_timestamp(datetime.now())
     if resource_ids is None:
-        resource_ids = [u'*']
+        resource_ids = ['*']
 
     indexes = [get_public_alias_name(resource_id) for resource_id in resource_ids]
     search = Search(using=common.ES_CLIENT, index=indexes).filter(create_version_query(version))

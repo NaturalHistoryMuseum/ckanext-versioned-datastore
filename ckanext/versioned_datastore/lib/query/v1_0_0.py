@@ -1,10 +1,10 @@
 import hashlib
 import io
 import json
+import os
 import string
 from collections import defaultdict
 
-import os
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Bool, Q
 
@@ -17,18 +17,18 @@ class v1_0_0Schema(Schema):
     Schema class for the v1.0.0 query schema.
     '''
 
-    version = u'v1.0.0'
+    version = 'v1.0.0'
 
     def __init__(self):
         self.schema, self.validator = load_core_schema(v1_0_0Schema.version)
         self.geojson = {
-            u'country': self.load_geojson(u'50m-admin-0-countries-v4.1.0.geojson',
-                                          (u'NAME_EN', u'NAME')),
+            'country': self.load_geojson('50m-admin-0-countries-v4.1.0.geojson',
+                                         ('NAME_EN', 'NAME')),
             # if we use name_en we end up with one atlantic ocean whereas if we use name we get 2 -
             # the "North Atlantic Ocean" and the "South Atlantic Ocean". I think this is preferable.
-            u'marine': self.load_geojson(u'50m-marine-regions-v4.1.0.geojson', (u'name',)),
-            u'geography': self.load_geojson(u'50m-geography-regions-v4.1.0.geojson',
-                                            (u'name_en', u'name')),
+            'marine': self.load_geojson('50m-marine-regions-v4.1.0.geojson', ('name',)),
+            'geography': self.load_geojson('50m-geography-regions-v4.1.0.geojson',
+                                           ('name_en', 'name')),
         }
         self.hasher = v1_0_0Hasher()
 
@@ -73,9 +73,9 @@ class v1_0_0Schema(Schema):
         :param search: an instantiated elasticsearch-dsl object
         :return: an instantiated elasticsearch-dsl object
         '''
-        if u'search' in query:
-            return search.query(u'match', **{u'meta.all': {u'query': query[u'search'],
-                                                           u'operator': u'and'}})
+        if 'search' in query:
+            return search.query('match', **{'meta.all': {'query': query['search'],
+                                                         'operator': 'and'}})
         return search
 
     def add_filters(self, query, search):
@@ -87,8 +87,8 @@ class v1_0_0Schema(Schema):
         :param search: an instantiated elasticsearch-dsl object
         :return: an instantiated elasticsearch-dsl object
         '''
-        if u'filters' in query:
-            return search.query(self.create_group_or_term(query[u'filters']))
+        if 'filters' in query:
+            return search.query(self.create_group_or_term(query['filters']))
         return search
 
     def create_group_or_term(self, group_or_term):
@@ -101,7 +101,7 @@ class v1_0_0Schema(Schema):
         '''
         # only one property is allowed so we can safely just extract the only name and options
         group_or_term_type, group_or_term_options = next(iter(group_or_term.items()))
-        return getattr(self, u'create_{}'.format(group_or_term_type))(group_or_term_options)
+        return getattr(self, f'create_{group_or_term_type}')(group_or_term_options)
 
     def create_and(self, group):
         '''
@@ -152,8 +152,8 @@ class v1_0_0Schema(Schema):
         :param options: the options for the string_equals query
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
-        return self.build_or([Q(u'term', **{prefix_field(field): options[u'value']})
-                              for field in options[u'fields']])
+        return self.build_or([Q('term', **{prefix_field(field): options['value']})
+                              for field in options['fields']])
 
     def create_string_contains(self, options):
         '''
@@ -165,14 +165,14 @@ class v1_0_0Schema(Schema):
         :param options: the options for the string_contains query
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
-        fields = options[u'fields']
-        query = {u'query': options[u'value'], u'operator': u'and'}
+        fields = options['fields']
+        query = {'query': options['value'], 'operator': 'and'}
 
         if fields:
-            return self.build_or([Q(u'match', **{u'{}.full'.format(prefix_field(field)): query})
+            return self.build_or([Q('match', **{f'{prefix_field(field)}.full': query})
                                   for field in fields])
         else:
-            return Q(u'match', **{u'meta.all': query})
+            return Q('match', **{'meta.all': query})
 
     def create_number_equals(self, options):
         '''
@@ -185,8 +185,8 @@ class v1_0_0Schema(Schema):
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
         return self.build_or(
-            [Q(u'term', **{u'{}.number'.format(prefix_field(field)): options[u'value']})
-             for field in options[u'fields']])
+            [Q('term', **{f'{prefix_field(field)}.number': options['value']})
+             for field in options['fields']])
 
     def create_number_range(self, options):
         '''
@@ -198,18 +198,18 @@ class v1_0_0Schema(Schema):
         :param options: the options for the number_range query
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
-        less_than = options.get(u'less_than', None)
-        greater_than = options.get(u'greater_than', None)
-        less_than_inclusive = options.get(u'less_than_inclusive', True)
-        greater_than_inclusive = options.get(u'greater_than_inclusive', True)
+        less_than = options.get('less_than', None)
+        greater_than = options.get('greater_than', None)
+        less_than_inclusive = options.get('less_than_inclusive', True)
+        greater_than_inclusive = options.get('greater_than_inclusive', True)
         query = {}
         if less_than is not None:
-            query[u'lt' if not less_than_inclusive else u'lte'] = less_than
+            query['lt' if not less_than_inclusive else 'lte'] = less_than
         if greater_than is not None:
-            query[u'gt' if not greater_than_inclusive else u'gte'] = greater_than
+            query['gt' if not greater_than_inclusive else 'gte'] = greater_than
 
-        return self.build_or([Q(u'range', **{u'{}.number'.format(prefix_field(field)): query})
-                              for field in options[u'fields']])
+        return self.build_or([Q('range', **{f'{prefix_field(field)}.number': query})
+                              for field in options['fields']])
 
     def create_exists(self, options):
         '''
@@ -222,11 +222,11 @@ class v1_0_0Schema(Schema):
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
         # TODO: should we provide exists on subfields?
-        if options.get(u'geo_field', False):
-            return Q(u'exists', field=u'meta.geo')
+        if options.get('geo_field', False):
+            return Q('exists', field='meta.geo')
         else:
-            return self.build_or([Q(u'exists', field=prefix_field(field))
-                                  for field in options[u'fields']])
+            return self.build_or([Q('exists', field=prefix_field(field))
+                                  for field in options['fields']])
 
     def create_geo_point(self, options):
         '''
@@ -238,12 +238,11 @@ class v1_0_0Schema(Schema):
         :param options: the options for the geo_point query
         :return: an elasticsearch-dsl Query object or a Bool object
         '''
-        return Q(u'geo_distance', **{
-            u'distance': u'{}{}'.format(options.get(u'radius', 0),
-                                        options.get(u'radius_unit', u'm')),
-            u'meta.geo': {
-                u'lat': options[u'latitude'],
-                u'lon': options[u'longitude'],
+        return Q('geo_distance', **{
+            'distance': f'{options.get("radius", 0)}{options.get("radius_unit", "m")}',
+            'meta.geo': {
+                'lat': options['latitude'],
+                'lon': options['longitude'],
             }
         })
 
@@ -298,9 +297,9 @@ class v1_0_0Schema(Schema):
         :param points: a list of points
         :return: an elasticsearch-dsl query object
         '''
-        return Q(u'geo_polygon', **{
-            u'meta.geo': {
-                u'points': [{u'lat': point[1], u'lon': point[0]} for point in points]
+        return Q('geo_polygon', **{
+            'meta.geo': {
+                'points': [{'lat': point[1], 'lon': point[0]} for point in points]
             }
         })
 
@@ -353,19 +352,19 @@ class v1_0_0Schema(Schema):
         :param name_keys: a priority ordered sequence of keys to use for feature name retrieval
         :return: a dict of names -> MultiPolygons
         '''
-        path = os.path.join(schema_base_path, v1_0_0Schema.version, u'geojson')
+        path = os.path.join(schema_base_path, v1_0_0Schema.version, 'geojson')
 
         # make sure we read the file using utf-8
-        with io.open(os.path.join(path, filename), u'r', encoding=u'utf-8') as f:
+        with io.open(os.path.join(path, filename), 'r', encoding='utf-8') as f:
             lookup = defaultdict(list)
-            for feature in json.load(f)[u'features']:
+            for feature in json.load(f)['features']:
                 # find the first name key with a value and pass it to string.capwords
                 name = string.capwords(next(iter(
-                    filter(None, (feature[u'properties'].get(key, None) for key in name_keys)))))
+                    filter(None, (feature['properties'].get(key, None) for key in name_keys)))))
 
-                coordinates = feature[u'geometry'][u'coordinates']
+                coordinates = feature['geometry']['coordinates']
                 # if the feature is a Polygon, wrap it in a list to make it a MultiPolygon
-                if feature[u'geometry'][u'type'] == u'Polygon':
+                if feature['geometry']['type'] == 'Polygon':
                     coordinates = [coordinates]
 
                 # add the polygons found to the existing MultiPolygon (some names are listed
@@ -379,7 +378,7 @@ class v1_0_0Schema(Schema):
             return lookup
 
 
-class v1_0_0Hasher(object):
+class v1_0_0Hasher:
     '''
     Query hasher class for the v1.0.0 query schema.
     '''
@@ -392,10 +391,11 @@ class v1_0_0Hasher(object):
         :return: the hex digest
         '''
         query_hash = hashlib.sha1()
-        if u'search' in query:
-            query_hash.update(u'search:{}'.format(query[u'search']))
-        if u'filters' in query:
-            query_hash.update(u'filters:{}'.format(self.create_group_or_term(query[u'filters'])))
+        if 'search' in query:
+            query_hash.update(f'search:{query["search"]}'.encode(u'utf-8'))
+        if 'filters' in query:
+            data = f'filters:{self.create_group_or_term(query["filters"])}'.encode(u'utf-8')
+            query_hash.update(data)
         return query_hash.hexdigest()
 
     def create_group_or_term(self, group_or_term):
@@ -407,7 +407,7 @@ class v1_0_0Hasher(object):
         '''
         # only one property is allowed so we can safely just extract the only name and options
         group_or_term_type, group_or_term_options = next(iter(group_or_term.items()))
-        return getattr(self, u'create_{}'.format(group_or_term_type))(group_or_term_options)
+        return getattr(self, f'create_{group_or_term_type}')(group_or_term_options)
 
     def create_and(self, group):
         '''
@@ -418,7 +418,7 @@ class v1_0_0Hasher(object):
         '''
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
-        return u'{}:[{}]'.format(u'and', u'|'.join(members))
+        return f'and:[{"|".join(members)}]'
 
     def create_or(self, group):
         '''
@@ -429,7 +429,7 @@ class v1_0_0Hasher(object):
         '''
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
-        return u'{}:[{}]'.format(u'or', u'|'.join(members))
+        return f'or:[{"|".join(members)}]'
 
     def create_not(self, group):
         '''
@@ -440,7 +440,7 @@ class v1_0_0Hasher(object):
         '''
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
-        return u'{}:[{}]'.format(u'not', u'|'.join(members))
+        return f'not:[{"|".join(members)}]'
 
     @staticmethod
     def create_string_equals(options):
@@ -451,8 +451,8 @@ class v1_0_0Hasher(object):
         :return: a string representing the term
         '''
         # sorting the fields makes this stable
-        fields = u','.join(sorted(options[u'fields']))
-        return u'string_equals:{};{}'.format(fields, options[u'value'])
+        fields = ','.join(sorted(options['fields']))
+        return f'string_equals:{fields};{options["value"]}'
 
     @staticmethod
     def create_string_contains(options):
@@ -463,8 +463,8 @@ class v1_0_0Hasher(object):
         :return: a string representing the term
         '''
         # sorting the fields makes this stable
-        fields = u','.join(sorted(options[u'fields']))
-        return u'string_contains:{};{}'.format(fields, options[u'value'])
+        fields = ','.join(sorted(options['fields']))
+        return f'string_contains:{fields};{options["value"]}'
 
     @staticmethod
     def create_number_equals(options):
@@ -475,8 +475,8 @@ class v1_0_0Hasher(object):
         :return: a string representing the term
         '''
         # sorting the fields makes this stable
-        fields = u','.join(sorted(options[u'fields']))
-        return u'number_equals:{};{}'.format(fields, options[u'value'])
+        fields = ','.join(sorted(options['fields']))
+        return f'number_equals:{fields};{options["value"]}'
 
     @staticmethod
     def create_number_range(options):
@@ -487,24 +487,24 @@ class v1_0_0Hasher(object):
         :return: a string representing the term
         '''
         # sorting the fields makes this stable
-        fields = u','.join(sorted(options[u'fields']))
-        hash_value = u'number_range:{};'.format(fields)
+        fields = ','.join(sorted(options['fields']))
+        hash_value = f'number_range:{fields};'
 
-        less_than = options.get(u'less_than', None)
-        less_than_inclusive = options.get(u'less_than_inclusive', True)
+        less_than = options.get('less_than', None)
+        less_than_inclusive = options.get('less_than_inclusive', True)
         if less_than is not None:
-            hash_value += u'<'
+            hash_value += '<'
             if less_than_inclusive:
-                hash_value += u'='
-            hash_value += unicode(less_than)
+                hash_value += '='
+            hash_value += str(less_than)
 
-        greater_than = options.get(u'greater_than', None)
-        greater_than_inclusive = options.get(u'greater_than_inclusive', True)
+        greater_than = options.get('greater_than', None)
+        greater_than_inclusive = options.get('greater_than_inclusive', True)
         if greater_than is not None:
-            hash_value += u'>'
+            hash_value += '>'
             if greater_than_inclusive:
-                hash_value += u'='
-            hash_value += unicode(greater_than)
+                hash_value += '='
+            hash_value += str(greater_than)
 
         return hash_value
 
@@ -516,12 +516,12 @@ class v1_0_0Hasher(object):
         :param options: the options for the exists query
         :return: a string representing the term
         '''
-        if options.get(u'geo_field', False):
-            return u'geo_exists'
+        if options.get('geo_field', False):
+            return 'geo_exists'
         else:
             # sorting the fields makes this stable
-            fields = u','.join(sorted(options[u'fields']))
-            return u'exists:{}'.format(fields)
+            fields = ','.join(sorted(options['fields']))
+            return f'exists:{fields}'
 
     @staticmethod
     def create_geo_point(options):
@@ -531,8 +531,8 @@ class v1_0_0Hasher(object):
         :param options: the options for the geo_point query
         :return: a string representing the term
         '''
-        distance = u'{}{}'.format(options.get(u'radius', 0), options.get(u'radius_unit', u'm'))
-        return u'geo_point:{};{};{}'.format(distance, options[u'latitude'], options[u'longitude'])
+        distance = f'{options.get("radius", 0)}{options.get("radius_unit", "m")}'
+        return f'geo_point:{distance};{options["latitude"]};{options["longitude"]}'
 
     @staticmethod
     def create_geo_named_area(options):
@@ -542,7 +542,7 @@ class v1_0_0Hasher(object):
         :param options: the options for the geo_named_area query
         :return: a string representing the term
         '''
-        return u'geo_named_area:{};{}'.format(*next(iter(options.items())))
+        return 'geo_named_area:{};{}'.format(*next(iter(options.items())))
 
     def create_geo_custom_area(self, coordinates):
         '''
@@ -564,11 +564,11 @@ class v1_0_0Hasher(object):
                 # sort the holes to ensure stability
                 holes_queries = sorted(self.build_geo_polygon_query(hole) for hole in holes)
                 # create a query which filters the outer query but filters out the holes
-                queries.append(u'{}/{}'.format(outer_query, holes_queries))
+                queries.append(f'{outer_query}/{holes_queries}')
             else:
                 queries.append(outer_query)
 
-        return u'geo_custom_area:{}'.format(u';'.join(queries))
+        return f'geo_custom_area:{";".join(queries)}'
 
     @staticmethod
     def build_geo_polygon_query(points):
@@ -579,4 +579,4 @@ class v1_0_0Hasher(object):
         :param points: the points as lat lon pairs
         :return: a string representing the points
         '''
-        return u','.join(u'[{},{}]'.format(point[1], point[0]) for point in points)
+        return ','.join(f'[{point[1]},{point[0]}]' for point in points)

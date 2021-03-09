@@ -2,12 +2,12 @@ import contextlib
 from collections import defaultdict
 
 import os
-import unicodecsv
+import csv
 
 from .utils import get_fields, filter_data_fields
 
 
-def flatten_dict(data, path=None, separator=u' | '):
+def flatten_dict(data, path=None, separator=' | '):
     '''
     Flattens a given dictionary so that nested dicts and lists of dicts are available from the root
     of the dict. For nested dicts, the keys in the nested dict are simply concatenated to the key
@@ -35,7 +35,7 @@ def flatten_dict(data, path=None, separator=u' | '):
     for key, value in data.items():
         if path is not None:
             # use a dot to indicate this key is below the parent in the path
-            key = u'{}.{}'.format(path, key)
+            key = f'{path}.{key}'
 
         if isinstance(value, dict):
             # flatten the nested dict and then update the current dict we've got on the go
@@ -50,9 +50,9 @@ def flatten_dict(data, path=None, separator=u' | '):
                         if subkey not in flat:
                             flat[subkey] = subvalue
                         else:
-                            flat[subkey] = u'{}{}{}'.format(flat[subkey], separator, subvalue)
+                            flat[subkey] = f'{flat[subkey]}{separator}{subvalue}'
             else:
-                flat[key] = separator.join(map(unicode, value))
+                flat[key] = separator.join(map(str, value))
         else:
             flat[key] = value
 
@@ -71,8 +71,8 @@ def create_sv_writer(field_names, dialect, target_dir, filename):
     :return: a 2-tuple containing the open file and the DictWriter object
     '''
     path = os.path.join(target_dir, filename)
-    open_file = open(path, u'wb')
-    writer = unicodecsv.DictWriter(open_file, field_names, encoding=u'utf-8', dialect=dialect)
+    open_file = open(path, 'w', encoding='utf-8')
+    writer = csv.DictWriter(open_file, field_names, dialect=dialect)
     writer.writeheader()
     return open_file, writer
 
@@ -106,9 +106,9 @@ def sv_writer(request, target_dir, field_counts, dialect, extension):
         # create a single writer object and open a single file for it
         all_field_names = get_fields(field_counts, request.ignore_empty_fields)
         # TODO: this could clash
-        all_field_names = [u'Source resource ID'] + all_field_names
+        all_field_names = ['Source resource ID'] + all_field_names
         open_file, writer = create_sv_writer(all_field_names, dialect, target_dir,
-                                             u'data.{}'.format(extension))
+                                             f'data.{extension}')
         open_files.append(open_file)
         # sneekily use a defaultdict to return the same writer object regardless of the resource id
         writers = defaultdict(lambda: writer)
@@ -119,7 +119,7 @@ def sv_writer(request, target_dir, field_counts, dialect, extension):
                 # the file needs opening and the *sv writer object needs creating
                 field_names = get_fields(field_counts, request.ignore_empty_fields, [resource_id])
                 open_file, writer = create_sv_writer(field_names, dialect, target_dir,
-                                                     u'{}.{}'.format(resource_id, extension))
+                                                     f'{resource_id}.{extension}')
                 open_files.append(open_file)
                 writers[resource_id] = writer
 
@@ -131,7 +131,7 @@ def sv_writer(request, target_dir, field_counts, dialect, extension):
             if not request.separate_files:
                 # if the rows are being written into one file we need to indicate which resource the
                 # row came from, this is how we do that
-                row[u'Source resource ID'] = resource_id
+                row['Source resource ID'] = resource_id
 
             # write the row to the writer, for separate files, this will select the correct writer
             # object and use it, for the single writer this will always retrieve the one writer

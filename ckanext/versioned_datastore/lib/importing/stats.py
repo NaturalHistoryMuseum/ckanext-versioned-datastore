@@ -6,9 +6,9 @@ from sqlalchemy import desc
 
 from ...model.stats import ImportStats
 
-PREP = u'prep'
-INGEST = u'ingest'
-INDEX = u'index'
+PREP = 'prep'
+INGEST = 'ingest'
+INDEX = 'index'
 ALL_TYPES = [PREP, INDEX, INGEST]
 
 
@@ -57,18 +57,18 @@ def finish_operation(stats_id, total, stats=None):
         start = model.Session.query(ImportStats).get(stats_id).start
         end = datetime.now()
         stats = {
-            u'duration': (end - start).total_seconds(),
-            u'start': start,
-            u'end': end,
-            u'operations': {},
+            'duration': (end - start).total_seconds(),
+            'start': start,
+            'end': end,
+            'operations': {},
         }
     update_stats(stats_id, {
         ImportStats.in_progress: False,
         ImportStats.count: total,
-        ImportStats.duration: stats[u'duration'],
-        ImportStats.start: stats[u'start'],
-        ImportStats.end: stats[u'end'],
-        ImportStats.operations: stats[u'operations'],
+        ImportStats.duration: stats['duration'],
+        ImportStats.start: stats['start'],
+        ImportStats.end: stats['end'],
+        ImportStats.operations: stats['operations'],
     })
 
 
@@ -141,7 +141,7 @@ def mark_error(stats_id, error):
         ImportStats.in_progress: False,
         ImportStats.duration: (end - start).total_seconds(),
         ImportStats.end: end,
-        ImportStats.error: unicode(format_exception_only(type(error), error)[-1].strip()),
+        ImportStats.error: str(format_exception_only(type(error), error)[-1].strip()),
     })
 
 

@@ -76,7 +76,7 @@ class DeletionFeeder(IngestionFeeder):
 
         :return: "deletion", always
         '''
-        return u'deletion'
+        return 'deletion'
 
     def records(self):
         '''
@@ -86,10 +86,10 @@ class DeletionFeeder(IngestionFeeder):
         '''
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # loop through records in mongo
-            for record in mongo.find(projection=[u'id', u'data']):
+            for record in mongo.find(projection=['id', 'data']):
                 # only delete the record if it hasn't already been deleted
-                if record[u'data']:
-                    yield DeletionRecord(self.version, self.resource_id, record[u'id'])
+                if record['data']:
+                    yield DeletionRecord(self.version, self.resource_id, record['id'])
 
 
 def delete_resource_data(resource_id, version, start):
@@ -103,7 +103,7 @@ def delete_resource_data(resource_id, version, start):
     :param start: the start time of the deletion
     :return: True if the deletion was successful, False if not
     '''
-    log.info(u'Starting deletion for {}'.format(resource_id))
+    log.info(f'Starting deletion for {resource_id}')
 
     # create a stats entry so that progress can be tracked
     stats_id = stats.start_operation(resource_id, stats.INGEST, version, start)
@@ -122,7 +122,7 @@ def delete_resource_data(resource_id, version, start):
         return True
     except Exception as e:
         stats.mark_error(stats_id, e)
-        log.exception(u'An error occurred during data deletion of {}'.format(resource_id))
+        log.exception(f'An error occurred during data deletion of {resource_id}')
         return False
 
 
@@ -158,7 +158,7 @@ class ReplaceDeletionFeeder(IngestionFeeder):
         '''
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # this finds all the records that haven't been updated in the given version
-            for mongo_doc in mongo.find({u'latest_version': {u'$lt': self.version}}):
-                if not self.tracker.was_included(mongo_doc[u'id']):
+            for mongo_doc in mongo.find({'latest_version': {'$lt': self.version}}):
+                if not self.tracker.was_included(mongo_doc['id']):
                     # delete
-                    yield DeletionRecord(self.version, self.resource_id, mongo_doc[u'id'])
+                    yield DeletionRecord(self.version, self.resource_id, mongo_doc['id'])
