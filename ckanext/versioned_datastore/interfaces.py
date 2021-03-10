@@ -237,6 +237,10 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         Hook allowing other extensions to modify the templating context used to generate the
         download email (both plain text and HTML versions) before it is sent.
 
+        The default context contains:
+            - "download_url": the download zip's full URL
+            - "site_url": the CKAN site's full URL (this is taken straight from the config)
+
         :param request: the DownloadRequest object
         :param context: templating context dict
         :return: context templating dict
