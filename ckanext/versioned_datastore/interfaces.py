@@ -221,12 +221,24 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
 
-    def download_add_to_email_body(self, request):
+    def download_modify_email_templates(self, text_template: str, html_template: str):
         '''
-        Hook allowing other extensions to add extra text to the body of the email that is sent to
-        users on completion of a download.
+        Hook allowing other extensions to modify the templates used when sending download emails.
+        The templates can be modified in place or completely replaced.
+
+        :param text_template: the text email template string
+        :param html_template: the html email template string
+        :return: a 2-tuple containing the text template string and the html template string
+        '''
+        return text_template, html_template
+
+    def download_modify_email_template_context(self, request, context):
+        '''
+        Hook allowing other extensions to modify the templating context used to generate the
+        download email (both plain text and HTML versions) before it is sent.
 
         :param request: the DownloadRequest object
-        :return:
+        :param context: templating context dict
+        :return: context templating dict
         '''
-        return None
+        return context
