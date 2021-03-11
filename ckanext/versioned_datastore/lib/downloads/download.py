@@ -17,6 +17,7 @@ from ckan.plugins import toolkit, PluginImplementations
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
+from jinja2 import Template
 
 from .jsonl import jsonl_writer
 from .sv import sv_writer
@@ -33,14 +34,25 @@ format_registry = {
     'jsonl': jsonl_writer,
 }
 
-# TODO: put this in the config/interface so that it can be overridden
 default_body = '''
 Hello,
+The link to the resource data you requested on {{ site_url }} is available at {{ download_url }}.
 
-The link to the resource data you requested on https://data.nhm.ac.uk is available at: {url}.
-{{extras}}
 Best Wishes,
-The NHM Data Portal Bot
+The Download Bot
+'''.strip()
+
+default_html_body = '''
+<html lang="en">
+<body>
+<p>Hello,</p>
+<p>The link to the resource data you requested on <a href="{{ site_url }}">{{ site_url }}</a> is
+available at <a href="{{ download_url }}">here</a>.</p>
+<br />
+<p>Best Wishes,</p>
+<p>The Download Bot</p>
+</body>
+</html>
 '''.strip()
 
 
@@ -266,21 +278,24 @@ def send_email(request, zip_name):
     :param request: the DownloadRequest object
     :param zip_name: the name of the zip file that has been created
     '''
-    download_url = f'{toolkit.config.get("ckan.site_url")}/downloads/{zip_name}'
-    # create the default download email body using the url
-    body = default_body.format(url=download_url)
-
-    # allow plugins to override the middle section of the email with any additional details
-    extras = []
+    # get the templates as strings
+    templates = (default_body, default_html_body)
     for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-        extra_body = plugin.download_add_to_email_body(request)
-        if extra_body:
-            extras.append(extra_body)
-    if extras:
-        body = body.format(extras='\n{}\n'.format('\n\n'.join(extras)))
-    else:
-        # this is necessary as it removes the {extras} placeholder in the default body text
-        body = body.format(extras='')
+        templates = plugin.download_modify_email_templates(*templates)
 
+    site_url = toolkit.config.get('ckan.site_url')
+    context = {
+        'site_url': site_url,
+        'download_url': f'{site_url}/downloads/{zip_name}',
+    }
+
+    # allow plugins to modify the context passed to the templates
+    for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+        context = plugin.download_modify_email_template_context(request, context)
+
+    # render both templates
+    body, body_html = (Template(template).render(**context) for template in templates)
+
+    # vend
     mailer.mail_recipient(recipient_email=request.email_address, recipient_name='Downloader',
-                          subject='Data download', body=body)
+                          subject='Data download', body=body, body_html=body_html)
