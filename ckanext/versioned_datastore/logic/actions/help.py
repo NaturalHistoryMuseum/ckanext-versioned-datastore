@@ -116,6 +116,12 @@ using the key 'records' or, if data is not specified, the URL on the resource is
 :type replace: bool
 :param version: the version to store the data under (optional, if not specified defaults to now)
 :type version: int
+:param records: the records to upsert into this resource's datastore. If this isn't specified the
+                url set on the resource is used to get the records. There are two limits applied to
+                this parameter, length and serialised size. The list of records can't be more than
+                20000 records long and when JSON serialised can't be bigger than 10MiB. An error
+                will be raised if either of these requirements isn't met.
+:type records: list of dicts
 
 **Results:**
 
