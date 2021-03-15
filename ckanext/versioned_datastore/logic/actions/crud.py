@@ -18,18 +18,18 @@ from ...lib.importing.queuing import queue_index, queue_import, queue_deletion
 from ...lib.importing.utils import check_version_is_valid
 
 
-def validate_records_size(records: List[dict], limit: int = 10 * 1024 * 1024):
+def validate_records_size(records: List[dict], limit=20000, byte_limit=10 * 1024 * 1024):
     '''
-    Given a list of record dicts, computes the JSON serialised size and raises an
-    UpsertTooManyRecordsException if the size exceeds the given limit.
+    Given a list of record dicts, computes the JSON serialised size and the length of the list and
+    raises an UpsertTooManyRecordsException if either exceed the given respective limits.
 
     :param records: the list of records
-    :param limit: the size limit in bytes (defaults to 10MiB)
-    :return:
+    :param limit: the records length limit (defaults to 20000)
+    :param byte_limit: the size limit in bytes (defaults to 10MiB in bytes)
     '''
     size = len(ujson.dumps(records, ensure_ascii=False).encode('utf-8'))
-    if size > limit:
-        raise UpsertTooManyRecordsException(size, limit)
+    if len(records) > limit or size > byte_limit:
+        raise UpsertTooManyRecordsException(len(records), size, limit, byte_limit)
 
 
 @action(schema.datastore_create(), help.datastore_create)

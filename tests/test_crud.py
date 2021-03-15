@@ -6,7 +6,8 @@ from ckanext.versioned_datastore.lib.datastore_utils import UpsertTooManyRecords
 from ckanext.versioned_datastore.logic.actions.crud import validate_records_size
 
 
-def test_validate_records_size():
+@pytest.fixture
+def records():
     records = []
     for i in range(100):
         records.append({
@@ -17,10 +18,21 @@ def test_validate_records_size():
             'field4': random.sample(range(5000), 4),
             'field5': random.choice(range(100000)),
         })
+    return records
 
+
+def test_validate_records_bytes(records):
     # this shouldn't raise an exception
-    validate_records_size(records, limit=100000000)
+    validate_records_size(records, limit=100, byte_limit=100000000)
 
-    # this should raise an exception
+    # this should raise an exception due to the bytes length
     with pytest.raises(UpsertTooManyRecordsException):
-        validate_records_size(records, limit=10)
+        validate_records_size(records, limit=100, byte_limit=10)
+
+    # this should raise an exception due to the records length
+    with pytest.raises(UpsertTooManyRecordsException):
+        validate_records_size(records, limit=10, byte_limit=100000000)
+
+    # this should raise an exception due to either of the limits
+    with pytest.raises(UpsertTooManyRecordsException):
+        validate_records_size(records, limit=0, byte_limit=0)

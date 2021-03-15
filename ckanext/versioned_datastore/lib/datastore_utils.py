@@ -178,18 +178,22 @@ class InvalidVersionException(toolkit.ValidationError):
 
 class UpsertTooManyRecordsException(toolkit.ValidationError):
 
-    def __init__(self, size: int, limit: int):
+    def __init__(self, size: int, byte_size: int, limit: int, byte_limit: int):
         self.size = size
+        self.byte_size = byte_size
         self.limit = limit
+        self.byte_limit = byte_limit
         super(UpsertTooManyRecordsException, self).__init__({
             'size': size,
             'limit': limit,
             'message': f'To avoid overloading our servers, we limit the size of the list of '
                        f'records that users can directly upload through the API. Because record '
-                       f'size can vary wildly we use the the number of bytes of the JSON '
-                       f'serialised records instead of the pure length of the array. This limit '
-                       f'is currently set to {limit} bytes and the size your upload was {size} '
-                       f'bytes. Please send your records in smaller chunks!',
+                       f'size can vary wildly we limit this in two ways: the number of records and '
+                       f'the number of bytes the records take up when JSON serialised. If either '
+                       f'of these limits is exceeded, this error is raised. The limits are '
+                       f'currently set to {limit} records or {byte_limit} bytes and the size your '
+                       f'upload was {size} records and {byte_size} bytes. Please send your '
+                       f'records in smaller chunks!',
             })
 
 
