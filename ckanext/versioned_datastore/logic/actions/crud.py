@@ -74,7 +74,8 @@ def datastore_upsert(resource_id, replace, context, original_data_dict, version=
     :return: information about the background job that is handling the ingestion
     '''
     # this comes through as junk if it's not removed before validating. This happens because the
-    # data dict is flattened during validation, but why this happens is unclear.
+    # data dict is flattened during validation and then the keys are compared to the schema and this
+    # process does not handle nested data at all so it junks the records :(
     records = original_data_dict.get('records', None)
 
     if is_resource_read_only(resource_id):
