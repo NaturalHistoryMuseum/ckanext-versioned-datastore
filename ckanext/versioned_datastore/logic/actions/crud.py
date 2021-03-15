@@ -1,5 +1,8 @@
-from ckan.plugins import toolkit
 from datetime import datetime
+from typing import List
+
+import ujson
+from ckan.plugins import toolkit
 from eevee.utils import to_timestamp
 
 from . import help
@@ -7,11 +10,26 @@ from .utils import action
 from .. import schema
 from ...lib import common
 from ...lib.datastore_utils import is_resource_read_only, is_ingestible, update_privacy, \
-    ReadOnlyResourceException, InvalidVersionException, is_datastore_resource
+    ReadOnlyResourceException, InvalidVersionException, is_datastore_resource, \
+    UpsertTooManyRecordsException
 from ...lib.importing import stats
 from ...lib.importing.indexing import DatastoreIndex
 from ...lib.importing.queuing import queue_index, queue_import, queue_deletion
 from ...lib.importing.utils import check_version_is_valid
+
+
+def validate_records_size(records: List[dict], limit: int = 10 * 1024 * 1024):
+    '''
+    Given a list of record dicts, computes the JSON serialised size and raises an
+    UpsertTooManyRecordsException if the size exceeds the given limit.
+
+    :param records: the list of records
+    :param limit: the size limit in bytes (defaults to 10MiB)
+    :return:
+    '''
+    size = len(ujson.dumps(records, ensure_ascii=False).encode('utf-8'))
+    if size > limit:
+        raise UpsertTooManyRecordsException(size, limit)
 
 
 @action(schema.datastore_create(), help.datastore_create)
@@ -68,6 +86,12 @@ def datastore_upsert(resource_id, replace, context, original_data_dict, version=
     # check that the version is valid
     if not check_version_is_valid(resource_id, version):
         raise InvalidVersionException('The new version must be newer than current version')
+
+    # apply a limit to the number of records that a user can send to the server to avoid using all
+    # the resources (this records list gets serialised into the queued import job object and
+    # therefore will end up in Redis)
+    if records:
+        validate_records_size(records)
 
     # get the current user
     user = toolkit.get_action('user_show')(context, {'id': context['user']})
@@ -163,7 +187,7 @@ def datastore_ensure_privacy(context, resource_id=None):
         while True:
             # iteratively retrieve all packages and ensure their resources
             packages = toolkit.get_action('current_package_list_with_resources')(context,
-                                                                                  package_data_dict)
+                                                                                 package_data_dict)
             if not packages:
                 # we've ensured all the packages that are available
                 break
