@@ -151,6 +151,9 @@ def download(request):
     :param request: the DownloadRequest object, see that for parameter details
     '''
     download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+    # make sure this download dir exists
+    if not os.path.exists(download_dir):
+        os.mkdir(download_dir)
     download_hash = request.generate_download_hash()
     existing_file = next(iglob(os.path.join(download_dir, f'*_{download_hash}.zip')), None)
     if existing_file is not None:
