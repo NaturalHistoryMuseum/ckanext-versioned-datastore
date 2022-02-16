@@ -46,6 +46,7 @@ setup(
         'elasticsearch>=6.0.0,<7.0.0',
         'elasticsearch-dsl>=6.0.0,<7.0.0',
         'jsonschema==3.0.0',
+        'pandas==1.4.1'
     ] + ['{0} @ {1}'.format(k, v) for k, v in dependencies.items()],
     dependency_links=list(dependencies.values()),
     entry_points= \

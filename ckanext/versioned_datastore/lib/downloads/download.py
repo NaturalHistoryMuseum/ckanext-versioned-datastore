@@ -21,6 +21,7 @@ from jinja2 import Template
 
 from .jsonl import jsonl_writer
 from .sv import sv_writer
+from .dwc import dwc_writer
 from .utils import calculate_field_counts
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
@@ -32,6 +33,7 @@ format_registry = {
     'csv': functools.partial(sv_writer, dialect='excel', extension='csv'),
     'tsv': functools.partial(sv_writer, dialect='excel-tab', extension='tsv'),
     'jsonl': jsonl_writer,
+    'dwc': dwc_writer
 }
 
 default_body = '''
