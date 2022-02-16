@@ -13,11 +13,22 @@ from .utils import NSMap, json_to_xml, get_setting
 
 
 class Archive(object):
-    def __init__(self, schema: Schema, request, target_dir, sub_dir=None):
+    def __init__(self, schema: Schema, request, target_dir, output_name=None):
+        '''
+        Produces one output file. Each archive contains a core .csv data file, one .csv file for
+        each specified extension, a metafile (meta.xml), and a resource metadata file (eml.xml).
+        :param schema: a Schema object representing the output data structure
+        :param request: the request object
+        :param target_dir: the root folder to save files into
+        :param output_name: only required if resources are to be separated into different files;
+                            usually this is the resource id
+        '''
         self.schema = schema
         self.dir = target_dir
         self.request = request
-        self.sub_dir = sub_dir
+        if request.separate_files and not output_name:
+            raise Exception('output_name must be specified if separate files are required.')
+        self.output_name = output_name or 'dwca'
         self._core_file = None
         self._core_writer = None
         self._ext_files = None
@@ -27,10 +38,13 @@ class Archive(object):
 
     @property
     def _uid(self):
+        '''
+        A unique identifier for this particular archive.
+        '''
         if self.single_resource:
             return self.request.resource_ids[0]
         elif self.request.separate_files:
-            return self.sub_dir
+            return self.output_name
         else:
             return self.request.query_hash
 
@@ -44,9 +58,20 @@ class Archive(object):
 
     @property
     def single_resource(self):
+        '''
+        If this download will only include data from a single resource with no filters, i.e. just
+        the whole resource.
+        '''
         return len(self.request.resource_ids) == 1 and self.request.query == {}
 
     def open(self, field_names, extension_map):
+        '''
+        Create the build dir, open the necessary files, and create csv writers. Does *not* write
+        the csv headers; this is done in self.initialise().
+        :param field_names: field names available in the data rows
+        :param extension_map: a map of field name to extension (see writer.py)
+        :return: self
+        '''
         self._extension_map = extension_map
         os.mkdir(self._build_dir)
         root_field_names = set([f.split('.')[0] for f in field_names])
@@ -72,6 +97,9 @@ class Archive(object):
         return self
 
     def close(self):
+        '''
+        Close any open files, build the metadata files, and zip everything up.
+        '''
         if self._core_file is None:
             # this might be called several times due to the defaultdict implementation in writer.py
             return
@@ -84,7 +112,7 @@ class Archive(object):
         with open(os.path.join(self._build_dir, 'eml.xml'), 'w') as f:
             eml_content = self.make_eml()
             f.write(eml_content)
-        shutil.make_archive(os.path.join(self.dir, self.sub_dir or 'dwca'), 'zip', self._build_dir)
+        shutil.make_archive(os.path.join(self.dir, self.output_name), 'zip', self._build_dir)
         shutil.rmtree(self._build_dir)
         self._core_file = None
         self._core_writer = None
@@ -92,24 +120,30 @@ class Archive(object):
         self._ext_writers = None
         self._extension_map = {}
 
-    def initialise(self, data):
+    def initialise(self, record):
         '''
         Only runs for the first row in the dataset. Checks that certain fields are the correct data
         type before writing the headers.
-        :param data:
-        :return:
+        :param record: a single row
         '''
         if self.rows_written > 0:
             return
         # check 'type' is right
         valid_types = ['StillImage', 'MovingImage', 'Sound', 'PhysicalObject', 'Event', 'Text']
-        if 'type' in data and data['type'] not in valid_types:
+        if 'type' in record and record['type'] not in valid_types:
             self._core_writer.fieldnames = [f for f in self._core_writer.fieldnames if f != 'type']
         self._core_writer.writeheader()
         for writer in self._ext_writers.values():
             writer.writeheader()
 
     def _extract_record(self, record, id_field):
+        '''
+        Transform the data in a single row into the required format. Separates extension fields
+        from core fields and filters out any fields that don't match the schema.
+        :param record: the row of data
+        :param id_field: the name of the current id field
+        :return: core row (dict), extension rows keyed on extension name (dict of lists of dicts)
+        '''
         core = {}
         ext = {}
 
@@ -140,6 +174,11 @@ class Archive(object):
         return core, ext
 
     def write_record(self, record, id_field='_id'):
+        '''
+        Transform the record then write it to csv.
+        :param record: the row of data
+        :param id_field: the name of the current id field
+        '''
         if self._core_file is None:
             # if this is None, the file is not open, and this is being called from the wrong place.
             raise Exception('File is not open.')
@@ -151,6 +190,10 @@ class Archive(object):
                 self._ext_writers[e].writerow(row)
 
     def make_meta(self):
+        '''
+        Create the xml text content of the metafile.
+        :return: xml string
+        '''
         nsmap = NSMap(xsi=XMLUrls.xsi,
                       xs=XMLUrls.xs)
         root = etree.Element('archive', nsmap=nsmap,
@@ -185,6 +228,12 @@ class Archive(object):
         return etree.tostring(root, pretty_print=True).decode()
 
     def make_eml(self):
+        '''
+        Create the xml text content of the resource metadata file. Tries to use some sensible
+        defaults and get information from other relevant plugins where available, but there's still
+        the potential for errors or silly data.
+        :return: xml string
+        '''
         # load some useful actions so we don't have to fetch them repeatedly
         resource_show = toolkit.get_action('resource_show')
         package_show = toolkit.get_action('package_show')
