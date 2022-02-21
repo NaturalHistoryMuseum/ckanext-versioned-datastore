@@ -25,20 +25,21 @@ def dwc_writer(request, target_dir, field_counts):
     :return: yields a write function
     '''
 
-    # load the extensions from the config, if any are defined. Ideally this could be specified or
-    # overridden at runtime, but for now it's all just in ckan.ini. Extensions are specified by
-    # name (as in urls.py).
+    # load the extensions, either from ckan.ini or from request args (request args take precedence).
+    # Extensions are specified by name (as in urls.py).
     schema_args = {}
     # there can only be one core extension
-    core_ext = toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name')
+    core_ext = request.format_args.get('core_extension_name',
+                                       toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name'))
     if core_ext is not None and core_ext.lower() in urls.core_extensions:
         core_ext_url = urls.core_extensions.get(core_ext.lower())
         schema_args['core_extension_url'] = core_ext_url
 
-    # there can be multiple non-core extensions, separated by commas
-    ext_names = [e.strip().lower() for e in
+    # there can be multiple non-core extensions, separated by commas in ckan.ini or supplied as a
+    # list in the request args
+    ext_names = request.format_args.get('extension_names', [e.strip().lower() for e in
                  toolkit.config.get('ckanext.versioned_datastore.dwc_extension_names', '').split(
-                     ',')]
+                     ',')])
     ext_urls = [urls.extensions.get(e) for e in ext_names if e in urls.extensions]
     if len(ext_urls) > 0:
         schema_args['extension_urls'] = ext_urls

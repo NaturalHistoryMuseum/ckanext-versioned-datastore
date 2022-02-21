@@ -317,7 +317,7 @@ class Archive(object):
                         toolkit.h.create_multisearch_citation_text(query_doi, html=False),
                         {'identifier': f'https://doi.org/{query_doi.doi}'})
 
-        if self.schema.core_extension and 'gbif' in self.schema.core_extension.location:
+        if self.schema.core_extension and self.schema.core_extension.location.base == GBIFUrls.base_url:
             dataset_metadata['keywordSet'].append({
                 'keyword': self.schema.row_type_name,
                 'keywordThesaurus': f'GBIF Dataset Type Vocabulary: {GBIFUrls.thesaurus}'
