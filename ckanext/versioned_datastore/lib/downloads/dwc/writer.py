@@ -30,7 +30,7 @@ def dwc_writer(request, target_dir, field_counts):
     # available are from GBIF, and they're specified by name (as in urls.py).
     schema_args = {}
     # there can only be one core extension
-    core_ext = toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name')
+    core_ext = toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name', '')
     core_ext_url = GBIFUrls.core_extensions.get(core_ext.lower())
     if core_ext_url:
         schema_args['core_extension_url'] = core_ext_url
