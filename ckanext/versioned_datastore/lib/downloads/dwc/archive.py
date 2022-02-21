@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import shutil
 from collections import OrderedDict
@@ -77,8 +78,9 @@ class Archive(object):
         root_field_names = set([f.split('.')[0] for f in field_names])
         all_ext_field_names = [item for sublist in extension_map.values() for item in sublist]
 
-        core_field_names = ['_id', 'datasetID', 'basisOfRecord'] + [f for f in root_field_names if
-                                                                    f not in all_ext_field_names and f in self.schema.props]
+        standard_fields = ['_id', 'datasetID', 'basisOfRecord', 'dynamicProperties']
+        core_field_names = standard_fields + [f for f in root_field_names if
+                                              f not in all_ext_field_names and f in self.schema.props]
         self._core_file = open(os.path.join(self._build_dir, self._core_file_name), 'w')
         self._core_writer = csv.DictWriter(self._core_file, core_field_names, dialect='unix')
 
@@ -89,7 +91,8 @@ class Archive(object):
             subfields = [f.split('.')[-1] for f in field_names if
                          f.split('.')[0] in extension_map_matches]
             potential_fields = self.schema.extension_props[e.name]
-            ext_field_names = ['_id'] + list(set([f for f in subfields if f in potential_fields]))
+            ext_field_names = ['_id'] + list(
+                set([f for f in subfields if f in potential_fields]))
             open_file = open(os.path.join(self._build_dir, f'{e.name.lower()}.csv'), 'w')
             self._ext_files[e.name] = open_file
             writer = csv.DictWriter(open_file, ext_field_names, dialect='unix')
@@ -146,6 +149,7 @@ class Archive(object):
         '''
         core = {}
         ext = {}
+        dynamic_properties = {}
 
         if id_field not in record:
             raise Exception(f'Record does not have ID field {id_field}')
@@ -157,8 +161,10 @@ class Archive(object):
                 ext_props = self._ext_writers[self._extension_map[k]].fieldnames
 
                 def _extract_ext(subdict):
-                    props = {ek: ev for ek, ev in subdict.items() if ek in ext_props}
-                    props['_id'] = record_id
+                    props = {'_id': record_id}
+                    for ek, ev in subdict.items():
+                        if ek in ext_props:
+                            props[ek] = ev
                     return props
 
                 if isinstance(v, list):
@@ -166,11 +172,15 @@ class Archive(object):
                 elif isinstance(v, dict):
                     ext_extracted = [_extract_ext(v)]
                 else:
-                    ext_extracted = [{k: v, '_id': record_id}]
+                    ext_extracted = [_extract_ext({k: v})]
                 ext[self._extension_map[k]] = ext_extracted
             else:
                 if k in self._core_writer.fieldnames:
                     core[k] = v
+                else:
+                    dynamic_properties[k] = v
+
+        core['dynamicProperties'] = json.dumps(dynamic_properties)
         return core, ext
 
     def write_record(self, record, id_field='_id'):
@@ -310,7 +320,8 @@ class Archive(object):
                     dataset_metadata['alternateIdentifier'] += ['doi:' + query_doi.doi]
                     dataset_metadata['distribution'][0]['online']['url'] = (
                         site_url + toolkit.url_for('query_doi.landing_page',
-                                                   data_centre=get_setting('ckanext.query_dois.prefix'),
+                                                   data_centre=get_setting(
+                                                       'ckanext.query_dois.prefix'),
                                                    identifier=query_doi.doi), {
                             'function': 'information'})
                     additional_metadata['metadata']['gbif']['citation'] = (
