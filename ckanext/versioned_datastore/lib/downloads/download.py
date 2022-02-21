@@ -77,7 +77,7 @@ def ensure_download_queue_exists():
 
 
 def queue_download(email_address, download_id, query_hash, query, query_version, search,
-                   resource_ids_and_versions, separate_files, file_format, ignore_empty_fields):
+                   resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
     '''
     Queues a job which when run will download the data for the resource.
 
@@ -85,7 +85,7 @@ def queue_download(email_address, download_id, query_hash, query, query_version,
     '''
     ensure_download_queue_exists()
     request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
-                              resource_ids_and_versions, separate_files, file_format,
+                              resource_ids_and_versions, separate_files, file_format, format_args,
                               ignore_empty_fields)
     return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request))
 
@@ -99,7 +99,7 @@ class DownloadRequest(object):
     '''
 
     def __init__(self, email_address, download_id, query_hash, query, query_version, search,
-                 resource_ids_and_versions, separate_files, file_format, ignore_empty_fields):
+                 resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
         self.email_address = email_address
         self.download_id = download_id
         self.query_hash = query_hash
@@ -109,6 +109,7 @@ class DownloadRequest(object):
         self.resource_ids_and_versions = resource_ids_and_versions
         self.separate_files = separate_files
         self.file_format = file_format
+        self.format_args = format_args
         self.ignore_empty_fields = ignore_empty_fields
 
     @property
@@ -134,6 +135,7 @@ class DownloadRequest(object):
             sorted(self.resource_ids_and_versions.items()),
             self.separate_files,
             self.file_format,
+            self.format_args,
             self.ignore_empty_fields,
         ]
         download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
@@ -186,6 +188,7 @@ def download(request):
             'resources': {},
             'separate_files': request.separate_files,
             'file_format': request.file_format,
+            'format_args': request.format_args,
             'ignore_empty_fields': request.ignore_empty_fields,
         }
         # calculate, per resource, the number of values for each field present in the search
