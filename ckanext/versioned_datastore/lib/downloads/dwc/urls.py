@@ -2,6 +2,11 @@ from dataclasses import dataclass
 
 
 @dataclass
+class SchemaUrl:
+    url: str
+    base: str
+
+
 class TDWGUrls:
     base_url = 'https://dwc.tdwg.org/xml'
     xmlns = 'http://rs.tdwg.org/dwc/text'
@@ -14,25 +19,28 @@ class TDWGUrls:
     metadata = 'http://rs.tdwg.org/dwc/text/tdwg_dwc_text.xsd'
 
 
-@dataclass
 class GBIFUrls:
     base_url = 'https://rs.gbif.org'
-    core_extensions = {
-        'occurrence': 'https://rs.gbif.org/core/dwc_occurrence_2020-07-15.xml',
-        'taxon': 'https://rs.gbif.org/core/dwc_taxon_2015-04-24.xml',
-        'event': 'https://rs.gbif.org/core/dwc_event_2016_06_21.xml'
-    }
-    extensions = {
-        'multimedia': 'https://rs.gbif.org/extension/gbif/1.0/multimedia.xml'
-    }
     eml = 'http://rs.gbif.org/schema/eml-gbif-profile/1.1/eml.xsd'
     thesaurus = 'http://rs.gbif.org/vocabulary/gbif/dataset_type.xml'
 
 
-@dataclass
 class XMLUrls:
     xsi = 'http://www.w3.org/2001/XMLSchema-instance'
     xs = 'http://www.w3.org/2001/XMLSchema'
     xml = 'http://www.w3.org/XML/1998/namespace'
     dc = 'http://purl.org/dc/terms'
     eml = 'eml://ecoinformatics.org/eml-2.1.1'
+
+
+core_extensions = {
+    'gbif_occurrence': SchemaUrl('https://rs.gbif.org/core/dwc_occurrence_2020-07-15.xml',
+                                 GBIFUrls.base_url),
+    'gbif_taxon': SchemaUrl('https://rs.gbif.org/core/dwc_taxon_2015-04-24.xml', GBIFUrls.base_url),
+    'gbif_event': SchemaUrl('https://rs.gbif.org/core/dwc_event_2016_06_21.xml', GBIFUrls.base_url)
+}
+
+extensions = {
+    'gbif_multimedia': SchemaUrl('https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
+                                 GBIFUrls.base_url)
+}

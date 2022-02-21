@@ -4,7 +4,7 @@ import os
 import pandas as pd
 
 from .schema_parts import Domain, Extension, Prop, PropCollection
-from .urls import TDWGUrls
+from .urls import TDWGUrls, SchemaUrl
 from .utils import load_schema
 
 
@@ -51,7 +51,7 @@ class Schema(object):
 
         if core_extension_url is not None:
             temp_props = {}
-            extension_schema = load_schema(core_extension_url)
+            extension_schema = load_schema(core_extension_url.url, core_extension_url.base)
             ce_props = extension_schema.findall('.//{*}property')
             for p in ce_props:
                 domain_name = p.attrib['group']
@@ -72,7 +72,7 @@ class Schema(object):
         extensions = []
         extension_props = {}
         for e in extension_urls:
-            extension_schema = load_schema(e)
+            extension_schema = load_schema(e.url, e.base)
             ext = Extension.create(e, extension_schema)
             extensions.append(ext)
             schema_props = extension_schema.findall('.//{*}property')

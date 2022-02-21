@@ -3,9 +3,9 @@ from collections import defaultdict
 
 from ckan.plugins import toolkit
 
+from . import urls
 from .archive import Archive
 from .schema import Schema
-from .urls import GBIFUrls
 from ..utils import filter_data_fields, get_fields
 
 
@@ -26,19 +26,20 @@ def dwc_writer(request, target_dir, field_counts):
     '''
 
     # load the extensions from the config, if any are defined. Ideally this could be specified or
-    # overridden at runtime, but for now it's all just in ckan.ini. Currently the only extensions
-    # available are from GBIF, and they're specified by name (as in urls.py).
+    # overridden at runtime, but for now it's all just in ckan.ini. Extensions are specified by
+    # name (as in urls.py).
     schema_args = {}
     # there can only be one core extension
-    core_ext = toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name', '')
-    core_ext_url = GBIFUrls.core_extensions.get(core_ext.lower())
-    if core_ext_url:
+    core_ext = toolkit.config.get('ckanext.versioned_datastore.dwc_core_extension_name')
+    if core_ext is not None and core_ext.lower() in urls.core_extensions:
+        core_ext_url = urls.core_extensions.get(core_ext.lower())
         schema_args['core_extension_url'] = core_ext_url
+
     # there can be multiple non-core extensions, separated by commas
     ext_names = [e.strip().lower() for e in
                  toolkit.config.get('ckanext.versioned_datastore.dwc_extension_names', '').split(
                      ',')]
-    ext_urls = [GBIFUrls.extensions.get(e) for e in ext_names if e in GBIFUrls.extensions]
+    ext_urls = [urls.extensions.get(e) for e in ext_names if e in urls.extensions]
     if len(ext_urls) > 0:
         schema_args['extension_urls'] = ext_urls
     schema_controller = Schema.load(
