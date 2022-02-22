@@ -295,7 +295,7 @@ class Archive(object):
             package = packages[0]
             dataset_metadata['title'] = resource['name']
             dataset_metadata['alternateIdentifier'] += self.request.resource_ids
-            dataset_metadata['pubDate'] = package.get('doi_date_published', resource.get('created'))
+            dataset_metadata['pubDate'] = package.get('metadata_modified', resource.get('created'))
             dataset_metadata['abstract'] = {'para': resource.get('description')}
             dataset_metadata['distribution'][0]['online']['url'] = (
                 site_url + toolkit.url_for('resource.read', id=package['id'],
