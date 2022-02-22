@@ -78,9 +78,9 @@ class Archive(object):
         root_field_names = set([f.split('.')[0] for f in field_names])
         all_ext_field_names = [item for sublist in extension_map.values() for item in sublist]
 
-        standard_fields = ['_id', 'datasetID', 'basisOfRecord', 'dynamicProperties']
-        core_field_names = standard_fields + [f for f in root_field_names if
-                                              f not in all_ext_field_names and f in self.schema.props]
+        standard_fields = ['datasetID', 'basisOfRecord', 'dynamicProperties']
+        dataset_fields = [f for f in root_field_names if f not in all_ext_field_names and f in self.schema.props]
+        core_field_names = ['_id'] + list(set(standard_fields + dataset_fields))
         self._core_file = open(os.path.join(self._build_dir, self._core_file_name), 'w')
         self._core_writer = csv.DictWriter(self._core_file, core_field_names, dialect='unix')
 
@@ -91,8 +91,7 @@ class Archive(object):
             subfields = [f.split('.')[-1] for f in field_names if
                          f.split('.')[0] in extension_map_matches]
             potential_fields = self.schema.extension_props[e.name]
-            ext_field_names = ['_id'] + list(
-                set([f for f in subfields if f in potential_fields]))
+            ext_field_names = ['_id'] + list(set([f for f in subfields if f in potential_fields]))
             open_file = open(os.path.join(self._build_dir, f'{e.name.lower()}.csv'), 'w')
             self._ext_files[e.name] = open_file
             writer = csv.DictWriter(open_file, ext_field_names, dialect='unix')
