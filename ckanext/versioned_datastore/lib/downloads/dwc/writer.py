@@ -40,16 +40,23 @@ def dwc_writer(request, target_dir, field_counts):
     ext_names = request.format_args.get('extension_names', [e.strip().lower() for e in
                  toolkit.config.get('ckanext.versioned_datastore.dwc_extension_names', '').split(
                      ',')])
-    ext_urls = [urls.extensions.get(e) for e in ext_names if e in urls.extensions]
+    # the fields used by the extension can also be overridden by request args
+    config_extension_map = request.format_args.get('extension_map', {})
+    ext_urls = []
+    for e in ext_names:
+        ext = urls.extensions.get(e)
+        if not ext:
+            continue
+        fields = config_extension_map.get(e)
+        if fields is not None and isinstance(fields, list):
+            ext.fields = fields
+        if ext.fields:  # no point in adding it if no fields are defined
+            ext_urls.append(ext)
+
     if len(ext_urls) > 0:
         schema_args['extension_urls'] = ext_urls
     schema_controller = Schema.load(
         toolkit.config.get('ckanext.versioned_datastore.dwc_schema_cache'), **schema_args)
-
-    # map field names to extension names; the field contains the data required for the extension.
-    # there may be a better way to define this dynamically but it's static for now
-    default_extension_map = {'associatedMedia': 'Multimedia'}
-    extension_map = {k: v for k, v in default_extension_map.items() if v.lower() in ext_names}
 
     if request.separate_files:
         # files will be opened lazily and stored in this dict using the resource ids as keys
@@ -57,8 +64,7 @@ def dwc_writer(request, target_dir, field_counts):
     else:
         all_field_names = get_fields(field_counts, request.ignore_empty_fields)
         # each 'Archive' contains multiple open files
-        open_file = Archive(schema_controller, request, target_dir).open(all_field_names,
-                                                                         extension_map)
+        open_file = Archive(schema_controller, request, target_dir).open(all_field_names)
         # ensure that any request to get the open file for a given resource returns this archive
         open_files = defaultdict(lambda: open_file)
 
@@ -68,7 +74,7 @@ def dwc_writer(request, target_dir, field_counts):
                 resource_field_names = get_fields(field_counts, request.ignore_empty_fields,
                                                   [resource_id])
                 archive = Archive(schema_controller, request, target_dir, resource_id).open(
-                    resource_field_names, extension_map)
+                    resource_field_names)
                 # lazily open the archive for this resource id
                 open_files[resource_id] = archive
             else:

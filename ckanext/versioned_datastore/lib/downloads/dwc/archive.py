@@ -34,7 +34,6 @@ class Archive(object):
         self._core_writer = None
         self._ext_files = None
         self._ext_writers = None
-        self._extension_map = {}
         self.rows_written = 0
 
     @property
@@ -65,21 +64,21 @@ class Archive(object):
         '''
         return len(self.request.resource_ids) == 1 and self.request.query == {}
 
-    def open(self, field_names, extension_map):
+    def open(self, field_names):
         '''
         Create the build dir, open the necessary files, and create csv writers. Does *not* write
         the csv headers; this is done in self.initialise().
         :param field_names: field names available in the data rows
-        :param extension_map: a map of field name to extension (see writer.py)
         :return: self
         '''
-        self._extension_map = extension_map
         os.mkdir(self._build_dir)
         root_field_names = set([f.split('.')[0] for f in field_names])
-        all_ext_field_names = [item for sublist in extension_map.values() for item in sublist]
+        all_ext_field_names = [item for ext in self.schema.extensions for item in
+                               ext.location.fields]
 
         standard_fields = ['datasetID', 'basisOfRecord', 'dynamicProperties']
-        dataset_fields = [f for f in root_field_names if f not in all_ext_field_names and f in self.schema.props]
+        dataset_fields = [f for f in root_field_names if
+                          f not in all_ext_field_names and f in self.schema.props]
         core_field_names = ['_id'] + list(set(standard_fields + dataset_fields))
         self._core_file = open(os.path.join(self._build_dir, self._core_file_name), 'w')
         self._core_writer = csv.DictWriter(self._core_file, core_field_names, dialect='unix')
@@ -87,9 +86,8 @@ class Archive(object):
         self._ext_files = {}
         self._ext_writers = {}
         for e in self.schema.extensions:
-            extension_map_matches = [k for k, v in extension_map.items() if v == e.name]
             subfields = [f.split('.')[-1] for f in field_names if
-                         f.split('.')[0] in extension_map_matches]
+                         f.split('.')[0] in e.location.fields]
             potential_fields = self.schema.extension_props[e.name]
             ext_field_names = ['_id'] + list(set([f for f in subfields if f in potential_fields]))
             open_file = open(os.path.join(self._build_dir, f'{e.name.lower()}.csv'), 'w')
@@ -120,7 +118,6 @@ class Archive(object):
         self._core_writer = None
         self._ext_files = None
         self._ext_writers = None
-        self._extension_map = {}
 
     def initialise(self, record):
         '''
@@ -155,9 +152,14 @@ class Archive(object):
         record_id = record.get(id_field)
         core['_id'] = record_id
 
+        extension_map = {}
+        for e in self.schema.extensions:
+            for f in e.location.fields:
+                extension_map[f] = e.name
+
         for k, v in record.items():
-            if k in self._extension_map:
-                ext_props = self._ext_writers[self._extension_map[k]].fieldnames
+            if k in extension_map:
+                ext_props = self._ext_writers[extension_map[k]].fieldnames
 
                 def _extract_ext(subdict):
                     props = {'_id': record_id}
@@ -172,7 +174,7 @@ class Archive(object):
                     ext_extracted = [_extract_ext(v)]
                 else:
                     ext_extracted = [_extract_ext({k: v})]
-                ext[self._extension_map[k]] = ext_extracted
+                ext[extension_map[k]] = ext_extracted
             else:
                 if k in self._core_writer.fieldnames:
                     core[k] = v

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class SchemaUrl:
     url: str
     base: str
+    fields: list = None
 
 
 class TDWGUrls:
@@ -42,5 +43,5 @@ core_extensions = {
 
 extensions = {
     'gbif_multimedia': SchemaUrl('https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
-                                 GBIFUrls.base_url)
+                                 GBIFUrls.base_url, ['associatedMedia'])
 }
