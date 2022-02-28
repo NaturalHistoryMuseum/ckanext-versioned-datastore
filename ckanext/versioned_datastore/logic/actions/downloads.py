@@ -19,7 +19,7 @@ from ...model.downloads import DatastoreDownload
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
 def datastore_queue_download(email_address, context, query=None, query_version=None, version=None,
                              resource_ids=None, resource_ids_and_versions=None, separate_files=True,
-                             format='csv', ignore_empty_fields=True):
+                             format='csv', format_args=None, ignore_empty_fields=True):
     '''
     Starts a download of the data found by the given query parameters. This download is created
     asynchronously using the rq background job queue and a link to the results is emailed to the
@@ -44,6 +44,7 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
                            results in one file. The default is True - split results into a file per
                            resource.
     :param format: the format to download the data in. The default is csv.
+    :param format_args: additional arguments for specific formats, e.g. extension names for DwC-A.
     :param ignore_empty_fields: whether to ignore fields with no data in them in the result set
                                 and not write them into the download file(s). Default: True.
     :return: a dict containing info about the background job that is doing the downloading and the
@@ -86,9 +87,12 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     search = translate_query(query, query_version)
     query_hash = hash_query(query, query_version)
 
+    format_args = format_args or {}
+
     options = {
         'separate_files': separate_files,
         'format': format,
+        'format_args': format_args,
         'ignore_empty_fields': ignore_empty_fields
     }
     download = DatastoreDownload(query_hash=query_hash, query=query, query_version=query_version,
@@ -98,7 +102,7 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
 
     job = queue_download(email_address, download.id, query_hash, query, query_version,
                          search.to_dict(), rounded_resource_ids_and_versions, separate_files,
-                         format, ignore_empty_fields)
+                         format, format_args, ignore_empty_fields)
 
     return {
         'queued_at': job.enqueued_at.isoformat(),

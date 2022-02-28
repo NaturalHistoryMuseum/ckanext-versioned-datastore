@@ -227,6 +227,7 @@ def datastore_queue_download():
         'separate_files': [ignore_missing, boolean_validator],
         'format': [ignore_missing, str],
         'ignore_empty_fields': [ignore_missing, boolean_validator],
+        'format_args': [ignore_missing, json_validator]
     }
 
 
