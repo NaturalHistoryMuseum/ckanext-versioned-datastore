@@ -34,7 +34,8 @@ def queue(function, request):
     :return: the queued job
     '''
     ensure_importing_queue_exists()
-    return toolkit.enqueue_job(function, args=[request], queue='importing', title=str(request))
+    return toolkit.enqueue_job(function, args=[request], queue='importing', title=str(request),
+                               rq_kwargs={'timeout': 600})
 
 
 def queue_import(resource, version, replace, records=None, api_key=None):
