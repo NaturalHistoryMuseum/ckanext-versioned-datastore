@@ -5,16 +5,16 @@ from .importing import import_resource_data, ResourceImportRequest, ResourceDele
 from .indexing import index_resource, ResourceIndexRequest
 
 
-def queue(function, request):
+def queue(task, request):
     '''
-    Generic queueing function which ensures our special queue is setup first.
+    Generic queueing function which ensures we set common attributes when queueing the task.
 
-    :param function: the function to queue
+    :param task: the function to queue
     :param request: the queue request object
     :return: the queued job
     '''
     # pass a timeout of 1 hour (3600 seconds)
-    return toolkit.enqueue_job(function, args=[request], queue='importing', title=str(request),
+    return toolkit.enqueue_job(task, args=[request], queue='importing', title=str(request),
                                rq_kwargs={'timeout': 3600})
 
 
