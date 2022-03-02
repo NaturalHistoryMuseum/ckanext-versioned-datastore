@@ -6,22 +6,20 @@ import shutil
 import socket
 import tempfile
 import zipfile
-from datetime import datetime
-from glob import iglob
-from traceback import format_exception_only
-
-import rq
 from ckan import model
-from ckan.lib import jobs, mailer
+from ckan.lib import mailer
 from ckan.plugins import toolkit, PluginImplementations
+from datetime import datetime
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
+from glob import iglob
 from jinja2 import Template
+from traceback import format_exception_only
 
+from .dwc import dwc_writer
 from .jsonl import jsonl_writer
 from .sv import sv_writer
-from .dwc import dwc_writer
 from .utils import calculate_field_counts
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
@@ -58,36 +56,20 @@ available at <a href="{{ download_url }}">here</a>.</p>
 '''.strip()
 
 
-def ensure_download_queue_exists():
-    '''
-    This is a hack to get around the lack of rq Queue kwarg exposure from ckanext-rq. The default
-    timeout for queues is 180 seconds in rq which is not long enough for our download tasks but the
-    timeout parameter hasn't been exposed. This code creates a new queue in the ckanext-rq cache so
-    that when enqueuing new jobs it is used rather than a default one. Once this bug has been fixed
-    in ckan/ckanext-rq this code will be removed.
-
-    The queue is only added if not already in existence so this is safe to call multiple times.
-    '''
-    name = jobs.add_queue_name_prefix('download')
-    if name not in jobs._queues:
-        # set the timeout to 12 hours
-        queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
-        # add the queue to the queue cache
-        jobs._queues[name] = queue
-
-
 def queue_download(email_address, download_id, query_hash, query, query_version, search,
-                   resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
+                   resource_ids_and_versions, separate_files, file_format, format_args,
+                   ignore_empty_fields):
     '''
     Queues a job which when run will download the data for the resource.
 
     :return: the queued job
     '''
-    ensure_download_queue_exists()
     request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
                               resource_ids_and_versions, separate_files, file_format, format_args,
                               ignore_empty_fields)
-    return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request))
+    # pass a timeout of 1 hour (3600 seconds)
+    return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request),
+                               rq_kwargs={'timeout': 3600})
 
 
 class DownloadRequest(object):
@@ -99,7 +81,8 @@ class DownloadRequest(object):
     '''
 
     def __init__(self, email_address, download_id, query_hash, query, query_version, search,
-                 resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
+                 resource_ids_and_versions, separate_files, file_format, format_args,
+                 ignore_empty_fields):
         self.email_address = email_address
         self.download_id = download_id
         self.query_hash = query_hash

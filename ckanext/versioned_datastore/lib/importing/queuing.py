@@ -1,5 +1,3 @@
-import rq
-from ckan.lib import jobs
 from ckan.plugins import toolkit
 
 from .importing import import_resource_data, ResourceImportRequest, ResourceDeletionRequest, \
@@ -7,34 +5,17 @@ from .importing import import_resource_data, ResourceImportRequest, ResourceDele
 from .indexing import index_resource, ResourceIndexRequest
 
 
-def ensure_importing_queue_exists():
+def queue(task, request):
     '''
-    This is a hack to get around the lack of rq Queue kwarg exposure from ckanext-rq. The default
-    timeout for queues is 180 seconds in rq which is not long enough for our import tasks but the
-    timeout parameter hasn't been exposed. This code creates a new queue in the ckanext-rq cache so
-    that when enqueuing new jobs it is used rather than a default one. Once this bug has been fixed
-    in ckan/ckanext-rq this code will be removed.
+    Generic queueing function which ensures we set common attributes when queueing the task.
 
-    The queue is only added if not already in existance so this is safe to call multiple times.
-    '''
-    name = jobs.add_queue_name_prefix('importing')
-    if name not in jobs._queues:
-        # set the timeout to 12 hours
-        queue = rq.Queue(name, default_timeout=60 * 60 * 12, connection=jobs._connect())
-        # add the queue to the queue cache
-        jobs._queues[name] = queue
-
-
-def queue(function, request):
-    '''
-    Generic queueing function which ensures our special queue is setup first.
-
-    :param function: the function to queue
+    :param task: the function to queue
     :param request: the queue request object
     :return: the queued job
     '''
-    ensure_importing_queue_exists()
-    return toolkit.enqueue_job(function, args=[request], queue='importing', title=str(request))
+    # pass a timeout of 1 hour (3600 seconds)
+    return toolkit.enqueue_job(task, args=[request], queue='importing', title=str(request),
+                               rq_kwargs={'timeout': 3600})
 
 
 def queue_import(resource, version, replace, records=None, api_key=None):
