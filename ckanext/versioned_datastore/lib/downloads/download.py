@@ -68,9 +68,9 @@ def queue_download(email_address, download_id, query_hash, query, query_version,
     request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
                               resource_ids_and_versions, separate_files, file_format, format_args,
                               ignore_empty_fields)
-    # pass a timeout of 10 mins (600 seconds)
+    # pass a timeout of 1 hour (3600 seconds)
     return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request),
-                               rq_kwargs={'timeout': 600})
+                               rq_kwargs={'timeout': 3600})
 
 
 class DownloadRequest(object):
