@@ -59,7 +59,8 @@ available at <a href="{{ download_url }}">here</a>.</p>
 
 
 def queue_download(email_address, download_id, query_hash, query, query_version, search,
-                   resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
+                   resource_ids_and_versions, separate_files, file_format, format_args,
+                   ignore_empty_fields):
     '''
     Queues a job which when run will download the data for the resource.
 
@@ -82,7 +83,8 @@ class DownloadRequest(object):
     '''
 
     def __init__(self, email_address, download_id, query_hash, query, query_version, search,
-                 resource_ids_and_versions, separate_files, file_format, format_args, ignore_empty_fields):
+                 resource_ids_and_versions, separate_files, file_format, format_args,
+                 ignore_empty_fields):
         self.email_address = email_address
         self.download_id = download_id
         self.query_hash = query_hash
