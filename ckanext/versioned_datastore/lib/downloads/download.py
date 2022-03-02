@@ -6,22 +6,20 @@ import shutil
 import socket
 import tempfile
 import zipfile
-from datetime import datetime
-from glob import iglob
-from traceback import format_exception_only
-
-import rq
 from ckan import model
-from ckan.lib import jobs, mailer
+from ckan.lib import mailer
 from ckan.plugins import toolkit, PluginImplementations
+from datetime import datetime
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
+from glob import iglob
 from jinja2 import Template
+from traceback import format_exception_only
 
+from .dwc import dwc_writer
 from .jsonl import jsonl_writer
 from .sv import sv_writer
-from .dwc import dwc_writer
 from .utils import calculate_field_counts
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
