@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from eevee.search import create_version_query
-from elasticsearch_dsl import Search, MultiSearch
+from elasticsearch_dsl import Search, A
 
 from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
 
@@ -53,10 +53,7 @@ def calculate_field_counts(request, es_client):
         # have to then go and see which fields are present in the search at this version
         mapping = es_client.indices.get_mapping(index_name)[index_name]
 
-        # we're going to do a multisearch to find out the number of records a value for each field
-        # from the mapping
-        search = MultiSearch(using=es_client, index=index_name)
-        base_search = Search.from_dict(request.search) \
+        search = Search.from_dict(request.search) \
             .index(index_name) \
             .using(es_client) \
             .extra(size=0) \
@@ -67,11 +64,12 @@ def calculate_field_counts(request, es_client):
         for field in fields:
             # add a search which finds the documents that have a value for the given field at the
             # right version
-            search = search.add(base_search.filter('exists', field=prefix_field(field)))
+            agg = A('value_count', field=prefix_field(field))
+            search.aggs.bucket(field, agg)
 
-        responses = search.execute()
-        for field, response in zip(fields, responses):
-            field_counts[resource_id][field] = response.hits.total
+        response = search.execute()
+        for field in fields:
+            field_counts[resource_id][field] = response.aggregations[field].value
 
     return field_counts
 
