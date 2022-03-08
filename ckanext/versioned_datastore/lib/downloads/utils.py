@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from eevee.search import create_version_query
-from elasticsearch_dsl import Search, MultiSearch, A
+from elasticsearch_dsl import Search, A
 
 from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
 
