@@ -180,12 +180,12 @@ This action runs through all resources (or handles a specific resource if a reso
 
 1. `initdb`: ensure the tables needed by this plugin exist.
     ```bash
-    paster --plugin=ckanext-versioned-datastore vds initdb -c $CONFIG_FILE
+    ckan -c $CONFIG_FILE initdb
     ```
 
 2. `reindex`: reindex either a specific resource or all resources.
     ```bash
-    paster --plugin=ckanext-versioned-datastore vds reindex $OPTIONAL_RESOURCE_ID -c $CONFIG_FILE
+    ckan -c $CONFIG_FILE reindex $OPTIONAL_RESOURCE_ID
     ```
 
 ## Interfaces
