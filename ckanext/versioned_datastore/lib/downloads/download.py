@@ -163,7 +163,7 @@ def download(request):
     try:
         es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True, sniffer_timeout=60,
                                              sniff_on_connection_fail=True, sniff_timeout=10,
-                                             http_compress=False)
+                                             http_compress=False, timeout=30)
 
         # this manifest will be written out as JSON and put in the download zip
         manifest = {
