@@ -21,6 +21,7 @@ from .dwc import dwc_writer
 from .jsonl import jsonl_writer
 from .sv import sv_writer
 from .utils import calculate_field_counts
+from .transform import Transform
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
 from ...interfaces import IVersionedDatastoreDownloads
@@ -165,6 +166,9 @@ def download(request):
                                              sniff_on_connection_fail=True, sniff_timeout=10,
                                              http_compress=False, timeout=30)
 
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            request = plugin.download_before_write(request)
+
         # this manifest will be written out as JSON and put in the download zip
         manifest = {
             'download_id': request.download_id,
@@ -182,9 +186,8 @@ def download(request):
         context = {'ignore_auth': True}
         # keep track of the resource record counts
         resource_counts = {}
-
-        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-            request = plugin.download_before_write(request)
+        # config options for data transformations
+        transform_config = request.format_args.get('transform', {})
 
         with writer_function(request, target_dir, field_counts) as writer:
             # handle each resource individually. We could search across all resources at the same
@@ -201,6 +204,7 @@ def download(request):
                 total_records = 0
                 for hit in search.scan():
                     data = hit.data.to_dict()
+                    data = Transform.transform_data(data, transform_config)
                     resource_id = trim_index_name(hit.meta.index)
                     # call the write function returned by our format specific writer context manager
                     writer(hit, data, resource_id)
