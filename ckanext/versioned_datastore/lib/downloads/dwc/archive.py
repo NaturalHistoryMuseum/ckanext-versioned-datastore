@@ -129,6 +129,7 @@ class Archive(object):
             return
         # check 'type' is right
         valid_types = ['StillImage', 'MovingImage', 'Sound', 'PhysicalObject', 'Event', 'Text']
+        self._core_writer.fieldnames = sorted(self._core_writer.fieldnames)
         if 'type' in record and record['type'] not in valid_types:
             self._core_writer.fieldnames = [f for f in self._core_writer.fieldnames if f != 'type']
         self._core_writer.writeheader()
