@@ -61,6 +61,8 @@ def calculate_field_counts(request, es_client):
 
         # get all the fields names and use dot notation for nested fields
         fields = ['.'.join(parts) for parts, _config in iter_data_fields(mapping)]
+        if request.include_fields:
+            fields = ['_id'] + [f for f in fields if f in request.include_fields or f.split('.')[0] in request.include_fields]
         for field in fields:
             # add a search which finds the documents that have a value for the given field at the
             # right version

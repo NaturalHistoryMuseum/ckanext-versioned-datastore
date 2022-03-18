@@ -19,7 +19,8 @@ from ...model.downloads import DatastoreDownload
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
 def datastore_queue_download(email_address, context, query=None, query_version=None, version=None,
                              resource_ids=None, resource_ids_and_versions=None, separate_files=True,
-                             format='csv', format_args=None, ignore_empty_fields=True):
+                             format='csv', format_args=None, ignore_empty_fields=True,
+                             transform=None, include_fields=None):
     '''
     Starts a download of the data found by the given query parameters. This download is created
     asynchronously using the rq background job queue and a link to the results is emailed to the
@@ -47,6 +48,9 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     :param format_args: additional arguments for specific formats, e.g. extension names for DwC-A.
     :param ignore_empty_fields: whether to ignore fields with no data in them in the result set
                                 and not write them into the download file(s). Default: True.
+    :param transform: data transformation configuration.
+    :param include_fields: manually specify the fields to include in the download. If None or an
+                           empty list, fields are included as normal. Default: None.
     :return: a dict containing info about the background job that is doing the downloading and the
              download id
     '''
@@ -88,12 +92,16 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     query_hash = hash_query(query, query_version)
 
     format_args = format_args or {}
+    transform = transform or {}
+    include_fields = None if include_fields is None or len(include_fields) == 0 else include_fields
 
     options = {
         'separate_files': separate_files,
         'format': format,
         'format_args': format_args,
-        'ignore_empty_fields': ignore_empty_fields
+        'ignore_empty_fields': ignore_empty_fields,
+        'transform': transform,
+        'include_fields': include_fields
     }
     download = DatastoreDownload(query_hash=query_hash, query=query, query_version=query_version,
                                  resource_ids_and_versions=rounded_resource_ids_and_versions,
@@ -102,7 +110,7 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
 
     job = queue_download(email_address, download.id, query_hash, query, query_version,
                          search.to_dict(), rounded_resource_ids_and_versions, separate_files,
-                         format, format_args, ignore_empty_fields)
+                         format, format_args, ignore_empty_fields, transform, include_fields)
 
     return {
         'queued_at': job.enqueued_at.isoformat(),

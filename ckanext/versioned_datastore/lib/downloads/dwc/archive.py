@@ -76,7 +76,9 @@ class Archive(object):
         all_ext_field_names = [item for ext in self.schema.extensions for item in
                                ext.location.fields]
 
-        standard_fields = ['datasetID', 'basisOfRecord', 'dynamicProperties']
+        standard_fields = ['datasetID', 'basisOfRecord']
+        if self.request.include_fields is None:
+            standard_fields.append('dynamicProperties')
         dataset_fields = [f for f in root_field_names if
                           f not in all_ext_field_names and f in self.schema.props]
         core_field_names = ['_id'] + list(set(standard_fields + dataset_fields))
@@ -146,6 +148,7 @@ class Archive(object):
         '''
         core = {}
         ext = {}
+        use_dynamic_properties = self.request.include_fields is None
         dynamic_properties = {}
 
         if id_field not in record:
@@ -179,10 +182,11 @@ class Archive(object):
             else:
                 if k in self._core_writer.fieldnames:
                     core[k] = v
-                else:
+                elif use_dynamic_properties:
                     dynamic_properties[k] = v
 
-        core['dynamicProperties'] = json.dumps(dynamic_properties)
+        if use_dynamic_properties:
+            core['dynamicProperties'] = json.dumps(dynamic_properties)
         return core, ext
 
     def write_record(self, record, id_field='_id'):
