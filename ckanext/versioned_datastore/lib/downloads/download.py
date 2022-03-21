@@ -183,6 +183,9 @@ def download(request):
         # keep track of the resource record counts
         resource_counts = {}
 
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            request = plugin.download_before_write(request)
+
         with writer_function(request, target_dir, field_counts) as writer:
             # handle each resource individually. We could search across all resources at the same
             # but we don't need to seeing as we're not doing sorting here. By handling each index
