@@ -12,7 +12,7 @@ RUN pip3 install --upgrade pip
 # fixes this https://github.com/ckan/ckan/issues/5570
 RUN pip3 install pytest-ckan
 
-# install the dependencies
+# install the base + test dependencies
 RUN pip3 install -e .[test]
 
 # this entrypoint ensures our service dependencies (postgresql, solr and redis) are running before
