@@ -1,10 +1,15 @@
+import codecs
+import csv
 import json
 import os
-
-import pandas as pd
+import requests
+from contextlib import closing
+from functional import seq
+from toolz import dissoc
+from whatever import that
 
 from .schema_parts import Domain, Extension, Prop, PropCollection
-from .urls import TDWGUrls, SchemaUrl
+from .urls import TDWGUrls
 from .utils import load_schema
 
 
@@ -23,28 +28,32 @@ class Schema(object):
     def regenerate(cls, core_extension_url=None, extension_urls=None):
         extension_urls = extension_urls or []
 
-        df = pd.read_csv(TDWGUrls.terms_csv)
-        # ignore deprecated terms
-        df = df[df.status == 'recommended']
-        # drop some columns we don't need
-        df = df.drop(['issued', 'status', 'replaces'], axis=1)
+        # download the TDWG DwC terms list in csv format and parse it
+        with closing(requests.get(TDWGUrls.terms_csv, stream=True)) as r:
+            terms = list(csv.DictReader(codecs.iterdecode(r.iter_lines(), 'utf-8')))
 
-        domains_df = df[df.rdf_type == 'http://www.w3.org/2000/01/rdf-schema#Class']
-        domains_df = domains_df.drop(['organized_in', 'rdf_type'], axis=1)
-        domains = [Domain.create(d) for _, d in domains_df.iterrows()]
+        domains = seq(terms) \
+            .filter(that['status'] == 'recommended') \
+            .map(lambda term: dissoc(term, 'issued', 'status', 'replaces')) \
+            .filter(that['rdf_type'] == 'http://www.w3.org/2000/01/rdf-schema#Class') \
+            .map(lambda term: dissoc(term, 'organized_in', 'rdf_type')) \
+            .map(Domain.create) \
+            .to_list()
 
-        props_df = df[df.rdf_type == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property']
-        props_df = props_df.drop(['rdf_type'], axis=1)
+        props = seq(terms) \
+            .filter(that['rdf_type'] == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property') \
+            .map(lambda term: dissoc(term, 'rdf_type')) \
+            .to_list()
 
         # supplementary property information is in the core schema
         core_xsd = load_schema(TDWGUrls.core, base_url=TDWGUrls.base_url)
         core_props = {}
-        for _, p in props_df.iterrows():
-            xml_element = core_xsd.find(f'.//{{*}}element[@name="{p.term_localName}"]')
+        for p in props:
+            xml_element = core_xsd.find(f'.//{{*}}element[@name="{p["term_localName"]}"]')
             # (hopefully) temporary fix for https://github.com/tdwg/dwc/issues/403
-            if xml_element is None and p.term_localName == 'degreeOfEstablishment':
+            if xml_element is None and p["term_localName"] == 'degreeOfEstablishment':
                 xml_element = core_xsd.find('.//{*}element[@name="degreeOfEstablishmentMeans"]')
-            elif xml_element is None and p.term_localName == 'waterBody':
+            elif xml_element is None and p["term_localName"] == 'waterBody':
                 xml_element = core_xsd.find('.//{*}element[@name="waterbody"]')
             prop = Prop.create(p, xml_element, flags=[p['flags']])
             core_props[prop.name] = prop

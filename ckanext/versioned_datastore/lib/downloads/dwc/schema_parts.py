@@ -57,9 +57,9 @@ class Prop(object):
         if row_source is None and xml_element_source is None:
             raise Exception('At least one source required.')
         if row_source is not None:
-            self.name = row_source.term_localName
-            self.iri = row_source.term_iri
-            self.domain = row_source.organized_in
+            self.name = row_source['term_localName']
+            self.iri = row_source['term_iri']
+            self.domain = row_source['organized_in']
         else:
             self.name = xml_element_source.attrib['name']
             self.iri = xml_element_source.attrib.get('qualName')
@@ -154,10 +154,10 @@ class Domain(object):
         return next(p for p in self.props(schema) if p.is_identifier)
 
     @classmethod
-    def create(cls, source):
-        name = source.term_localName
-        label = source.label
-        iri = source.term_iri
+    def create(cls, source: dict):
+        name = source['term_localName']
+        label = source['label']
+        iri = source['term_iri']
         return cls(name, label, iri)
 
     def serialise(self):
