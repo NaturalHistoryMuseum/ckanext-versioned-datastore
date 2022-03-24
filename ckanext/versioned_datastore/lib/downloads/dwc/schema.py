@@ -1,7 +1,7 @@
 import json
 import os
 
-import pandas as pd
+# import pandas as pd
 
 from .schema_parts import Domain, Extension, Prop, PropCollection
 from .urls import TDWGUrls, SchemaUrl
