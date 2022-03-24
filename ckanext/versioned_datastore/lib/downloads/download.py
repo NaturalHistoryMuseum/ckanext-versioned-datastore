@@ -21,6 +21,7 @@ from .dwc import dwc_writer
 from .jsonl import jsonl_writer
 from .sv import sv_writer
 from .utils import calculate_field_counts
+from .transform import Transform
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
 from ...interfaces import IVersionedDatastoreDownloads
@@ -58,7 +59,7 @@ available at <a href="{{ download_url }}">here</a>.</p>
 
 def queue_download(email_address, download_id, query_hash, query, query_version, search,
                    resource_ids_and_versions, separate_files, file_format, format_args,
-                   ignore_empty_fields):
+                   ignore_empty_fields, transform):
     '''
     Queues a job which when run will download the data for the resource.
 
@@ -66,7 +67,7 @@ def queue_download(email_address, download_id, query_hash, query, query_version,
     '''
     request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
                               resource_ids_and_versions, separate_files, file_format, format_args,
-                              ignore_empty_fields)
+                              ignore_empty_fields, transform)
     # pass a timeout of 1 hour (3600 seconds)
     return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request),
                                rq_kwargs={'timeout': 3600})
@@ -82,7 +83,7 @@ class DownloadRequest(object):
 
     def __init__(self, email_address, download_id, query_hash, query, query_version, search,
                  resource_ids_and_versions, separate_files, file_format, format_args,
-                 ignore_empty_fields):
+                 ignore_empty_fields, transform):
         self.email_address = email_address
         self.download_id = download_id
         self.query_hash = query_hash
@@ -94,6 +95,7 @@ class DownloadRequest(object):
         self.file_format = file_format
         self.format_args = format_args
         self.ignore_empty_fields = ignore_empty_fields
+        self.transform = transform
 
     @property
     def resource_ids(self):
@@ -120,6 +122,7 @@ class DownloadRequest(object):
             self.file_format,
             self.format_args,
             self.ignore_empty_fields,
+            self.transform,
         ]
         download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
         return download_hash.hexdigest()
@@ -165,6 +168,9 @@ def download(request):
                                              sniff_on_connection_fail=True, sniff_timeout=10,
                                              http_compress=False, timeout=30)
 
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            request = plugin.download_before_write(request)
+
         # this manifest will be written out as JSON and put in the download zip
         manifest = {
             'download_id': request.download_id,
@@ -173,6 +179,7 @@ def download(request):
             'file_format': request.file_format,
             'format_args': request.format_args,
             'ignore_empty_fields': request.ignore_empty_fields,
+            'transform': request.transform,
         }
         # calculate, per resource, the number of values for each field present in the search
         field_counts = calculate_field_counts(request, es_client)
@@ -198,6 +205,7 @@ def download(request):
                 total_records = 0
                 for hit in search.scan():
                     data = hit.data.to_dict()
+                    data = Transform.transform_data(data, request.transform)
                     resource_id = trim_index_name(hit.meta.index)
                     # call the write function returned by our format specific writer context manager
                     writer(hit, data, resource_id)

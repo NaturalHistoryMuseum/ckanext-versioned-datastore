@@ -246,3 +246,12 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :return: context templating dict
         '''
         return context
+
+    def download_before_write(self, request):
+        '''
+        Hook allowing other extensions to access and modify the request before the search is run
+        and the download file is created.
+        :param request: the DownloadRequest object
+        :return: the request
+        '''
+        return request

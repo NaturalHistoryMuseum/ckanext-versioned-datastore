@@ -80,10 +80,10 @@ def dwc_writer(request, target_dir, field_counts):
             else:
                 archive = open_files[resource_id]
 
-            archive.initialise(data)
-
             if request.ignore_empty_fields:
                 data = filter_data_fields(data, field_counts[resource_id])
+
+            archive.initialise(data)
 
             # always add the resource ID
             data['datasetID'] = resource_id
