@@ -21,4 +21,4 @@ jobs:
       - name: Run coveralls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: docker-compose run ckan -e GITHUB_TOKEN coveralls --service=github
+        run: docker-compose run -e GITHUB_TOKEN ckan coveralls --service=github
