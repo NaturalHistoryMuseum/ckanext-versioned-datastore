@@ -110,7 +110,6 @@ def datastore_upsert():
         'resource_id': [not_empty, str, resource_id_exists],
         'replace': [not_missing, boolean_validator],
         'version': [ignore_missing, int_validator],
-        # 'records': [ignore_missing, list_of_dicts_validator],
     }
 
 
