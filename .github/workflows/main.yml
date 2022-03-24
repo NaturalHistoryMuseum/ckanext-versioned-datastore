@@ -16,9 +16,4 @@ jobs:
         run: docker-compose build
 
       - name: Run tests
-        run: docker-compose up ckan
-
-      - name: Run coveralls
-        run: coveralls --service=github
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: docker-compose run -e GITHUB_TOKEN=${GITHUB_TOKEN} ckan "pytest --cov=ckanext.versioned_datastore --ckan-ini=test.ini tests && coveralls --service=github"
