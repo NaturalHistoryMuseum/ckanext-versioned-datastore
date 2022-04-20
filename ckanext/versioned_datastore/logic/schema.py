@@ -229,6 +229,7 @@ def datastore_queue_download():
         'ignore_empty_fields': [ignore_missing, boolean_validator],
         'format_args': [ignore_missing, json_validator],
         'transform': [ignore_missing, json_validator],
+        'slug_or_doi': [ignore_missing, str]
     }
 
 
