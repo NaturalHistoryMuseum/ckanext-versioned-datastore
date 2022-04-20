@@ -20,6 +20,7 @@ from traceback import format_exception_only
 from .dwc import dwc_writer
 from .jsonl import jsonl_writer
 from .sv import sv_writer
+from .xlsx import xlsx_writer
 from .utils import calculate_field_counts
 from .transform import Transform
 from .. import common
@@ -32,7 +33,8 @@ format_registry = {
     'csv': functools.partial(sv_writer, dialect='excel', extension='csv'),
     'tsv': functools.partial(sv_writer, dialect='excel-tab', extension='tsv'),
     'jsonl': jsonl_writer,
-    'dwc': dwc_writer
+    'dwc': dwc_writer,
+    'xlsx': xlsx_writer,
 }
 
 default_body = '''
