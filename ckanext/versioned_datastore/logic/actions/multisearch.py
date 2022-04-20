@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import datetime
 
 import jsonschema
-from ckan.plugins import toolkit, PluginImplementations
+from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
 from eevee.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch
 
@@ -206,14 +206,31 @@ def datastore_resolve_slug(slug):
     :param slug: the slug
     :return: the query parameters and the creation time in a dict
     '''
-    found_slug = resolve_slug(slug)
-    if found_slug is None:
-        raise toolkit.ValidationError('Slug not found')
+    # try resolving the slug first
+    resolved = resolve_slug(slug)
+    if resolved:
+        result = {k: getattr(resolved, k) for k in ('query', 'query_version', 'version',
+                                                    'resource_ids', 'resource_ids_and_versions')}
+        result['created'] = resolved.created.isoformat()
+        return result
 
-    result = {k: getattr(found_slug, k) for k in ('query', 'query_version', 'version',
-                                                  'resource_ids', 'resource_ids_and_versions')}
-    result['created'] = found_slug.created.isoformat()
-    return result
+    # then check if it's a query DOI
+    if plugin_loaded('query_dois'):
+        from ckanext.query_dois.model import QueryDOI
+        from ckan import model
+        resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
+        if resolved:
+            return {
+                'query': resolved.query,
+                'query_version': resolved.query_version,
+                'version': resolved.requested_version,
+                'resource_ids': list(resolved.resources_and_versions.keys()),
+                'resource_ids_and_versions': resolved.resources_and_versions,
+                'created': resolved.timestamp.isoformat()
+            }
+
+    # if both slug and DOI have failed
+    raise toolkit.ValidationError('Slug not found')
 
 
 @action(schema.datastore_field_autocomplete(), help.datastore_field_autocomplete,
