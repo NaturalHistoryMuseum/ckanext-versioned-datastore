@@ -82,12 +82,13 @@ def xlsx_writer(request, target_dir, field_counts):
             if request.ignore_empty_fields:
                 data = filter_data_fields(data, field_counts[resource_id])
 
+            row = flatten_dict(data)
+
             if not request.separate_files:
                 # if the data is being written into one file we need to indicate which resource the
                 # data came from, this is how we do that
-                data['Source resource ID'] = resource_id
+                row['Source resource ID'] = resource_id
 
-            row = flatten_dict(data)
             workbooks[resource_id].add(row)
 
         yield write
