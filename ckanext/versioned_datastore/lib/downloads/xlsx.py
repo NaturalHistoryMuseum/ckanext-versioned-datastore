@@ -43,12 +43,13 @@ class WorkbookWithFields:
 
     def save(self, path: Path):
         '''
-        Write the workbook to disk. This can only be called once (see write only workbook mode).
+        Write the workbook to disk. This can only be called once (see write only workbook mode) and
+        close the workbook.
 
         :param path: the path to write the workbook to
-        :return:
         '''
         self.workbook.save(path)
+        self.workbook.close()
 
 
 @contextlib.contextmanager
