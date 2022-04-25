@@ -20,7 +20,7 @@ from ...model.downloads import DatastoreDownload
 def datastore_queue_download(email_address, context, query=None, query_version=None, version=None,
                              resource_ids=None, resource_ids_and_versions=None, separate_files=True,
                              format='csv', format_args=None, ignore_empty_fields=True,
-                             transform=None):
+                             transform=None, slug_or_doi=None):
     '''
     Starts a download of the data found by the given query parameters. This download is created
     asynchronously using the rq background job queue and a link to the results is emailed to the
@@ -49,9 +49,23 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     :param ignore_empty_fields: whether to ignore fields with no data in them in the result set
                                 and not write them into the download file(s). Default: True.
     :param transform: data transformation configuration.
+    :param slug_or_doi: use instead of query, query_version, resource_ids, and resource_ids_and_versions;
+                        retrieves these parameters from a saved query via a slug or a doi
     :return: a dict containing info about the background job that is doing the downloading and the
              download id
     '''
+
+    if slug_or_doi:
+        try:
+            saved_query = toolkit.get_action('datastore_resolve_slug')(context, {'slug': slug_or_doi})
+            query = saved_query.get('query')
+            query_version = saved_query.get('query_version')
+            resource_ids = saved_query.get('resource_ids')
+            resource_ids_and_versions = saved_query.get('resource_ids_and_versions')
+        except toolkit.ValidationError:
+            # if the slug doesn't resolve, continue as normal
+            pass
+
     if resource_ids_and_versions is None:
         resource_ids_and_versions = {}
     else:

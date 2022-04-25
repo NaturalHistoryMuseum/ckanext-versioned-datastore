@@ -19,8 +19,7 @@ services:
       - ./tests:/srv/app/src/ckanext-versioned-datastore/tests
 
   solr:
-    build:
-      context: https://github.com/okfn/docker-ckan.git#:solr
+    image: ckan/ckan-solr:2.9
     logging:
       driver: none
 
