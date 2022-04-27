@@ -1,4 +1,5 @@
 import json
+import re
 
 from ckan.plugins import toolkit
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
@@ -75,6 +76,18 @@ def list_validator(value, context):
         return value
     else:
         raise toolkit.Invalid('Value must be a list')
+
+
+def url_safe(value, context):
+    '''
+    Checks if the value is safe to be included in a URL as a slug.
+    :param value: the value to check
+    :param context: the context in which to check
+    '''
+    if not re.match('^[A-Za-z0-9-_]+$', value):
+        raise toolkit.Invalid('Only a-z, 0-9, hyphens (-) and underscores (_) are valid characters')
+    else:
+        return value
 
 
 def datastore_search():
@@ -255,4 +268,11 @@ def datastore_hash_query():
 def datastore_is_datastore_resource():
     return {
         'resource_id': [not_missing, not_empty, resource_id_exists]
+    }
+
+
+def datastore_edit_slug():
+    return {
+        'current_slug': [str, not_missing, not_empty],
+        'new_reserved_slug': [str, not_missing, not_empty, url_safe]
     }

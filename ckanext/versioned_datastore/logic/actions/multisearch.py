@@ -371,3 +371,15 @@ def datastore_hash_query(query=None, query_version=None):
         raise toolkit.ValidationError(e.message)
 
     return hash_query(query, query_version)
+
+
+@action(schema.datastore_edit_slug(), help.datastore_edit_slug, toolkit.side_effect_free)
+def datastore_edit_slug(context, current_slug, new_reserved_slug):
+    slug = resolve_slug(current_slug)
+    if slug is None:
+        raise toolkit.Invalid(f'The slug {current_slug} does not exist')
+    if slug.reserved_pretty_slug and not context['auth_user_obj'].sysadmin:
+        raise toolkit.NotAuthorized('Only sysadmins can replace existing reserved slugs.')
+    slug.reserved_pretty_slug=new_reserved_slug.lower()
+    slug.commit()
+    return slug.as_dict()
