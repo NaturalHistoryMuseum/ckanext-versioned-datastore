@@ -195,6 +195,7 @@ def datastore_create_slug(context, query=None, query_version=None, version=None,
     return {
         'slug': slug.get_slug_string(),
         'is_new': is_new,
+        'is_reserved': slug.reserved_pretty_slug == slug.get_slug_string()
     }
 
 
