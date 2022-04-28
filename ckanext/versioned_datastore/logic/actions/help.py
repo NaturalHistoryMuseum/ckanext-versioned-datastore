@@ -718,3 +718,19 @@ Params:
 The result of this action is a dictionary with the following keys:
 :rtype: an integer count
 '''
+
+datastore_edit_slug = '''
+Add or modify the reserved slug for a query. Reserved slugs can only be replaced by sysadmins, but
+if one has not been added yet for a query, any logged-in user can supply it.
+
+Params:
+
+:param current_slug: the slug currently referencing the search (reserved or non-reserved)
+:type current_slug: str
+:param new_reserved_slug: the string to use as the new reserved slug
+:type new_reserved_slug: str
+
+Returns:
+
+:rtype: bool
+'''
