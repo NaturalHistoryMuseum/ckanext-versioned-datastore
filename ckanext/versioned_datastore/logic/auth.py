@@ -143,3 +143,9 @@ def datastore_get_latest_query_schema_version(context, data_dict):
 def datastore_count(context, data_dict):
     # allow access to everyone
     return {'success': True}
+
+
+@toolkit.auth_disallow_anonymous_access
+def datastore_edit_slug(context, data_dict):
+    # only allow logged-in users
+    return {'success': True}

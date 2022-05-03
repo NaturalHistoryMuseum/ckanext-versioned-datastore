@@ -67,6 +67,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             'datastore_is_datastore_resource': auth.datastore_hash_query,
             'datastore_get_latest_query_schema_version':
                 auth.datastore_get_latest_query_schema_version,
+            'datastore_edit_slug': auth.datastore_edit_slug,
         }
 
     # ITemplateHelpers
