@@ -2,11 +2,11 @@ import logging
 from contextlib import suppress
 from datetime import datetime
 
-from eevee.utils import to_timestamp
-
 from ckan import model
 from ckan.model import DomainObjectOperation
 from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
+from eevee.utils import to_timestamp
+
 from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
@@ -68,6 +68,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             'datastore_get_latest_query_schema_version':
                 auth.datastore_get_latest_query_schema_version,
             'datastore_edit_slug': auth.datastore_edit_slug,
+            'datastore_value_autocomplete': auth.datastore_value_autocomplete,
         }
 
     # ITemplateHelpers
