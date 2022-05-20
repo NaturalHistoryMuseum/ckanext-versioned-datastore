@@ -4,7 +4,7 @@ from datetime import datetime
 import jsonschema
 from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
 from eevee.utils import to_timestamp
-from elasticsearch_dsl import MultiSearch
+from elasticsearch_dsl import MultiSearch, A
 
 from . import help
 from .utils import action, Timer
@@ -12,15 +12,15 @@ from .. import schema
 from ...interfaces import IVersionedDatastore
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fields, \
-    trim_index_name
+    trim_index_name, prefix_field
 from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields, \
     get_mappings
+from ...lib.query.query_log import log_query
 from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
     validate_query, translate_query, hash_query
 from ...lib.query.slugs import create_slug, resolve_slug
 from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
     determine_version_filter, calculate_after, find_searched_resources
-from ...lib.query.query_log import log_query
 
 
 @action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
@@ -352,6 +352,92 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
         return select_fields(all_fields, search, size)
 
 
+@action(schema.datastore_value_autocomplete(), help.datastore_value_autocomplete,
+        toolkit.side_effect_free)
+def datastore_value_autocomplete(context, field, prefix, query=None, query_version=None,
+                                 version=None, resource_ids=None, resource_ids_and_versions=None,
+                                 size=20, after=None):
+    '''
+    Returns a list of values in alphabetical order from the given field that start with the given
+    prefix. The values have to be from the provided resource ids and be from documents that match
+    the given query. The after parameter can be used to get the next set of values providing
+    pagination. The resulting list is limited to a maximum size of 20 values.
+
+    :param context: the context dict from the action call
+    :param field: the field to get the values from
+    :param prefix: the prefix value to search with (this can be missing/blank to just return the
+                   first values)
+    :param query: the query
+    :param query_version: the query schema version
+    :param version: the version to search at
+    :param resource_ids: the resource ids to search in
+    :param resource_ids_and_versions: a dict of resource ids -> versions to search at
+    :param size: the number of values to return
+    :param after: the after value to use (provides pagination)
+    :return: a list of values that match the given prefix
+    '''
+    # provide some more complex defaults for some parameters if necessary
+    if query is None:
+        query = {}
+    if query_version is None:
+        query_version = get_latest_query_version()
+    # limit the size so that it is between 1 and 20
+    size = max(1, min(size, 20))
+
+    try:
+        # validate and translate the query into an elasticsearch-dsl Search object
+        validate_query(query, query_version)
+        search = translate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    # figure out which resources we're searching
+    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
+                                                                       resource_ids_and_versions)
+    if not resource_ids:
+        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+
+    # add the version filter necessary given the parameters and the resources we're searching
+    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    search = search.filter(version_filter)
+
+    # only add the prefix filter to the search if one is provided
+    if prefix:
+        search = search.filter('prefix', **{prefix_field(field): prefix})
+
+    # we don't need any results so set the size to 0
+    search = search.extra(size=0)
+
+    # modify the search so that it has the aggregation required to get the autocompletion results
+    search.aggs.bucket('field_values', 'composite', size=size,
+                       sources={field: A('terms', field=prefix_field(field), order='asc')})
+    # if there's an after included, add it into the aggregation
+    if after:
+        search.aggs['field_values'].after = {field: after}
+
+    # add the resource indexes we're searching on
+    search = search.index([prefix_resource(resource_id) for resource_id in resource_ids])
+
+    # create a multisearch for this one query - this ensures there aren't any issues with the length
+    # of the URL as the index list is passed as a part of the body
+    multisearch = MultiSearch(using=common.ES_CLIENT).add(search)
+
+    # run the search and get the only result from the search results list
+    result = next(iter(multisearch.execute()))
+
+    # get the results we're interested in
+    agg_result = result.aggs.to_dict()['field_values']
+    # return a dict of results, but only include the after details if there are any to include
+    response = {
+        'values': [bucket['key'][field] for bucket in agg_result['buckets']],
+    }
+    if 'after_key' in agg_result:
+        response['after'] = agg_result['after_key'][field]
+    if skipped_resource_ids:
+        result['skipped_resources'] = skipped_resource_ids
+    return response
+
+
 @action(schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free)
 def datastore_hash_query(query=None, query_version=None):
     '''
@@ -381,6 +467,6 @@ def datastore_edit_slug(context, current_slug, new_reserved_slug):
         raise toolkit.Invalid(f'The slug {current_slug} does not exist')
     if slug.reserved_pretty_slug and not context['auth_user_obj'].sysadmin:
         raise toolkit.NotAuthorized('Only sysadmins can replace existing reserved slugs.')
-    slug.reserved_pretty_slug=new_reserved_slug.lower()
+    slug.reserved_pretty_slug = new_reserved_slug.lower()
     slug.commit()
     return slug.as_dict()
