@@ -98,6 +98,12 @@ def datastore_field_autocomplete(context, data_dict):
 
 
 @toolkit.auth_allow_anonymous_access
+def datastore_value_autocomplete(context, data_dict):
+    # allow access to everyone
+    return {'success': True}
+
+
+@toolkit.auth_allow_anonymous_access
 def datastore_create_slug(context, data_dict):
     # allow access to everyone
     return {'success': True}

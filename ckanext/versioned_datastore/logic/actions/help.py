@@ -558,6 +558,74 @@ The result of this action is a dictionary with the following keys:
 :type count: int
 '''
 
+datastore_value_autocomplete = '''
+Finds values in the given field, from the given resources, which start with the given prefix and
+returns up to {size} of them in a list. The values are sorted in alphabetical order.
+
+Params:
+
+:param field: the name of the field to autocomplete
+:type field: str
+:param prefix: the value to use as the prefix search, can be missing or blank
+:type prefix: str
+:param query: the search JSON
+:type query: dict
+:param version: version to search at, if not provided the current version of the data is
+               searched
+:type version: int, number of milliseconds (not seconds!) since UNIX epoch
+:param resource_ids_and_versions: a dict of resource ids and the versions to search them at. If
+                                  this is present it's values are prioritised over the version
+                                  and resource_ids parameters.
+:type resource_ids_and_versions: dict of strings -> ints (number of milliseconds (not seconds!)
+                                 since UNIX epoch)
+:param query_version: the query language version (for example v1.0.0)
+:type query_version: string
+:param resource_ids: a list of resource ids to search. If no resources ids are specified (either
+                     because the parameter is missing or because an empty list is passed) then
+                     all resources in the datastore that the user can access are searched. Any
+                     resources that the user cannot access or that aren't datastore resources
+                     are skipped. If this means that no resources are available from the
+                     provided list then a ValidationError is raised.
+:type resource_ids: a list of strings
+:param after: provides pagination. By passing a previous result set's after value, the next
+              page's results can be found. If not provided then the first page is retrieved
+:type after: a list
+:param size: the number of records to return in the search result. If not provided then the
+             default value of 20 is used. This value must be between 1 and 20 and will be capped at
+             which ever end as necessary if it is beyond these bounds
+:type size: int
+
+**Results:**
+
+The result of this action is a dictionary with the following keys:
+
+:rtype: A dict with the following keys
+:param total: number of total matching records
+:type total: int
+:param records: list of matching results as dicts. Each dict will contain a "data" key which
+                holds the record data, and a "resource" key which holds the resource id the
+                record belongs to.
+:type records: list of dicts
+:param after: the next page's search_after value which can be passed back in the "after"
+              parameter. This value will always be included if there were results otherwise None
+              is returned. A value will also always be returned even if this page is the last.
+:type after: a list or None
+:param top_resources: if requested, the top 10 resources and the number of records matched in
+                      them by the query
+:type top_resources: list of dicts
+:param skipped_resources: a list of the resources from the requested resource_ids parameter that
+                          were not searched. This list is only populated if a the resource ids
+                          paramater is passed, otherwise it will be an empty list. The resources
+                          in this list will have been skipped for one of two reasons: either the
+                          user doesn't have access to the requested resource or the requested
+                          resource isn't a datastore resource.
+:type skipped_resources: a list of strings
+:param timings: dict of events and how long they took as part of the response processing. This is
+                only included in the response if the timings parameter is True
+:type timings: dict
+
+'''
+
 datastore_queue_download = '''
 Queues a task to generate a downloadable zip containing the data produced by the given query
 and then sends a link for the zip to the provided email address.

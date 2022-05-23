@@ -206,6 +206,20 @@ def datastore_field_autocomplete():
     }
 
 
+def datastore_value_autocomplete():
+    return {
+        'field': [not_empty, str],
+        'prefix': [ignore_missing, str],
+        'query': [ignore_missing, json_validator],
+        'version': [ignore_missing, int_validator],
+        'query_version': [ignore_missing, str],
+        'resource_ids': [ignore_missing, list_of_strings()],
+        'after': [ignore_missing, str],
+        'size': [ignore_missing, int_validator],
+        'resource_ids_and_versions': [ignore_missing, json_validator],
+    }
+
+
 def datastore_create_slug():
     return {
         'query': [ignore_missing, json_validator],
