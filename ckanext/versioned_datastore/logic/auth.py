@@ -76,6 +76,12 @@ def datastore_field_autocomplete(context, data_dict):
 
 
 @auth(anon=True)
+def datastore_value_autocomplete(context, data_dict):
+    # allow access to everyone
+    return {'success': True}
+
+
+@auth(anon=True)
 def datastore_create_slug(context, data_dict):
     # allow access to everyone
     return {'success': True}
@@ -125,5 +131,5 @@ def datastore_count(context, data_dict):
 
 @auth()
 def datastore_edit_slug(context, data_dict):
-    # allow access to everyone
+    # only allows logged-in users
     return {'success': True}
