@@ -3,7 +3,8 @@ import re
 
 from ckan.plugins import toolkit
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
-from ckantools.validators import list_validator, list_of_strings, list_of_dicts_validator, object_validator
+from ckantools.validators import list_validator, list_of_strings, object_validator
+from .arg_objects import QueryArgs, DerivativeArgs, ServerArgs, NotifierArgs
 
 # grab all the validator functions upfront
 boolean_validator = toolkit.get_validator('boolean_validator')
@@ -183,6 +184,10 @@ def datastore_count():
 
 def datastore_queue_download():
     return {
+        'query': [not_missing, object_validator(QueryArgs)],
+        'file': [not_missing, object_validator(DerivativeArgs)],  # called 'file' instead of derivative to make its purpose clearer to the end user
+        'server': [ignore_missing, object_validator(ServerArgs)],
+        'notifier': [ignore_missing, object_validator(NotifierArgs)]
     }
 
 
