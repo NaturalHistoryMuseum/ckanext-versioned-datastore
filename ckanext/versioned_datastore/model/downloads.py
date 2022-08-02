@@ -24,7 +24,8 @@ datastore_downloads_core_files_table = Table(
     Column('resource_ids_and_versions', JSONB, nullable=False),
     Column('created', DateTime, nullable=False, default=datetime.utcnow),
     Column('total', BigInteger, nullable=True),
-    Column('resource_totals', JSONB, nullable=True)
+    Column('resource_totals', JSONB, nullable=True),
+    Column('filename', UnicodeText, nullable=True)
 )
 
 # describes derived files generated from the core Parquet files
@@ -38,7 +39,8 @@ datastore_downloads_derivative_files_table = Table(
     Column('download_hash', UnicodeText, nullable=False, index=True),
     Column('created', DateTime, nullable=False, default=datetime.utcnow),
     Column('format', UnicodeText, nullable=False),
-    Column('options', JSONB, nullable=True)
+    Column('options', JSONB, nullable=True),
+    Column('filename', UnicodeText, nullable=True)
 )
 
 datastore_downloads_requests_table = Table(
@@ -67,6 +69,7 @@ class CoreFileRecord(DomainObject):
     created: datetime
     total: int
     resource_totals: dict
+    filename: str
     derivatives: list
     requests: list
 
@@ -83,6 +86,10 @@ class CoreFileRecord(DomainObject):
     def get_by_hash(cls, query_hash):
         return Session.query(cls).filter(cls.query_hash == query_hash).one_or_none()
 
+    @classmethod
+    def get_by_filename(cls, filename):
+        return Session.query(cls).filter(cls.filename == filename).one_or_none()
+
 
 class DerivativeFileRecord(DomainObject):
     '''
@@ -95,6 +102,7 @@ class DerivativeFileRecord(DomainObject):
     created: datetime
     format: str
     options: dict
+    filename: str
     core_record: CoreFileRecord
     requests: list
 
@@ -110,6 +118,10 @@ class DerivativeFileRecord(DomainObject):
     @classmethod
     def get_by_hash(cls, download_hash):
         return Session.query(cls).filter(cls.download_hash == download_hash).one_or_none()
+
+    @classmethod
+    def get_by_filename(cls, filename):
+        return Session.query(cls).filter(cls.filename == filename).one_or_none()
 
 
 class DownloadRequest(DomainObject):
