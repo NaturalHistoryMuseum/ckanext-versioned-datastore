@@ -8,6 +8,7 @@ from ..query.utils import get_available_datastore_resources
 from .. import common
 from ..datastore_utils import prefix_resource
 from ...logic.actions.meta.arg_objects import QueryArgs
+import hashlib
 
 
 class Query(object):
@@ -74,8 +75,14 @@ class Query(object):
 
         return cls(query, query_version, rounded_resource_ids_and_versions)
 
+    @property
     def hash(self):
-        return hash_query(self.query, self.query_version)
+        to_hash = [
+            hash_query(self.query, self.query_version),
+            sorted(self.resource_ids_and_versions.items())
+        ]
+        download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
+        return download_hash.hexdigest()
 
     def validate(self):
         return validate_query(self.query, self.query_version)
