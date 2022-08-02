@@ -1,2 +1,3 @@
+from .csv import CsvDerivativeGenerator
 
-derivatives = []
+derivatives = [CsvDerivativeGenerator]

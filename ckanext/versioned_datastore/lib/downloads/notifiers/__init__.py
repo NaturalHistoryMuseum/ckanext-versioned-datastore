@@ -1,2 +1,4 @@
+from .email import EmailNotifier
 
-notifiers = []
+
+notifiers = [EmailNotifier]

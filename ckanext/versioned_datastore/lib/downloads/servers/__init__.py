@@ -1,2 +1,3 @@
+from .direct import DirectFileServer
 
-servers = []
+servers = [DirectFileServer]
