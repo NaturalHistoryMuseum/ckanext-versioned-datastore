@@ -46,6 +46,10 @@ class DerivativeArgs(BaseArgs):
         'transform': [ignore_missing, json_validator]
     }
 
+    defaults = {
+        'format_args': {}
+    }
+
 
 class ServerArgs(BaseArgs):
     type: str
@@ -56,6 +60,11 @@ class ServerArgs(BaseArgs):
         'type_args': [ignore_missing, json_validator]
     }
 
+    defaults = {
+        'type': 'direct',
+        'type_args': {}
+    }
+
 
 class NotifierArgs(BaseArgs):
     type: str
@@ -64,4 +73,9 @@ class NotifierArgs(BaseArgs):
     fields = {
         'type': [not_missing, str],
         'type_args': [ignore_missing, json_validator]
+    }
+
+    defaults = {
+        'type': 'email',
+        'type_args': {}
     }
