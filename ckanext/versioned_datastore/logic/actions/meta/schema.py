@@ -180,20 +180,9 @@ def datastore_count():
         'version': [ignore_missing, int_validator]
     }
 
+
 def datastore_queue_download():
     return {
-        'email_address': [not_missing, not_empty, email_validator],
-        'query': [ignore_missing, json_validator],
-        'version': [ignore_missing, int_validator],
-        'resource_ids_and_versions': [ignore_missing, json_validator],
-        'query_version': [ignore_missing, str],
-        'resource_ids': [ignore_missing, list_of_strings()],
-        'separate_files': [ignore_missing, boolean_validator],
-        'format': [ignore_missing, str],
-        'ignore_empty_fields': [ignore_missing, boolean_validator],
-        'format_args': [ignore_missing, json_validator],
-        'transform': [ignore_missing, json_validator],
-        'slug_or_doi': [ignore_missing, str]
     }
 
 
