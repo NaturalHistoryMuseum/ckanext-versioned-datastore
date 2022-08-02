@@ -11,7 +11,7 @@ from ...logic.actions.meta.arg_objects import QueryArgs
 
 
 class Query(object):
-    def __init__(self, query, query_version, resource_ids_and_versions, transform=None):
+    def __init__(self, query, query_version, resource_ids_and_versions):
         self.query = query
         self.query_version = query_version
         self.resource_ids_and_versions = resource_ids_and_versions
