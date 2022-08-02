@@ -247,11 +247,36 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         '''
         return context
 
-    def download_before_write(self, request):
+    def download_derivative_generators(self, registered_derivatives=None):
         '''
-        Hook allowing other extensions to access and modify the request before the search is run
-        and the download file is created.
-        :param request: the DownloadRequest object
-        :return: the request
+        Extend or modify the list of derivative generators.
+        :param registered_derivatives: a dict of existing derivative generator classes, returned from previously loaded plugins
+        :return: a dict of loaded derivative generator classes, keyed on the name used to specify them in download requests
         '''
-        return request
+        return registered_derivatives or {}
+
+    def download_file_servers(self, registered_servers=None):
+        '''
+        Extend or modify the list of file servers.
+        :param registered_servers: a dict of existing file server classes, returned from previously loaded plugins
+        :return: a dict of loaded file server classes, keyed on the name used to specify them in download requests
+        '''
+        return registered_servers or {}
+
+    def download_notifiers(self, registered_notifiers=None):
+        '''
+        Extend or modify the list of download notifiers.
+        :param registered_notifiers: a dict of existing notifier classes, returned from previously loaded plugins
+        :return: a dict of loaded notifier classes, keyed on the name used to specify them in download requests
+        '''
+        return registered_notifiers or {}
+
+    def download_data_transformations(self, registered_transformations=None):
+        '''
+        Extend or modify the list of data transformations.
+        :param registered_transformations: a dict of existing data transformations, returned from
+                                           previously loaded plugins
+        :return: a dict of loaded transformations, keyed on the name used to specify them in
+                 download requests
+        '''
+        return registered_transformations or {}
