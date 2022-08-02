@@ -7,9 +7,8 @@ from eevee.utils import to_timestamp
 from elasticsearch import RequestError
 from elasticsearch_dsl import A, Search
 
-from . import help
-from .utils import action
-from .. import schema
+from .meta import help, schema
+from ckantools.decorators import action
 from ...interfaces import IVersionedDatastore
 from ...lib.basic_query.search import create_search
 from ...lib.basic_query.utils import run_search, get_fields, format_facets

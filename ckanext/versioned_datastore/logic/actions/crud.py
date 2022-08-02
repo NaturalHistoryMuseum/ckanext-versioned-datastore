@@ -2,9 +2,8 @@ from ckan.plugins import toolkit
 from datetime import datetime
 from eevee.utils import to_timestamp
 
-from . import help
-from .utils import action
-from .. import schema
+from .meta import help, schema
+from ckantools.decorators import action
 from ...lib import common
 from ...lib.datastore_utils import is_resource_read_only, is_ingestible, update_privacy, \
     ReadOnlyResourceException, InvalidVersionException, is_datastore_resource

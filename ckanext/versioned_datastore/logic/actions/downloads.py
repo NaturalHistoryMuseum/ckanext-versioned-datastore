@@ -1,12 +1,10 @@
 from datetime import datetime
 
-from ckan import model
 from ckan.plugins import toolkit
 from eevee.utils import to_timestamp
 
-from . import help
-from .utils import action
-from .. import schema
+from .meta import help, schema
+from ckantools.decorators import action
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource
 from ...lib.downloads.download import queue_download
