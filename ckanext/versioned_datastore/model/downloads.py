@@ -6,10 +6,7 @@ from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime, Foreign
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, backref
 
-state_complete = 'complete'
-state_failed = 'failed'
-state_processing = 'processing'
-state_zipping = 'zipping'
+# this one is outside DownloadRequest so we can use it as a default in the table def
 state_initial = 'initiated'
 
 # describes the core (Parquet) files from which the output derivatives (e.g. CSV, DwC-A) are
@@ -136,6 +133,14 @@ class DownloadRequest(DomainObject):
     derivative_id: str
     derivative_record: DerivativeFileRecord
     core_record: CoreFileRecord
+
+    state_initial = state_initial
+    state_complete = 'complete'
+    state_failed = 'failed'
+    state_packaging = 'zipping'
+    state_derivative_gen = 'gen_derivative'
+    state_core_gen = 'gen_core'
+    state_retrieving = 'retrieving'
 
     @classmethod
     def get(cls, request_id):
