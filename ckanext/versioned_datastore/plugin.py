@@ -16,7 +16,7 @@ from .lib.query.schema import register_schema
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .logic import auth
 from .logic.actions import basic_search, crud, downloads, extras, multisearch
-from .logic.actions.utils import create_actions
+from ckantools.loaders import create_actions, create_auth
 
 log = logging.getLogger(__name__)
 
@@ -43,33 +43,7 @@ class VersionedSearchPlugin(SingletonPlugin):
 
     # IAuthFunctions
     def get_auth_functions(self):
-        return {
-            'datastore_create': auth.datastore_create,
-            'datastore_upsert': auth.datastore_upsert,
-            'datastore_delete': auth.datastore_delete,
-            'datastore_search': auth.datastore_search,
-            'datastore_get_record_versions': auth.datastore_get_record_versions,
-            'datastore_get_resource_versions': auth.datastore_get_resource_versions,
-            'datastore_autocomplete': auth.datastore_autocomplete,
-            'datastore_reindex': auth.datastore_reindex,
-            'datastore_query_extent': auth.datastore_query_extent,
-            'datastore_get_rounded_version': auth.datastore_get_rounded_version,
-            'datastore_search_raw': auth.datastore_search_raw,
-            'datastore_ensure_privacy': auth.datastore_ensure_privacy,
-            'datastore_count': auth.datastore_count,
-            'datastore_multisearch': auth.datastore_multisearch,
-            'datastore_field_autocomplete': auth.datastore_field_autocomplete,
-            'datastore_create_slug': auth.datastore_create_slug,
-            'datastore_resolve_slug': auth.datastore_resolve_slug,
-            'datastore_queue_download': auth.datastore_queue_download,
-            'datastore_guess_fields': auth.datastore_guess_fields,
-            'datastore_hash_query': auth.datastore_hash_query,
-            'datastore_is_datastore_resource': auth.datastore_hash_query,
-            'datastore_get_latest_query_schema_version':
-                auth.datastore_get_latest_query_schema_version,
-            'datastore_edit_slug': auth.datastore_edit_slug,
-            'datastore_value_autocomplete': auth.datastore_value_autocomplete,
-        }
+        return create_auth(auth)
 
     # ITemplateHelpers
     def get_helpers(self):

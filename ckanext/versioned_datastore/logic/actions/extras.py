@@ -5,9 +5,8 @@ from eevee.search import create_version_query
 from eevee.utils import to_timestamp
 from elasticsearch_dsl import Search
 
-from . import help
-from .utils import action
-from .. import schema
+from .meta import help, schema
+from ckantools.decorators import action
 from ...lib import common
 from ...lib.basic_query.search import create_search
 from ...lib.datastore_utils import prefix_resource, is_datastore_resource, get_public_alias_name

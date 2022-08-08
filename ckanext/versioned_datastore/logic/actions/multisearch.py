@@ -6,9 +6,9 @@ from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
 from eevee.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch, A
 
-from . import help
-from .utils import action, Timer
-from .. import schema
+from .meta import help, schema
+from ckantools.decorators import action
+from ckantools.timer import Timer
 from ...interfaces import IVersionedDatastore
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fields, \
