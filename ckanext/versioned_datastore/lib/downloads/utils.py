@@ -1,9 +1,35 @@
 from collections import defaultdict
 
+import avro.schema
 from eevee.search import create_version_query
+from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
+import json
 
 from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
+
+
+def get_schema(query, es_client: Elasticsearch):
+    resource_mapping = es_client.indices.get_mapping(
+        index=','.join([prefix_resource(r) for r in query.resource_ids_and_versions.keys()]))
+
+    avro_types = ['null', 'boolean', 'int', 'long', 'float', 'double', 'bytes', 'string']
+    avro_types += [{'type': 'map', 'values': avro_types.copy()}]
+    avro_types += [{'type': 'array', 'items': avro_types.copy()}]
+
+    schema_fields = {}
+    for prefixed_resource, mapping in resource_mapping.items():
+        field_list = mapping['mappings']['_doc']['properties']['data']['properties']
+        for field_name, type_dict in field_list.items():
+            if field_name in schema_fields:
+                continue
+            schema_fields[field_name] = {'name': field_name, 'type': avro_types}
+    schema_json = json.dumps({
+        'type': 'record',
+        'name': 'ResourceRecord',
+        'fields': list(schema_fields.values())
+    })
+    return avro.schema.parse(schema_json)
 
 
 def get_fields(field_counts, ignore_empty_fields, resource_ids=None):

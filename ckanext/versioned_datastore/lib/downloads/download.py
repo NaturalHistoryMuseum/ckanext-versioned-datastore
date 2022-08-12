@@ -31,22 +31,23 @@ class DownloadRunManager:
         self.core_record = None  # will not necessarily be used
 
     def run(self):
-        pass
+        self.get_derivative()
 
     @property
     def hash(self):
         to_hash = [
-            self.query.hash,
+            self.query.record_hash,
             self.derivative_generator.hash
         ]
         download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
-    def _check_for_file(self, hash_string, model_class):
+    def _check_for_file(self, hash_string, model_class, ext='zip'):
         '''
         Helper for searching for files via iglob.
         :param hash_string: the hash string that's part of the file name
         :param model_class: the model class (i.e. DerivativeFileRecord or CoreFileRecord)
+        :param ext: the extension of the file to search for
         :return: the record if the file and record exist, None if not
         '''
         # check the download dir exists
@@ -55,7 +56,7 @@ class DownloadRunManager:
             # if it doesn't then the file obviously doesn't exist either
             return False
 
-        fn = f'*_{hash}.zip'
+        fn = f'*_{hash}.{ext}'
         existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
         record = None
         if existing_file is not None:
@@ -67,7 +68,7 @@ class DownloadRunManager:
         return self.derivative_record is not None
 
     def check_for_core(self):
-        self.core_record = self._check_for_file(self.hash, CoreFileRecord)
+        self.core_record = self._check_for_file(self.hash, CoreFileRecord, 'parquet')
         return self.core_record is not None
 
     def get_derivative(self):

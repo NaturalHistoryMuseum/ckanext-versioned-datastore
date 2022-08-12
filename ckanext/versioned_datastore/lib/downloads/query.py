@@ -77,8 +77,12 @@ class Query(object):
 
     @property
     def hash(self):
+        return hash_query(self.query, self.query_version)
+
+    @property
+    def record_hash(self):
         to_hash = [
-            hash_query(self.query, self.query_version),
+            self.hash,
             sorted(self.resource_ids_and_versions.items())
         ]
         download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
