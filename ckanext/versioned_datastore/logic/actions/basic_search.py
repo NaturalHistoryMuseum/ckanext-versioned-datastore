@@ -157,6 +157,10 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     # now build the search object against the normal search code
     original_data_dict, data_dict, version, search = create_search(context, data_dict,
                                                                    original_data_dict)
+    # if we don't have a version, set to now
+    if version is None:
+        version = to_timestamp(datetime.now())
+
     # get the index we're going to search against
     index_name = prefix_resource(data_dict['resource_id'])
 
