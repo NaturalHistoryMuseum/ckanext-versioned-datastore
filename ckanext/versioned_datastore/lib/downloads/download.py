@@ -56,20 +56,16 @@ class DownloadRunManager:
             # if it doesn't then the file obviously doesn't exist either
             return False
 
-        fn = f'*_{hash}.{ext}'
+        fn = f'*_{hash_string}.{ext}'
         existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
         record = None
         if existing_file is not None:
-            record = model_class.get_by_filename(existing_file)
+            record = model_class.get_by_filepath(existing_file)
         return record
 
     def check_for_derivative(self):
         self.derivative_record = self._check_for_file(self.hash, DerivativeFileRecord)
         return self.derivative_record is not None
-
-    def check_for_core(self):
-        self.core_record = self._check_for_file(self.hash, CoreFileRecord, 'parquet')
-        return self.core_record is not None
 
     def get_derivative(self):
         '''
@@ -83,11 +79,7 @@ class DownloadRunManager:
             self.request.update_status(DownloadRequest.state_retrieving)
             return self.derivative_record
 
-        core_exists = self.check_for_core()
-
-        if not core_exists:
-            self.request.update_status(DownloadRequest.state_core_gen)
-            self.core_record = generate_core(self.query, self.request)
+        self.core_record = generate_core(self.query, self.request)
 
         self.request.update_status(DownloadRequest.state_derivative_gen)
         self.derivative_record = self.derivative_generator.generate(self.core_record, self.request)

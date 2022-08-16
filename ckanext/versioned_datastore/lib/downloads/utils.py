@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-import avro.schema
+from fastavro import parse_schema
 from eevee.search import create_version_query
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
@@ -24,12 +24,12 @@ def get_schema(query, es_client: Elasticsearch):
             if field_name in schema_fields:
                 continue
             schema_fields[field_name] = {'name': field_name, 'type': avro_types}
-    schema_json = json.dumps({
+    schema_json = {
         'type': 'record',
         'name': 'ResourceRecord',
         'fields': list(schema_fields.values())
-    })
-    return avro.schema.parse(schema_json)
+    }
+    return parse_schema(schema_json)
 
 
 def get_fields(field_counts, ignore_empty_fields, resource_ids=None):

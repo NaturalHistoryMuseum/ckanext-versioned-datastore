@@ -2,14 +2,14 @@ from datetime import datetime
 
 from ckan.model import meta, DomainObject, Session
 from ckan.model.types import make_uuid
-from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime, ForeignKey
+from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime, ForeignKey, desc
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, backref
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
 state_initial = 'initiated'
 
-# describes the core (Parquet) files from which the output derivatives (e.g. CSV, DwC-A) are
+# describes the core files from which the output derivatives (e.g. CSV, DwC-A) are
 # generated
 datastore_downloads_core_files_table = Table(
     'vds_download_core',
@@ -18,14 +18,13 @@ datastore_downloads_core_files_table = Table(
     Column('query_hash', UnicodeText, nullable=False, index=True),
     Column('query', JSONB, nullable=False),
     Column('query_version', UnicodeText, nullable=False),
-    Column('resource_ids_and_versions', JSONB, nullable=False),
-    Column('created', DateTime, nullable=False, default=datetime.utcnow),
+    Column('resource_ids_and_versions', JSONB, nullable=False, default=dict),
+    Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('total', BigInteger, nullable=True),
-    Column('resource_totals', JSONB, nullable=True),
-    Column('filename', UnicodeText, nullable=True)
+    Column('resource_totals', JSONB, nullable=False, default=dict)
 )
 
-# describes derived files generated from the core Parquet files
+# describes derived files generated from the core files
 datastore_downloads_derivative_files_table = Table(
     'vds_download_derivative',
     meta.metadata,
@@ -37,7 +36,7 @@ datastore_downloads_derivative_files_table = Table(
     Column('created', DateTime, nullable=False, default=datetime.utcnow),
     Column('format', UnicodeText, nullable=False),
     Column('options', JSONB, nullable=True),
-    Column('filename', UnicodeText, nullable=True)
+    Column('filepath', UnicodeText, nullable=True)
 )
 
 datastore_downloads_requests_table = Table(
@@ -63,10 +62,10 @@ class CoreFileRecord(DomainObject):
     query: dict
     query_version: str
     resource_ids_and_versions: dict
-    created: datetime
+    modified: datetime
     total: int
     resource_totals: dict
-    filename: str
+    filepath: str
     derivatives: list
     requests: list
 
@@ -81,11 +80,7 @@ class CoreFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, query_hash):
-        return Session.query(cls).filter(cls.query_hash == query_hash).one_or_none()
-
-    @classmethod
-    def get_by_filename(cls, filename):
-        return Session.query(cls).filter(cls.filename == filename).one_or_none()
+        return Session.query(cls).filter(cls.query_hash == query_hash).order_by(desc(cls.modified)).all()
 
 
 class DerivativeFileRecord(DomainObject):
@@ -99,7 +94,7 @@ class DerivativeFileRecord(DomainObject):
     created: datetime
     format: str
     options: dict
-    filename: str
+    filepath: str
     core_record: CoreFileRecord
     requests: list
 
@@ -114,11 +109,11 @@ class DerivativeFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, download_hash):
-        return Session.query(cls).filter(cls.download_hash == download_hash).one_or_none()
+        return Session.query(cls).filter(cls.download_hash == download_hash).order_by(desc(cls.created)).all()
 
     @classmethod
-    def get_by_filename(cls, filename):
-        return Session.query(cls).filter(cls.filename == filename).one_or_none()
+    def get_by_filepath(cls, filepath):
+        return Session.query(cls).filter(cls.filepath == filepath).order_by(desc(cls.created)).all()
 
 
 class DownloadRequest(DomainObject):
@@ -152,8 +147,9 @@ class DownloadRequest(DomainObject):
         self.modified = datetime.utcnow()
         self.save()
 
-    def update_status(self, status_text):
+    def update_status(self, status_text, message=None):
         self.state = status_text
+        self.message = message
         self.save()
 
 
