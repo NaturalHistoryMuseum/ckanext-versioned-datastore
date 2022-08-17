@@ -76,6 +76,7 @@ class CoreFileRecord(DomainObject):
     def update(self, **kwargs):
         for field, value in kwargs.items():
             setattr(self, field, value)
+        self.modified = datetime.utcnow()
         self.save()
 
     @classmethod
