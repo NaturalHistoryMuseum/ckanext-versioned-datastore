@@ -1,13 +1,23 @@
 import hashlib
 import os
+import os.path
+import shutil
 from glob import iglob
 
 from ckan.plugins import toolkit
+from eevee.indexing.utils import get_elasticsearch_client
+from eevee.search import create_version_query
+from elasticsearch_dsl import Search
+from fastavro import writer
 
 from .core_generator import generate_core
 from .loaders import get_derivative_generator, get_file_server, get_notifier
 from .query import Query
-from ...model.downloads import DownloadRequest, DerivativeFileRecord, CoreFileRecord
+from .utils import get_schema
+from .. import common
+from ..datastore_utils import prefix_resource
+from ...model.downloads import CoreFileRecord, DownloadRequest
+from ...model.downloads import DerivativeFileRecord
 
 
 class DownloadRunManager:
@@ -79,8 +89,86 @@ class DownloadRunManager:
             self.request.update_status(DownloadRequest.state_retrieving)
             return self.derivative_record
 
-        self.core_record = generate_core(self.query, self.request)
+        self.core_record = self.generate_core()
 
         self.request.update_status(DownloadRequest.state_derivative_gen)
         self.derivative_record = self.derivative_generator.generate(self.core_record, self.request)
         return self.derivative_record
+
+    def generate_core(self):
+        try:
+            download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+
+            root_folder = os.path.join(download_dir, self.query.hash)
+            record = None
+            if os.path.exists(root_folder):
+                records = CoreFileRecord.get_by_hash(self.query.hash)
+                if records:
+                    # use the most recent one
+                    record = records[0]
+                else:
+                    shutil.rmtree(root_folder)
+            if record is None:
+                os.mkdir(root_folder)
+                record = CoreFileRecord(query_hash=self.query.hash,
+                                        query=self.query.query,
+                                        query_version=self.query.query_version,
+                                        resource_ids_and_versions={})
+
+            existing_resources = os.listdir(root_folder)
+            resources_to_generate = {rid: v for rid, v in
+                                     self.query.resource_ids_and_versions.items() if
+                                     f'{rid}_{v}' not in existing_resources}
+
+            if len(resources_to_generate) > 0:
+                es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True,
+                                                     sniffer_timeout=60,
+                                                     sniff_on_connection_fail=True,
+                                                     sniff_timeout=10,
+                                                     http_compress=False, timeout=30)
+
+                schema = get_schema(self.query, es_client)
+                resource_totals = {k: v for k, v in (record.resource_totals or {}).items()}
+
+                for resource_id, version in resources_to_generate.items():
+                    self.request.update_status(DownloadRequest.state_core_gen,
+                                               f'Generating {resource_id}')
+                    resource_totals[resource_id] = 0
+
+                    search = Search.from_dict(self.query.translate().to_dict()) \
+                        .index(prefix_resource(resource_id)) \
+                        .using(es_client) \
+                        .filter(create_version_query(version))
+
+                    fn = f'{resource_id}_{version}.avro'
+                    fp = os.path.join(root_folder, fn)
+
+                    codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
+                    chunk_size = 10000
+                    with open(fp, 'wb') as f:
+                        writer(f, schema, [], **codec_kwargs)
+
+                    def _flush(record_block):
+                        with open(fp, 'a+b') as outfile:
+                            writer(outfile, None, record_block, **codec_kwargs)
+
+                    chunk = []
+                    for hit in search.scan():
+                        data = hit.data.to_dict()
+                        resource_totals[resource_id] += 1
+                        chunk.append(data)
+                        if len(chunk) == chunk_size:
+                            _flush(chunk)
+                            chunk = []
+                    _flush(chunk)
+
+                # use .update() so it updates the modified datetime
+                record.update(resource_totals=resource_totals,
+                              total=sum(record.resource_totals.values()),
+                              resource_ids_and_versions=self.query.resource_ids_and_versions)
+
+            record.save()
+            return record
+        except Exception as e:
+            self.request.update_status(DownloadRequest.state_failed, str(e))
+            raise e
