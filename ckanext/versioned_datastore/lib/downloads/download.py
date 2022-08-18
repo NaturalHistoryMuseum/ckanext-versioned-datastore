@@ -1,7 +1,9 @@
 import hashlib
+import json
 import os
 import os.path
 import shutil
+from datetime import datetime as dt
 from glob import iglob
 
 from ckan.plugins import toolkit
@@ -10,7 +12,6 @@ from eevee.search import create_version_query
 from elasticsearch_dsl import Search
 from fastavro import writer
 
-from .core_generator import generate_core
 from .loaders import get_derivative_generator, get_file_server, get_notifier
 from .query import Query
 from .utils import get_schema
@@ -25,10 +26,7 @@ class DownloadRunManager:
 
     def __init__(self, query_args, derivative_args, server_args, notifier_args):
         self.query = Query.from_query_args(query_args)
-        self.derivative_generator = get_derivative_generator(derivative_args.format,
-                                                             separate_files=derivative_args.separate_files,
-                                                             ignore_empty_fields=derivative_args.ignore_empty_fields,
-                                                             **derivative_args.format_args)
+        self.derivative_options = derivative_args
         self.server = get_file_server(server_args.type, **server_args.type_args)
         self.notifier = get_notifier(notifier_args.type, **notifier_args.type_args)
 
@@ -44,37 +42,38 @@ class DownloadRunManager:
         self.get_derivative()
 
     @property
+    def derivative_hash(self):
+        file_options = {
+            'format': self.derivative_options.format,
+            'format_args': self.derivative_options.format_args,
+            'separate_files': self.derivative_options.separate_files,
+            'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
+            'transform': self.derivative_options.transform
+        }
+        file_options_hash = hashlib.sha1(json.dumps(file_options).encode('utf-8'))
+        return file_options_hash.hexdigest()
+
+    @property
     def hash(self):
         to_hash = [
             self.query.record_hash,
-            self.derivative_generator.hash
+            self.derivative_hash
         ]
         download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
-    def _check_for_file(self, hash_string, model_class, ext='zip'):
-        '''
-        Helper for searching for files via iglob.
-        :param hash_string: the hash string that's part of the file name
-        :param model_class: the model class (i.e. DerivativeFileRecord or CoreFileRecord)
-        :param ext: the extension of the file to search for
-        :return: the record if the file and record exist, None if not
-        '''
+    def check_for_derivative(self):
         # check the download dir exists
         if not os.path.exists(self.download_dir):
             os.mkdir(self.download_dir)
             # if it doesn't then the file obviously doesn't exist either
             return False
 
-        fn = f'*_{hash_string}.{ext}'
+        fn = f'*_{self.hash}.zip'
         existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
-        record = None
+        self.derivative_record = None
         if existing_file is not None:
-            record = model_class.get_by_filepath(existing_file)
-        return record
-
-    def check_for_derivative(self):
-        self.derivative_record = self._check_for_file(self.hash, DerivativeFileRecord)
+            self.derivative_record = DerivativeFileRecord.get_by_filepath(existing_file)
         return self.derivative_record is not None
 
     def get_derivative(self):
@@ -92,7 +91,7 @@ class DownloadRunManager:
         self.core_record = self.generate_core()
 
         self.request.update_status(DownloadRequest.state_derivative_gen)
-        self.derivative_record = self.derivative_generator.generate(self.core_record, self.request)
+        self.derivative_record = self.generate_derivative()
         return self.derivative_record
 
     def generate_core(self):
@@ -172,3 +171,26 @@ class DownloadRunManager:
         except Exception as e:
             self.request.update_status(DownloadRequest.state_failed, str(e))
             raise e
+
+    def generate_derivative(self):
+        start = dt.utcnow()
+
+        derivative_generator = get_derivative_generator(self.derivative_options.format,
+                                                        **self.derivative_options.format_args)
+
+        manifest = {
+            'download_id': self.request.id,
+            'resources': {},
+            'separate_files': self.derivative_options.separate_files,
+            'file_format': derivative_generator.name,
+            'format_args': derivative_generator.format_args,
+            'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
+            'transform': self.derivative_options.transform,
+            'start': start.isoformat(),
+
+            # these get filled in later but we'll initialise them here
+            'total_records': 0,
+            'files': [],
+            'end': None,
+            'duration_in_seconds': 0
+        }
