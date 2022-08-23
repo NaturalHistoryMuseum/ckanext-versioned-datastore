@@ -32,7 +32,7 @@ def get_schema(query, es_client: Elasticsearch):
     return parse_schema(schema_json)
 
 
-def get_fields(field_counts, ignore_empty_fields, resource_ids=None):
+def get_fields(field_counts, ignore_empty_fields, resource_id=None):
     '''
     Return a sorted list of field names for the resource ids specified using the field counts dict.
     The field counts dict should provide the field names available and their counts at the given
@@ -44,58 +44,63 @@ def get_fields(field_counts, ignore_empty_fields, resource_ids=None):
     :param field_counts: the dict of resource ids -> fields -> counts
     :param ignore_empty_fields: whether fields with no values should be included in the resulting
                                 list or not
-    :param resource_ids: the resource ids to get the fields for. The default is None which means
+    :param resource_id: the resource id to get the fields for. The default is None which means
                          that the fields from all resources will be returned
     :return: a list of fields in case-insensitive ascending order
     '''
     # TODO: retrieve the sort order for resources from the database and use
     field_names = set()
 
-    for resource_id, counts in field_counts.items():
-        if resource_ids is None or resource_id in resource_ids:
-            for field, count in counts.items():
-                if count == 0 and ignore_empty_fields:
-                    continue
-                else:
-                    field_names.add(field)
+    if resource_id:
+        field_counts_list = [field_counts[resource_id]]
+    else:
+        field_counts_list = list(field_counts.values())
+
+    for counts in field_counts_list:
+        for field, count in counts.items():
+            if count == 0 and ignore_empty_fields:
+                continue
+            else:
+                field_names.add(field)
 
     return sorted(field_names, key=lambda f: f.lower())
 
 
-def calculate_field_counts(request, es_client):
+def calculate_field_counts(query, es_client, resource_id, resource_version):
     '''
     Given a download request and an elasticsearch client to work with, work out the number of values
     available per field, per resource for the search.
 
-    :param request: the DownloadRequest object
+    :param query: the Query object
     :param es_client: the elasticsearch client to use
+    :param resource_id:
+    :param resource_version:
     :return: a dict of resource ids -> fields -> counts
     '''
-    field_counts = defaultdict(dict)
-    for resource_id, version in request.resource_ids_and_versions.items():
-        index_name = prefix_resource(resource_id)
-        # get the base field mapping for the index so that we know which fields to look up, this
-        # will get all fields from all versions and therefore isn't usable straight off the bat, we
-        # have to then go and see which fields are present in the search at this version
-        mapping = es_client.indices.get_mapping(index_name)[index_name]
+    field_counts = {}
+    index_name = prefix_resource(resource_id)
+    # get the base field mapping for the index so that we know which fields to look up, this
+    # will get all fields from all versions and therefore isn't usable straight off the bat, we
+    # have to then go and see which fields are present in the search at this version
+    mapping = es_client.indices.get_mapping(index_name)[index_name]
 
-        search = Search.from_dict(request.search) \
-            .index(index_name) \
-            .using(es_client) \
-            .extra(size=0) \
-            .filter(create_version_query(version))
+    search = Search.from_dict(query.search.to_dict()) \
+        .index(index_name) \
+        .using(es_client) \
+        .extra(size=0) \
+        .filter(create_version_query(resource_version))
 
-        # get all the fields names and use dot notation for nested fields
-        fields = ['.'.join(parts) for parts, _config in iter_data_fields(mapping)]
-        for field in fields:
-            # add a search which finds the documents that have a value for the given field at the
-            # right version
-            agg = A('value_count', field=prefix_field(field))
-            search.aggs.bucket(field, agg)
+    # get all the fields names and use dot notation for nested fields
+    fields = ['.'.join(parts) for parts, _config in iter_data_fields(mapping)]
+    for field in fields:
+        # add a search which finds the documents that have a value for the given field at the
+        # right version
+        agg = A('value_count', field=prefix_field(field))
+        search.aggs.bucket(field, agg)
 
-        response = search.execute()
-        for field in fields:
-            field_counts[resource_id][field] = response.aggregations[field].value
+    response = search.execute()
+    for field in fields:
+        field_counts[field] = response.aggregations[field].value
 
     return field_counts
 
@@ -153,3 +158,50 @@ def filter_data_fields(data, field_counts, prefix=None):
             filtered_data[field] = value
 
     return filtered_data
+
+
+def flatten_dict(data, path=None, separator=' | '):
+    '''
+    Flattens a given dictionary so that nested dicts and lists of dicts are available from the root
+    of the dict. For nested dicts, the keys in the nested dict are simply concatenated to the key
+    that references the dict with a dot between each, for example:
+        {"a": {"b": 4, "c": 6}} -> {"a.b": 4, "a.c": 6}
+    This works to any nesting level.
+    For lists of dicts, the common keys between them are pulled up to the level above in the same
+    way as the standard nested dict, but if there are multiple dicts with the same keys the values
+    associated with them are concatenated together using the separator parameter. For example:
+        {"a": [{"b": 5}, {"b": 19}]} -> {"a.b": "5 | 19"}
+    :param data: the dict to flatten
+    :param path: the path to place all found keys under, by default this is None and therefore the
+                 keys in the dict are not placed under anything and are used as is. This is really
+                 only here for internal recursive purposes.
+    :param separator: the string to use when concatenating lists of values, whether common ones from
+                      a list of dicts, or indeed just a normal list of values
+    :return: the flattened dict
+    '''
+    flat = {}
+    for key, value in data.items():
+        if path is not None:
+            # use a dot to indicate this key is below the parent in the path
+            key = f'{path}.{key}'
+
+        if isinstance(value, dict):
+            # flatten the nested dict and then update the current dict we've got on the go
+            flat.update(flatten_dict(value, path=key))
+        elif isinstance(value, list):
+            if all(isinstance(element, dict) for element in value):
+                for element in value:
+                    # iterate through the list of dicts flattening each as we go and then either
+                    # just adding the value to the dict we've got on the go or appending it to the
+                    # string value we're using for collecting multiples
+                    for subkey, subvalue in flatten_dict(element, path=key).items():
+                        if subkey not in flat:
+                            flat[subkey] = subvalue
+                        else:
+                            flat[subkey] = f'{flat[subkey]}{separator}{subvalue}'
+            else:
+                flat[key] = separator.join(map(str, value))
+        else:
+            flat[key] = value
+
+    return flat
