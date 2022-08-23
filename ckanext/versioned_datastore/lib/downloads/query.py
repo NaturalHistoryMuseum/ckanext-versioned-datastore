@@ -16,7 +16,14 @@ class Query(object):
         self.query = query
         self.query_version = query_version
         self.resource_ids_and_versions = resource_ids_and_versions
+        self._search = None
         self.validate()
+
+    @property
+    def search(self):
+        if self._search is None:
+            self._search = self.translate()
+        return self._search
 
     @classmethod
     def from_query_args(cls, query_args: QueryArgs):
