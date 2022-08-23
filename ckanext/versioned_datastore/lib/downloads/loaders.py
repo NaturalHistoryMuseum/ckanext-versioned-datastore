@@ -2,6 +2,7 @@ from ckan.plugins import PluginImplementations, toolkit
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreDownloads
 
 from . import derivatives, servers, notifiers, transforms
+from functools import partial
 
 
 def get_derivative_generator(derivative_name, *args, **kwargs):
@@ -38,7 +39,7 @@ def get_notifier(notifier_type, *args, **kwargs):
     return notifier
 
 
-def get_transformation(transform_name):
+def get_transformation(transform_name, *args, **kwargs):
     trns = {t.name: t for t in transforms.transforms}
     for plugin in PluginImplementations(IVersionedDatastoreDownloads):
         trns = plugin.download_data_transformations(transforms)
@@ -46,4 +47,4 @@ def get_transformation(transform_name):
     if transform_func is None:
         raise toolkit.ObjectNotFound(
             f'{transform_name} is not a registered download data transformation function.')
-    return transform_func
+    return partial(transform_func, *args, **kwargs)

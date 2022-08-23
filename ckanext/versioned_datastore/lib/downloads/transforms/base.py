@@ -8,5 +8,5 @@ class BaseTransform(metaclass=ABCMeta):
     name = 'base'
 
     @abstractmethod
-    def transform_data(self, data, **kwargs):
+    def __call__(self, data, **kwargs):
         return data

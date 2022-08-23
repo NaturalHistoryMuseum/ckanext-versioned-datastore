@@ -13,7 +13,7 @@ object_endpoint = toolkit.config.get('ckanext.versioned_datastore.record_view_en
 class IdAsUrlTransform(BaseTransform):
     name = 'id_as_url'
 
-    def transform_data(self, data, **kwargs):
+    def __call__(self, data, field=None):
         '''
         Reformat an ID field as a URL (probably one that links to that record). Requires an endpoint
         (config option ckanext.versioned_datastore.record_view_endpoint, default 'object.view')
@@ -22,7 +22,8 @@ class IdAsUrlTransform(BaseTransform):
         :param field: the name of the data field that contains the ID and that will contain the URL
         :return: the transformed data (or untransformed if there was an error).
         '''
-        field = kwargs.get('field')
+        if field is None:
+            return data
         try:
             object_id = data.get(field)
             if object_id is None or object_id == '':
