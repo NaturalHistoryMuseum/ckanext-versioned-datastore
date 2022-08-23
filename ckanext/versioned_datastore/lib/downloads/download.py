@@ -14,7 +14,7 @@ from fastavro import writer
 
 from .loaders import get_derivative_generator, get_file_server, get_notifier
 from .query import Query
-from .utils import get_schema
+from .utils import get_schema, calculate_field_counts, filter_data_fields, get_fields
 from .. import common
 from ..datastore_utils import prefix_resource
 from ...model.downloads import CoreFileRecord, DownloadRequest
@@ -128,11 +128,14 @@ class DownloadRunManager:
 
                 schema = get_schema(self.query, es_client)
                 resource_totals = {k: v for k, v in (record.resource_totals or {}).items()}
+                field_counts = {k: v for k, v in (record.field_counts or {}).items()}
 
                 for resource_id, version in resources_to_generate.items():
                     self.request.update_status(DownloadRequest.state_core_gen,
                                                f'Generating {resource_id}')
                     resource_totals[resource_id] = 0
+                    field_counts[resource_id] = calculate_field_counts(self.query, es_client,
+                                                                       resource_id, version)
 
                     search = Search.from_dict(self.query.translate().to_dict()) \
                         .index(prefix_resource(resource_id)) \
@@ -164,7 +167,8 @@ class DownloadRunManager:
                 # use .update() so it updates the modified datetime
                 record.update(resource_totals=resource_totals,
                               total=sum(record.resource_totals.values()),
-                              resource_ids_and_versions=self.query.resource_ids_and_versions)
+                              resource_ids_and_versions=self.query.resource_ids_and_versions,
+                              field_counts=field_counts)
 
             record.save()
             return record

@@ -21,7 +21,8 @@ datastore_downloads_core_files_table = Table(
     Column('resource_ids_and_versions', JSONB, nullable=False, default=dict),
     Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('total', BigInteger, nullable=True),
-    Column('resource_totals', JSONB, nullable=False, default=dict)
+    Column('resource_totals', JSONB, nullable=False, default=dict),
+    Column('field_counts', JSONB, nullable=False, default=dict)
 )
 
 # describes derived files generated from the core files
@@ -65,6 +66,7 @@ class CoreFileRecord(DomainObject):
     modified: datetime
     total: int
     resource_totals: dict
+    field_counts: dict
     filepath: str
     derivatives: list
     requests: list
