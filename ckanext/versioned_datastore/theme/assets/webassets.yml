@@ -1,14 +1,18 @@
 datastore-activities:
   output: ckanext-versioned-datastore/%(version)s_datastore-activities.css
+  filters: less
+  config:
+    LESS_BIN: ../../../../../node_modules/less/bin/lessc
   contents:
-    # TODO: 2.9 - lessify
-    - css/datastore-activities.css
+    - less/datastore-activities.less
 
 search-css:
   output: ckanext-versioned-datastore/%(version)s_search.css
+  filters: less
+  config:
+    LESS_BIN: ../../../../../node_modules/less/bin/lessc
   contents:
-    # TODO: 2.9 - lessify
-    - css/search.css
+    - less/search.less
 
 search-js:
   output: ckanext-versioned-datastore/%(version)s_search.js
