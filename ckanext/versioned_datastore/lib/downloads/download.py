@@ -267,6 +267,7 @@ class DownloadRunManager:
                 for filename in files_to_zip:
                     z.write(os.path.join(temp_dir, filename), arcname=filename)
             derivative_record.save()
+            self.request.derivative_id = derivative_record.id
             return derivative_record
         except Exception as e:
             self.request.update_status(DownloadRequest.state_failed, str(e))

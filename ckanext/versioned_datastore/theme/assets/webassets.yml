@@ -14,6 +14,14 @@ search-css:
   contents:
     - less/search.less
 
+download-status-css:
+  output: ckanext-versioned-datastore/%(version)s_download_status.css
+  filters: less
+  config:
+    LESS_BIN: ../../../../../node_modules/less/bin/lessc
+  contents:
+    - less/download-status.less
+
 search-js:
   output: ckanext-versioned-datastore/%(version)s_search.js
   filters: rjsmin
