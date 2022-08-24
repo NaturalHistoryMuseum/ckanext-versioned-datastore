@@ -598,3 +598,8 @@ animals = [
     'yak',
     'zebra'
 ]
+
+
+list_one = adjectives
+list_two = adjectives
+list_three = animals
