@@ -1,0 +1,54 @@
+.activity {
+  & .item {
+    & .datastore_activity_title {
+      font-weight: bolder;
+    }
+
+    &.in_progress .icon {
+      background-color: #8c76ce;
+    }
+
+    &.duplicate .icon {
+      background-color: #b9b952;
+    }
+
+    &.ingest .icon {
+      background-color: #4c9947;
+    }
+
+    &.index .icon {
+      background-color: #4c9947;
+    }
+
+    &.prep .icon {
+      background-color: #4c9947;
+    }
+
+    & a {
+      font-size: 14px;
+      line-height: 1.5;
+      margin: 5px 0 0 80px;
+    }
+
+    & .date {
+      color: #656565;
+    }
+  }
+
+  & li:last-child {
+    /* this is a hack to prevent the dotted lines from displaying below the first activity */
+    background: white;
+  }
+
+  & .collapseDetails {
+    margin: 5px 0 0 100px;
+
+    & .detailsTable {
+      font-size: 13px;
+
+      & td {
+        padding-left: 12px;
+      }
+    }
+  }
+}
