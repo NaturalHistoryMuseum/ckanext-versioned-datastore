@@ -235,6 +235,7 @@ adjectives = [
     'open',
     'opening',
     'opposite',
+    'orange',
     'ordinary',
     'original',
     'other',
