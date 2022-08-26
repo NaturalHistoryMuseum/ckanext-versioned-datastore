@@ -20,3 +20,11 @@ search-js:
   contents:
     - scripts/vendor/bodybuilder.js
     - scripts/modules/search.js
+
+slugerator:
+  output: ckanext-versioned-datastore/%(version)s_slugerator.css
+  filters: less
+  config:
+    LESS_BIN: ../../../../../node_modules/less/bin/lessc
+  contents:
+    - less/slugerator.less
