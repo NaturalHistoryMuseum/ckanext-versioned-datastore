@@ -1,0 +1,52 @@
+{% extends "page.html" %}
+
+{% block title %}
+{{ _('Slugerator') }}
+{% endblock %}
+
+{% block breadcrumb_content %}
+<li class="active">
+    <a class="active" href="/slugerator">Slug generator</a>
+</li>
+{% endblock %}
+
+{% block primary %}
+{% asset 'ckanext-versioned-datastore/slugerator' %}
+<div class="primary col-sm-9 col-xs-12">
+    <article class="module">
+        <div class="module-content">
+            <div class="slug-main">
+                <h2 class="new-slug">{{ new_slug }}</h2>
+                <a href="/slugerator" target="_self" class="btn btn-primary">Another!</a>
+            </div>
+        </div>
+    </article>
+</div>
+{% endblock %}
+
+{% block secondary %}
+
+<div class="secondary col-sm-3">
+    {% block secondary_content %}
+    {% block slug_stats %}
+
+    <dl class="slug-stats">
+        <dt>Possible permutations</dt>
+        <dd>{{ remaining }}</dd>
+        <dt>Used</dt>
+        <dd>{{ unreserved }} ({{ percent_used }}%)</dd>
+        <dt>Special slugs</dt>
+        <dd>{{ reserved }}</dd>
+    </dl>
+    {% endblock %}
+
+    <div class="slug-explain">
+        <small>
+        <b>What?</b>
+        <span>This uses the same logic as the {% link_for _('Search'), named_route='search.view' %} page to generate an unused "slug". We use our slugs to create more memorable URLs for saved queries.</span>
+        </small>
+    </div>
+    {% endblock %}
+</div>
+
+{% endblock %}

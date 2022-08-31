@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from .schema import get_latest_query_version, hash_query
 from .schema import validate_query
-from .slug_words import adjectives, animals
+from .slug_words import list_one, list_two, list_three
 from .utils import get_available_datastore_resources
 from ...model.slugs import DatastoreSlug
 
@@ -39,10 +39,10 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
     return hash_value.hexdigest()
 
 
-def generate_pretty_slug(word_lists=(adjectives, adjectives, animals)):
+def generate_pretty_slug(word_lists=(list_one, list_two, list_three)):
     '''
     Generate a new slug using the adjective and animal lists available. The default word_lists value
-    is a trio of lists: (adjectives, adjectives, animals). This produces 31,365,468 unique
+    is a trio of lists: (adjectives, adjectives, animals). This produces >31,000,000 unique
     combinations which should be more than enough! This function does have the potential to
     produce duplicate adjectives (for example, green-green-llama) but the chances are really low and
     it doesn't really matter.
