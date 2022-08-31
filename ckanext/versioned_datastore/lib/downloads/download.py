@@ -45,6 +45,8 @@ class DownloadRunManager:
 
     def run(self):
         self.get_derivative()
+        url = self.server.serve(self.request)
+        self.notifier.notify(url)
 
     @property
     def derivative_hash(self):
@@ -78,7 +80,9 @@ class DownloadRunManager:
         existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
         self.derivative_record = None
         if existing_file is not None:
-            self.derivative_record = DerivativeFileRecord.get_by_filepath(existing_file)
+            possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
+            if len(possible_records) > 0:
+                self.derivative_record = possible_records[0]
         return self.derivative_record is not None
 
     def get_derivative(self):
@@ -91,10 +95,10 @@ class DownloadRunManager:
 
         if derivative_exists:
             self.request.update_status(DownloadRequest.state_retrieving)
-            return self.derivative_record
-
-        self.core_record = self.generate_core()
-        self.derivative_record = self.generate_derivative()
+        else:
+            self.core_record = self.generate_core()
+            self.derivative_record = self.generate_derivative()
+        self.request.derivative_id = self.derivative_record.id
         return self.derivative_record
 
     def generate_core(self):
@@ -266,6 +270,9 @@ class DownloadRunManager:
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
                 for filename in files_to_zip:
                     z.write(os.path.join(temp_dir, filename), arcname=filename)
+
+            self.request.update_status(DownloadRequest.state_complete)
+
             derivative_record.save()
             self.request.derivative_id = derivative_record.id
             return derivative_record
