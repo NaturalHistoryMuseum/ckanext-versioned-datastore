@@ -1,17 +1,38 @@
-from .base import BaseNotifier
 import requests
+
+from ckan.plugins import toolkit
+from .base import BaseNotifier
 
 
 class WebhookNotifier(BaseNotifier):
     name = 'webhook'
 
-    def __init__(self, url, param_name, post=False, **kwargs):
+    def __init__(self, request, url, url_param='url', text_param='text', post=False, **kwargs):
         self.url = url
-        self.param = param_name
+        self.url_param = url_param
+        self.text_param = text_param
         self.post = post
-        super(WebhookNotifier, self).__init__(**kwargs)
+        super(WebhookNotifier, self).__init__(request, **kwargs)
 
-    def notify(self, file_url):
+    def notify_start(self):
         request_method = 'POST' if self.post else 'GET'
-        requests.request(request_method, self.url, params={self.param or 'data': file_url})
+        text, _ = self.start_text()
+        context = self.template_context()
+        params = {self.url_param: context['status_page'],
+                  self.text_param: text}
+        requests.request(request_method, self.url, params=params)
 
+    def notify_end(self, file_url):
+        request_method = 'POST' if self.post else 'GET'
+        text, _ = self.end_text(file_url)
+        params = {self.url_param: file_url,
+                  self.text_param: text}
+        requests.request(request_method, self.url, params=params)
+
+    def notify_error(self):
+        request_method = 'POST' if self.post else 'GET'
+        text, _ = self.error_text()
+        context = self.template_context()
+        params = {self.url_param: context['status_page'],
+                  self.text_param: text}
+        requests.request(request_method, self.url, params=params)

@@ -221,18 +221,43 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
 
-    def download_modify_email_templates(self, text_template: str, html_template: str):
+    def download_modify_notifier_start_templates(self, text_template: str, html_template: str):
         '''
-        Hook allowing other extensions to modify the templates used when sending download emails.
+        Hook allowing other extensions to modify the templates used when sending notifications that
+        a download has started.
         The templates can be modified in place or completely replaced.
 
-        :param text_template: the text email template string
-        :param html_template: the html email template string
+        :param text_template: the text template string
+        :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template string
         '''
         return text_template, html_template
 
-    def download_modify_email_template_context(self, request, context):
+    def download_modify_notifier_end_templates(self, text_template: str, html_template: str):
+        '''
+        Hook allowing other extensions to modify the templates used when sending notifications that
+        a download has completed successfully.
+        The templates can be modified in place or completely replaced.
+
+        :param text_template: the text template string
+        :param html_template: the html template string
+        :return: a 2-tuple containing the text template string and the html template string
+        '''
+        return text_template, html_template
+
+    def download_modify_notifier_error_templates(self, text_template: str, html_template: str):
+        '''
+        Hook allowing other extensions to modify the templates used when sending notifications that
+        a download has failed.
+        The templates can be modified in place or completely replaced.
+
+        :param text_template: the text template string
+        :param html_template: the html template string
+        :return: a 2-tuple containing the text template string and the html template string
+        '''
+        return text_template, html_template
+
+    def download_modify_notifier_template_context(self, request, context):
         '''
         Hook allowing other extensions to modify the templating context used to generate the
         download email (both plain text and HTML versions) before it is sent.

@@ -33,20 +33,22 @@ class DownloadRunManager:
         self.query = Query.from_query_args(query_args)
         self.derivative_options = derivative_args
         self.server = get_file_server(server_args.type, **server_args.type_args)
-        self.notifier = get_notifier(notifier_args.type, **notifier_args.type_args)
 
         # initialises a log entry in the database
         self.request = DownloadRequest()
         self.request.save()
+
+        self.notifier = get_notifier(notifier_args.type, request=self.request, **notifier_args.type_args)
 
         # initialise attributes for completing later
         self.derivative_record = None
         self.core_record = None  # will not necessarily be used
 
     def run(self):
+        self.notifier.notify_start()
         self.get_derivative()
         url = self.server.serve(self.request)
-        self.notifier.notify(url)
+        self.notifier.notify_end(url)
 
     @property
     def derivative_hash(self):
@@ -180,6 +182,7 @@ class DownloadRunManager:
             return record
         except Exception as e:
             self.request.update_status(DownloadRequest.state_failed, str(e))
+            self.notifier.notify_error()
             raise e
 
     def generate_derivative(self):
@@ -278,4 +281,5 @@ class DownloadRunManager:
             return derivative_record
         except Exception as e:
             self.request.update_status(DownloadRequest.state_failed, str(e))
+            self.notifier.notify_error()
             raise e
