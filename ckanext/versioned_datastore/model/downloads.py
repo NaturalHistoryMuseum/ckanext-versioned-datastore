@@ -1,10 +1,11 @@
 from datetime import datetime
 
-from ckan.model import meta, DomainObject, Session
-from ckan.model.types import make_uuid
 from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime, ForeignKey, desc
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, backref
+
+from ckan.model import meta, DomainObject, Session
+from ckan.model.types import make_uuid
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
 state_initial = 'initiated'
@@ -50,6 +51,9 @@ datastore_downloads_requests_table = Table(
     Column('message', UnicodeText, nullable=True),
     Column('derivative_id', UnicodeText,
            ForeignKey('vds_download_derivative.id', onupdate='CASCADE', ondelete='CASCADE'),
+           nullable=True),
+    Column('core_id', UnicodeText,
+           ForeignKey('vds_download_core.id', onupdate='CASCADE', ondelete='CASCADE'),
            nullable=True)
 )
 
@@ -83,7 +87,8 @@ class CoreFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, query_hash):
-        return Session.query(cls).filter(cls.query_hash == query_hash).order_by(desc(cls.modified)).all()
+        return Session.query(cls).filter(cls.query_hash == query_hash).order_by(
+            desc(cls.modified)).all()
 
 
 class DerivativeFileRecord(DomainObject):
@@ -112,7 +117,8 @@ class DerivativeFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, download_hash):
-        return Session.query(cls).filter(cls.download_hash == download_hash).order_by(desc(cls.created)).all()
+        return Session.query(cls).filter(cls.download_hash == download_hash).order_by(
+            desc(cls.created)).all()
 
     @classmethod
     def get_by_filepath(cls, filepath):
@@ -156,19 +162,19 @@ class DownloadRequest(DomainObject):
         self.save()
 
 
-meta.mapper(CoreFileRecord, datastore_downloads_core_files_table, properties={
-    'requests': relationship(DownloadRequest,
-                             secondary=datastore_downloads_derivative_files_table)
-})
+meta.mapper(CoreFileRecord, datastore_downloads_core_files_table, properties={})
+
 meta.mapper(DerivativeFileRecord, datastore_downloads_derivative_files_table, properties={
     'core_record': relationship(CoreFileRecord,
                                 primaryjoin=datastore_downloads_derivative_files_table.c.core_id == CoreFileRecord.id,
                                 backref=backref('derivatives', cascade='all, delete-orphan'))
 })
+
 meta.mapper(DownloadRequest, datastore_downloads_requests_table, properties={
     'derivative_record': relationship(DerivativeFileRecord,
                                       primaryjoin=datastore_downloads_requests_table.c.derivative_id == DerivativeFileRecord.id,
                                       backref=backref('requests', cascade='all, delete-orphan')),
     'core_record': relationship(CoreFileRecord,
-                                secondary=datastore_downloads_derivative_files_table, uselist=False)
+                                primaryjoin=datastore_downloads_requests_table.c.core_id == CoreFileRecord.id,
+                                backref=backref('requests', cascade='all, delete-orphan'))
 })

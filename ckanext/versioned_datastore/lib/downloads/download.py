@@ -101,10 +101,11 @@ class DownloadRunManager:
 
         if derivative_exists:
             self.request.update_status(DownloadRequest.state_retrieving)
+            self.request.update(derivative_id=self.derivative_record.id)
         else:
             self.core_record = self.generate_core()
             self.derivative_record = self.generate_derivative()
-        self.request.derivative_id = self.derivative_record.id
+        self.request.update_status(DownloadRequest.state_complete)
         return self.derivative_record
 
     def generate_core(self):
@@ -125,6 +126,8 @@ class DownloadRunManager:
                                         query=self.query.query,
                                         query_version=self.query.query_version,
                                         resource_ids_and_versions={})
+            record.save()
+            self.request.update(core_id = record.id)
 
             existing_resources = os.listdir(self.core_folder_path)
             resources_to_generate = {rid: v for rid, v in
@@ -207,6 +210,9 @@ class DownloadRunManager:
                                                               f != 'format'},
                                                      filepath=zip_path)
 
+            derivative_record.save()
+            self.request.update(derivative_id=derivative_record.id)
+
             manifest = {
                 'download_id': self.request.id,
                 'resources': {},
@@ -281,7 +287,6 @@ class DownloadRunManager:
             self.request.update_status(DownloadRequest.state_complete)
 
             derivative_record.save()
-            self.request.derivative_id = derivative_record.id
             return derivative_record
         except Exception as e:
             self.request.update_status(DownloadRequest.state_failed, str(e))
