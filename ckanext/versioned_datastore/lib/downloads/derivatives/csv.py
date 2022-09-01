@@ -19,6 +19,14 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
 
     def write(self, data):
         row = flatten_dict(data)
+        filtered_row = {}
+        for field, value in row.items():
+            if value is None and field not in self.fields:
+                continue
+            elif field not in self.fields:
+                raise ValueError('Unexpected field.')
+            else:
+                filtered_row[field] = value
         if self.resource_id:
-            row['Resource ID'] = self.resource_id
-        self.writer.writerow(row)
+            filtered_row['Resource ID'] = self.resource_id
+        self.writer.writerow(filtered_row)
