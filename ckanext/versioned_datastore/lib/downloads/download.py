@@ -174,7 +174,7 @@ class DownloadRunManager:
 
                 # use .update() so it updates the modified datetime
                 record.update(resource_totals=resource_totals,
-                              total=sum(record.resource_totals.values()),
+                              total=sum(resource_totals.values()),
                               resource_ids_and_versions=self.query.resource_ids_and_versions,
                               field_counts=field_counts)
 
