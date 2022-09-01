@@ -23,6 +23,7 @@ from .. import common
 from ..datastore_utils import prefix_resource
 from ...model.downloads import CoreFileRecord, DownloadRequest
 from ...model.downloads import DerivativeFileRecord
+from ...logic.actions.meta.arg_objects import DerivativeArgs
 
 
 class DownloadRunManager:
@@ -32,6 +33,9 @@ class DownloadRunManager:
     def __init__(self, query_args, derivative_args, server_args, notifier_args):
         self.query = Query.from_query_args(query_args)
         self.derivative_options = derivative_args
+        for field, default_value in DerivativeArgs.defaults.items():
+            if getattr(self.derivative_options, field) is None:
+                setattr(self.derivative_options, field, default_value)
         self.server = get_file_server(server_args.type, **server_args.type_args)
 
         # initialises a log entry in the database

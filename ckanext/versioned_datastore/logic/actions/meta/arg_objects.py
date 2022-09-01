@@ -47,7 +47,10 @@ class DerivativeArgs(BaseArgs):
     }
 
     defaults = {
-        'format_args': {}
+        'format_args': {},
+        'separate_files': False,
+        'ignore_empty_fields': False,
+        'transform': {}
     }
 
 
