@@ -11,11 +11,12 @@
 </li>
 {% endblock %}
 
-{% block primary_content %}
+{% block pre_primary %}
 {% asset 'ckanext-versioned-datastore/download-status-css' %}
 <article class="module">
     <div class="module-content">
-        <h1 class="page-heading">{{ download_request.state | capitalize }}: {{ download_request.id }}</h1>
+        <h1 class="page-heading">Download status</h1>
+        <h2>{{ status_friendly }} ({{ download_request.modified.strftime('%Y-%m-%d %H:%M:%S') }})</h2>
 
         <section class="additional-info">
             <h3>Download Information</h3>
@@ -37,7 +38,11 @@
                 {% endif %}
                 <tr>
                     <th scope="row">Created</th>
-                    <td>{{ download_request.created.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ download_request.created.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Last updated</th>
+                    <td>{{ download_request.modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
                 </tr>
                 {% if download_request.derivative_record %}
                 <tr>
