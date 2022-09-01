@@ -10,7 +10,7 @@ blueprint = Blueprint(name='datastore_status', import_name=__name__, url_prefix=
 def download_status(download_id):
     dl = DownloadRequest.get(download_id)
     res_show = toolkit.get_action('resource_show')
-    resources = {k: res_show({}, {'id': k}) for k in dl.core_record.resource_ids_and_versions}
+    resources = {k: res_show({}, {'id': k}) for k in dl.core_record.resource_ids_and_versions} if dl.core_record else {}
 
     return toolkit.render('status/download.html',
                           extra_vars={'download_request': dl, 'resources': resources})

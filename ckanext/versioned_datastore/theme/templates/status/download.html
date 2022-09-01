@@ -39,6 +39,7 @@
                     <th scope="row">Created</th>
                     <td>{{ download_request.created.strftime('%Y-%m-%d') }}</td>
                 </tr>
+                {% if download_request.derivative_record %}
                 <tr>
                     <th scope="row">Format</th>
                     <td>
@@ -59,7 +60,8 @@
                     <th scope="row">Ignore empty fields</th>
                     <td>{{ download_request.derivative_record.options.get('ignore_empty_fields', True) }}</td>
                 </tr>
-                {% if download_request.core_record.total %}
+                {% endif %}
+                {% if download_request.core_record %}
                 <tr>
                     <th scope="row">Records</th>
                     <td>
