@@ -2,6 +2,7 @@ from flask import Blueprint
 
 from ckan.plugins import toolkit
 from ..model.downloads import DownloadRequest
+from datetime import datetime as dt, timedelta
 
 blueprint = Blueprint(name='datastore_status', import_name=__name__, url_prefix='/status')
 
@@ -22,6 +23,12 @@ def download_status(download_id):
         DownloadRequest.state_failed: toolkit._('Failed')
     }
 
+    time_now = dt.now()
+    total_time_elapsed = timedelta(seconds=round((time_now - dl.created).total_seconds()))
+    since_last_updated = timedelta(seconds=round((time_now - dl.modified).total_seconds()))
+
     return toolkit.render('status/download.html',
                           extra_vars={'download_request': dl, 'resources': resources,
-                                      'status_friendly': status_friendly[dl.state]})
+                                      'status_friendly': status_friendly[dl.state],
+                                      'total_time': total_time_elapsed,
+                                      'since_last_update': since_last_updated})
