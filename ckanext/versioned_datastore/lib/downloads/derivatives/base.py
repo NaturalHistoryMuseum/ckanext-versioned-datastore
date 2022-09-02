@@ -11,8 +11,11 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
 
     def __init__(self, output_dir, fields, resource_id=None, **format_args):
         self.output_dir = output_dir
-        self.fields = fields
         self.resource_id = resource_id
+        if resource_id:
+            self.fields = fields + ['Resource ID']
+        else:
+            self.fields = fields
         self.format_args = format_args
         self.file_paths = {'main': os.path.join(self.output_dir, os.extsep.join(
             [resource_id or 'resource', self.extension or self.name]))}

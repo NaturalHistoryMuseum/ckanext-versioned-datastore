@@ -8,13 +8,14 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
     name = 'csv'
     extension = 'csv'
 
-    def __init__(self, output_dir, fields, resource_id=None, **format_args):
+    def __init__(self, output_dir, fields, resource_id=None, delimiter='comma', **format_args):
         super(CsvDerivativeGenerator, self).__init__(output_dir, fields, resource_id,
-                                                     **format_args)
+                                                     delimiter='comma', **format_args)
+        self.delimiter = {'comma': ',', 'tab': '\t'}[delimiter]
         self.writer = None
 
     def initialise(self):
-        self.writer = csv.DictWriter(self.main_file, self.fields)
+        self.writer = csv.DictWriter(self.main_file, self.fields, delimiter=self.delimiter)
         self.writer.writeheader()
 
     def write(self, data):
