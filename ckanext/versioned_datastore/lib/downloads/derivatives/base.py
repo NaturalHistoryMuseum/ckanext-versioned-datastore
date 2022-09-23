@@ -22,9 +22,11 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         self.files = {}
         self.initialised = False
 
-    @abstractmethod
     def initialise(self):
-        raise NotImplemented
+        self.initialised = True
+
+    def finalise(self):
+        pass
 
     @abstractmethod
     def write(self, data):
@@ -47,6 +49,7 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        self.finalise()
         for f in self.files.values():
             try:
                 f.close()

@@ -17,6 +17,7 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
     def initialise(self):
         self.writer = csv.DictWriter(self.main_file, self.fields, delimiter=self.delimiter)
         self.writer.writeheader()
+        super(CsvDerivativeGenerator, self).initialise()
 
     def write(self, data):
         row = flatten_dict(data)
