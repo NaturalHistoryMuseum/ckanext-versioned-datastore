@@ -1,3 +1,4 @@
 from .csv import CsvDerivativeGenerator
+from .json import JsonDerivativeGenerator
 
-derivatives = [CsvDerivativeGenerator]
+derivatives = [CsvDerivativeGenerator, JsonDerivativeGenerator]
