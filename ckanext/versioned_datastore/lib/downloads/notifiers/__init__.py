@@ -1,5 +1,6 @@
 from .email import EmailNotifier
 from .webhook import WebhookNotifier
+from .null import NullNotifier
 
 
-notifiers = [EmailNotifier, WebhookNotifier]
+notifiers = [EmailNotifier, WebhookNotifier, NullNotifier]
