@@ -9,11 +9,13 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
     name = 'base'
     extension = None
 
+    RESOURCE_ID_FIELD_NAME = 'Source resource ID'
+
     def __init__(self, output_dir, fields, resource_id=None, **format_args):
         self.output_dir = output_dir
         self.resource_id = resource_id
         if resource_id:
-            self.fields = fields + ['Resource ID']
+            self.fields = fields + [self.RESOURCE_ID_FIELD_NAME]
         else:
             self.fields = fields
         self.format_args = format_args

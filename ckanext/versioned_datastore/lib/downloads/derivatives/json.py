@@ -29,7 +29,7 @@ class JsonDerivativeGenerator(BaseDerivativeGenerator):
             self._first_row = False
 
         if self.resource_id:
-            data['Resource ID'] = self.resource_id
+            data[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
 
         json_text = json.dumps(data, indent=2)
         indented_json_text = '\n'.join([f'  {line}' for line in json_text.split('\n')])

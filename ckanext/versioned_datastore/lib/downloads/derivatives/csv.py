@@ -30,5 +30,5 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
             else:
                 filtered_row[field] = value
         if self.resource_id:
-            filtered_row['Resource ID'] = self.resource_id
+            filtered_row[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
         self.writer.writerow(filtered_row)
