@@ -20,10 +20,11 @@ def download_status(download_id):
         DownloadRequest.state_derivative_gen: toolkit._('Generating files'),
         DownloadRequest.state_retrieving: toolkit._('Retrieving files'),
         DownloadRequest.state_complete: toolkit._('Complete'),
-        DownloadRequest.state_failed: toolkit._('Failed')
+        DownloadRequest.state_failed: toolkit._('Failed'),
+        DownloadRequest.state_packaging: toolkit._('Packaging')
     }
 
-    time_now = dt.now()
+    time_now = dt.utcnow()
     total_time_elapsed = timedelta(seconds=round((time_now - dl.created).total_seconds()))
     since_last_updated = timedelta(seconds=round((time_now - dl.modified).total_seconds()))
 
