@@ -8,24 +8,24 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
     name = 'csv'
     extension = 'csv'
 
-    def __init__(self, output_dir, fields, resource_id=None, delimiter='comma', **format_args):
-        super(CsvDerivativeGenerator, self).__init__(output_dir, fields, resource_id,
+    def __init__(self, output_dir, fields, query, resource_id=None, delimiter='comma', **format_args):
+        super(CsvDerivativeGenerator, self).__init__(output_dir, fields, query, resource_id,
                                                      delimiter='comma', **format_args)
         self.delimiter = {'comma': ',', 'tab': '\t'}[delimiter]
         self.writer = None
 
     def initialise(self):
-        self.writer = csv.DictWriter(self.main_file, self.fields, delimiter=self.delimiter)
+        self.writer = csv.DictWriter(self.main_file, self.fields['main'], delimiter=self.delimiter)
         self.writer.writeheader()
         super(CsvDerivativeGenerator, self).initialise()
 
-    def write(self, data):
-        row = flatten_dict(data)
+    def _write(self, record):
+        row = flatten_dict(record)
         filtered_row = {}
         for field, value in row.items():
-            if value is None and field not in self.fields:
+            if value is None and field not in self.fields['main']:
                 continue
-            elif field not in self.fields:
+            elif field not in self.fields['main']:
                 raise ValueError('Unexpected field.')
             else:
                 filtered_row[field] = value

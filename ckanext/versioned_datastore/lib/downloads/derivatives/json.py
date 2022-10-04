@@ -8,8 +8,8 @@ class JsonDerivativeGenerator(BaseDerivativeGenerator):
     name = 'json'
     extension = 'json'
 
-    def __init__(self, output_dir, fields, resource_id=None, **format_args):
-        super(JsonDerivativeGenerator, self).__init__(output_dir, fields, resource_id, **format_args)
+    def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
+        super(JsonDerivativeGenerator, self).__init__(output_dir, fields, query, resource_id, **format_args)
         self._first_row = True
 
     def initialise(self):
@@ -21,7 +21,7 @@ class JsonDerivativeGenerator(BaseDerivativeGenerator):
         self.main_file.write('\n]')
         super(JsonDerivativeGenerator, self).finalise()
 
-    def write(self, data):
+    def _write(self, record):
         if not self._first_row:
             self.main_file.write(',\n')
         else:
@@ -29,8 +29,8 @@ class JsonDerivativeGenerator(BaseDerivativeGenerator):
             self._first_row = False
 
         if self.resource_id:
-            data[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
+            record[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
 
-        json_text = json.dumps(data, indent=2)
+        json_text = json.dumps(record, indent=2)
         indented_json_text = '\n'.join([f'  {line}' for line in json_text.split('\n')])
         self.main_file.write(indented_json_text)

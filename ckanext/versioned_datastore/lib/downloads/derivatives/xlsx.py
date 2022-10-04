@@ -10,31 +10,31 @@ class XlsxDerivativeGenerator(BaseDerivativeGenerator):
 
     DEFAULT_SHEET_NAME = 'Data'
 
-    def __init__(self, output_dir, fields, resource_id=None, **format_args):
-        super(XlsxDerivativeGenerator, self).__init__(output_dir, fields, resource_id,
+    def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
+        super(XlsxDerivativeGenerator, self).__init__(output_dir, fields, query, resource_id,
                                                       **format_args)
         self.workbook = None
 
     def initialise(self):
         self.workbook = Workbook(write_only=True)
         self.workbook.create_sheet(self.DEFAULT_SHEET_NAME)
-        self.workbook.active.append(self.fields)
+        self.workbook.active.append(self.fields['main'])
         super(XlsxDerivativeGenerator, self).initialise()
 
     def finalise(self):
         self.workbook.save(self.file_paths['main'])
         self.workbook.close()
 
-    def write(self, data):
-        row = flatten_dict(data)
+    def _write(self, record):
+        row = flatten_dict(record)
         filtered_row = {}
         for field, value in row.items():
-            if value is None and field not in self.fields:
+            if value is None and field not in self.fields['main']:
                 continue
-            elif field not in self.fields:
+            elif field not in self.fields['main']:
                 raise ValueError('Unexpected field.')
             else:
                 filtered_row[field] = value
         if self.resource_id:
             filtered_row[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
-        self.workbook.active.append(filtered_row.get(field) for field in self.fields)
+        self.workbook.active.append(filtered_row.get(field) for field in self.fields['main'])

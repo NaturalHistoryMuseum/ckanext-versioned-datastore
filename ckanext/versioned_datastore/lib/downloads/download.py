@@ -240,12 +240,14 @@ class DownloadRunManager:
                                                             output_dir=temp_dir,
                                                             fields=fields(resource_id=rid),
                                                             resource_id=rid,
+                                                            query=self.query,
                                                             **self.derivative_options.format_args)
                               for rid in self.query.resource_ids_and_versions}
             else:
                 gen = get_derivative_generator(self.derivative_options.format,
                                                output_dir=temp_dir,
                                                fields=fields(),
+                                               query=self.query,
                                                **self.derivative_options.format_args)
                 components = defaultdict(lambda: gen)
 
