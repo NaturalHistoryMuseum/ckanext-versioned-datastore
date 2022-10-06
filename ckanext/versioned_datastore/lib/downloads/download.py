@@ -89,7 +89,10 @@ class DownloadRunManager:
             possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
             if len(possible_records) > 0:
                 self.derivative_record = possible_records[0]
-        return self.derivative_record is not None
+        if self.derivative_record is not None:
+            self.core_record = self.derivative_record.core_record
+            return True
+        return False
 
     def get_derivative(self):
         '''
@@ -101,10 +104,10 @@ class DownloadRunManager:
 
         if derivative_exists:
             self.request.update_status(DownloadRequest.state_retrieving)
-            self.request.update(derivative_id=self.derivative_record.id)
         else:
             self.core_record = self.generate_core()
             self.derivative_record = self.generate_derivative()
+        self.request.update(derivative_id=self.derivative_record.id, core_id=self.core_record.id)
         self.request.update_status(DownloadRequest.state_complete)
         return self.derivative_record
 
@@ -127,7 +130,7 @@ class DownloadRunManager:
                                         query_version=self.query.query_version,
                                         resource_ids_and_versions={})
             record.save()
-            self.request.update(core_id = record.id)
+            self.request.update(core_id=record.id)
 
             existing_resources = os.listdir(self.core_folder_path)
             resources_to_generate = {rid: v for rid, v in
