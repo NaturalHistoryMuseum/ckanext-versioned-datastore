@@ -7,23 +7,23 @@ import tempfile
 import zipfile
 from collections import defaultdict
 from datetime import datetime as dt
-from glob import iglob
 from functools import partial
+from glob import iglob
 
 import fastavro
-from ckan.plugins import toolkit
 from eevee.indexing.utils import get_elasticsearch_client
 from eevee.search import create_version_query
 from elasticsearch_dsl import Search
 
+from ckan.plugins import toolkit
 from .loaders import get_derivative_generator, get_file_server, get_notifier, get_transformation
 from .query import Query
 from .utils import get_schema, calculate_field_counts, filter_data_fields, get_fields
 from .. import common
 from ..datastore_utils import prefix_resource
+from ...logic.actions.meta.arg_objects import DerivativeArgs
 from ...model.downloads import CoreFileRecord, DownloadRequest
 from ...model.downloads import DerivativeFileRecord
-from ...logic.actions.meta.arg_objects import DerivativeArgs
 
 
 class DownloadRunManager:
@@ -42,7 +42,8 @@ class DownloadRunManager:
         self.request = DownloadRequest()
         self.request.save()
 
-        self.notifier = get_notifier(notifier_args.type, request=self.request, **notifier_args.type_args)
+        self.notifier = get_notifier(notifier_args.type, request=self.request,
+                                     **notifier_args.type_args)
 
         # initialise attributes for completing later
         self.derivative_record = None
@@ -260,7 +261,8 @@ class DownloadRunManager:
             for resource_id, version in self.query.resource_ids_and_versions.items():
                 self.request.update_status(DownloadRequest.state_derivative_gen, resource_id)
                 derivative_generator = components[resource_id]
-                core_file_path = os.path.join(self.core_folder_path, f'{resource_id}_{version}.avro')
+                core_file_path = os.path.join(self.core_folder_path,
+                                              f'{resource_id}_{version}.avro')
                 with derivative_generator, open(core_file_path, 'rb') as core_file:
                     for record in fastavro.reader(core_file):
                         for transform in transformations:
