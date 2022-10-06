@@ -47,16 +47,13 @@ class DownloadRunManager:
 
         # initialise attributes for completing later
         self.derivative_record = None
-        self.core_record = None  # will not necessarily be used
-
-    def run(self):
-        self.notifier.notify_start()
-        self.get_derivative()
-        url = self.server.serve(self.request)
-        self.notifier.notify_end(url)
+        self.core_record = None
 
     @property
     def derivative_hash(self):
+        '''
+        Unique hash for the derivative file options.
+        '''
         file_options = {
             f: getattr(self.derivative_options, f) for f in self.derivative_options.fields
         }
@@ -65,6 +62,9 @@ class DownloadRunManager:
 
     @property
     def hash(self):
+        '''
+        Unique hash for this download request, identified by the query and the derivative options.
+        '''
         to_hash = [
             self.query.record_hash,
             self.derivative_hash
@@ -74,228 +74,273 @@ class DownloadRunManager:
 
     @property
     def core_folder_path(self):
+        '''
+        Location of the core files for this query.
+        '''
         return os.path.join(self.core_dir, self.query.hash)
 
-    def check_for_derivative(self):
+    def run(self):
+        '''
+        Run the download process.
+        '''
+        self.notifier.notify_start()
+        self.request.update_status(DownloadRequest.state_initial)
+
+        try:
+            # load records, if they exist
+            self.check_for_records()
+
+            # generate core file if needed
+            self.generate_core()
+
+            # generate derivative file if needed
+            self.generate_derivative()
+
+            # finish up
+            self.request.update_status(DownloadRequest.state_complete)
+            url = self.server.serve(self.request)
+            self.notifier.notify_end(url)
+        except Exception as e:
+            self.request.update_status(DownloadRequest.state_failed, str(e))
+            self.notifier.notify_error()
+            raise e
+
+    def check_for_records(self):
+        '''
+        Check if relevant files and records already exist and returns the records if they exist.
+        :return: tuple of core_record (or None) and derivative_record (or None)
+        '''
         # check the download dir exists
         if not os.path.exists(self.download_dir):
             os.mkdir(self.download_dir)
             # if it doesn't then the file obviously doesn't exist either
             return False
 
+        # also check the core dir exists
+        if not os.path.exists(self.core_dir):
+            os.mkdir(self.core_dir)
+
+        # initialise empty variables
+        self.core_record = None
+        self.derivative_record = None
+
+        # search for derivative first
         fn = f'*_{self.hash}.zip'
         existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
-        self.derivative_record = None
         if existing_file is not None:
+            # could return multiple options, sorted by most recent first
             possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
-            if len(possible_records) > 0:
+            if possible_records:
+                # use the most recent one
                 self.derivative_record = possible_records[0]
-        if self.derivative_record is not None:
-            self.core_record = self.derivative_record.core_record
-            return True
-        return False
+                self.core_record = self.derivative_record.core_record
+                # we want to update the request with the IDs ASAP in case of errors
+                self.request.update(core_id=self.core_record.id,
+                                    derivative_id=self.derivative_record.id)
 
-    def get_derivative(self):
-        '''
-        Find or create a derivative file and return the associated database entry (a DerivativeFileRecord instance).
-        :return:
-        '''
-        # does derivative exist?
-        derivative_exists = self.check_for_derivative()
+        # if the core record hasn't been found by searching for the derivative, try and find it now
+        if self.core_record is None:
+            if os.path.exists(self.core_folder_path):
+                # could return multiple options, sorted by most recent first
+                possible_records = CoreFileRecord.get_by_hash(self.query.hash)
+                if possible_records:
+                    # use the most recent one
+                    self.core_record = possible_records[0]
+                    # update core_id ASAP in case of errors
+                    self.request.update(core_id=self.core_record.id)
+                else:
+                    # if there's no record, delete the folder and start again
+                    shutil.rmtree(self.core_folder_path)
 
-        if derivative_exists:
-            self.request.update_status(DownloadRequest.state_retrieving)
-        else:
-            self.core_record = self.generate_core()
-            self.derivative_record = self.generate_derivative()
-        self.request.update(derivative_id=self.derivative_record.id, core_id=self.core_record.id)
-        self.request.update_status(DownloadRequest.state_complete)
-        return self.derivative_record
+        # these don't really need to be returned but we may as well
+        return self.core_record, self.derivative_record
 
     def generate_core(self):
-        try:
-            if not os.path.exists(self.core_dir):
-                os.mkdir(self.core_dir)
-            record = None
-            if os.path.exists(self.core_folder_path):
-                records = CoreFileRecord.get_by_hash(self.query.hash)
-                if records:
-                    # use the most recent one
-                    record = records[0]
-                else:
-                    shutil.rmtree(self.core_folder_path)
-            if record is None:
-                os.mkdir(self.core_folder_path)
-                record = CoreFileRecord(query_hash=self.query.hash,
-                                        query=self.query.query,
-                                        query_version=self.query.query_version,
-                                        resource_ids_and_versions={})
+        '''
+        Generates and loads core files. This method will add new resources to existing core records
+        with identical filters, reducing data duplication.
+        :return: the core record
+        '''
+        if self.core_record is None:
+            os.mkdir(self.core_folder_path)
+            record = CoreFileRecord(query_hash=self.query.hash,
+                                    query=self.query.query,
+                                    query_version=self.query.query_version,
+                                    resource_ids_and_versions={})
             record.save()
-            self.request.update(core_id=record.id)
+            self.core_record = record
+        # if self.core_record was already set then core_id should already be set, but just in case:
+        self.request.update(core_id=self.core_record.id)
 
-            existing_resources = os.listdir(self.core_folder_path)
-            resources_to_generate = {rid: v for rid, v in
-                                     self.query.resource_ids_and_versions.items() if
-                                     f'{rid}_{v}.avro' not in existing_resources}
+        # check if there are new resources to generate
+        existing_resources = os.listdir(self.core_folder_path)
+        resources_to_generate = {rid: v for rid, v in
+                                 self.query.resource_ids_and_versions.items() if
+                                 f'{rid}_{v}.avro' not in existing_resources}
 
-            if len(resources_to_generate) > 0:
-                es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True,
-                                                     sniffer_timeout=60,
-                                                     sniff_on_connection_fail=True,
-                                                     sniff_timeout=10,
-                                                     http_compress=False, timeout=30)
+        if len(resources_to_generate) > 0:
+            es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True,
+                                                 sniffer_timeout=60,
+                                                 sniff_on_connection_fail=True,
+                                                 sniff_timeout=10,
+                                                 http_compress=False, timeout=30)
 
-                schema = get_schema(self.query, es_client)
-                resource_totals = {k: v for k, v in (record.resource_totals or {}).items()}
-                field_counts = {k: v for k, v in (record.field_counts or {}).items()}
+            schema = get_schema(self.query, es_client)
+            resource_totals = {k: v for k, v in (self.core_record.resource_totals or {}).items()}
+            field_counts = {k: v for k, v in (self.core_record.field_counts or {}).items()}
 
-                for resource_id, version in resources_to_generate.items():
-                    self.request.update_status(DownloadRequest.state_core_gen,
-                                               resource_id)
-                    resource_totals[resource_id] = 0
-                    field_counts[resource_id] = calculate_field_counts(self.query, es_client,
-                                                                       resource_id, version)
+            for resource_id, version in resources_to_generate.items():
+                self.request.update_status(DownloadRequest.state_core_gen,
+                                           resource_id)
+                resource_totals[resource_id] = 0
+                field_counts[resource_id] = calculate_field_counts(self.query, es_client,
+                                                                   resource_id, version)
 
-                    search = Search.from_dict(self.query.translate().to_dict()) \
-                        .index(prefix_resource(resource_id)) \
-                        .using(es_client) \
-                        .filter(create_version_query(version))
+                search = Search.from_dict(self.query.translate().to_dict()) \
+                    .index(prefix_resource(resource_id)) \
+                    .using(es_client) \
+                    .filter(create_version_query(version))
 
-                    fn = f'{resource_id}_{version}.avro'
-                    fp = os.path.join(self.core_folder_path, fn)
+                fn = f'{resource_id}_{version}.avro'
+                fp = os.path.join(self.core_folder_path, fn)
 
-                    codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
-                    chunk_size = 10000
-                    with open(fp, 'wb') as f:
-                        fastavro.writer(f, schema, [], **codec_kwargs)
+                codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
+                chunk_size = 10000
+                with open(fp, 'wb') as f:
+                    fastavro.writer(f, schema, [], **codec_kwargs)
 
-                    def _flush(record_block):
-                        with open(fp, 'a+b') as outfile:
-                            fastavro.writer(outfile, None, record_block, **codec_kwargs)
+                def _flush(record_block):
+                    with open(fp, 'a+b') as outfile:
+                        fastavro.writer(outfile, None, record_block, **codec_kwargs)
 
-                    chunk = []
-                    for hit in search.scan():
-                        data = hit.data.to_dict()
-                        resource_totals[resource_id] += 1
-                        chunk.append(data)
-                        if len(chunk) == chunk_size:
-                            _flush(chunk)
-                            chunk = []
-                    _flush(chunk)
+                chunk = []
+                for hit in search.scan():
+                    data = hit.data.to_dict()
+                    resource_totals[resource_id] += 1
+                    chunk.append(data)
+                    if len(chunk) == chunk_size:
+                        _flush(chunk)
+                        chunk = []
+                _flush(chunk)
 
-                # use .update() so it updates the modified datetime
-                record.update(resource_totals=resource_totals,
-                              total=sum(resource_totals.values()),
-                              resource_ids_and_versions=self.query.resource_ids_and_versions,
-                              field_counts=field_counts)
+            self.core_record.update(resource_totals=resource_totals,
+                                    total=sum(resource_totals.values()),
+                                    resource_ids_and_versions=self.query.resource_ids_and_versions,
+                                    field_counts=field_counts)
 
-            record.save()
-            return record
-        except Exception as e:
-            self.request.update_status(DownloadRequest.state_failed, str(e))
-            self.notifier.notify_error()
-            raise e
+        return self.core_record
 
     def generate_derivative(self):
-        start = dt.utcnow()
-        self.request.update_status(DownloadRequest.state_derivative_gen, 'initialising')
+        '''
+        Generates derivative files, if necessary.
+        :return:
+        '''
 
-        try:
-            temp_dir = tempfile.mkdtemp()
+        if self.derivative_record is None:
             zip_name = f'{self.request.id}_{self.hash}.zip'
             zip_path = os.path.join(self.download_dir, zip_name)
 
-            derivative_record = DerivativeFileRecord(core_id=self.core_record.id,
-                                                     download_hash=self.hash,
-                                                     format=self.derivative_options.format,
-                                                     options={f: getattr(self.derivative_options, f)
-                                                              for
-                                                              f in self.derivative_options.fields if
-                                                              f != 'format'},
-                                                     filepath=zip_path)
+            record = DerivativeFileRecord(core_id=self.core_record.id,
+                                          download_hash=self.hash,
+                                          format=self.derivative_options.format,
+                                          options={f: getattr(self.derivative_options, f) for f in
+                                                   self.derivative_options.fields if f != 'format'},
+                                          filepath=zip_path)
+            record.save()
+            self.derivative_record = record
+            self.request.update(derivative_id=self.derivative_record.id)
+        else:
+            # if self.derivative_record was already set then derivative_id should already be set,
+            # but just in case:
+            self.request.update(derivative_id=self.derivative_record.id)
+            # we don't want to proceed with the rest of the generation
+            return self.derivative_record
 
-            derivative_record.save()
-            self.request.update(derivative_id=derivative_record.id)
+        # for keeping track of elapsed generation time
+        start = dt.utcnow()
+        # for storing build files
+        temp_dir = tempfile.mkdtemp()
 
-            manifest = {
-                'download_id': self.request.id,
-                'resources': {},
-                'separate_files': self.derivative_options.separate_files,
-                'file_format': self.derivative_options.format,
-                'format_args': self.derivative_options.format_args,
-                'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
-                'transform': self.derivative_options.transform,
-                'total_records': self.core_record.total,
-                'start': start.isoformat(),
+        manifest = {
+            'download_id': self.request.id,
+            'resources': {},
+            'separate_files': self.derivative_options.separate_files,
+            'file_format': self.derivative_options.format,
+            'format_args': self.derivative_options.format_args,
+            'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
+            'transform': self.derivative_options.transform,
+            'total_records': self.core_record.total,
+            'start': start.isoformat(),
 
-                # these get filled in later but we'll initialise them here
-                'files': [],
-                'end': None,
-                'duration_in_seconds': 0
-            }
+            # these get filled in later but we'll initialise them here
+            'files': [],
+            'end': None,
+            'duration_in_seconds': 0
+        }
 
-            # components = individual file groups within the main zip, e.g. one CSV for each
-            # resource (multiple components), or multiple files comprising a single DarwinCore
-            # archive (single component)
-            fields = partial(get_fields, self.core_record.field_counts,
-                             self.derivative_options.ignore_empty_fields)
-            if self.derivative_options.separate_files:
-                components = {rid: get_derivative_generator(self.derivative_options.format,
-                                                            output_dir=temp_dir,
-                                                            fields=fields(resource_id=rid),
-                                                            resource_id=rid,
-                                                            query=self.query,
-                                                            **self.derivative_options.format_args)
-                              for rid in self.query.resource_ids_and_versions}
-            else:
-                gen = get_derivative_generator(self.derivative_options.format,
-                                               output_dir=temp_dir,
-                                               fields=fields(),
-                                               query=self.query,
-                                               **self.derivative_options.format_args)
-                components = defaultdict(lambda: gen)
+        # set up the derivative generators; each generator creates one component.
+        # components = individual file groups within the main zip, e.g. one CSV for each
+        # resource (multiple components), or multiple files comprising a single DarwinCore
+        # archive (single component)
+        fields = partial(get_fields, self.core_record.field_counts,
+                         self.derivative_options.ignore_empty_fields)
+        if self.derivative_options.separate_files:
+            components = {rid: get_derivative_generator(self.derivative_options.format,
+                                                        output_dir=temp_dir,
+                                                        fields=fields(resource_id=rid),
+                                                        resource_id=rid,
+                                                        query=self.query,
+                                                        **self.derivative_options.format_args)
+                          for rid in self.query.resource_ids_and_versions}
+        else:
+            gen = get_derivative_generator(self.derivative_options.format,
+                                           output_dir=temp_dir,
+                                           fields=fields(),
+                                           query=self.query,
+                                           **self.derivative_options.format_args)
+            components = defaultdict(lambda: gen)
 
-            transformations = {t: get_transformation(t, **targs) for
-                               t, targs in (self.derivative_options.transform or {}).items()}
+        # load transformation functions
+        transformations = {t: get_transformation(t, **targs) for
+                           t, targs in (self.derivative_options.transform or {}).items()}
 
-            for resource_id, version in self.query.resource_ids_and_versions.items():
-                self.request.update_status(DownloadRequest.state_derivative_gen, resource_id)
-                derivative_generator = components[resource_id]
-                core_file_path = os.path.join(self.core_folder_path,
-                                              f'{resource_id}_{version}.avro')
-                with derivative_generator, open(core_file_path, 'rb') as core_file:
-                    for record in fastavro.reader(core_file):
-                        for transform in transformations:
-                            record = transform(record)
-                        if self.derivative_options.ignore_empty_fields:
-                            record = filter_data_fields(record,
-                                                        self.core_record.field_counts[resource_id])
-                        derivative_generator.write(record)
-            end = dt.utcnow()
-            manifest['end'] = end.isoformat()
+        for resource_id, version in self.query.resource_ids_and_versions.items():
+            # add the resource ID as the message for use in the status page
+            self.request.update_status(DownloadRequest.state_derivative_gen, resource_id)
+            derivative_generator = components[resource_id]
+            core_file_path = os.path.join(self.core_folder_path,
+                                          f'{resource_id}_{version}.avro')
+            with derivative_generator, open(core_file_path, 'rb') as core_file:
+                for record in fastavro.reader(core_file):
+                    # apply the transformations first
+                    for transform in transformations:
+                        record = transform(record)
+                    # filter out fields that are empty for all records
+                    if self.derivative_options.ignore_empty_fields:
+                        record = filter_data_fields(record,
+                                                    self.core_record.field_counts[resource_id])
+                    # then write the record
+                    derivative_generator.write(record)
 
-            duration = (end - start).total_seconds()
-            manifest['duration_in_seconds'] = duration
+        # generation finished
+        self.request.update_status(DownloadRequest.state_packaging)
 
-            files_to_zip = os.listdir(temp_dir) + ['manifest.json']
-            manifest['files'] = files_to_zip
+        end = dt.utcnow()
+        manifest['end'] = end.isoformat()
 
-            self.request.update_status(DownloadRequest.state_packaging)
+        duration = (end - start).total_seconds()
+        manifest['duration_in_seconds'] = duration
 
-            # write out manifest
-            with open(os.path.join(temp_dir, 'manifest.json'), 'w', encoding='utf8') as f:
-                json.dump(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
+        files_to_zip = os.listdir(temp_dir) + ['manifest.json']
+        manifest['files'] = files_to_zip
 
-            # zip everything up
-            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
-                for filename in files_to_zip:
-                    z.write(os.path.join(temp_dir, filename), arcname=filename)
+        # write out manifest
+        with open(os.path.join(temp_dir, 'manifest.json'), 'w', encoding='utf8') as f:
+            json.dump(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
 
-            self.request.update_status(DownloadRequest.state_complete)
+        # zip everything up
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
+            for filename in files_to_zip:
+                z.write(os.path.join(temp_dir, filename), arcname=filename)
 
-            derivative_record.save()
-            return derivative_record
-        except Exception as e:
-            self.request.update_status(DownloadRequest.state_failed, str(e))
-            self.notifier.notify_error()
-            raise e
+        return self.derivative_record
