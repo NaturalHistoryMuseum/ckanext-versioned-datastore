@@ -151,7 +151,7 @@ class DownloadRunManager:
 
                 for resource_id, version in resources_to_generate.items():
                     self.request.update_status(DownloadRequest.state_core_gen,
-                                               f'Generating {resource_id}')
+                                               resource_id)
                     resource_totals[resource_id] = 0
                     field_counts[resource_id] = calculate_field_counts(self.query, es_client,
                                                                        resource_id, version)
