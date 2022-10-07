@@ -2,7 +2,6 @@ import hashlib
 import json
 import os
 import os.path
-import shutil
 import tempfile
 import zipfile
 from collections import defaultdict
@@ -142,15 +141,13 @@ class DownloadRunManager:
         if self.core_record is None:
             if os.path.exists(self.core_folder_path):
                 # could return multiple options, sorted by most recent first
-                possible_records = CoreFileRecord.get_by_hash(self.query.hash)
+                possible_records = CoreFileRecord.get_by_hash(self.query.hash,
+                                                              self.query.resource_hash)
                 if possible_records:
                     # use the most recent one
                     self.core_record = possible_records[0]
                     # update core_id ASAP in case of errors
                     self.request.update(core_id=self.core_record.id)
-                else:
-                    # if there's no record, delete the folder and start again
-                    shutil.rmtree(self.core_folder_path)
 
         # these don't really need to be returned but we may as well
         return self.core_record, self.derivative_record
@@ -162,21 +159,27 @@ class DownloadRunManager:
         :return: the core record
         '''
         if self.core_record is None:
-            os.mkdir(self.core_folder_path)
             record = CoreFileRecord(query_hash=self.query.hash,
                                     query=self.query.query,
                                     query_version=self.query.query_version,
-                                    resource_ids_and_versions={})
+                                    resource_ids_and_versions=self.query.resource_ids_and_versions,
+                                    resource_hash=self.query.resource_hash)
             record.save()
             self.core_record = record
         # if self.core_record was already set then core_id should already be set, but just in case:
         self.request.update(core_id=self.core_record.id)
 
+        if not os.path.exists(self.core_folder_path):
+            os.mkdir(self.core_folder_path)
+
         # check if there are new resources to generate
-        existing_resources = os.listdir(self.core_folder_path)
+        existing_files = os.listdir(self.core_folder_path)
         resources_to_generate = {rid: v for rid, v in
                                  self.query.resource_ids_and_versions.items() if
-                                 f'{rid}_{v}.avro' not in existing_resources}
+                                 f'{rid}_{v}.avro' not in existing_files}
+
+        resource_totals = {k: None for k in self.core_record.resource_ids_and_versions}
+        field_counts = {k: None for k in self.core_record.resource_ids_and_versions}
 
         if len(resources_to_generate) > 0:
             es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True,
@@ -186,8 +189,6 @@ class DownloadRunManager:
                                                  http_compress=False, timeout=30)
 
             schema = get_schema(self.query, es_client)
-            resource_totals = {k: v for k, v in (self.core_record.resource_totals or {}).items()}
-            field_counts = {k: v for k, v in (self.core_record.field_counts or {}).items()}
 
             for resource_id, version in resources_to_generate.items():
                 self.request.update_status(DownloadRequest.state_core_gen,
@@ -223,10 +224,19 @@ class DownloadRunManager:
                         chunk = []
                 _flush(chunk)
 
-            self.core_record.update(resource_totals=resource_totals,
-                                    total=sum(resource_totals.values()),
-                                    resource_ids_and_versions=self.query.resource_ids_and_versions,
-                                    field_counts=field_counts)
+        # now get info for resources that weren't just generated
+        existing_resources = [k for k, v in resource_totals.items() if v is None]
+        for resource_id in existing_resources:
+            # find a matching core record
+            record = CoreFileRecord.find_resource(self.query.hash, resource_id,
+                                                  self.query.resource_ids_and_versions[resource_id])
+            if record:
+                resource_totals[resource_id] = record.resource_totals[resource_id]
+                field_counts[resource_id] = record.field_counts[resource_id]
+
+        self.core_record.update(resource_totals=resource_totals,
+                                total=sum(resource_totals.values()),
+                                field_counts=field_counts)
 
         return self.core_record
 
@@ -321,6 +331,12 @@ class DownloadRunManager:
                                                     self.core_record.field_counts[resource_id])
                     # then write the record
                     derivative_generator.write(record)
+
+        if self.derivative_options.separate_files:
+            for generator in components.values():
+                generator.cleanup()
+        else:
+            components.default_factory().cleanup()
 
         # generation finished
         self.request.update_status(DownloadRequest.state_packaging)

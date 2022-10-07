@@ -20,6 +20,7 @@ datastore_downloads_core_files_table = Table(
     Column('query', JSONB, nullable=False),
     Column('query_version', UnicodeText, nullable=False),
     Column('resource_ids_and_versions', JSONB, nullable=False, default=dict),
+    Column('resource_hash', UnicodeText, nullable=False),
     Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('total', BigInteger, nullable=True),
     Column('resource_totals', JSONB, nullable=False, default=dict),
@@ -67,11 +68,11 @@ class CoreFileRecord(DomainObject):
     query: dict
     query_version: str
     resource_ids_and_versions: dict
+    resource_hash: str
     modified: datetime
     total: int
     resource_totals: dict
     field_counts: dict
-    filepath: str
     derivatives: list
     requests: list
 
@@ -86,9 +87,22 @@ class CoreFileRecord(DomainObject):
         self.save()
 
     @classmethod
-    def get_by_hash(cls, query_hash):
-        return Session.query(cls).filter(cls.query_hash == query_hash).order_by(
+    def get_by_hash(cls, query_hash, resource_hash):
+        return Session.query(cls).filter(cls.query_hash == query_hash,
+                                         cls.resource_hash == resource_hash).order_by(
             desc(cls.modified)).all()
+
+    @classmethod
+    def find_resource(cls, query_hash, resource_id, resource_version):
+        have_resource = Session.query(cls).filter(cls.query_hash == query_hash,
+                                                  cls.resource_ids_and_versions.has_key(
+                                                      resource_id)).order_by(
+            desc(cls.modified)).all()
+        have_resource_version = [r for r in have_resource if
+                                 r.resource_ids_and_versions[resource_id] == resource_version]
+        if have_resource_version:
+            return have_resource_version[0]
+        return
 
 
 class DerivativeFileRecord(DomainObject):

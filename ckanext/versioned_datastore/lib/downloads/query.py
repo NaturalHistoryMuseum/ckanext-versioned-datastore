@@ -87,12 +87,17 @@ class Query(object):
         return hash_query(self.query, self.query_version)
 
     @property
+    def resource_hash(self):
+        resources = sorted(self.resource_ids_and_versions.items())
+        return hashlib.sha1('|'.join(map(str, resources)).encode('utf-8')).hexdigest()
+
+    @property
     def record_hash(self):
         to_hash = [
             self.hash,
-            sorted(self.resource_ids_and_versions.items())
+            self.resource_hash
         ]
-        download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
+        download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
     def validate(self):

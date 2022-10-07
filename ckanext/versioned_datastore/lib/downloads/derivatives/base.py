@@ -92,6 +92,13 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         '''
         pass
 
+    def cleanup(self):
+        '''
+        Runs when the generator has finished, i.e. after a single resource in separate-resources
+        requests and after all resources in combined requests.
+        '''
+        pass
+
     @abstractmethod
     def _write(self, record):
         raise NotImplemented

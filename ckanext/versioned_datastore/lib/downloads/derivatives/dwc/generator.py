@@ -86,7 +86,6 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
     def __exit__(self, *args, **kwargs):
         super(DwcDerivativeGenerator, self).__exit__(*args, **kwargs)
         shutil.make_archive(os.path.join(self.output_dir, os.path.splitext(self.output_name)[0]), 'zip', self._build_dir)
-        shutil.rmtree(self._build_dir)
 
     def initialise(self):
         if not self._opened:
@@ -106,6 +105,12 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
     def finalise(self):
         self.files['_meta'].write(self.make_meta())
         self.files['_eml'].write(self.make_eml())
+
+    def cleanup(self):
+        try:
+            shutil.rmtree(self._build_dir)
+        except FileNotFoundError:
+            pass
 
     def _write(self, record):
         core_row, ext_rows = self._extract_record(record)
