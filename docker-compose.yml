@@ -15,8 +15,8 @@ services:
       - elasticsearch
       - mongodb
     volumes:
-      - ./ckanext:/srv/app/src/ckanext-versioned-datastore/ckanext
-      - ./tests:/srv/app/src/ckanext-versioned-datastore/tests
+      - ./ckanext:/base/src/ckanext-versioned-datastore/ckanext
+      - ./tests:/base/src/ckanext-versioned-datastore/tests
 
   solr:
     image: ckan/ckan-solr:2.9
