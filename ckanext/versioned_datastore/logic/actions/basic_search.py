@@ -20,7 +20,7 @@ from ...lib.query.query_log import log_query
 _query_log_keys = ('q', 'filters')
 
 
-@action(schema.datastore_search(), help.datastore_search, toolkit.side_effect_free)
+@action(schema.datastore_search(), help.datastore_search, get=True)
 def datastore_search(context, data_dict, original_data_dict):
     '''
     Searches the datastore using a query schema similar to the standard CKAN datastore query schema,
@@ -87,7 +87,7 @@ def datastore_search(context, data_dict, original_data_dict):
         }
 
 
-@action(schema.datastore_autocomplete(), help.datastore_autocomplete, toolkit.side_effect_free)
+@action(schema.datastore_autocomplete(), help.datastore_autocomplete, get=True)
 def datastore_autocomplete(context, data_dict, original_data_dict):
     '''
     Runs a search to find autocomplete values based on the provided prefix.
@@ -137,7 +137,7 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
     return return_dict
 
 
-@action(schema.datastore_search(), help.datastore_query_extent, toolkit.side_effect_free)
+@action(schema.datastore_search(), help.datastore_query_extent, get=True)
 def datastore_query_extent(context, data_dict, original_data_dict):
     '''
     Given the parameters for a datastore_query, finds the geographic extent of the query's results.
@@ -187,7 +187,7 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     return to_return
 
 
-@action(schema.datastore_search_raw(), help.datastore_search_raw, toolkit.side_effect_free)
+@action(schema.datastore_search_raw(), help.datastore_search_raw, get=True)
 def datastore_search_raw(resource_id, context, data_dict, original_data_dict, search=None,
                          version=None, raw_result=False, include_version=True):
     '''
