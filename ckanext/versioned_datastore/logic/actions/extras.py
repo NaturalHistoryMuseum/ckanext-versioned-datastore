@@ -13,8 +13,7 @@ from ...lib.datastore_utils import prefix_resource, is_datastore_resource, get_p
 from ...lib.query.schema import get_latest_query_version
 
 
-@action(schema.datastore_get_record_versions(), help.datastore_get_record_versions,
-        toolkit.side_effect_free)
+@action(schema.datastore_get_record_versions(), help.datastore_get_record_versions, get=True)
 def datastore_get_record_versions(id, resource_id):
     '''
     Retrieves all the versions of the record with the given id in the given resource. The versions
@@ -28,7 +27,7 @@ def datastore_get_record_versions(id, resource_id):
     return common.SEARCH_HELPER.get_record_versions(index_name, int(id))
 
 
-@action(schema.datastore_search(), help.datastore_get_resource_versions, toolkit.side_effect_free)
+@action(schema.datastore_search(), help.datastore_get_resource_versions, get=True)
 def datastore_get_resource_versions(resource_id, context, data_dict, original_data_dict):
     '''
     Retrieves all the versions of the given resource when under the given search. Note that the
@@ -56,8 +55,7 @@ def datastore_get_resource_versions(resource_id, context, data_dict, original_da
     return data
 
 
-@action(schema.datastore_get_rounded_version(), help.datastore_get_rounded_version,
-        toolkit.side_effect_free)
+@action(schema.datastore_get_rounded_version(), help.datastore_get_rounded_version, get=True)
 def datastore_get_rounded_version(resource_id, version=None):
     '''
     Retrieve the closest version of the resource's data to the given version when rounding down.
@@ -71,8 +69,7 @@ def datastore_get_rounded_version(resource_id, version=None):
     return common.SEARCH_HELPER.get_rounded_versions([index_name], version)[index_name]
 
 
-@action(schema.datastore_is_datastore_resource(), help.datastore_is_datastore_resource,
-        toolkit.side_effect_free)
+@action(schema.datastore_is_datastore_resource(), help.datastore_is_datastore_resource, get=True)
 def datastore_is_datastore_resource(resource_id):
     '''
     Checks whether the given resource id is in the datastore or not.
@@ -83,7 +80,7 @@ def datastore_is_datastore_resource(resource_id):
     return is_datastore_resource(resource_id)
 
 
-@action({}, help.datastore_get_latest_query_schema_version, toolkit.side_effect_free)
+@action({}, help.datastore_get_latest_query_schema_version, get=True)
 def datastore_get_latest_query_schema_version():
     '''
     Simply returns the latest available query schema version.
@@ -93,7 +90,7 @@ def datastore_get_latest_query_schema_version():
     return get_latest_query_version()
 
 
-@action(schema.datastore_count(), help.datastore_count, toolkit.side_effect_free)
+@action(schema.datastore_count(), help.datastore_count, get=True)
 def datastore_count(resource_ids=None, version=None):
     if version is None:
         version = to_timestamp(datetime.now())
