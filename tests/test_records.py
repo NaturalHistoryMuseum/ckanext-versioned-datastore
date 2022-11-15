@@ -5,26 +5,17 @@ from ckanext.versioned_datastore.lib.importing.ingestion.records import Datastor
 
 def test_convert_empty():
     scenarios = [
-        (
-            {},
-            {}
-        ),
+        ({}, {}),
         (
             {'field1': 'beans', 'field2': [1, 2, 3, 4]},
-            {'field1': 'beans', 'field2': [1, 2, 3, 4]}
+            {'field1': 'beans', 'field2': [1, 2, 3, 4]},
         ),
-        (
-            {'field1.another': 'beans'},
-            {'field1_another': 'beans'}
-        ),
+        ({'field1.another': 'beans'}, {'field1_another': 'beans'}),
         (
             {'field1.another.more.moreagain': 'beans'},
-            {'field1_another_more_moreagain': 'beans'}
+            {'field1_another_more_moreagain': 'beans'},
         ),
-        (
-            {'': 'beans'},
-            {}
-        ),
+        ({'': 'beans'}, {}),
         (
             {'field': {'field1': 'beans', 'field2.field3': False, 'a': {'': 'beans'}}},
             {'field': {'field1': 'beans', 'field2_field3': False, 'a': {}}},

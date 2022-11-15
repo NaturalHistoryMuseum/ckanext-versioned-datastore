@@ -2,14 +2,18 @@ import json
 
 import pytest
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.basic_query.geo import add_point_filter, FIELD, \
-    add_multipolygon_filter, add_polygon_filter, add_geo_search
+from ckanext.versioned_datastore.lib.basic_query.geo import (
+    add_point_filter,
+    FIELD,
+    add_multipolygon_filter,
+    add_polygon_filter,
+    add_geo_search,
+)
 from elasticsearch_dsl.query import GeoPolygon, Bool
 from mock import MagicMock, call, patch
 
 
 class TestAddPointFilter(object):
-
     def test_simple(self):
         search = MagicMock(filter=MagicMock())
         distance = MagicMock()
@@ -19,14 +23,16 @@ class TestAddPointFilter(object):
 
         assert returned_search == search.filter.return_value
         assert search.filter.call_count == 1
-        assert search.filter.call_args == call('geo_distance',
-                                               **{
-                                                   'distance': distance,
-                                                   FIELD: {
-                                                       'lat': coordinates[1],
-                                                       'lon': coordinates[0],
-                                                   }
-                                               })
+        assert search.filter.call_args == call(
+            'geo_distance',
+            **{
+                'distance': distance,
+                FIELD: {
+                    'lat': coordinates[1],
+                    'lon': coordinates[0],
+                },
+            }
+        )
 
     def test_float_conversion(self):
         search = MagicMock(filter=MagicMock())
@@ -37,18 +43,19 @@ class TestAddPointFilter(object):
 
         assert returned_search == search.filter.return_value
         assert search.filter.call_count == 1
-        assert search.filter.call_args == call('geo_distance',
-                                               **{
-                                                   'distance': distance,
-                                                   FIELD: {
-                                                       'lat': float(coordinates[1]),
-                                                       'lon': float(coordinates[0]),
-                                                   }
-                                               })
+        assert search.filter.call_args == call(
+            'geo_distance',
+            **{
+                'distance': distance,
+                FIELD: {
+                    'lat': float(coordinates[1]),
+                    'lon': float(coordinates[0]),
+                },
+            }
+        )
 
 
 class TestAddMultiPolygonFilter(object):
-
     def test_simple(self):
         search = MagicMock(filter=MagicMock())
         coordinates = [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]]
@@ -59,30 +66,34 @@ class TestAddMultiPolygonFilter(object):
         assert search.filter.call_count == 1
 
         filters = [
-            GeoPolygon(**{
-                FIELD: {
-                    'points': [
-                        {
-                            'lat': 44.0,
-                            'lon': -16.0,
-                        },
-                        {
-                            'lat': 34.8,
-                            'lon': -13.1,
-                        },
-                        {
-                            'lat': 35.0,
-                            'lon': 15.99,
-                        },
-                        {
-                            'lat': 49.0,
-                            'lon': 5.0,
-                        },
-                    ]
+            GeoPolygon(
+                **{
+                    FIELD: {
+                        'points': [
+                            {
+                                'lat': 44.0,
+                                'lon': -16.0,
+                            },
+                            {
+                                'lat': 34.8,
+                                'lon': -13.1,
+                            },
+                            {
+                                'lat': 35.0,
+                                'lon': 15.99,
+                            },
+                            {
+                                'lat': 49.0,
+                                'lon': 5.0,
+                            },
+                        ]
+                    }
                 }
-            })
+            )
         ]
-        assert search.filter.call_args == call(Bool(should=filters, minimum_should_match=1))
+        assert search.filter.call_args == call(
+            Bool(should=filters, minimum_should_match=1)
+        )
 
     def test_validation_error(self):
         search = MagicMock(filter=MagicMock())
@@ -94,7 +105,9 @@ class TestAddMultiPolygonFilter(object):
 
     def test_float_conversion(self):
         search = MagicMock(filter=MagicMock())
-        coordinates = [[[['-16', '44'], ['-13.1', '34.8'], ['15.99', '35'], ['5', '49']]]]
+        coordinates = [
+            [[['-16', '44'], ['-13.1', '34.8'], ['15.99', '35'], ['5', '49']]]
+        ]
 
         returned_search = add_multipolygon_filter(search, coordinates)
 
@@ -102,34 +115,37 @@ class TestAddMultiPolygonFilter(object):
         assert search.filter.call_count == 1
 
         filters = [
-            GeoPolygon(**{
-                FIELD: {
-                    'points': [
-                        {
-                            'lat': 44.0,
-                            'lon': -16.0,
-                        },
-                        {
-                            'lat': 34.8,
-                            'lon': -13.1,
-                        },
-                        {
-                            'lat': 35.0,
-                            'lon': 15.99,
-                        },
-                        {
-                            'lat': 49.0,
-                            'lon': 5.0,
-                        },
-                    ]
+            GeoPolygon(
+                **{
+                    FIELD: {
+                        'points': [
+                            {
+                                'lat': 44.0,
+                                'lon': -16.0,
+                            },
+                            {
+                                'lat': 34.8,
+                                'lon': -13.1,
+                            },
+                            {
+                                'lat': 35.0,
+                                'lon': 15.99,
+                            },
+                            {
+                                'lat': 49.0,
+                                'lon': 5.0,
+                            },
+                        ]
+                    }
                 }
-            })
+            )
         ]
-        assert search.filter.call_args == call(Bool(should=filters, minimum_should_match=1))
+        assert search.filter.call_args == call(
+            Bool(should=filters, minimum_should_match=1)
+        )
 
 
 class TestAddPolygonFilter(object):
-
     def test_pass_off(self):
         # add_polygon_filter just uses add_multipolygon_filter which we already have a test for so
         # we can just test that it is called
@@ -137,15 +153,16 @@ class TestAddPolygonFilter(object):
         coordinates = [[['-16', '44'], ['-13.1', '34.8'], ['15.99', '35'], ['5', '49']]]
         mock_add_multipolygon_filter = MagicMock()
 
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
-                   mock_add_multipolygon_filter):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
+            mock_add_multipolygon_filter,
+        ):
             add_polygon_filter(search, coordinates)
 
         assert mock_add_multipolygon_filter.call_args == call(search, [coordinates])
 
 
 class TestAddGeoSearch(object):
-
     def test_valid_point_dict(self):
         search = MagicMock()
         geo_filter = {
@@ -155,12 +172,17 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock
+        ):
             add_geo_search(search, geo_filter)
 
         assert add_mock.call_count == 1
-        assert add_mock.call_args == call(search, distance=geo_filter['distance'],
-                                          coordinates=geo_filter['coordinates'])
+        assert add_mock.call_args == call(
+            search,
+            distance=geo_filter['distance'],
+            coordinates=geo_filter['coordinates'],
+        )
 
     def test_valid_point_string(self):
         search = MagicMock()
@@ -172,12 +194,17 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_point_filter', add_mock
+        ):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert add_mock.call_count == 1
-        assert add_mock.call_args == call(search, distance=geo_filter['distance'],
-                                          coordinates=geo_filter['coordinates'])
+        assert add_mock.call_args == call(
+            search,
+            distance=geo_filter['distance'],
+            coordinates=geo_filter['coordinates'],
+        )
 
     def test_invalid_point(self):
         search = MagicMock()
@@ -204,8 +231,10 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
-                   add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
+            add_mock,
+        ):
             add_geo_search(search, geo_filter)
 
         assert add_mock.call_count == 1
@@ -220,8 +249,10 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
-                   add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_multipolygon_filter',
+            add_mock,
+        ):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert add_mock.call_count == 1
@@ -244,7 +275,10 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter',
+            add_mock,
+        ):
             add_geo_search(search, geo_filter)
 
         assert add_mock.call_count == 1
@@ -259,7 +293,10 @@ class TestAddGeoSearch(object):
         }
 
         add_mock = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter', add_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.geo.add_polygon_filter',
+            add_mock,
+        ):
             add_geo_search(search, json.dumps(geo_filter))
 
         assert add_mock.call_count == 1

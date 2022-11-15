@@ -1,7 +1,8 @@
 class IngestionException(Exception):
-    '''
+    """
     Represents an exception that has occurred during ingestion.
-    '''
+    """
+
     pass
 
 
@@ -16,15 +17,16 @@ class UnsupportedDataSource(IngestionException):
         :param res_format: the resource format
         '''
         super(UnsupportedDataSource, self).__init__(
-            f'Could not find ingest reader for {res_format if res_format else "n/a"}')
+            f'Could not find ingest reader for {res_format if res_format else "n/a"}'
+        )
         self.res_format = res_format
 
 
 class InvalidId(IngestionException):
-    '''
-    Should be raised when the data source we are attempting to ingest contains at least one row with
-    an _id field which has a non-integer value.
-    '''
+    """
+    Should be raised when the data source we are attempting to ingest contains at least
+    one row with an _id field which has a non-integer value.
+    """
 
     def __init__(self, row_number, row, cause=None):
         '''
@@ -43,30 +45,33 @@ class InvalidId(IngestionException):
 
 
 class DuplicateDataSource(IngestionException):
-    '''
-    Should be raised when the data source we are attempting to ingest is the same as the last
-    successful ingest's data source.
-    '''
+    """
+    Should be raised when the data source we are attempting to ingest is the same as the
+    last successful ingest's data source.
+    """
 
     def __init__(self, file_hash):
         '''
         :param file_hash: the file hash that clashed
         '''
         super(DuplicateDataSource, self).__init__(
-            f'This file has been ingested before, ignoring [hash: {file_hash}]')
+            f'This file has been ingested before, ignoring [hash: {file_hash}]'
+        )
         self.file_hash = file_hash
 
 
 class InvalidCharacterException(IngestionException):
-    '''
-    Thrown when there is an invalid unicode character found in the resource data. This is detected
+    """
+    Thrown when there is an invalid unicode character found in the resource data.
+
+    This is detected
     by checking if the unicode version of the row contains any category C characters (control
     characters basically, see here: http://www.unicode.org/reports/tr44/#General_Category_Values).
     This is treated as an error to avoid putting crap unicode into the jsonl.gz intermediate file
     and then erroring when attempting to deserialise the json.
     Typically this error is produced when the user has uploaded a file in a really weird character
     encoding and we failed to detect it, thus falling back to UTF-8.
-    '''
+    """
 
     def __init__(self, row_number, row):
         '''

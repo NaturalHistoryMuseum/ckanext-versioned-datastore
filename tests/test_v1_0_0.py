@@ -12,7 +12,6 @@ from ckanext.versioned_datastore.lib.query.v1_0_0 import v1_0_0Schema
 
 
 class TestV1_0_0Translator(object):
-
     def test_validate_examples(self):
         schema = v1_0_0Schema()
         path = os.path.join(schema_base_path, schema.version, 'examples')
@@ -34,18 +33,9 @@ class TestV1_0_0Translator(object):
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_2(self):
-        query = {
-            'search': 'mollusca'
-        }
+        query = {'search': 'mollusca'}
         search_dict = {
-            'query': {
-                'match': {
-                    'meta.all': {
-                        'query': 'mollusca',
-                        'operator': 'and'
-                    }
-                }
-            }
+            'query': {'match': {'meta.all': {'query': 'mollusca', 'operator': 'and'}}}
         }
         self.compare_query_and_search(query, search_dict)
 
@@ -53,22 +43,13 @@ class TestV1_0_0Translator(object):
         query = {
             u"filters": {
                 u"and": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    },
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}},
                     {
                         u"string_contains": {
-                            u"fields": [
-                                u"higherGeography"
-                            ],
-                            u"value": u"europe"
+                            u"fields": [u"higherGeography"],
+                            u"value": u"europe",
                         }
-                    }
+                    },
                 ]
             }
         }
@@ -76,19 +57,15 @@ class TestV1_0_0Translator(object):
             'query': {
                 'bool': {
                     'filter': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        },
+                        {'term': {'data.genus': 'helix'}},
                         {
                             'match': {
                                 'data.higherGeography.full': {
                                     'query': 'europe',
-                                    'operator': 'and'
+                                    'operator': 'and',
                                 }
                             }
-                        }
+                        },
                     ]
                 }
             }
@@ -100,53 +77,33 @@ class TestV1_0_0Translator(object):
             'search': 'italy',
             u"filters": {
                 u"and": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    },
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}},
                     {
                         u"string_contains": {
-                            u"fields": [
-                                u"higherGeography"
-                            ],
-                            u"value": u"europe"
+                            u"fields": [u"higherGeography"],
+                            u"value": u"europe",
                         }
-                    }
+                    },
                 ]
-            }
+            },
         }
         search_dict = {
             'query': {
                 'bool': {
                     'filter': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        },
+                        {'term': {'data.genus': 'helix'}},
                         {
                             'match': {
                                 'data.higherGeography.full': {
                                     'query': 'europe',
-                                    'operator': 'and'
+                                    'operator': 'and',
                                 }
                             }
-                        }
+                        },
                     ],
                     'must': [
-                        {
-                            'match': {
-                                'meta.all': {
-                                    'query': 'italy',
-                                    'operator': 'and'
-                                }
-                            }
-                        }
-                    ]
+                        {'match': {'meta.all': {'query': 'italy', 'operator': 'and'}}}
+                    ],
                 }
             }
         }
@@ -156,42 +113,29 @@ class TestV1_0_0Translator(object):
         query = {
             u"filters": {
                 u"and": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    },
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}},
                     {
                         u"or": [
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"italy"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"italy",
                                 }
                             },
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"spain"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"spain",
                                 }
                             },
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"portugal"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"portugal",
                                 }
-                            }
+                            },
                         ]
-                    }
+                    },
                 ]
             }
         }
@@ -199,11 +143,7 @@ class TestV1_0_0Translator(object):
             'query': {
                 'bool': {
                     'filter': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        },
+                        {'term': {'data.genus': 'helix'}},
                         {
                             'bool': {
                                 'minimum_should_match': 1,
@@ -212,7 +152,7 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'italy',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
                                     },
@@ -220,7 +160,7 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'spain',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
                                     },
@@ -228,13 +168,13 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'portugal',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
-                                    }
-                                ]
+                                    },
+                                ],
                             }
-                        }
+                        },
                     ]
                 }
             }
@@ -245,53 +185,38 @@ class TestV1_0_0Translator(object):
         query = {
             u"filters": {
                 u"and": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    },
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}},
                     {
                         u"number_range": {
-                            u"fields": [
-                                u"year"
-                            ],
+                            u"fields": [u"year"],
                             u"less_than": 2010,
                             u"less_than_inclusive": True,
                             u"greater_than": 2000,
-                            u"greater_than_inclusive": True
+                            u"greater_than_inclusive": True,
                         }
                     },
                     {
                         u"or": [
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"italy"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"italy",
                                 }
                             },
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"spain"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"spain",
                                 }
                             },
                             {
                                 u"string_contains": {
-                                    u"fields": [
-                                        u"higherGeography"
-                                    ],
-                                    u"value": u"portugal"
+                                    u"fields": [u"higherGeography"],
+                                    u"value": u"portugal",
                                 }
-                            }
+                            },
                         ]
-                    }
+                    },
                 ]
             }
         }
@@ -299,19 +224,8 @@ class TestV1_0_0Translator(object):
             'query': {
                 'bool': {
                     'filter': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        },
-                        {
-                            'range': {
-                                'data.year.number': {
-                                    'gte': 2000,
-                                    'lte': 2010
-                                }
-                            }
-                        },
+                        {'term': {'data.genus': 'helix'}},
+                        {'range': {'data.year.number': {'gte': 2000, 'lte': 2010}}},
                         {
                             'bool': {
                                 'minimum_should_match': 1,
@@ -320,7 +234,7 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'italy',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
                                     },
@@ -328,7 +242,7 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'spain',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
                                     },
@@ -336,13 +250,13 @@ class TestV1_0_0Translator(object):
                                         'match': {
                                             'data.higherGeography.full': {
                                                 'query': 'portugal',
-                                                'operator': 'and'
+                                                'operator': 'and',
                                             }
                                         }
-                                    }
-                                ]
+                                    },
+                                ],
                             }
-                        }
+                        },
                     ]
                 }
             }
@@ -353,22 +267,15 @@ class TestV1_0_0Translator(object):
         query = {
             u"filters": {
                 u"and": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    },
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}},
                     {
                         u"geo_point": {
                             u"latitude": 51.4712,
                             u"longitude": -0.9421,
                             u"radius": 10,
-                            u"radius_unit": u"mi"
+                            u"radius_unit": u"mi",
                         }
-                    }
+                    },
                 ]
             }
         }
@@ -376,20 +283,13 @@ class TestV1_0_0Translator(object):
             'query': {
                 'bool': {
                     'filter': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        },
+                        {'term': {'data.genus': 'helix'}},
                         {
                             'geo_distance': {
-                                'meta.geo': {
-                                    'lat': 51.4712,
-                                    'lon': -0.9421
-                                },
-                                'distance': '10mi'
+                                'meta.geo': {'lat': 51.4712, 'lon': -0.9421},
+                                'distance': '10mi',
                             }
-                        }
+                        },
                     ]
                 }
             }
@@ -397,69 +297,26 @@ class TestV1_0_0Translator(object):
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_8(self):
-        query = {
-            u"filters": {
-                u"and": [
-                    {
-                        u"exists": {
-                            u"fields": [
-                                u"associatedMedia"
-                            ]
-                        }
-                    }
-                ]
-            }
-        }
-        search_dict = {
-            'query': {
-                'exists': {
-                    'field': 'data.associatedMedia'
-                }
-            }
-        }
+        query = {u"filters": {u"and": [{u"exists": {u"fields": [u"associatedMedia"]}}]}}
+        search_dict = {'query': {'exists': {'field': 'data.associatedMedia'}}}
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_9(self):
-        query = {
-            u"filters": {
-                u"and": [
-                    {
-                        u"exists": {
-                            u"geo_field": True
-                        }
-                    }
-                ]
-            }
-        }
-        search_dict = {
-            'query': {
-                'exists': {
-                    'field': 'meta.geo'
-                }
-            }
-        }
+        query = {u"filters": {u"and": [{u"exists": {u"geo_field": True}}]}}
+        search_dict = {'query': {'exists': {'field': 'meta.geo'}}}
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_10(self):
         country = 'Curaçao'
         multipolygon = v1_0_0Schema().geojson['country'][country]
-        query = {
-            u"filters": {
-                u"and": [
-                    {
-                        u"geo_named_area": {
-                            u"country": country
-                        }
-                    }
-                ]
-            }
-        }
+        query = {u"filters": {u"and": [{u"geo_named_area": {u"country": country}}]}}
         search_dict = {
             'query': {
                 'geo_polygon': {
                     'meta.geo': {
                         'points': [
-                            {'lat': point[1], 'lon': point[0]} for point in multipolygon[0][0]
+                            {'lat': point[1], 'lon': point[0]}
+                            for point in multipolygon[0][0]
                         ]
                     }
                 }
@@ -468,8 +325,20 @@ class TestV1_0_0Translator(object):
         self.compare_query_and_search(query, search_dict)
 
     def test_translate_11(self):
-        a_square = [[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]]
-        another_square = [[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]
+        a_square = [
+            [102.0, 2.0],
+            [103.0, 2.0],
+            [103.0, 3.0],
+            [102.0, 3.0],
+            [102.0, 2.0],
+        ]
+        another_square = [
+            [100.0, 0.0],
+            [101.0, 0.0],
+            [101.0, 1.0],
+            [100.0, 1.0],
+            [100.0, 0.0],
+        ]
         a_hole = [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]]
 
         def to_points(points):
@@ -483,7 +352,7 @@ class TestV1_0_0Translator(object):
                             # just a square
                             [a_square],
                             # a square with a square hole in it
-                            [another_square, a_hole]
+                            [another_square, a_hole],
                         ]
                     }
                 ]
@@ -496,9 +365,7 @@ class TestV1_0_0Translator(object):
                     u"should": [
                         {
                             u"geo_polygon": {
-                                u"meta.geo": {
-                                    u"points": to_points(a_square)
-                                }
+                                u"meta.geo": {u"points": to_points(a_square)}
                             }
                         },
                         {
@@ -515,15 +382,13 @@ class TestV1_0_0Translator(object):
                                 u"must_not": [
                                     {
                                         u"geo_polygon": {
-                                            u"meta.geo": {
-                                                u"points": to_points(a_hole)
-                                            }
+                                            u"meta.geo": {u"points": to_points(a_hole)}
                                         }
                                     }
-                                ]
+                                ],
                             }
-                        }
-                    ]
+                        },
+                    ],
                 }
             }
         }
@@ -533,29 +398,12 @@ class TestV1_0_0Translator(object):
         query = {
             u"filters": {
                 u"not": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    }
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}}
                 ]
             }
         }
         search_dict = {
-            'query': {
-                'bool': {
-                    'must_not': [
-                        {
-                            'term': {
-                                'data.genus': 'helix'
-                            }
-                        }
-                    ]
-                }
-            }
+            'query': {'bool': {'must_not': [{'term': {'data.genus': 'helix'}}]}}
         }
         self.compare_query_and_search(query, search_dict)
 
@@ -566,15 +414,8 @@ class TestV1_0_0Translator(object):
             u"filters": {
                 'something_else': {},
                 u"not": [
-                    {
-                        u"string_equals": {
-                            u"fields": [
-                                u"genus"
-                            ],
-                            u"value": u"helix"
-                        }
-                    }
-                ]
+                    {u"string_equals": {u"fields": [u"genus"], u"value": u"helix"}}
+                ],
             }
         }
         with pytest.raises(jsonschema.ValidationError):
@@ -589,7 +430,7 @@ class TestV1_0_0Translator(object):
                     {
                         u"geo_named_area": {
                             u"country": u"Belgium",
-                            u"something_else": False
+                            u"something_else": False,
                         }
                     }
                 ]

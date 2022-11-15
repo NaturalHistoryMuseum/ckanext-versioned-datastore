@@ -14,10 +14,10 @@ ALL_IN_ONE_FILE_NAME = 'data.xlsx'
 
 
 class WorkbookWithFields:
-    '''
-    Class to keep a Workbook and the associated fields in use within it together, plus some
-    convenience methods for adding and saving data.
-    '''
+    """
+    Class to keep a Workbook and the associated fields in use within it together, plus
+    some convenience methods for adding and saving data.
+    """
 
     def __init__(self, fields: List[str]):
         '''
@@ -34,27 +34,27 @@ class WorkbookWithFields:
         self.workbook.active.append(fields)
 
     def add(self, row: Dict[str, str]):
-        '''
+        """
         Add a row to the workbook's active sheet.
 
         :param row: the row of data as a dict
-        '''
+        """
         self.workbook.active.append(row.get(field) for field in self.fields)
 
     def save(self, path: Path):
-        '''
-        Write the workbook to disk. This can only be called once (see write only workbook mode) and
-        close the workbook.
+        """
+        Write the workbook to disk. This can only be called once (see write only
+        workbook mode) and close the workbook.
 
         :param path: the path to write the workbook to
-        '''
+        """
         self.workbook.save(path)
         self.workbook.close()
 
 
 @contextlib.contextmanager
 def xlsx_writer(request, target_dir, field_counts):
-    '''
+    """
     An XLSX (i.e. Excel speadsheet) writer.
 
     :param request: the download request object
@@ -62,7 +62,7 @@ def xlsx_writer(request, target_dir, field_counts):
     :param field_counts: a dict of resource ids -> fields -> counts used to determine which fields
                          should be included in the xlsx file headers
     :return: yields a write function
-    '''
+    """
     if request.separate_files:
         # map of resource ids to workbooks
         workbooks = {}
@@ -75,9 +75,12 @@ def xlsx_writer(request, target_dir, field_counts):
         workbooks = defaultdict(lambda: workbook)
 
     try:
+
         def write(hit, data, resource_id):
             if request.separate_files and resource_id not in workbooks:
-                field_names = get_fields(field_counts, request.ignore_empty_fields, [resource_id])
+                field_names = get_fields(
+                    field_counts, request.ignore_empty_fields, [resource_id]
+                )
                 workbooks[resource_id] = WorkbookWithFields(field_names)
 
             if request.ignore_empty_fields:

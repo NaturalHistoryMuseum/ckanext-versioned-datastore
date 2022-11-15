@@ -10,9 +10,9 @@ from ..importing.details import get_all_details
 
 
 def run_search(search, indexes, version=None):
-    '''
-    Convenience function to runs a search on the given indexes using the client available in this
-    module.
+    """
+    Convenience function to runs a search on the given indexes using the client
+    available in this module.
 
     If the index(es) required for the search are missing then a CKAN SearchIndexError exception is
     raised.
@@ -21,7 +21,7 @@ def run_search(search, indexes, version=None):
     :param indexes: either a list of index names to search in or a single index name as a string
     :param version: version to filter the search results to, optional
     :return: the result of running the query
-    '''
+    """
     try:
         if version is not None:
             search = search.filter(create_version_query(version))
@@ -65,8 +65,10 @@ def format_facets(aggs):
                 'sum_other_doc_count': details['sum_other_doc_count'],
                 'doc_count_error_upper_bound': details['doc_count_error_upper_bound'],
             },
-            'values': {value_details['key']: value_details['doc_count']
-                       for value_details in details['buckets']}
+            'values': {
+                value_details['key']: value_details['doc_count']
+                for value_details in details['buckets']
+            },
         }
 
     return facets
@@ -81,9 +83,9 @@ field_cache = {}
 
 
 def get_fields(resource_id, version=None):
-    '''
-    Given a resource id, returns the fields that existed at the given version. If the version is
-    None then the fields for the latest version are returned.
+    """
+    Given a resource id, returns the fields that existed at the given version. If the
+    version is None then the fields for the latest version are returned.
 
     The response format is important as it must match the requirements of reclineJS's field
     definitions. See http://okfnlabs.org/recline/docs/models.html#field for more details.
@@ -104,7 +106,7 @@ def get_fields(resource_id, version=None):
     :param resource_id: the resource's id
     :param version: the version of the data we're querying (default: None, which means latest)
     :return: a list of dicts containing the field data
-    '''
+    """
     # figure out the index name from the resource id
     index = prefix_resource(resource_id)
     # figure out the rounded version so that we can figure out the fields at the right version
@@ -139,14 +141,18 @@ def get_fields(resource_id, version=None):
         # in descending version order though so that we respect the column order at the version
         # we're at before respecting any data from previous versions
         for details in reversed(all_details.values()):
-            columns = [column for column in details.get_columns() if column not in seen_fields]
+            columns = [
+                column for column in details.get_columns() if column not in seen_fields
+            ]
             field_names.extend(columns)
             seen_fields.update(columns)
 
     mapped_fields = mapping['mappings'][DOC_TYPE]['properties']['data']['properties']
     # add any unseen mapped fields to the list of names. If we have a details object for each
     # version this shouldn't add any additional fields and if not it ensures we don't miss any
-    field_names.extend(field for field in sorted(mapped_fields) if field not in seen_fields)
+    field_names.extend(
+        field for field in sorted(mapped_fields) if field not in seen_fields
+    )
 
     if field_names:
         # find out which fields exist in this version and how many values each has
@@ -154,20 +160,25 @@ def get_fields(resource_id, version=None):
         for field in field_names:
             # create a search which finds the documents that have a value for the given field at the
             # rounded version. We're only interested in the counts though so set size to 0
-            search = search.add(Search().extra(size=0)
-                                .filter('exists', **{'field': prefix_field(field)})
-                                .filter('term', **{'meta.versions': rounded_version}))
+            search = search.add(
+                Search()
+                .extra(size=0)
+                .filter('exists', **{'field': prefix_field(field)})
+                .filter('term', **{'meta.versions': rounded_version})
+            )
 
         # run the search and get the response
         responses = search.execute()
         for i, response in enumerate(responses):
             # if the field has documents then it should be included in the fields list
             if response.hits.total > 0:
-                fields.append({
-                    'id': field_names[i],
-                    # by default everything is a string
-                    'type': 'string',
-                })
+                fields.append(
+                    {
+                        'id': field_names[i],
+                        # by default everything is a string
+                        'type': 'string',
+                    }
+                )
 
     # stick the result in the cache for next time
     field_cache[cache_key] = (mapping, fields)

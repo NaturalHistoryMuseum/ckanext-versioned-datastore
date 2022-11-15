@@ -9,17 +9,18 @@ from ...interfaces import IVersionedDatastore
 
 
 def _find_version(data_dict):
-    '''
-    Retrieve the version from the data_dict. The version can be specified as a parameter in it's own
-    right or as a special filter in the filters dict using the key __version__. Using the version
-    parameter is preferred and will override any filter version value. The filter method is provided
-    because of limitations in the CKAN recline.js framework used by the NHM on CKAN 2.3 where no
-    additional parameters can be passed other than q, filters etc.
+    """
+    Retrieve the version from the data_dict. The version can be specified as a parameter
+    in it's own right or as a special filter in the filters dict using the key
+    __version__. Using the version parameter is preferred and will override any filter
+    version value. The filter method is provided because of limitations in the CKAN
+    recline.js framework used by the NHM on CKAN 2.3 where no additional parameters can
+    be passed other than q, filters etc.
 
     :param data_dict: the data dict, this might be modified if the __version__ key is used (it will
                       be removed if present)
     :return: the version found as an integer, or None if no version was found
-    '''
+    """
     version = data_dict.get('version', None)
 
     # TODO: __version__ support should be removed once the frontend is capable of using the param
@@ -41,17 +42,17 @@ def _find_version(data_dict):
 
 
 def create_search(context, data_dict, original_data_dict):
-    '''
-    Create the search object based on the parameters in the data_dict. This function will call
-    plugins that implement the datastore_modify_data_dict and datastore_modify_search interface
-    functions.
+    """
+    Create the search object based on the parameters in the data_dict. This function
+    will call plugins that implement the datastore_modify_data_dict and
+    datastore_modify_search interface functions.
 
     :param context: the context dict
     :param data_dict: the data dict of parameters
     :return: a 3-tuple containing: the original data_dict that was passed into this function, the
                                    data_dict after modification by other plugins and finally the
                                    elasticsearch-dsl Search object
-    '''
+    """
     # allow other extensions implementing our interface to modify the data_dict
     for plugin in PluginImplementations(IVersionedDatastore):
         data_dict = plugin.datastore_modify_data_dict(context, data_dict)
@@ -64,14 +65,26 @@ def create_search(context, data_dict, original_data_dict):
 
     # allow other extensions implementing our interface to modify the search object
     for plugin in PluginImplementations(IVersionedDatastore):
-        search = plugin.datastore_modify_search(context, original_data_dict, data_dict, search)
+        search = plugin.datastore_modify_search(
+            context, original_data_dict, data_dict, search
+        )
 
     return original_data_dict, data_dict, version, search
 
 
-def build_search_object(q=None, filters=None, after=None, offset=None, limit=None, fields=None,
-                        facets=None, facet_limits=None, sort=None, **kwargs):
-    '''
+def build_search_object(
+    q=None,
+    filters=None,
+    after=None,
+    offset=None,
+    limit=None,
+    fields=None,
+    facets=None,
+    facet_limits=None,
+    sort=None,
+    **kwargs
+):
+    """
     Given the parameters, creates a new elasticsearch-dsl Search object and returns it.
 
     :param q: a query string which will be searched against the meta.all field or a dict of fields
@@ -113,13 +126,15 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     :param kwargs: as a convenience we allow a kwargs parameter which we ignore, this is useful to
                    as it allows the arguments to be passed by just unpacking the data_dict
     :return: an elasticsearch-dsl Search object
-    '''
+    """
     search = Search()
     # add a free text query across all fields if there is one. This searches against meta.all which
     # is a copy field created by adding the values of each data.* field
     if q is not None and q != '' and q != {}:
         if isinstance(q, (str, int, float)):
-            search = search.query('match', **{'meta.all': {'query': q, 'operator': 'and'}})
+            search = search.query(
+                'match', **{'meta.all': {'query': q, 'operator': 'and'}}
+            )
         elif isinstance(q, dict):
             for field, query in sorted(q.items(), key=operator.itemgetter(0)):
                 # TODO: change this to __all__ to match __geo__?
@@ -127,7 +142,9 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
                     field = 'meta.all'
                 else:
                     field = prefix_field(field)
-                search = search.query('match', **{field: {'query': query, 'operator': 'and'}})
+                search = search.query(
+                    'match', **{field: {'query': query, 'operator': 'and'}}
+                )
     if filters is not None:
         for field, values in sorted(filters.items(), key=operator.itemgetter(0)):
             if not isinstance(values, list):
@@ -157,9 +174,12 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
             # to produce the facet counts we use a bucket terms aggregation, note that using the
             # bucket function on the top level aggs attribute on the search object doesn't return a
             # copy of the search object like it does when adding queries etc
-            search.aggs.bucket(facet, 'terms',
-                               field=prefix_field(facet),
-                               size=facet_limits.get(facet, 10))
+            search.aggs.bucket(
+                facet,
+                'terms',
+                field=prefix_field(facet),
+                size=facet_limits.get(facet, 10),
+            )
 
     # at least one sort is always added, on the _id column. This is necessary to ensure use of that
     # search_after is predictable (in the elasticsearch docs it recommends that a tie-breaker field
@@ -170,7 +190,9 @@ def build_search_object(q=None, filters=None, after=None, offset=None, limit=Non
     id_in_sort = False
     if sort is not None:
         for field_and_sort in sort:
-            if not field_and_sort.endswith(' desc') and not field_and_sort.endswith(' asc'):
+            if not field_and_sort.endswith(' desc') and not field_and_sort.endswith(
+                ' asc'
+            ):
                 # default the sort direction to ascending if nothing is provided
                 field_and_sort += ' asc'
             field, direction = field_and_sort.rsplit(' ', 1)

@@ -2,8 +2,9 @@ from eevee.ingestion.feeders import BaseRecord
 
 
 def _convert(data):
-    '''
-    Converts the given dict into a suitable format for storage in mongo. For us this means:
+    """
+    Converts the given dict into a suitable format for storage in mongo. For us this
+    means:
 
         - replacing '.' with '_' as neither mongo nor elasticsearch can handle dots in field
           names as they both use the dot notation for nested field access
@@ -13,7 +14,7 @@ def _convert(data):
     This function is recursive.
 
     :return: a dict ready for storage in mongo
-    '''
+    """
     converted = {}
     for field, value in data.items():
         # elasticsearch doesn't allow empty fields, plus it's silly so ignore them
@@ -29,9 +30,9 @@ def _convert(data):
 
 
 class DatastoreRecord(BaseRecord):
-    '''
+    """
     Represents a record from a feeder which needs to be ingested into mongo.
-    '''
+    """
 
     def __init__(self, version, record_id, data, resource_id):
         '''
@@ -46,8 +47,9 @@ class DatastoreRecord(BaseRecord):
         self.resource_id = resource_id
 
     def convert(self):
-        '''
-        Converts the record into a suitable format for storage in mongo. For us this means:
+        """
+        Converts the record into a suitable format for storage in mongo. For us this
+        means:
 
             - replacing '.' with '_' as neither mongo nor elasticsearch can handle dots in field
               names as they both use the dot notation for nested field access
@@ -55,23 +57,24 @@ class DatastoreRecord(BaseRecord):
               don't create fields that are the empty string
 
         :return: a dict ready for storage in mongo
-        '''
+        """
         return _convert(self.data)
 
     @property
     def id(self):
-        '''
+        """
         Returns the id of the record.
 
         :return: the id
-        '''
+        """
         return self.record_id
 
     @property
     def mongo_collection(self):
-        '''
-        Returns the name of the collection in mongo which should store this record's data.
+        """
+        Returns the name of the collection in mongo which should store this record's
+        data.
 
         :return: the name of the target mongo collection
-        '''
+        """
         return self.resource_id

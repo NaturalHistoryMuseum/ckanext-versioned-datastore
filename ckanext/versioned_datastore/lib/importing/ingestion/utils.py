@@ -8,13 +8,13 @@ import requests
 
 
 def compute_hash(fp):
-    '''
-    Given a file pointer like object, computes the sha1 hash of its data. The file pointer is reset
-    after use.
+    """
+    Given a file pointer like object, computes the sha1 hash of its data. The file
+    pointer is reset after use.
 
     :param fp: a file pointer like object
     :return: the sha1 hexdigest
-    '''
+    """
     hasher = hashlib.sha1()
     with ensure_reset(fp):
         while True:
@@ -27,9 +27,10 @@ def compute_hash(fp):
 
 @contextmanager
 def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
-    '''
-    Streams the data from the given URL and saves it in a temporary file. The (named) temporary file
-    is then yielded to the caller for use. Once the context collapses the temporary file is removed.
+    """
+    Streams the data from the given URL and saves it in a temporary file. The (named)
+    temporary file is then yielded to the caller for use. Once the context collapses the
+    temporary file is removed.
 
     If the compress parameter is passed as True (the default) the data will be downloaded and
     written to a file using GZIP and a GzipFile pointer will be returned.
@@ -39,7 +40,7 @@ def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
     :param compress: whether to compress the downloaded data when storing it, if so a GzipFile
                      pointer will be returned (default: True)
     :param chunk_size: the number of bytes to read at a time from the url stream
-    '''
+    """
     headers = headers if headers else {}
     # open up the url for streaming
     with closing(requests.get(url, stream=True, headers=headers)) as r:
@@ -69,11 +70,11 @@ def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
 
 @contextmanager
 def ensure_reset(file_pointer):
-    '''
+    """
     Context manager which resets (seeks to 0) the passed file pointer after use.
 
     :param file_pointer: the file pointer to reset
-    '''
+    """
     try:
         yield
     finally:
@@ -81,15 +82,14 @@ def ensure_reset(file_pointer):
 
 
 class InclusionTracker(object):
-    '''
-    Class that tracks the ids of records that have been included in an ingestion event but we're
-    actually modified. The ids are stored in a temporary sqlite database in case there are too many
-    to store in memory. The objects created from this class definition should be used as context
-    managers like so:
+    """
+    Class that tracks the ids of records that have been included in an ingestion event
+    but we're actually modified. The ids are stored in a temporary sqlite database in
+    case there are too many to store in memory. The objects created from this class
+    definition should be used as context managers like so:
 
-    with InclusionTracker(ingester) as tracker:
-        ...
-    '''
+    with InclusionTracker(ingester) as tracker:     ...
+    """
 
     def __init__(self, ingester):
         '''
@@ -119,13 +119,13 @@ class InclusionTracker(object):
         self.temporary_file.close()
 
     def was_included(self, record_id):
-        '''
-        Checks whether the given record id was included in the ingestion but not updated as the data
-        was the same.
+        """
+        Checks whether the given record id was included in the ingestion but not updated
+        as the data was the same.
 
         :param record_id: the record id
         :return: True if the record id was included but not updated and False if not
-        '''
+        """
         with self.tracker_db:
             cursor = self.tracker_db.cursor()
             cursor.execute('select 1 from ids where id = ?', (record_id,))

@@ -2,12 +2,15 @@ from eevee.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS, DATASTORE_ONLY_RESOURCE
-from ckanext.versioned_datastore.lib.datastore_utils import is_datastore_resource, is_ingestible, \
-    is_datastore_only_resource, iter_data_fields
+from ckanext.versioned_datastore.lib.datastore_utils import (
+    is_datastore_resource,
+    is_ingestible,
+    is_datastore_only_resource,
+    iter_data_fields,
+)
 
 
 class TestDatastoreUtils(object):
-
     def test_is_datastore_resource(self):
         scenarios = [
             (True, True, {'beans-banana': MagicMock()}),
@@ -22,24 +25,42 @@ class TestDatastoreUtils(object):
             return f'beans-{name}'
 
         for expected_outcome, exists, status in scenarios:
-            client_mock = MagicMock(indices=MagicMock(exists=MagicMock(return_value=exists)))
-            search_helper_mock = MagicMock(get_latest_index_versions=MagicMock(return_value=status))
+            client_mock = MagicMock(
+                indices=MagicMock(exists=MagicMock(return_value=exists))
+            )
+            search_helper_mock = MagicMock(
+                get_latest_index_versions=MagicMock(return_value=status)
+            )
 
-            with patch('ckanext.versioned_datastore.lib.datastore_utils.prefix_resource',
-                       new=prefix_mock):
-                with patch('ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
-                           new=search_helper_mock):
-                    with patch('ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock):
+            with patch(
+                'ckanext.versioned_datastore.lib.datastore_utils.prefix_resource',
+                new=prefix_mock,
+            ):
+                with patch(
+                    'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
+                    new=search_helper_mock,
+                ):
+                    with patch(
+                        'ckanext.versioned_datastore.lib.common.ES_CLIENT',
+                        new=client_mock,
+                    ):
                         assert expected_outcome == is_datastore_resource('banana')
 
     def test_is_datastore_only_resource(self):
-        for yes in [DATASTORE_ONLY_RESOURCE, f'http://{DATASTORE_ONLY_RESOURCE}',
-                    f'https://{DATASTORE_ONLY_RESOURCE}']:
+        for yes in [
+            DATASTORE_ONLY_RESOURCE,
+            f'http://{DATASTORE_ONLY_RESOURCE}',
+            f'https://{DATASTORE_ONLY_RESOURCE}',
+        ]:
             assert is_datastore_only_resource(yes)
 
-        for no in [f'ftp://{DATASTORE_ONLY_RESOURCE}', 'this is datastore only', None,
-                   f'{DATASTORE_ONLY_RESOURCE}/{DATASTORE_ONLY_RESOURCE}',
-                   f'https://{DATASTORE_ONLY_RESOURCE}/nope']:
+        for no in [
+            f'ftp://{DATASTORE_ONLY_RESOURCE}',
+            'this is datastore only',
+            None,
+            f'{DATASTORE_ONLY_RESOURCE}/{DATASTORE_ONLY_RESOURCE}',
+            f'https://{DATASTORE_ONLY_RESOURCE}/nope',
+        ]:
             assert not is_datastore_only_resource(no)
 
     def test_is_ingestible(self):

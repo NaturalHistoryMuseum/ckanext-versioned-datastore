@@ -29,9 +29,10 @@ datastore_downloads_table = Table(
 
 
 class DatastoreDownload(DomainObject):
-    '''
+    """
     Object for a datastore download row.
-    '''
+    """
+
     pass
 
 

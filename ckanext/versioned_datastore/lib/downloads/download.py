@@ -26,8 +26,13 @@ from .transform import Transform
 from .. import common
 from ..datastore_utils import trim_index_name, prefix_resource
 from ...interfaces import IVersionedDatastoreDownloads
-from ...model.downloads import DatastoreDownload, state_complete, state_failed, state_processing, \
-    state_zipping
+from ...model.downloads import (
+    DatastoreDownload,
+    state_complete,
+    state_failed,
+    state_processing,
+    state_zipping,
+)
 
 format_registry = {
     'csv': functools.partial(sv_writer, dialect='excel', extension='csv'),
@@ -59,33 +64,74 @@ available at <a href="{{ download_url }}">here</a>.</p>
 '''.strip()
 
 
-def queue_download(email_address, download_id, query_hash, query, query_version, search,
-                   resource_ids_and_versions, separate_files, file_format, format_args,
-                   ignore_empty_fields, transform):
-    '''
+def queue_download(
+    email_address,
+    download_id,
+    query_hash,
+    query,
+    query_version,
+    search,
+    resource_ids_and_versions,
+    separate_files,
+    file_format,
+    format_args,
+    ignore_empty_fields,
+    transform,
+):
+    """
     Queues a job which when run will download the data for the resource.
 
     :return: the queued job
-    '''
-    request = DownloadRequest(email_address, download_id, query_hash, query, query_version, search,
-                              resource_ids_and_versions, separate_files, file_format, format_args,
-                              ignore_empty_fields, transform)
+    """
+    request = DownloadRequest(
+        email_address,
+        download_id,
+        query_hash,
+        query,
+        query_version,
+        search,
+        resource_ids_and_versions,
+        separate_files,
+        file_format,
+        format_args,
+        ignore_empty_fields,
+        transform,
+    )
     # pass a timeout of 1 hour (3600 seconds)
-    return toolkit.enqueue_job(download, args=[request], queue='download', title=str(request),
-                               rq_kwargs={'timeout': 3600})
+    return toolkit.enqueue_job(
+        download,
+        args=[request],
+        queue='download',
+        title=str(request),
+        rq_kwargs={'timeout': 3600},
+    )
 
 
 class DownloadRequest(object):
-    '''
-    Class representing a request to download data. We use a class like this for two reasons, firstly
-    to avoid having a long list of arguments passed through to queued functions, and secondly
-    because rq by default logs the arguments sent to a function and if the records argument is a
-    large list of dicts this becomes insane.
-    '''
+    """
+    Class representing a request to download data.
 
-    def __init__(self, email_address, download_id, query_hash, query, query_version, search,
-                 resource_ids_and_versions, separate_files, file_format, format_args,
-                 ignore_empty_fields, transform):
+    We use a class like this for two reasons, firstly to avoid having a long list of
+    arguments passed through to queued functions, and secondly because rq by default
+    logs the arguments sent to a function and if the records argument is a large list of
+    dicts this becomes insane.
+    """
+
+    def __init__(
+        self,
+        email_address,
+        download_id,
+        query_hash,
+        query,
+        query_version,
+        search,
+        resource_ids_and_versions,
+        separate_files,
+        file_format,
+        format_args,
+        ignore_empty_fields,
+        transform,
+    ):
         self.email_address = email_address
         self.download_id = download_id
         self.query_hash = query_hash
@@ -104,12 +150,12 @@ class DownloadRequest(object):
         return sorted(self.resource_ids_and_versions.keys())
 
     def update_download(self, **kwargs):
-        '''
-        Update the DatastoreDownload object with the given database id with the given update dict.
-        The update dict will be passed directly to SQLAlchemy.
+        """
+        Update the DatastoreDownload object with the given database id with the given
+        update dict. The update dict will be passed directly to SQLAlchemy.
 
         :param kwargs: a dict of fields to update with the corresponding values
-        '''
+        """
         download_entry = model.Session.query(DatastoreDownload).get(self.download_id)
         for field, value in kwargs.items():
             setattr(download_entry, field, value)
@@ -137,23 +183,30 @@ class DownloadRequest(object):
 
 
 def download(request):
-    '''
+    """
     Downloads the data found by the query in the request and writes it to a zip.
 
     :param request: the DownloadRequest object, see that for parameter details
-    '''
+    """
     download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
     # make sure this download dir exists
     if not os.path.exists(download_dir):
         os.mkdir(download_dir)
     download_hash = request.generate_download_hash()
-    existing_file = next(iglob(os.path.join(download_dir, f'*_{download_hash}.zip')), None)
+    existing_file = next(
+        iglob(os.path.join(download_dir, f'*_{download_hash}.zip')), None
+    )
     if existing_file is not None:
         previous_download_id = os.path.split(existing_file)[1].split('_')[0]
-        existing_download = model.Session.query(DatastoreDownload).get(previous_download_id)
+        existing_download = model.Session.query(DatastoreDownload).get(
+            previous_download_id
+        )
         if existing_download is not None:
-            request.update_download(state='complete', total=existing_download.total,
-                                    resource_totals=existing_download.resource_totals)
+            request.update_download(
+                state='complete',
+                total=existing_download.total,
+                resource_totals=existing_download.resource_totals,
+            )
             zip_name = f'{existing_download.id}_{download_hash}.zip'
             send_email(request, zip_name)
             return
@@ -166,9 +219,15 @@ def download(request):
     target_dir = tempfile.mkdtemp()
 
     try:
-        es_client = get_elasticsearch_client(common.CONFIG, sniff_on_start=True, sniffer_timeout=60,
-                                             sniff_on_connection_fail=True, sniff_timeout=10,
-                                             http_compress=False, timeout=30)
+        es_client = get_elasticsearch_client(
+            common.CONFIG,
+            sniff_on_start=True,
+            sniffer_timeout=60,
+            sniff_on_connection_fail=True,
+            sniff_timeout=10,
+            http_compress=False,
+            timeout=30,
+        )
 
         for plugin in PluginImplementations(IVersionedDatastoreDownloads):
             request = plugin.download_before_write(request)
@@ -199,10 +258,12 @@ def download(request):
             # the scroll api - if we were to search all resources requested at once we'd probably
             # have to use the multisearch endpoint on es and that doesn't support the scroll api
             for resource_id, version in request.resource_ids_and_versions.items():
-                search = Search.from_dict(request.search) \
-                    .index(prefix_resource(resource_id)) \
-                    .using(es_client) \
+                search = (
+                    Search.from_dict(request.search)
+                    .index(prefix_resource(resource_id))
+                    .using(es_client)
                     .filter(create_version_query(version))
+                )
 
                 total_records = 0
                 for hit in search.scan():
@@ -218,9 +279,13 @@ def download(request):
                     continue
 
                 # retrieve information about the resource and package and add it to the manifest
-                resource_dict = toolkit.get_action('resource_show')(context, {'id': resource_id})
+                resource_dict = toolkit.get_action('resource_show')(
+                    context, {'id': resource_id}
+                )
                 package_id = resource_dict['package_id']
-                package_dict = toolkit.get_action('package_show')(context, {'id': package_id})
+                package_dict = toolkit.get_action('package_show')(
+                    context, {'id': package_id}
+                )
                 manifest['resources'][resource_id] = {
                     'name': resource_dict['name'],
                     'package_id': package_id,
@@ -232,8 +297,9 @@ def download(request):
                 resource_counts[resource_id] = total_records
 
         overall_total = sum(resource_counts.values())
-        request.update_download(state=state_zipping, total=overall_total,
-                                resource_totals=resource_counts)
+        request.update_download(
+            state=state_zipping, total=overall_total, resource_totals=resource_counts
+        )
 
         # create a list of files that should be added to the zip, this should include the manifest
         files_to_zip = ['manifest.json'] + os.listdir(target_dir)
@@ -272,13 +338,13 @@ def download(request):
 
 
 def send_email(request, zip_name):
-    '''
-    Sends an email to the email address in the passed request informing them that a download has
-    completed and providing them with a link to go get it from.
+    """
+    Sends an email to the email address in the passed request informing them that a
+    download has completed and providing them with a link to go get it from.
 
     :param request: the DownloadRequest object
     :param zip_name: the name of the zip file that has been created
-    '''
+    """
     # get the templates as strings
     templates = (default_body, default_html_body)
     for plugin in PluginImplementations(IVersionedDatastoreDownloads):
@@ -298,5 +364,10 @@ def send_email(request, zip_name):
     body, body_html = (Template(template).render(**context) for template in templates)
 
     # vend
-    mailer.mail_recipient(recipient_email=request.email_address, recipient_name='Downloader',
-                          subject='Data download', body=body, body_html=body_html)
+    mailer.mail_recipient(
+        recipient_email=request.email_address,
+        recipient_name='Downloader',
+        subject='Data download',
+        body=body,
+        body_html=body_html,
+    )

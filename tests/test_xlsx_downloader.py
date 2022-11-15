@@ -4,8 +4,12 @@ from unittest.mock import MagicMock
 
 from openpyxl import load_workbook
 
-from ckanext.versioned_datastore.lib.downloads.xlsx import xlsx_writer, ALL_IN_ONE_FILE_NAME, \
-    DEFAULT_SHEET_NAME, RESOURCE_ID_FIELD_NAME
+from ckanext.versioned_datastore.lib.downloads.xlsx import (
+    xlsx_writer,
+    ALL_IN_ONE_FILE_NAME,
+    DEFAULT_SHEET_NAME,
+    RESOURCE_ID_FIELD_NAME,
+)
 
 
 def test_xlsx_single(tmpdir: Path):

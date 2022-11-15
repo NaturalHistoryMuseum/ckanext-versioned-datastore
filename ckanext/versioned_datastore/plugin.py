@@ -4,14 +4,24 @@ from datetime import datetime
 
 from ckan import model
 from ckan.model import DomainObjectOperation
-from ckan.plugins import toolkit, interfaces, SingletonPlugin, implements, PluginImplementations
+from ckan.plugins import (
+    toolkit,
+    interfaces,
+    SingletonPlugin,
+    implements,
+    PluginImplementations,
+)
 from eevee.utils import to_timestamp
 
 from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
 from .lib.common import setup
-from .lib.datastore_utils import is_datastore_resource, ReadOnlyResourceException, \
-    InvalidVersionException, update_resources_privacy
+from .lib.datastore_utils import (
+    is_datastore_resource,
+    ReadOnlyResourceException,
+    InvalidVersionException,
+    update_resources_privacy,
+)
 from .lib.query.schema import register_schema
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .logic import auth
@@ -64,10 +74,10 @@ class VersionedSearchPlugin(SingletonPlugin):
 
     # IDomainObjectModification
     def notify(self, entity, operation):
-        '''
-        Respond to changes to model objects. We use this hook to ensure any new data is imported
-        into the versioned datastore and to make sure the privacy settings on the data are up to
-        date. We're only interested in:
+        """
+        Respond to changes to model objects. We use this hook to ensure any new data is
+        imported into the versioned datastore and to make sure the privacy settings on
+        the data are up to date. We're only interested in:
 
             - resource deletions
             - new resources
@@ -77,8 +87,11 @@ class VersionedSearchPlugin(SingletonPlugin):
         :param entity: the entity that has changed
         :param operation: the operation undertaken on the object. This will be one of the options
                           from the DomainObjectOperation enum.
-        '''
-        if isinstance(entity, model.Package) and operation == DomainObjectOperation.changed:
+        """
+        if (
+            isinstance(entity, model.Package)
+            and operation == DomainObjectOperation.changed
+        ):
             # if a package is the target entity and it's been changed ensure the privacy is applied
             # correctly to its resource indexes
             update_resources_privacy(entity)
@@ -93,7 +106,9 @@ class VersionedSearchPlugin(SingletonPlugin):
 
                 if operation == DomainObjectOperation.new:
                     # datastore_create returns True when the resource looks like it's ingestible
-                    do_upsert = toolkit.get_action('datastore_create')(context, data_dict)
+                    do_upsert = toolkit.get_action('datastore_create')(
+                        context, data_dict
+                    )
                 elif operation == DomainObjectOperation.changed:
                     # always try the upsert if the resource has changed
                     do_upsert = True
@@ -102,7 +117,9 @@ class VersionedSearchPlugin(SingletonPlugin):
                     # in theory, last_modified should change when the resource file/url is changed
                     # and metadata_modified should change when any other attributes are changed. To
                     # cover off the possibility that this gets mixed up, we'll pick the max of them
-                    modified = list(filter(None, (entity.last_modified, entity.metadata_modified)))
+                    modified = list(
+                        filter(None, (entity.last_modified, entity.metadata_modified))
+                    )
                     last_modified = max(modified) if modified else datetime.now()
                     data_dict['version'] = to_timestamp(last_modified)
                     # use replace to overwrite the existing data (this is what users would expect)
@@ -134,13 +151,15 @@ class VersionedSearchPlugin(SingletonPlugin):
 
         # reserve any requested slugs
         from .lib.query.slugs import reserve_slug
+
         for plugin in PluginImplementations(IVersionedDatastore):
-            for reserved_pretty_slug, query_parameters in plugin.datastore_reserve_slugs().items():
+            for (
+                reserved_pretty_slug,
+                query_parameters,
+            ) in plugin.datastore_reserve_slugs().items():
                 with suppress(Exception):
                     reserve_slug(reserved_pretty_slug, **query_parameters)
 
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):
-        return [
-            (v1_0_0Schema.version, v1_0_0Schema())
-        ]
+        return [(v1_0_0Schema.version, v1_0_0Schema())]
