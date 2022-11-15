@@ -1,3 +1,76 @@
+[project]
+name = "ckanext-versioned-datastore"
+version = "3.6.2"
+description = "A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch"
+readme = "README.md"
+requires-python = ">=3.6"
+license = { text = "GPL-3.0-or-later" }
+authors = [
+    { name = "Natural History Museum", email = "data@nhm.ac.uk" }
+]
+keywords = ["CKAN", "data", "versioned_datastore"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8"
+]
+dependencies = [
+    "backports.csv==1.0.6",
+    "cchardet==2.1.4",
+    "ckantools",
+    "eevee @ git+https://github.com/NaturalHistoryMuseum/eevee@v1.2.3#egg=eevee-1.2.3",
+    "elasticsearch-dsl>=6.0.0,<7.0.0",
+    "elasticsearch>=6.0.0,<7.0.0",
+    "jsonschema==3.0.0",
+    "openpyxl==2.5.8",
+    "pandas==1.4.1",
+    "requests",
+    "six>=1.11.0",
+    "xlrd==1.1.0"
+]
+
+[project.optional-dependencies]
+test = [
+    "mock",
+    "pytest>=4.6.5",
+    "pytest-cov>=2.7.1",
+    "coveralls"
+]
+
+[project.urls]
+repository = "https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore"
+changelog = "https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore/blob/main/CHANGELOG.md"
+
+[project.entry-points."ckan.plugins"]
+versioned_datastore = "ckanext.versioned_datastore.plugin:VersionedSearchPlugin"
+
+
 [build-system]
 requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+
+[tool]
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = ["tests", "docs"]
+
+[tool.black]
+line-length = 88
+skip_string_normalization = true
+
+[tool.pylint]
+max-line-length = 88
+disable = ["C0114", "R0903"]
+
+[tool.docformatter]
+wrap-summaries = 88
+wrap-descriptions = 88
+pre-summary-newline = true
+make-summary-multi-line = true
