@@ -1,6 +1,6 @@
 from ckan.plugins import toolkit
 from datetime import datetime
-from eevee.utils import to_timestamp
+from splitgill.utils import to_timestamp
 
 from .meta import help, schema
 from ckantools.decorators import action

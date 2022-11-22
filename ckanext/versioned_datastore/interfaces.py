@@ -150,14 +150,14 @@ class IVersionedDatastore(interfaces.Interface):
         """
         return False
 
-    def datastore_after_indexing(self, request, eevee_stats, stats_id):
+    def datastore_after_indexing(self, request, splitgill_stats, stats_id):
         """
         Allows implementors to hook onto the completion of an indexing task. This
         function doesn't return anything and any exceptions it raises will be caught and
         ignored.
 
         :param request: the ResourceIndexRequest object that triggered the indexing task
-        :param eevee_stats: the statistics about the indexing task from eevee
+        :param splitgill_stats: the statistics about the indexing task from splitgill
         :param stats_id: the id of the statistics entry in the ImportStats database table
         """
         pass

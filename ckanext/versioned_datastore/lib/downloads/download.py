@@ -10,8 +10,8 @@ from ckan import model
 from ckan.lib import mailer
 from ckan.plugins import toolkit, PluginImplementations
 from datetime import datetime
-from eevee.indexing.utils import get_elasticsearch_client
-from eevee.search import create_version_query
+from splitgill.indexing.utils import get_elasticsearch_client
+from splitgill.search import create_version_query
 from elasticsearch_dsl import Search
 from glob import iglob
 from jinja2 import Template

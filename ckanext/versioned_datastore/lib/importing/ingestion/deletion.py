@@ -1,9 +1,9 @@
 import logging
 
-from eevee.ingestion.converters import RecordToMongoConverter
-from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
-from eevee.ingestion.ingesters import Ingester
-from eevee.mongo import get_mongo
+from splitgill.ingestion.converters import RecordToMongoConverter
+from splitgill.ingestion.feeders import IngestionFeeder, BaseRecord
+from splitgill.ingestion.ingesters import Ingester
+from splitgill.mongo import get_mongo
 
 from .. import stats
 from ... import common

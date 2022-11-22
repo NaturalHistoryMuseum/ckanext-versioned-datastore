@@ -1,7 +1,7 @@
 import logging
 
-from eevee.config import Config
-from eevee.search import SearchHelper
+from splitgill.config import Config
+from splitgill.search import SearchHelper
 
 log = logging.getLogger(__name__)
 # stop elasticsearch from showing warning logs
@@ -20,7 +20,7 @@ XLSX_FORMATS = [
 ]
 ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
 
-# global variables to hold the eevee config (not the CKAN one), the eevee search helper object and
+# global variables to hold the splitgill config (not the CKAN one), the splitgill search helper object and
 # an elasticsearch client object
 CONFIG = None
 SEARCH_HELPER = None

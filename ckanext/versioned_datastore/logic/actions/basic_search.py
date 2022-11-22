@@ -1,9 +1,9 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit, PluginImplementations
-from eevee.indexing.utils import DOC_TYPE
-from eevee.search import create_version_query
-from eevee.utils import to_timestamp
+from splitgill.indexing.utils import DOC_TYPE
+from splitgill.search import create_version_query
+from splitgill.utils import to_timestamp
 from elasticsearch import RequestError
 from elasticsearch_dsl import A, Search
 

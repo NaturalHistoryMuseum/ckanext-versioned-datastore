@@ -3,8 +3,8 @@ from copy import copy
 from ckan import model
 from ckan.plugins import toolkit
 from datetime import datetime
-from eevee.search import create_version_query, create_index_specific_version_filter
-from eevee.utils import to_timestamp
+from splitgill.search import create_version_query, create_index_specific_version_filter
+from splitgill.utils import to_timestamp
 from elasticsearch_dsl import Search, MultiSearch
 
 from .. import common

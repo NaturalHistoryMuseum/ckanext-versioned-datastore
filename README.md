@@ -27,7 +27,7 @@ This allows this plugin to:
   - store large resources (millions of rows) and still provide high speed search responses
   - store complex data as both MongoDB and Elasticsearch are JSON based, allowing object nesting and arrays
 
-This plugin is built on [Eevee](https://github.com/NaturalHistoryMuseum/eevee).
+This plugin is built on [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill).
 
 <!--overview-end-->
 
@@ -73,12 +73,12 @@ Path variables used below:
 
 ## Further Setup
 
-At the version of Eevee this plugin uses, you will also need to:
+At the version of Splitgill this plugin uses, you will also need to:
 
   - install MongoDB 4.x
   - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
 
-See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
+See the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
 
 This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
 
@@ -137,8 +137,8 @@ Note that only the first sheet in multisheet XLS and XLSX files will be processe
 
 Adding data to the datastore is accomplished in two steps:
 
-1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
+1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
+2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
 
 The ingesting and indexing is completed in the background using the CKAN's job queue.
 

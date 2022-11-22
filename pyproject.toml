@@ -22,7 +22,7 @@ dependencies = [
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
     "ckantools",
-    "eevee @ git+https://github.com/NaturalHistoryMuseum/eevee@v1.2.3#egg=eevee-1.2.3",
+    "splitgill==2.0.0",
     "elasticsearch-dsl>=6.0.0,<7.0.0",
     "elasticsearch>=6.0.0,<7.0.0",
     "jsonschema==3.0.0",

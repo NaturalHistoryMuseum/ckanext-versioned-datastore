@@ -11,7 +11,7 @@ from ckan.plugins import (
     implements,
     PluginImplementations,
 )
-from eevee.utils import to_timestamp
+from splitgill.utils import to_timestamp
 
 from . import routes, helpers, cli
 from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore

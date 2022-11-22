@@ -1,4 +1,4 @@
-from eevee.ingestion.feeders import BaseRecord
+from splitgill.ingestion.feeders import BaseRecord
 
 
 def _convert(data):
