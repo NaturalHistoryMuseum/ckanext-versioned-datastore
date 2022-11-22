@@ -1,3 +1,4 @@
+<!--header-start-->
 <img src=".github/nhm-logo.svg" align="left" width="150px" height="100px" hspace="40"/>
 
 # ckanext-versioned-datastore
@@ -10,8 +11,11 @@
 
 _A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch._
 
+<!--header-end-->
+
 # Overview
 
+<!--overview-start-->
 This plugin provides a complete replacement for ckan's datastore plugin and therefore shouldn't be used in conjunction with it.
 Rather than storing data in PostgreSQL, resource data is stored in MongoDB and then made available to frontend APIs using Elasticsearch.
 
@@ -25,9 +29,11 @@ This allows this plugin to:
 
 This plugin is built on [Eevee](https://github.com/NaturalHistoryMuseum/eevee).
 
+<!--overview-end-->
 
 # Installation
 
+<!--installation-start-->
 Path variables used below:
 - `$INSTALL_FOLDER` (i.e. where CKAN is installed), e.g. `/usr/lib/ckan/default`
 - `$CONFIG_FILE`, e.g. `/etc/ckan/default/development.ini`
@@ -65,8 +71,23 @@ Path variables used below:
   ckan.plugins = ... versioned_datastore
   ```
 
+## Further Setup
+
+At the version of Eevee this plugin uses, you will also need to:
+
+  - install MongoDB 4.x
+  - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
+
+See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
+
+This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
+
+
+<!--installation-end-->
+
 # Configuration
 
+<!--configuration-start-->
 There are a number of options that can be specified in your .ini config file.
 All configuration options are currently required.
 
@@ -95,21 +116,11 @@ Name|Description|Example
 `ckanext.versioned_datastore.dwc_org_email`|The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`|`contact@yoursite.com`
 `ckanext.versioned_datastore.dwc_default_license`|The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`|`http://creativecommons.org/publicdomain/zero/1.0/legalcode`
 
-
-# Further Setup
-
-At the version of Eevee this plugin uses, you will also need to:
-
-  - install MongoDB 4.x
-  - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
-
-See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-
-This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
-
+<!--configuration-end-->
 
 # Usage
 
+<!--usage-start-->
 A brief tour!
 
 The plugin automatically detects resources on upload that can be added to the datastore.
@@ -205,8 +216,11 @@ Here is a brief overview of its functions:
 
 See the interface definition in this plugin for more details about these functions.
 
+<!--usage-end-->
+
 # Testing
 
+<!--testing-start-->
 There is a Docker compose configuration available in this repository to make it easier to run tests.
 
 To run the tests against ckan 2.9.x on Python3:
@@ -225,3 +239,5 @@ docker-compose run ckan
 ```
 
 The ckan image uses the Dockerfile in the `docker/` folder.
+
+<!--testing-end-->
