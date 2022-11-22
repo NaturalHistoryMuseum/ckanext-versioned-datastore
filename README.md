@@ -1,16 +1,21 @@
+<!--header-start-->
 <img src=".github/nhm-logo.svg" align="left" width="150px" height="100px" hspace="40"/>
 
 # ckanext-versioned-datastore
 
 [![Tests](https://img.shields.io/github/workflow/status/NaturalHistoryMuseum/ckanext-versioned-datastore/Tests?style=flat-square)](https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore/actions/workflows/main.yml)
-[![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/master.svg?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
+[![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/main?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
 [![CKAN](https://img.shields.io/badge/ckan-2.9.1-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
 [![Python](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue.svg?style=flat-square)](https://www.python.org/)
+[![Docs](https://img.shields.io/readthedocs/ckanext-versioned-datastore?style=flat-square)](https://ckanext-versioned-datastore.readthedocs.io)
 
 _A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch._
 
+<!--header-end-->
+
 # Overview
 
+<!--overview-start-->
 This plugin provides a complete replacement for ckan's datastore plugin and therefore shouldn't be used in conjunction with it.
 Rather than storing data in PostgreSQL, resource data is stored in MongoDB and then made available to frontend APIs using Elasticsearch.
 
@@ -22,11 +27,13 @@ This allows this plugin to:
   - store large resources (millions of rows) and still provide high speed search responses
   - store complex data as both MongoDB and Elasticsearch are JSON based, allowing object nesting and arrays
 
-This plugin is built on [Eevee](https://github.com/NaturalHistoryMuseum/eevee).
+This plugin is built on [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill).
 
+<!--overview-end-->
 
 # Installation
 
+<!--installation-start-->
 Path variables used below:
 - `$INSTALL_FOLDER` (i.e. where CKAN is installed), e.g. `/usr/lib/ckan/default`
 - `$CONFIG_FILE`, e.g. `/etc/ckan/default/development.ini`
@@ -64,8 +71,23 @@ Path variables used below:
   ckan.plugins = ... versioned_datastore
   ```
 
+## Further Setup
+
+At the version of Splitgill this plugin uses, you will also need to:
+
+  - install MongoDB 4.x
+  - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
+
+See the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
+
+This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
+
+
+<!--installation-end-->
+
 # Configuration
 
+<!--configuration-start-->
 There are a number of options that can be specified in your .ini config file.
 All configuration options are currently required.
 
@@ -94,21 +116,11 @@ Name|Description|Example
 `ckanext.versioned_datastore.dwc_org_email`|The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`|`contact@yoursite.com`
 `ckanext.versioned_datastore.dwc_default_license`|The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`|`http://creativecommons.org/publicdomain/zero/1.0/legalcode`
 
-
-# Further Setup
-
-At the version of Eevee this plugin uses, you will also need to:
-
-  - install MongoDB 4.x
-  - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
-
-See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-
-This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
-
+<!--configuration-end-->
 
 # Usage
 
+<!--usage-start-->
 A brief tour!
 
 The plugin automatically detects resources on upload that can be added to the datastore.
@@ -125,8 +137,8 @@ Note that only the first sheet in multisheet XLS and XLSX files will be processe
 
 Adding data to the datastore is accomplished in two steps:
 
-1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
+1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
+2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
 
 The ingesting and indexing is completed in the background using the CKAN's job queue.
 
@@ -204,11 +216,12 @@ Here is a brief overview of its functions:
 
 See the interface definition in this plugin for more details about these functions.
 
-# Testing
-_Test coverage is currently extremely limited._
+<!--usage-end-->
 
-To run the tests in this extension, there is a Docker compose configuration available in this
-repository to make it easy.
+# Testing
+
+<!--testing-start-->
+There is a Docker compose configuration available in this repository to make it easier to run tests.
 
 To run the tests against ckan 2.9.x on Python3:
 
@@ -225,4 +238,6 @@ docker-compose build
 docker-compose run ckan
 ```
 
-The ckan image uses the Dockerfile in the `docker/` folder which is based on `openknowledge/ckan-dev:2.9`.
+The ckan image uses the Dockerfile in the `docker/` folder.
+
+<!--testing-end-->

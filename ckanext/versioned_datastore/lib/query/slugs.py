@@ -12,11 +12,13 @@ from .utils import get_available_datastore_resources
 from ...model.slugs import DatastoreSlug
 
 
-def generate_query_hash(query, query_version, version, resource_ids, resource_ids_and_versions):
-    '''
-    Given a query and the parameters required to run it, create a unique id for it (a hash) and
-    returns it. The hashing algorithm used is sha1 and the output will be a 40 character hexidecimal
-    string.
+def generate_query_hash(
+    query, query_version, version, resource_ids, resource_ids_and_versions
+):
+    """
+    Given a query and the parameters required to run it, create a unique id for it (a
+    hash) and returns it. The hashing algorithm used is sha1 and the output will be a 40
+    character hexidecimal string.
 
     :param query: the query dict
     :param query_version: the query version
@@ -24,7 +26,7 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
     :param resource_ids: the ids of the resources under search
     :param resource_ids_and_versions: the resource ids and specific versions to search at for them
     :return: a unique id for the query, which is a hash of the query and parameters
-    '''
+    """
     hash_value = hashlib.sha1()
     bits = [
         hash_query(query, query_version),
@@ -33,32 +35,43 @@ def generate_query_hash(query, query_version, version, resource_ids, resource_id
         # sort the resource ids to ensure stability
         sorted(resource_ids) if resource_ids is not None else None,
         # sort the resource ids and versions to ensure stability
-        sorted(resource_ids_and_versions.items()) if resource_ids_and_versions is not None else None
+        sorted(resource_ids_and_versions.items())
+        if resource_ids_and_versions is not None
+        else None,
     ]
     hash_value.update('|'.join(map(str, bits)).encode('utf-8'))
     return hash_value.hexdigest()
 
 
 def generate_pretty_slug(word_lists=(list_one, list_two, list_three)):
-    '''
-    Generate a new slug using the adjective and animal lists available. The default word_lists value
-    is a trio of lists: (adjectives, adjectives, animals). This produces >31,000,000 unique
-    combinations which should be more than enough! This function does have the potential to
-    produce duplicate adjectives (for example, green-green-llama) but the chances are really low and
-    it doesn't really matter.
+    """
+    Generate a new slug using the adjective and animal lists available. The default
+    word_lists value is a trio of lists: (adjectives, adjectives, animals). This
+    produces >31,000,000 unique combinations which should be more than enough! This
+    function does have the potential to produce duplicate adjectives (for example,
+    green-green-llama) but the chances are really low and it doesn't really matter.
 
     :param word_lists: a sequence of word lists to choose from
     :return: the slug
-    '''
+    """
     return '-'.join(map(random.choice, word_lists))
 
 
-def create_slug(context, query, query_version, version=None, resource_ids=None,
-                resource_ids_and_versions=None, pretty_slug=True, attempts=5):
-    '''
-    Creates a new slug in the database and returns the saved DatastoreSlug object. If a slug already
-    exists under the query hash then the existing slug entry is returned. In addition to the slug
-    object, also returned is information about whether the slug was new or not.
+def create_slug(
+    context,
+    query,
+    query_version,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    pretty_slug=True,
+    attempts=5,
+):
+    """
+    Creates a new slug in the database and returns the saved DatastoreSlug object. If a
+    slug already exists under the query hash then the existing slug entry is returned.
+    In addition to the slug object, also returned is information about whether the slug
+    was new or not.
 
     Only valid queries get a slug, otherwise we raise a ValidationError.
 
@@ -78,30 +91,40 @@ def create_slug(context, query, query_version, version=None, resource_ids=None,
     :return: a 2-tuple containing a boolean indicating whether the slug object returned was newly
              created and the DatastoreSlug object itself. If we couldn't create a slug object for
              some reason then (False, None) is returned.
-    '''
+    """
     # only store valid queries!
     validate_query(query, query_version)
 
     if resource_ids:
         resource_ids = list(get_available_datastore_resources(context, resource_ids))
         if not resource_ids:
-            raise toolkit.ValidationError(u"The requested resources aren't accessible to this user")
+            raise toolkit.ValidationError(
+                u"The requested resources aren't accessible to this user"
+            )
 
-    query_hash = generate_query_hash(query, query_version, version, resource_ids,
-                                     resource_ids_and_versions)
+    query_hash = generate_query_hash(
+        query, query_version, version, resource_ids, resource_ids_and_versions
+    )
 
-    existing_slug = model.Session.query(DatastoreSlug) \
-        .filter(DatastoreSlug.query_hash == query_hash) \
+    existing_slug = (
+        model.Session.query(DatastoreSlug)
+        .filter(DatastoreSlug.query_hash == query_hash)
         .first()
+    )
 
     if existing_slug is not None:
         return False, existing_slug
 
     while attempts:
         attempts -= 1
-        new_slug = DatastoreSlug(query_hash=query_hash, query=query, query_version=query_version,
-                                 version=version, resource_ids=resource_ids,
-                                 resource_ids_and_versions=resource_ids_and_versions)
+        new_slug = DatastoreSlug(
+            query_hash=query_hash,
+            query=query,
+            query_version=query_version,
+            version=version,
+            resource_ids=resource_ids,
+            resource_ids_and_versions=resource_ids_and_versions,
+        )
 
         if pretty_slug:
             new_slug.pretty_slug = generate_pretty_slug()
@@ -124,25 +147,33 @@ def create_slug(context, query, query_version, version=None, resource_ids=None,
 
 
 def resolve_slug(slug):
-    '''
+    """
     Resolves the given slug and returns it if it's found, otherwise None is returned.
 
     :param slug: the slug
     :return: a DatastoreSlug object or None if the slug couldn't be found
-    '''
-    return model.Session.query(DatastoreSlug).filter(DatastoreSlug.on_slug(slug)).first()
+    """
+    return (
+        model.Session.query(DatastoreSlug).filter(DatastoreSlug.on_slug(slug)).first()
+    )
 
 
 class DuplicateSlugException(Exception):
     pass
 
 
-def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=None,
-                 resource_ids=None, resource_ids_and_versions=None):
-    '''
-    This function can be used to reserve a slug using a specific string. This should probably only
-    be called during this extension's initialisation via the datastore_reserve_slugs interface
-    function.
+def reserve_slug(
+    reserved_pretty_slug,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+):
+    """
+    This function can be used to reserve a slug using a specific string. This should
+    probably only be called during this extension's initialisation via the
+    datastore_reserve_slugs interface function.
 
     If a slug already exists in the database with the same reserved pretty slug and the same
     query parameters then nothing happens.
@@ -162,7 +193,7 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
     :return: a DatastoreSlug object that has either been found (if it already existed), created (if
              no slug existed) or updated (if a slug existed for the query parameters, but no
              reserved query string was associated with it).
-    '''
+    """
     # default some parameters and then assert they are all the right types. We do this because if
     # there are problems they're going to be reported back to the developer not the user
     if query is None:
@@ -185,15 +216,26 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
     else:
         # there is no slug associated with this reserved pretty slug so let's see if there's a slug
         # using the query parameters
-        query_hash = generate_query_hash(query, query_version, version, resource_ids,
-                                         resource_ids_and_versions)
-        slug = model.Session.query(DatastoreSlug).filter(
-            DatastoreSlug.query_hash == query_hash).first()
+        query_hash = generate_query_hash(
+            query, query_version, version, resource_ids, resource_ids_and_versions
+        )
+        slug = (
+            model.Session.query(DatastoreSlug)
+            .filter(DatastoreSlug.query_hash == query_hash)
+            .first()
+        )
         if slug is None:
             # we need to make a new slug
             context = {'ignore_auth': True}
-            success, slug = create_slug(context, query, query_version, version, resource_ids,
-                                        resource_ids_and_versions, pretty_slug=False)
+            success, slug = create_slug(
+                context,
+                query,
+                query_version,
+                version,
+                resource_ids,
+                resource_ids_and_versions,
+                pretty_slug=False,
+            )
             if not success:
                 # this should never really happen
                 raise Exception('Failed to create new reserved slug')
@@ -207,5 +249,7 @@ def reserve_slug(reserved_pretty_slug, query=None, query_version=None, version=N
                 slug.save()
                 return slug
             else:
-                raise DuplicateSlugException(f'The query parameters are already associated with a '
-                                             f'different slug: {slug.get_slug_string()}')
+                raise DuplicateSlugException(
+                    f'The query parameters are already associated with a '
+                    f'different slug: {slug.get_slug_string()}'
+                )

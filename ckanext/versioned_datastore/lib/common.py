@@ -1,7 +1,7 @@
 import logging
 
-from eevee.config import Config
-from eevee.search import SearchHelper
+from splitgill.config import Config
+from splitgill.search import SearchHelper
 
 log = logging.getLogger(__name__)
 # stop elasticsearch from showing warning logs
@@ -14,10 +14,13 @@ DATASTORE_ONLY_RESOURCE = '_datastore_only_resource'
 CSV_FORMATS = ['csv', 'application/csv']
 TSV_FORMATS = ['tsv']
 XLS_FORMATS = ['xls', 'application/vnd.ms-excel']
-XLSX_FORMATS = ['xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+XLSX_FORMATS = [
+    'xlsx',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+]
 ALL_FORMATS = CSV_FORMATS + TSV_FORMATS + XLS_FORMATS + XLSX_FORMATS
 
-# global variables to hold the eevee config (not the CKAN one), the eevee search helper object and
+# global variables to hold the splitgill config (not the CKAN one), the splitgill search helper object and
 # an elasticsearch client object
 CONFIG = None
 SEARCH_HELPER = None
@@ -25,14 +28,16 @@ ES_CLIENT = None
 
 
 def setup(ckan_config):
-    '''
+    """
     Given the CKAN config, setup the plugin's global variables.
 
     :param ckan_config: the ckan config
-    '''
+    """
     global CONFIG, SEARCH_HELPER, ES_CLIENT
 
-    es_hosts = ckan_config.get('ckanext.versioned_datastore.elasticsearch_hosts').split(',')
+    es_hosts = ckan_config.get('ckanext.versioned_datastore.elasticsearch_hosts').split(
+        ','
+    )
     es_port = ckan_config.get('ckanext.versioned_datastore.elasticsearch_port')
     prefix = ckan_config.get('ckanext.versioned_datastore.elasticsearch_index_prefix')
     CONFIG = Config(

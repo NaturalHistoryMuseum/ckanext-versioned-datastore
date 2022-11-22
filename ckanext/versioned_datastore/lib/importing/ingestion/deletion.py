@@ -1,9 +1,9 @@
 import logging
 
-from eevee.ingestion.converters import RecordToMongoConverter
-from eevee.ingestion.feeders import IngestionFeeder, BaseRecord
-from eevee.ingestion.ingesters import Ingester
-from eevee.mongo import get_mongo
+from splitgill.ingestion.converters import RecordToMongoConverter
+from splitgill.ingestion.feeders import IngestionFeeder, BaseRecord
+from splitgill.ingestion.ingesters import Ingester
+from splitgill.mongo import get_mongo
 
 from .. import stats
 from ... import common
@@ -12,9 +12,9 @@ log = logging.getLogger(__name__)
 
 
 class DeletionRecord(BaseRecord):
-    '''
+    """
     A record that represents a deleted record to the converter object.
-    '''
+    """
 
     def __init__(self, version, resource_id, record_id):
         '''
@@ -27,38 +27,39 @@ class DeletionRecord(BaseRecord):
         self.record_id = record_id
 
     def convert(self):
-        '''
-        Converts the data into the form to be stored in mongo under the "data" field. As this is a
-        deletion record the return is an empty dict to signify the deletion.
+        """
+        Converts the data into the form to be stored in mongo under the "data" field. As
+        this is a deletion record the return is an empty dict to signify the deletion.
 
         :return: an empty dict
-        '''
+        """
         # to signal a deletion we're using an empty dict
         return {}
 
     @property
     def id(self):
-        '''
+        """
         Returns the id of the record to delete.
 
         :return: the record id
-        '''
+        """
         return self.record_id
 
     @property
     def mongo_collection(self):
-        '''
-        Returns the name of the collection in mongo that this record exists in (if indeed it does).
+        """
+        Returns the name of the collection in mongo that this record exists in (if
+        indeed it does).
 
         :return: the resource id which is used as the collection name too
-        '''
+        """
         return self.resource_id
 
 
 class DeletionFeeder(IngestionFeeder):
-    '''
+    """
     A feeder for deletion records.
-    '''
+    """
 
     def __init__(self, version, resource_id):
         '''
@@ -70,20 +71,20 @@ class DeletionFeeder(IngestionFeeder):
 
     @property
     def source(self):
-        '''
-        This is used for stats/logging and as it the name of the source of that data, in this case
-        we just return "deletion" always because deletions are a special case.
+        """
+        This is used for stats/logging and as it the name of the source of that data, in
+        this case we just return "deletion" always because deletions are a special case.
 
         :return: "deletion", always
-        '''
+        """
         return 'deletion'
 
     def records(self):
-        '''
+        """
         Generator function which yields DeletionRecord objects.
 
         :return: yields DeletionRecords
-        '''
+        """
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # loop through records in mongo
             for record in mongo.find(projection=['id', 'data']):
@@ -93,16 +94,16 @@ class DeletionFeeder(IngestionFeeder):
 
 
 def delete_resource_data(resource_id, version, start):
-    '''
-    Update all the records in mongo to a deleted state (empty data). Essentially we present an empty
-    dict as the new data version for all records in the collection that don't already have this
-    state.
+    """
+    Update all the records in mongo to a deleted state (empty data). Essentially we
+    present an empty dict as the new data version for all records in the collection that
+    don't already have this state.
 
     :param resource_id: the resource id
     :param version: the version to put this ingest in as
     :param start: the start time of the deletion
     :return: True if the deletion was successful, False if not
-    '''
+    """
     log.info(f'Starting deletion for {resource_id}')
 
     # create a stats entry so that progress can be tracked
@@ -127,9 +128,9 @@ def delete_resource_data(resource_id, version, start):
 
 
 class ReplaceDeletionFeeder(IngestionFeeder):
-    '''
+    """
     A feeder for deletion records that come from a replacement upload.
-    '''
+    """
 
     def __init__(self, version, resource_id, tracker, original_source):
         '''
@@ -148,17 +149,20 @@ class ReplaceDeletionFeeder(IngestionFeeder):
         return self.original_source
 
     def records(self):
-        '''
-        Generator function which yields DeletionRecord objects. When the replace flag is true during
-        ingestion this indicates that any records not present in the new resource data should be
-        deleted. By using the tracker this feeder can yield record objects which represent a record
-        that was not included in a new version of a resource's data for deletion.
+        """
+        Generator function which yields DeletionRecord objects. When the replace flag is
+        true during ingestion this indicates that any records not present in the new
+        resource data should be deleted. By using the tracker this feeder can yield
+        record objects which represent a record that was not included in a new version
+        of a resource's data for deletion.
 
         :return: yields DeletionRecords
-        '''
+        """
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # this finds all the records that haven't been updated in the given version
             for mongo_doc in mongo.find({'latest_version': {'$lt': self.version}}):
                 if not self.tracker.was_included(mongo_doc['id']):
                     # delete
-                    yield DeletionRecord(self.version, self.resource_id, mongo_doc['id'])
+                    yield DeletionRecord(
+                        self.version, self.resource_id, mongo_doc['id']
+                    )

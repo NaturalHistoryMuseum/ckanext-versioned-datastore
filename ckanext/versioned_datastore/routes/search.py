@@ -22,10 +22,12 @@ def view(slug=''):
 
 @blueprint.route('/slugerator')
 def slug_generator():
-    '''
-    A queryless slug generator. Because why not.
+    """
+    A queryless slug generator.
+
+    Because why not.
     :return:
-    '''
+    """
     extra_vars = {}
     slug_q = Session.query(DatastoreSlug)
 
@@ -37,7 +39,9 @@ def slug_generator():
     extra_vars['remaining'] = total_permutations - pretty_slugs
     extra_vars['percent_used'] = round((pretty_slugs / total_permutations) * 100, 2)
 
-    reserved_slugs = slug_q.filter(DatastoreSlug.reserved_pretty_slug.isnot(None)).count()
+    reserved_slugs = slug_q.filter(
+        DatastoreSlug.reserved_pretty_slug.isnot(None)
+    ).count()
     extra_vars['reserved'] = reserved_slugs
 
     date_func = func.date_trunc('day', DatastoreSlug.created)
@@ -52,7 +56,9 @@ def slug_generator():
     extra_vars['slug_stats'] = slug_stats
     # also compress the data and add to toolkit.c
     toolkit.c.date_interval = 'day'
-    toolkit.c.graph_data = base64.b64encode(zlib.compress(json.dumps(slug_stats).encode(), level=9))
+    toolkit.c.graph_data = base64.b64encode(
+        zlib.compress(json.dumps(slug_stats).encode(), level=9)
+    )
 
     attempts = 0
     while attempts < 100:

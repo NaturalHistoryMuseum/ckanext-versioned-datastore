@@ -4,8 +4,11 @@ import pytest
 from elasticsearch_dsl import Search
 from mock import MagicMock, patch
 
-from ckanext.versioned_datastore.lib.basic_query.search import _find_version, create_search, \
-    build_search_object
+from ckanext.versioned_datastore.lib.basic_query.search import (
+    _find_version,
+    create_search,
+    build_search_object,
+)
 from ckanext.versioned_datastore.lib.datastore_utils import prefix_field
 
 
@@ -50,8 +53,12 @@ class TestFindVersion(object):
             _find_version({'filters': {'__version__': ['aaaaa', None]}})
 
     def test_both_are_none(self):
-        assert _find_version({'version': None, 'filters': {'__version__': None}}) == None
-        assert _find_version({'version': None, 'filters': {'__version__': [None]}}) == None
+        assert (
+            _find_version({'version': None, 'filters': {'__version__': None}}) == None
+        )
+        assert (
+            _find_version({'version': None, 'filters': {'__version__': [None]}}) == None
+        )
 
     def test_version_takes_precedence(self):
         assert _find_version({'version': 10, 'filters': {'__version__': 12}}) == 10
@@ -65,10 +72,11 @@ class TestFindVersion(object):
 
 
 class TestCreateSearch(object):
-
     @contextlib.contextmanager
     def _patch(self, target, replacement):
-        with patch(f'ckanext.versioned_datastore.lib.basic_query.search.{target}', replacement):
+        with patch(
+            f'ckanext.versioned_datastore.lib.basic_query.search.{target}', replacement
+        ):
             yield
 
     def test_onward_calls(self):
@@ -129,7 +137,6 @@ class TestCreateSearch(object):
 
 
 class TestBuildSearchObject(object):
-
     def _run_test(self, kwargs, expected_result, add_size=True, add_sort=True):
         if add_size:
             expected_result['size'] = 100
@@ -148,9 +155,7 @@ class TestBuildSearchObject(object):
 
     def test_q_simple_text(self):
         self._run_test(
-            {
-                'q': 'banana'
-            },
+            {'q': 'banana'},
             {
                 'query': {
                     'match': {
@@ -160,12 +165,10 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
         self._run_test(
-            {
-                'q': 'a multi-word example'
-            },
+            {'q': 'a multi-word example'},
             {
                 'query': {
                     'match': {
@@ -175,16 +178,12 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
 
     def test_q_dicts(self):
         self._run_test(
-            {
-                'q': {
-                    '': 'banana'
-                }
-            },
+            {'q': {'': 'banana'}},
             {
                 'query': {
                     'match': {
@@ -194,14 +193,10 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
         self._run_test(
-            {
-                'q': {
-                    'field1': 'banana'
-                }
-            },
+            {'q': {'field1': 'banana'}},
             {
                 'query': {
                     'match': {
@@ -211,15 +206,10 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
         self._run_test(
-            {
-                'q': {
-                    'field1': 'banana',
-                    'field2': 'lemons'
-                }
-            },
+            {'q': {'field1': 'banana', 'field2': 'lemons'}},
             {
                 'query': {
                     'bool': {
@@ -243,14 +233,12 @@ class TestBuildSearchObject(object):
                         ]
                     }
                 }
-            }
+            },
         )
 
     def test_q_string_and_unicode(self):
         self._run_test(
-            {
-                'q': 'a string'
-            },
+            {'q': 'a string'},
             {
                 'query': {
                     'match': {
@@ -260,12 +248,10 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
         self._run_test(
-            {
-                'q': 'a unicode string'
-            },
+            {'q': 'a unicode string'},
             {
                 'query': {
                     'match': {
@@ -275,14 +261,12 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
 
     def test_q_non_string(self):
         self._run_test(
-            {
-                'q': 4
-            },
+            {'q': 4},
             {
                 'query': {
                     'match': {
@@ -292,12 +276,10 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
         self._run_test(
-            {
-                'q': 4.31932
-            },
+            {'q': 4.31932},
             {
                 'query': {
                     'match': {
@@ -307,7 +289,7 @@ class TestBuildSearchObject(object):
                         }
                     }
                 }
-            }
+            },
         )
 
     def test_filters_empties(self):
@@ -332,7 +314,7 @@ class TestBuildSearchObject(object):
                         ]
                     }
                 }
-            }
+            },
         )
         self._run_test(
             {
@@ -354,17 +336,19 @@ class TestBuildSearchObject(object):
                                 'term': {
                                     prefix_field('field2'): 'lemons',
                                 }
-                            }
+                            },
                         ]
                     }
                 }
-            }
+            },
         )
 
         add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
         mock_geo_value = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
-                   add_geo_search_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
+            add_geo_search_mock,
+        ):
             build_search_object(filters={'__geo__': mock_geo_value})
         assert add_geo_search_mock.call_count == 1
         search_object, filter_value = add_geo_search_mock.call_args[0]
@@ -390,7 +374,7 @@ class TestBuildSearchObject(object):
                         ]
                     }
                 }
-            }
+            },
         )
         self._run_test(
             {
@@ -412,11 +396,11 @@ class TestBuildSearchObject(object):
                                 'term': {
                                     prefix_field('field2'): 'lemons',
                                 }
-                            }
+                            },
                         ]
                     }
                 }
-            }
+            },
         )
         self._run_test(
             {
@@ -453,16 +437,18 @@ class TestBuildSearchObject(object):
                                 'term': {
                                     prefix_field('field2'): 'chunk',
                                 }
-                            }
+                            },
                         ]
                     }
                 }
-            }
+            },
         )
         add_geo_search_mock = MagicMock(side_effect=lambda s, v: s)
         mock_geo_value = MagicMock()
-        with patch('ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
-                   add_geo_search_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.search.add_geo_search',
+            add_geo_search_mock,
+        ):
             build_search_object(filters={'__geo__': [mock_geo_value]})
         assert add_geo_search_mock.call_count == 1
         search_object, filter_value = add_geo_search_mock.call_args[0]
@@ -495,11 +481,11 @@ class TestBuildSearchObject(object):
                                 'term': {
                                     prefix_field('field2'): 'blarp',
                                 }
-                            }
+                            },
                         ]
                     }
                 }
-            }
+            },
         )
 
     def test_after(self):
@@ -514,54 +500,32 @@ class TestBuildSearchObject(object):
         self._run_test({'limit': '1500'}, {'size': 1500}, add_size=False)
 
     def test_fields(self):
-        self._run_test({'fields': ['field1', 'field2']}, {'_source': ['data.field1',
-                                                                      'data.field2']})
+        self._run_test(
+            {'fields': ['field1', 'field2']},
+            {'_source': ['data.field1', 'data.field2']},
+        )
 
     def test_facets(self):
         self._run_test({'facets': []}, {})
 
         self._run_test(
-            {
-                'facets': ['field1']
-            },
+            {'facets': ['field1']},
             {
                 'aggs': {
-                    'field1': {
-                        'terms': {
-                            'field': prefix_field('field1'),
-                            'size': 10
-                        }
-                    }
+                    'field1': {'terms': {'field': prefix_field('field1'), 'size': 10}}
                 }
-            }
+            },
         )
 
         self._run_test(
-            {
-                'facets': ['field1', 'field2', 'field3']
-            },
+            {'facets': ['field1', 'field2', 'field3']},
             {
                 'aggs': {
-                    'field1': {
-                        'terms': {
-                            'field': prefix_field('field1'),
-                            'size': 10
-                        }
-                    },
-                    'field2': {
-                        'terms': {
-                            'field': prefix_field('field2'),
-                            'size': 10
-                        }
-                    },
-                    'field3': {
-                        'terms': {
-                            'field': prefix_field('field3'),
-                            'size': 10
-                        }
-                    }
+                    'field1': {'terms': {'field': prefix_field('field1'), 'size': 10}},
+                    'field2': {'terms': {'field': prefix_field('field2'), 'size': 10}},
+                    'field3': {'terms': {'field': prefix_field('field3'), 'size': 10}},
                 }
-            }
+            },
         )
 
         self._run_test(
@@ -570,84 +534,53 @@ class TestBuildSearchObject(object):
                 'facet_limits': {
                     'field1': 20,
                     'field3': 100,
-                }
+                },
             },
             {
                 'aggs': {
-                    'field1': {
-                        'terms': {
-                            'field': prefix_field('field1'),
-                            'size': 20
-                        }
-                    },
-                    'field2': {
-                        'terms': {
-                            'field': prefix_field('field2'),
-                            'size': 10
-                        }
-                    },
-                    'field3': {
-                        'terms': {
-                            'field': prefix_field('field3'),
-                            'size': 100
-                        }
-                    }
+                    'field1': {'terms': {'field': prefix_field('field1'), 'size': 20}},
+                    'field2': {'terms': {'field': prefix_field('field2'), 'size': 10}},
+                    'field3': {'terms': {'field': prefix_field('field3'), 'size': 100}},
                 }
-            }
+            },
         )
 
     def test_sorts(self):
         self._run_test({'sort': []}, {})
         self._run_test(
-            {
-                'sort': ['field1']
-            },
-            {
-                'sort': [prefix_field('field1'), prefix_field('_id')]
-            },
-            add_sort=False
+            {'sort': ['field1']},
+            {'sort': [prefix_field('field1'), prefix_field('_id')]},
+            add_sort=False,
         )
         self._run_test(
-            {
-                'sort': ['field1', 'field2']
-            },
-            {
-                'sort': [prefix_field('field1'), prefix_field('field2'), prefix_field('_id')]
-            },
-            add_sort=False
-        )
-        self._run_test(
-            {
-                'sort': ['field1', '_id']
-            },
-            {
-                'sort': [prefix_field('field1'), prefix_field('_id')]
-            },
-            add_sort=False
-        )
-        self._run_test(
-            {
-                'sort': ['field1 desc', 'field2 asc']
-            },
+            {'sort': ['field1', 'field2']},
             {
                 'sort': [
-                    {
-                        prefix_field('field1'): {'order': 'desc'}
-                    },
+                    prefix_field('field1'),
                     prefix_field('field2'),
-                    prefix_field('_id')
+                    prefix_field('_id'),
                 ]
             },
-            add_sort=False
+            add_sort=False,
         )
         self._run_test(
+            {'sort': ['field1', '_id']},
+            {'sort': [prefix_field('field1'), prefix_field('_id')]},
+            add_sort=False,
+        )
+        self._run_test(
+            {'sort': ['field1 desc', 'field2 asc']},
             {
-                'sort': ['_id desc']
+                'sort': [
+                    {prefix_field('field1'): {'order': 'desc'}},
+                    prefix_field('field2'),
+                    prefix_field('_id'),
+                ]
             },
-            {
-                'sort': [{
-                    prefix_field('_id'): {'order': 'desc'}
-                }]
-            },
-            add_sort=False
+            add_sort=False,
+        )
+        self._run_test(
+            {'sort': ['_id desc']},
+            {'sort': [{prefix_field('_id'): {'order': 'desc'}}]},
+            add_sort=False,
         )

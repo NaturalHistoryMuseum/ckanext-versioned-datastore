@@ -10,7 +10,6 @@ from mock import MagicMock, patch
 
 
 class TestQuery(object):
-
     def test_load_core_schema(self):
         schema, validator = schema_lib.load_core_schema('v1.0.0')
 
@@ -26,19 +25,23 @@ class TestQuery(object):
         assert os.path.isabs(schema_lib.schema_base_path)
 
     def test_get_latest_query_version(self):
-        test_schemas = OrderedDict([
-            ('v1.0.0', MagicMock()),
-            ('v1.0.1', MagicMock()),
-            ('v2.10.1', MagicMock()),
-        ])
-        with patch('ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas):
+        test_schemas = OrderedDict(
+            [
+                ('v1.0.0', MagicMock()),
+                ('v1.0.1', MagicMock()),
+                ('v2.10.1', MagicMock()),
+            ]
+        )
+        with patch(
+            'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
+        ):
             assert schema_lib.get_latest_query_version() == 'v1.0.0'
 
     def test_validate_query_valid(self):
-        test_schemas = {
-            'v1.0.0': MagicMock(validate=MagicMock(return_value=True))
-        }
-        with patch('ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas):
+        test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
+        with patch(
+            'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
+        ):
             assert schema_lib.validate_query(MagicMock(), 'v1.0.0')
 
     def test_validate_query_invalid_query_version(self):
@@ -48,9 +51,13 @@ class TestQuery(object):
 
     def test_validate_query_invalid_query(self):
         test_schemas = {
-            'v1.0.0': MagicMock(validate=MagicMock(side_effect=jsonschema.ValidationError('no!')))
+            'v1.0.0': MagicMock(
+                validate=MagicMock(side_effect=jsonschema.ValidationError('no!'))
+            )
         }
-        with patch('ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas):
+        with patch(
+            'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
+        ):
             with pytest.raises(jsonschema.ValidationError):
                 schema_lib.validate_query(MagicMock(), 'v1.0.0')
 

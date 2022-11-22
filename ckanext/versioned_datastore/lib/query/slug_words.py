@@ -582,7 +582,7 @@ animals = [
     'woodlouse',
     'woodpecker',
     'yak',
-    'zebra'
+    'zebra',
 ]
 
 adverbs = [
@@ -958,7 +958,7 @@ adverbs = [
     'woefully',
     'wonderfully',
     'woodenly',
-    'wrongly'
+    'wrongly',
 ]
 
 plants = [
@@ -1046,7 +1046,7 @@ plants = [
     'walnut',
     'wheat',
     'yarrow',
-    'yam'
+    'yam',
 ]
 
 list_one = adjectives + adverbs

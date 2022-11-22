@@ -7,7 +7,7 @@ FIELD = 'meta.geo'
 
 
 def add_point_filter(search, distance, coordinates):
-    '''
+    """
     Adds a point filter query to the search object and returns a new search object.
 
     :param search: the current elasticsearch DSL object
@@ -17,7 +17,7 @@ def add_point_filter(search, distance, coordinates):
     :param coordinates: the point to centre the radius on, specified as a lon/lat pair in a list
                         (i.e. [40.2, -20]).
     :return: a search object
-    '''
+    """
     options = {
         'distance': distance,
         FIELD: {
@@ -29,11 +29,11 @@ def add_point_filter(search, distance, coordinates):
 
 
 def add_multipolygon_filter(search, coordinates):
-    '''
-    Adds a multipolygon filter query to the search object and returns a new search object. Only the
-    first group in each polygon grouping will be used as elasticsearch doesn't support this type of
-    query yet (this kind of query is used for vacating space inside a polygon, like a donut for
-    example.
+    """
+    Adds a multipolygon filter query to the search object and returns a new search
+    object. Only the first group in each polygon grouping will be used as elasticsearch
+    doesn't support this type of query yet (this kind of query is used for vacating
+    space inside a polygon, like a donut for example.
 
     If more than one group is included then they are included as an or with a minimum must match of
     1.
@@ -42,17 +42,21 @@ def add_multipolygon_filter(search, coordinates):
     :param coordinates: a list of a list of a list of a list of at least 3 lon/lat pairs (i.e.
                         [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]])
     :return: a search object
-    '''
+    """
     filters = []
     for group in coordinates:
         points = group[0]
         if len(points) < 3:
-            raise toolkit.ValidationError('Not enough points in the polygon, must be 3 or more')
+            raise toolkit.ValidationError(
+                'Not enough points in the polygon, must be 3 or more'
+            )
 
         options = {
             FIELD: {
                 # format the polygon point data appropriately
-                'points': [{'lat': float(point[1]), 'lon': float(point[0])} for point in points],
+                'points': [
+                    {'lat': float(point[1]), 'lon': float(point[0])} for point in points
+                ],
             },
         }
         filters.append(Q('geo_polygon', **options))
@@ -61,10 +65,11 @@ def add_multipolygon_filter(search, coordinates):
 
 
 def add_polygon_filter(search, coordinates):
-    '''
-    Adds a polygon filter query to the search object and returns a new search object. Only the first
-    group in each polygon grouping will be used as elasticsearch doesn't support this type of query
-    yet (this kind of query is used for vacating space inside a polygon, like a donut for example.
+    """
+    Adds a polygon filter query to the search object and returns a new search object.
+    Only the first group in each polygon grouping will be used as elasticsearch doesn't
+    support this type of query yet (this kind of query is used for vacating space inside
+    a polygon, like a donut for example.
 
     If more than one group is included then they are included as an or with a minimum must match of
     1.
@@ -73,14 +78,15 @@ def add_polygon_filter(search, coordinates):
     :param coordinates: a list of a list of a list of at least 3 lon/lat pairs (i.e. [[[-16, 44],
                         [-13.1, 34.8], [15.99, 35], [5, 49]]])
     :return: a search object
-    '''
+    """
     # just wrap in another list and pass to the multipolygon handler
     return add_multipolygon_filter(search, [coordinates])
 
 
 def add_geo_search(search, geo_filter):
-    '''
-    Updates the given search DSL object with the geo filter specified in the geo_filter dict.
+    """
+    Updates the given search DSL object with the geo filter specified in the geo_filter
+    dict.
 
     :param search: the current elasticsearch DSL object
     :param geo_filter: a dict describing a geographic filter. This should be a GeoJSON geometry and
@@ -89,7 +95,7 @@ def add_geo_search(search, geo_filter):
                        key is also required which specifies the radius of the point in a form
                        elasticsearch understands (for example, 10km).
     :return: a search DSL object
-    '''
+    """
     # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
     query_type_map = {
         'Point': (add_point_filter, {'distance', 'coordinates'}),
@@ -106,7 +112,9 @@ def add_geo_search(search, geo_filter):
     except (TypeError, ValueError):
         raise toolkit.ValidationError('Invalid geo filter information, must be JSON')
     except KeyError:
-        raise toolkit.ValidationError('Invalid query type, must be point, box or polygon')
+        raise toolkit.ValidationError(
+            'Invalid query type, must be point, box or polygon'
+        )
 
     try:
         # try and pull out the required parameters for each type

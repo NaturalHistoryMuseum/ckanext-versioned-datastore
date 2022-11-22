@@ -1,9 +1,9 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit, PluginImplementations
-from eevee.indexing.utils import DOC_TYPE
-from eevee.search import create_version_query
-from eevee.utils import to_timestamp
+from splitgill.indexing.utils import DOC_TYPE
+from splitgill.search import create_version_query
+from splitgill.utils import to_timestamp
 from elasticsearch import RequestError
 from elasticsearch_dsl import A, Search
 
@@ -22,17 +22,18 @@ _query_log_keys = ('q', 'filters')
 
 @action(schema.datastore_search(), help.datastore_search, get=True)
 def datastore_search(context, data_dict, original_data_dict):
-    '''
-    Searches the datastore using a query schema similar to the standard CKAN datastore query schema,
-    but with versioning.
+    """
+    Searches the datastore using a query schema similar to the standard CKAN datastore
+    query schema, but with versioning.
 
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
     :return: a dict including the search results amongst other things
-    '''
-    original_data_dict, data_dict, version, search = create_search(context, data_dict,
-                                                                   original_data_dict)
+    """
+    original_data_dict, data_dict, version, search = create_search(
+        context, data_dict, original_data_dict
+    )
     resource_id = data_dict['resource_id']
     index_name = prefix_resource(resource_id)
 
@@ -56,7 +57,9 @@ def datastore_search(context, data_dict, original_data_dict):
 
         # allow other extensions implementing our interface to modify the result
         for plugin in PluginImplementations(IVersionedDatastore):
-            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+            result = plugin.datastore_modify_result(
+                context, original_data_dict, data_dict, result
+            )
 
         # add the actual result object to the context in case the caller is an extension and they
         # have used one of the interface hooks to alter the search object and include, for example,
@@ -81,7 +84,9 @@ def datastore_search(context, data_dict, original_data_dict):
             'records': [hit.data.to_dict() for hit in result],
             'facets': format_facets(result.aggs.to_dict()),
             'fields': fields,
-            'raw_fields': mapping['mappings'][DOC_TYPE]['properties']['data']['properties'],
+            'raw_fields': mapping['mappings'][DOC_TYPE]['properties']['data'][
+                'properties'
+            ],
             'after': get_last_after(result.hits),
             '_backend': 'versioned-datastore',
         }
@@ -89,14 +94,14 @@ def datastore_search(context, data_dict, original_data_dict):
 
 @action(schema.datastore_autocomplete(), help.datastore_autocomplete, get=True)
 def datastore_autocomplete(context, data_dict, original_data_dict):
-    '''
+    """
     Runs a search to find autocomplete values based on the provided prefix.
 
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
     :return: a dict containing a list of results and an after value for the next page of results
-    '''
+    """
     # extract the fields specifically needed for setting up the autocomplete query
     field = data_dict.pop('field')
     term = data_dict.pop('term')
@@ -109,16 +114,21 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
     data_dict.pop('offset', None)
 
     # now build the search object against the normal search code
-    original_data_dict, data_dict, version, search = create_search(context, data_dict,
-                                                                   original_data_dict)
+    original_data_dict, data_dict, version, search = create_search(
+        context, data_dict, original_data_dict
+    )
     # get the index we're going to search against
     index_name = prefix_resource(data_dict['resource_id'])
 
     # add the autocompletion query part which takes the form of a prefix search
     search = search.filter('prefix', **{prefix_field(field): term})
     # modify the search so that it has the aggregation required to get the autocompletion results
-    search.aggs.bucket('field_values', 'composite', size=size,
-                       sources={field: A('terms', field=prefix_field(field), order='asc')})
+    search.aggs.bucket(
+        'field_values',
+        'composite',
+        size=size,
+        sources={field: A('terms', field=prefix_field(field), order='asc')},
+    )
     # if there's an after included, add it into the aggregation
     if after:
         search.aggs['field_values'].after = {field: after}
@@ -139,15 +149,16 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
 
 @action(schema.datastore_search(), help.datastore_query_extent, get=True)
 def datastore_query_extent(context, data_dict, original_data_dict):
-    '''
-    Given the parameters for a datastore_query, finds the geographic extent of the query's results.
+    """
+    Given the parameters for a datastore_query, finds the geographic extent of the
+    query's results.
 
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
     :return: a dict containing the total number of matches for the query, the total number of
              matches with geo data and the bounds of the query
-    '''
+    """
     # ensure the search doesn't respond with any hits cause we don't need them and override two
     # unused params
     data_dict['limit'] = 0
@@ -155,8 +166,9 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     data_dict.pop('after', None)
 
     # now build the search object against the normal search code
-    original_data_dict, data_dict, version, search = create_search(context, data_dict,
-                                                                   original_data_dict)
+    original_data_dict, data_dict, version, search = create_search(
+        context, data_dict, original_data_dict
+    )
     # if we don't have a version, set to now
     if version is None:
         version = to_timestamp(datetime.now())
@@ -188,9 +200,17 @@ def datastore_query_extent(context, data_dict, original_data_dict):
 
 
 @action(schema.datastore_search_raw(), help.datastore_search_raw, get=True)
-def datastore_search_raw(resource_id, context, data_dict, original_data_dict, search=None,
-                         version=None, raw_result=False, include_version=True):
-    '''
+def datastore_search_raw(
+    resource_id,
+    context,
+    data_dict,
+    original_data_dict,
+    search=None,
+    version=None,
+    raw_result=False,
+    include_version=True,
+):
+    """
     Searches the datastore using a raw elasticsearch query.
 
     :param resource_id: the id of the resource to search
@@ -203,7 +223,7 @@ def datastore_search_raw(resource_id, context, data_dict, original_data_dict, se
                        the same way as a normal datastore_search call would
     :param include_version: whether to include the version in the search or not
     :return: a dict containing the results of the search
-    '''
+    """
     if search is None:
         search = {}
     if version is None:
@@ -225,7 +245,9 @@ def datastore_search_raw(resource_id, context, data_dict, original_data_dict, se
 
         # allow other extensions implementing our interface to modify the result object
         for plugin in PluginImplementations(IVersionedDatastore):
-            result = plugin.datastore_modify_result(context, original_data_dict, data_dict, result)
+            result = plugin.datastore_modify_result(
+                context, original_data_dict, data_dict, result
+            )
 
         # add the actual result object to the context in case the caller is an extension and
         # they have used one of the interface hooks to alter the search object and include, for
@@ -244,7 +266,9 @@ def datastore_search_raw(resource_id, context, data_dict, original_data_dict, se
             'records': [hit.data.to_dict() for hit in result],
             'facets': format_facets(result.aggs.to_dict()),
             'fields': fields,
-            'raw_fields': mapping['mappings'][DOC_TYPE]['properties']['data']['properties'],
+            'raw_fields': mapping['mappings'][DOC_TYPE]['properties']['data'][
+                'properties'
+            ],
             'after': get_last_after(result.hits),
             '_backend': 'versioned-datastore',
         }
