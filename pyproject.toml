@@ -21,7 +21,7 @@ classifiers = [
 dependencies = [
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
-    "ckantools",
+    "ckantools>=0.3.0",
     "splitgill==2.0.0",
     "elasticsearch-dsl>=6.0.0,<7.0.0",
     "elasticsearch>=6.0.0,<7.0.0",
