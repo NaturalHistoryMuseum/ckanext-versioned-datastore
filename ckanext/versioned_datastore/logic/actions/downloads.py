@@ -1,28 +1,43 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit
-from eevee.utils import to_timestamp
+from splitgill.utils import to_timestamp
 
 from .meta import help, schema
 from ckantools.decorators import action
 from ...lib import common
 from ...lib.datastore_utils import prefix_resource
 from ...lib.downloads.download import queue_download
-from ...lib.query.schema import get_latest_query_version, validate_query, translate_query, \
-    hash_query
+from ...lib.query.schema import (
+    get_latest_query_version,
+    validate_query,
+    translate_query,
+    hash_query,
+)
 from ...lib.query.utils import get_available_datastore_resources
 from ...model.downloads import DatastoreDownload
 
 
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
-def datastore_queue_download(email_address, context, query=None, query_version=None, version=None,
-                             resource_ids=None, resource_ids_and_versions=None, separate_files=True,
-                             format='csv', format_args=None, ignore_empty_fields=True,
-                             transform=None, slug_or_doi=None):
-    '''
-    Starts a download of the data found by the given query parameters. This download is created
-    asynchronously using the rq background job queue and a link to the results is emailed to the
-    given email address when complete.
+def datastore_queue_download(
+    email_address,
+    context,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    separate_files=True,
+    format='csv',
+    format_args=None,
+    ignore_empty_fields=True,
+    transform=None,
+    slug_or_doi=None,
+):
+    """
+    Starts a download of the data found by the given query parameters. This download is
+    created asynchronously using the rq background job queue and a link to the results
+    is emailed to the given email address when complete.
 
     :param email_address: the email address to send the download link to
     :param context: the context dict from the action call
@@ -51,11 +66,13 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
                         retrieves these parameters from a saved query via a slug or a doi
     :return: a dict containing info about the background job that is doing the downloading and the
              download id
-    '''
+    """
 
     if slug_or_doi:
         try:
-            saved_query = toolkit.get_action('datastore_resolve_slug')(context, {'slug': slug_or_doi})
+            saved_query = toolkit.get_action('datastore_resolve_slug')(
+                context, {'slug': slug_or_doi}
+            )
             query = saved_query.get('query')
             query_version = saved_query.get('query_version')
             resource_ids = saved_query.get('resource_ids')
@@ -73,7 +90,9 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
     # figure out which resources should be searched
     resource_ids = get_available_datastore_resources(context, resource_ids)
     if not resource_ids:
-        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
 
     rounded_resource_ids_and_versions = {}
     # see if a version was provided, we'll use this is a resource id we're searching doesn't have a
@@ -87,7 +106,9 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
         target_version = resource_ids_and_versions.get(resource_id, version)
         index = prefix_resource(resource_id)
         # round the version down to ensure we search the exact version requested
-        rounded_version = common.SEARCH_HELPER.get_rounded_versions([index], target_version)[index]
+        rounded_version = common.SEARCH_HELPER.get_rounded_versions(
+            [index], target_version
+        )[index]
         if rounded_version is not None:
             # resource ids without a rounded version are skipped
             rounded_resource_ids_and_versions[resource_id] = rounded_version
@@ -109,16 +130,32 @@ def datastore_queue_download(email_address, context, query=None, query_version=N
         'format': format,
         'format_args': format_args,
         'ignore_empty_fields': ignore_empty_fields,
-        'transform': transform
+        'transform': transform,
     }
-    download = DatastoreDownload(query_hash=query_hash, query=query, query_version=query_version,
-                                 resource_ids_and_versions=rounded_resource_ids_and_versions,
-                                 state='queued', options=options)
+    download = DatastoreDownload(
+        query_hash=query_hash,
+        query=query,
+        query_version=query_version,
+        resource_ids_and_versions=rounded_resource_ids_and_versions,
+        state='queued',
+        options=options,
+    )
     download.save()
 
-    job = queue_download(email_address, download.id, query_hash, query, query_version,
-                         search.to_dict(), rounded_resource_ids_and_versions, separate_files,
-                         format, format_args, ignore_empty_fields, transform)
+    job = queue_download(
+        email_address,
+        download.id,
+        query_hash,
+        query,
+        query_version,
+        search.to_dict(),
+        rounded_resource_ids_and_versions,
+        separate_files,
+        format,
+        format_args,
+        ignore_empty_fields,
+        transform,
+    )
 
     return {
         'queued_at': job.enqueued_at.isoformat(),

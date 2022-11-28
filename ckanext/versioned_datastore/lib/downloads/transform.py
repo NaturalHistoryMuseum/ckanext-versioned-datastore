@@ -4,7 +4,9 @@ from ckan.plugins import toolkit
 
 log = logging.getLogger(__name__)
 base_url = toolkit.config.get('ckan.site_url')
-object_endpoint = toolkit.config.get('ckanext.versioned_datastore.record_view_endpoint', 'object.view')
+object_endpoint = toolkit.config.get(
+    'ckanext.versioned_datastore.record_view_endpoint', 'object.view'
+)
 
 
 class Transform:
@@ -18,14 +20,15 @@ class Transform:
 
     @classmethod
     def id_as_url(cls, data, field):
-        '''
-        Reformat an ID field as a URL (probably one that links to that record). Requires an endpoint
-        (config option ckanext.versioned_datastore.record_view_endpoint, default 'object.view')
-        taking the ID field as the 'uuid' named argument.
+        """
+        Reformat an ID field as a URL (probably one that links to that record). Requires
+        an endpoint (config option ckanext.versioned_datastore.record_view_endpoint,
+        default 'object.view') taking the ID field as the 'uuid' named argument.
+
         :param data: the record data to be transformed
         :param field: the name of the data field that contains the ID and that will contain the URL
         :return: the transformed data (or untransformed if there was an error).
-        '''
+        """
         try:
             object_id = data.get(field)
             if object_id is None or object_id == '':

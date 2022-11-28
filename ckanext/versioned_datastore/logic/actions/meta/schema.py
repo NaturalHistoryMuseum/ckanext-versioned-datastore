@@ -3,7 +3,12 @@ import re
 
 from ckan.plugins import toolkit
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
-from ckantools.validators import list_validator, list_of_strings, list_of_dicts_validator, object_validator
+from ckantools.validators import (
+    list_validator,
+    list_of_strings,
+    list_of_dicts_validator,
+    object_validator,
+)
 
 # grab all the validator functions upfront
 boolean_validator = toolkit.get_validator('boolean_validator')
@@ -16,13 +21,16 @@ email_validator = toolkit.get_validator('email_validator')
 
 
 def url_safe(value, context):
-    '''
+    """
     Checks if the value is safe to be included in a URL as a slug.
+
     :param value: the value to check
     :param context: the context in which to check
-    '''
+    """
     if not re.match('^[A-Za-z0-9-_]+$', value):
-        raise toolkit.Invalid('Only a-z, 0-9, hyphens (-) and underscores (_) are valid characters')
+        raise toolkit.Invalid(
+            'Only a-z, 0-9, hyphens (-) and underscores (_) are valid characters'
+        )
     else:
         return value
 
@@ -177,8 +185,9 @@ def datastore_resolve_slug():
 def datastore_count():
     return {
         'resource_ids': [ignore_missing, list_of_strings()],
-        'version': [ignore_missing, int_validator]
+        'version': [ignore_missing, int_validator],
     }
+
 
 def datastore_queue_download():
     return {
@@ -193,7 +202,7 @@ def datastore_queue_download():
         'ignore_empty_fields': [ignore_missing, boolean_validator],
         'format_args': [ignore_missing, json_validator],
         'transform': [ignore_missing, json_validator],
-        'slug_or_doi': [ignore_missing, str]
+        'slug_or_doi': [ignore_missing, str],
     }
 
 
@@ -205,7 +214,7 @@ def datastore_guess_fields():
         'resource_ids': [ignore_missing, list_of_strings()],
         'resource_ids_and_versions': [ignore_missing, json_validator],
         'size': [ignore_missing, int_validator],
-        'ignore_groups': [ignore_missing, list_of_strings()]
+        'ignore_groups': [ignore_missing, list_of_strings()],
     }
 
 
@@ -217,13 +226,11 @@ def datastore_hash_query():
 
 
 def datastore_is_datastore_resource():
-    return {
-        'resource_id': [not_missing, not_empty, resource_id_exists]
-    }
+    return {'resource_id': [not_missing, not_empty, resource_id_exists]}
 
 
 def datastore_edit_slug():
     return {
         'current_slug': [str, not_missing, not_empty],
-        'new_reserved_slug': [str, not_missing, not_empty, url_safe]
+        'new_reserved_slug': [str, not_missing, not_empty, url_safe],
     }

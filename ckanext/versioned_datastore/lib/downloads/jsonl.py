@@ -9,10 +9,11 @@ from .utils import filter_data_fields
 
 @contextlib.contextmanager
 def jsonl_writer(request, target_dir, field_counts):
-    '''
-    Provides the functionality to write data to jsonl files (JSON lines: http://jsonlines.org/).
-    Each line in the file is a JSON serialised representation of a record. This function handles
-    opening and closing the necessary files to write data to either one file or a file per resource.
+    """
+    Provides the functionality to write data to jsonl files (JSON lines:
+    http://jsonlines.org/). Each line in the file is a JSON serialised representation of
+    a record. This function handles opening and closing the necessary files to write
+    data to either one file or a file per resource.
 
     This function is a context manager and when used with `with` will yield a write function. This
     function takes 3 parameters - the elasticsearch hit object, the data dict from the hit and the
@@ -22,7 +23,7 @@ def jsonl_writer(request, target_dir, field_counts):
     :param target_dir: the target directory to put the data files in
     :param field_counts: not used, just here to match the writer interface
     :return: yields a write function
-    '''
+    """
     if request.separate_files:
         # files will be opened lazily and stored in this dict using the resource ids as keys
         open_files = {}
@@ -34,11 +35,14 @@ def jsonl_writer(request, target_dir, field_counts):
         open_files = defaultdict(lambda: open_file)
 
     try:
+
         def write(hit, data, resource_id):
             if request.separate_files and resource_id not in open_files:
                 # lazily open the file for this resource id
                 resource_file_name = os.path.join(target_dir, f'{resource_id}.jsonl')
-                open_files[resource_id] = open(resource_file_name, 'w', encoding='utf-8')
+                open_files[resource_id] = open(
+                    resource_file_name, 'w', encoding='utf-8'
+                )
 
             if request.ignore_empty_fields:
                 data = filter_data_fields(data, field_counts[resource_id])

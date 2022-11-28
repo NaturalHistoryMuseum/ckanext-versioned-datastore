@@ -16,7 +16,9 @@ class TDWGUrls:
     core_classes = 'https://dwc.tdwg.org/xml/tdwg_dwc_classes.xsd'
     core_class_terms = 'https://dwc.tdwg.org/xml/tdwg_dwc_class_terms.xsd'
     simple = 'https://dwc.tdwg.org/xml/tdwg_dwc_simple.xsd'
-    terms_csv = 'https://raw.githubusercontent.com/tdwg/dwc/master/vocabulary/term_versions.csv'
+    terms_csv = (
+        'https://raw.githubusercontent.com/tdwg/dwc/master/vocabulary/term_versions.csv'
+    )
     metadata = 'http://rs.tdwg.org/dwc/text/tdwg_dwc_text.xsd'
 
 
@@ -35,13 +37,21 @@ class XMLUrls:
 
 
 core_extensions = {
-    'gbif_occurrence': SchemaUrl('https://rs.gbif.org/core/dwc_occurrence_2020-07-15.xml',
-                                 GBIFUrls.base_url),
-    'gbif_taxon': SchemaUrl('https://rs.gbif.org/core/dwc_taxon_2015-04-24.xml', GBIFUrls.base_url),
-    'gbif_event': SchemaUrl('https://rs.gbif.org/core/dwc_event_2016_06_21.xml', GBIFUrls.base_url)
+    'gbif_occurrence': SchemaUrl(
+        'https://rs.gbif.org/core/dwc_occurrence_2020-07-15.xml', GBIFUrls.base_url
+    ),
+    'gbif_taxon': SchemaUrl(
+        'https://rs.gbif.org/core/dwc_taxon_2015-04-24.xml', GBIFUrls.base_url
+    ),
+    'gbif_event': SchemaUrl(
+        'https://rs.gbif.org/core/dwc_event_2016_06_21.xml', GBIFUrls.base_url
+    ),
 }
 
 extensions = {
-    'gbif_multimedia': SchemaUrl('https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
-                                 GBIFUrls.base_url, ['associatedMedia'])
+    'gbif_multimedia': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
+        GBIFUrls.base_url,
+        ['associatedMedia'],
+    )
 }

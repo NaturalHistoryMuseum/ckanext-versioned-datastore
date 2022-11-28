@@ -1,5 +1,5 @@
 import pytest
-from eevee.indexing.utils import DOC_TYPE
+from splitgill.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.basic_query.utils import format_facets, get_fields
@@ -8,9 +8,9 @@ from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 
 @pytest.fixture
 def with_versioned_datastore_tables(reset_db):
-    '''
+    """
     Simple fixture which resets the database and creates the versioned-datastore tables.
-    '''
+    """
     reset_db()
     tables = [
         stats.import_stats_table,
@@ -25,49 +25,32 @@ def with_versioned_datastore_tables(reset_db):
 
 
 class TestBasicQueryUtils(object):
-
     def test_format_facets(self):
         # first, check it can deal with an empty aggregation result
         assert format_facets({}) == {}
 
-        facets = format_facets({
-            'facet1': {
-                'sum_other_doc_count': 901,
-                'doc_count_error_upper_bound': 12,
-                'buckets': [
-                    {
-                        'key': 'value1',
-                        'doc_count': 43
-                    },
-                    {
-                        'key': 'value2',
-                        'doc_count': 243
-                    },
-                    {
-                        'key': 'value3',
-                        'doc_count': 543
-                    },
-                    {
-                        'key': 'value4',
-                        'doc_count': 143
-                    },
-                    {
-                        'key': 'value5',
-                        'doc_count': 743
-                    },
-                ]
-            },
-            'facet2': {
-                'sum_other_doc_count': 0,
-                'doc_count_error_upper_bound': 0,
-                'buckets': [
-                    {
-                        'key': 'value1',
-                        'doc_count': 6
-                    },
-                ]
+        facets = format_facets(
+            {
+                'facet1': {
+                    'sum_other_doc_count': 901,
+                    'doc_count_error_upper_bound': 12,
+                    'buckets': [
+                        {'key': 'value1', 'doc_count': 43},
+                        {'key': 'value2', 'doc_count': 243},
+                        {'key': 'value3', 'doc_count': 543},
+                        {'key': 'value4', 'doc_count': 143},
+                        {'key': 'value5', 'doc_count': 743},
+                    ],
+                },
+                'facet2': {
+                    'sum_other_doc_count': 0,
+                    'doc_count_error_upper_bound': 0,
+                    'buckets': [
+                        {'key': 'value1', 'doc_count': 6},
+                    ],
+                },
             }
-        })
+        )
 
         assert len(facets) == 2
         assert facets['facet1']['details']['sum_other_doc_count'] == 901
@@ -95,9 +78,7 @@ class TestBasicQueryUtils(object):
                         u"properties": {
                             u"data": {
                                 u"properties": {
-                                    u"_id": {
-                                        'type': 'long'
-                                    },
+                                    u"_id": {'type': 'long'},
                                     u"field1": {
                                         u"type": u"keyword",
                                     },
@@ -116,19 +97,29 @@ class TestBasicQueryUtils(object):
         prefix_mock = lambda name: f'beans-{name}'
         client_mock = MagicMock(indices=MagicMock(get_mapping=mapping_mock_function))
         search_helper_mock = MagicMock()
-        es_response = [MagicMock(hits=MagicMock(total=4)), MagicMock(hits=MagicMock(total=10))]
+        es_response = [
+            MagicMock(hits=MagicMock(total=4)),
+            MagicMock(hits=MagicMock(total=10)),
+        ]
         multisearch_mock = MagicMock()
-        multisearch_mock.configure_mock(add=MagicMock(return_value=multisearch_mock),
-                                        execute=MagicMock(return_value=es_response))
+        multisearch_mock.configure_mock(
+            add=MagicMock(return_value=multisearch_mock),
+            execute=MagicMock(return_value=es_response),
+        )
         multisearch_class_mock = MagicMock(return_value=multisearch_mock)
 
-        with patch('ckanext.versioned_datastore.lib.basic_query.utils.prefix_resource',
-                   new=prefix_mock), \
-            patch('ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock), \
-            patch('ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
-                  new=search_helper_mock), \
-            patch('ckanext.versioned_datastore.lib.basic_query.utils.MultiSearch',
-                  new=multisearch_class_mock):
+        with patch(
+            'ckanext.versioned_datastore.lib.basic_query.utils.prefix_resource',
+            new=prefix_mock,
+        ), patch(
+            'ckanext.versioned_datastore.lib.common.ES_CLIENT', new=client_mock
+        ), patch(
+            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
+            new=search_helper_mock,
+        ), patch(
+            'ckanext.versioned_datastore.lib.basic_query.utils.MultiSearch',
+            new=multisearch_class_mock,
+        ):
             mapping, fields = get_fields('index')
             assert mapping == mock_mapping['beans-index']
             assert len(fields) == 3

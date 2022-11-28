@@ -13,17 +13,17 @@ def get_commands():
 
 @click.group()
 def versioned_datastore():
-    '''
+    """
     Perform various tasks on the versioned datastore.
-    '''
+    """
     pass
 
 
 @versioned_datastore.command(name='initdb')
 def init_db():
-    '''
+    """
     Ensure the tables needed by this plugin exist.
-    '''
+    """
     tables = [
         import_stats_table,
         datastore_resource_details_table,
@@ -40,9 +40,9 @@ def init_db():
 @versioned_datastore.command()
 @click.option('-r', '--resource_id', 'resource_ids', multiple=True)
 def reindex(resource_ids):
-    '''
+    """
     Reindex either a specific resource or all resources.
-    '''
+    """
     ids = set()
     context = {'ignore_auth': True}
 
@@ -69,9 +69,16 @@ def reindex(resource_ids):
 
     for resource_id in sorted(ids):
         try:
-            result = toolkit.get_action('datastore_reindex')(context, {'resource_id': resource_id})
-            click.secho(f'Queued reindex of {resource_id} as job {result["job_id"]}', fg='cyan')
+            result = toolkit.get_action('datastore_reindex')(
+                context, {'resource_id': resource_id}
+            )
+            click.secho(
+                f'Queued reindex of {resource_id} as job {result["job_id"]}', fg='cyan'
+            )
         except toolkit.ValidationError as e:
-            click.secho(f'Failed to reindex {resource_id} due to validation error: {e}', fg='red')
+            click.secho(
+                f'Failed to reindex {resource_id} due to validation error: {e}',
+                fg='red',
+            )
 
     click.secho('Reindexing complete', fg='green')
