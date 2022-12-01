@@ -5,7 +5,7 @@
 
 [![Tests](https://img.shields.io/github/workflow/status/NaturalHistoryMuseum/ckanext-versioned-datastore/Tests?style=flat-square)](https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore/actions/workflows/main.yml)
 [![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/main?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
-[![CKAN](https://img.shields.io/badge/ckan-2.9.1-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
+[![CKAN](https://img.shields.io/badge/ckan-2.9.7-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
 [![Python](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue.svg?style=flat-square)](https://www.python.org/)
 [![Docs](https://img.shields.io/readthedocs/ckanext-versioned-datastore?style=flat-square)](https://ckanext-versioned-datastore.readthedocs.io)
 
