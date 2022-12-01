@@ -1,6 +1,6 @@
 {
   "name": "ckanext-versioned-datastore",
-  "version": "3.7.0",
+  "version": "3.7.1",
   "description": "A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch",
   "repository": {
     "type": "git",
