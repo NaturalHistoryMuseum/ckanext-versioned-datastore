@@ -91,28 +91,28 @@ All configuration options are currently required.
 
 ## **[REQUIRED]**
 
-Name|Description|Example
---|--|--
-`ckanext.versioned_datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
-`ckanext.versioned_datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
-`ckanext.versioned_datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
-`ckanext.versioned_datastore.mongo_host`|The mongo server host|`10.54.24.10`
-`ckanext.versioned_datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
-`ckanext.versioned_datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
+| Name                                                     | Description                                                                                                                                                               | Example                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `ckanext.versioned_datastore.elasticsearch_hosts`        | A comma separated list of elasticsearch server hosts                                                                                                                      | `1.2.3.4,1.5.4.3,es.mydomain.local` |
+| `ckanext.versioned_datastore.elasticsearch_port`         | The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option                                                                           | `9200`                              |
+| `ckanext.versioned_datastore.elasticsearch_index_prefix` | The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended. | `nhm-`                              |
+| `ckanext.versioned_datastore.mongo_host`                 | The mongo server host                                                                                                                                                     | `10.54.24.10`                       |
+| `ckanext.versioned_datastore.mongo_port`                 | The port to use to connect to the mongo host                                                                                                                              | `27017`                             |
+| `ckanext.versioned_datastore.mongo_database`             | The name of the mongo database to use to store datastore data in                                                                                                          | `nhm`                               |
 
 ## **[OPTIONAL]**
 
-Name|Description|Example
---|--|--
-`ckanext.versioned_datastore.redis_host`|The redis server host. If this is provided slugging is enabled|`14.1.214.50`
-`ckanext.versioned_datastore.redis_port`|The port to use to connect to the redis host|`6379`
-`ckanext.versioned_datastore.redis_database`|The redis database index to use to store datastore multisearch slugs in|`1`
-`ckanext.versioned_datastore.slug_ttl`|The amount of time slugs should last for, in days. Default: `7`|`7`
-`ckanext.versioned_datastore.dwc_core_extension_name`|The name of the DwC core extension to use, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).|`gbif_occurrence`
-`ckanext.versioned_datastore.dwc_extension_names`|A comma-separated list of (non-core) DwC extension names, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).|`gbif_multimedia`
-`ckanext.versioned_datastore.dwc_org_name`|The organisation name to use in DwC-A metadata. Default: the value of `ckanext.doi.publisher` or `ckan.site_title`|`The Natural History Museum`
-`ckanext.versioned_datastore.dwc_org_email`|The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`|`contact@yoursite.com`
-`ckanext.versioned_datastore.dwc_default_license`|The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`|`http://creativecommons.org/publicdomain/zero/1.0/legalcode`
+| Name                                                  | Description                                                                                                                                        | Example                                                      |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `ckanext.versioned_datastore.redis_host`              | The redis server host. If this is provided slugging is enabled                                                                                     | `14.1.214.50`                                                |
+| `ckanext.versioned_datastore.redis_port`              | The port to use to connect to the redis host                                                                                                       | `6379`                                                       |
+| `ckanext.versioned_datastore.redis_database`          | The redis database index to use to store datastore multisearch slugs in                                                                            | `1`                                                          |
+| `ckanext.versioned_datastore.slug_ttl`                | The amount of time slugs should last for, in days. Default: `7`                                                                                    | `7`                                                          |
+| `ckanext.versioned_datastore.dwc_core_extension_name` | The name of the DwC core extension to use, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).                | `gbif_occurrence`                                            |
+| `ckanext.versioned_datastore.dwc_extension_names`     | A comma-separated list of (non-core) DwC extension names, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py). | `gbif_multimedia`                                            |
+| `ckanext.versioned_datastore.dwc_org_name`            | The organisation name to use in DwC-A metadata. Default: the value of `ckanext.doi.publisher` or `ckan.site_title`                                 | `The Natural History Museum`                                 |
+| `ckanext.versioned_datastore.dwc_org_email`           | The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`                                                                 | `contact@yoursite.com`                                       |
+| `ckanext.versioned_datastore.dwc_default_license`     | The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`                          | `http://creativecommons.org/publicdomain/zero/1.0/legalcode` |
 
 <!--configuration-end-->
 
