@@ -104,7 +104,7 @@ def datastore_is_datastore_resource(resource_id):
     return is_datastore_resource(resource_id)
 
 
-@action({}, help.datastore_get_latest_query_schema_version, toolkit.side_effect_free)
+@action({}, help.datastore_get_latest_query_schema_version, get=True)
 def datastore_get_latest_query_schema_version():
     """
     Simply returns the latest available query schema version.
@@ -114,7 +114,7 @@ def datastore_get_latest_query_schema_version():
     return get_latest_query_version()
 
 
-@action(schema.datastore_count(), help.datastore_count, toolkit.side_effect_free)
+@action(schema.datastore_count(), help.datastore_count, get=True)
 def datastore_count(resource_ids=None, version=None):
     if version is None:
         version = to_timestamp(datetime.now())

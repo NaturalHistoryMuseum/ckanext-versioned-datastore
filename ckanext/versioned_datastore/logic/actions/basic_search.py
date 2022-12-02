@@ -20,7 +20,7 @@ from ...lib.query.query_log import log_query
 _query_log_keys = ('q', 'filters')
 
 
-@action(schema.datastore_search(), help.datastore_search, toolkit.side_effect_free)
+@action(schema.datastore_search(), help.datastore_search, get=True)
 def datastore_search(context, data_dict, original_data_dict):
     """
     Searches the datastore using a query schema similar to the standard CKAN datastore
