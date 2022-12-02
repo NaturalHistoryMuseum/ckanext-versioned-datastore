@@ -9,7 +9,9 @@ class JsonDerivativeGenerator(BaseDerivativeGenerator):
     extension = 'json'
 
     def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
-        super(JsonDerivativeGenerator, self).__init__(output_dir, fields, query, resource_id, **format_args)
+        super(JsonDerivativeGenerator, self).__init__(
+            output_dir, fields, query, resource_id, **format_args
+        )
         self._first_row = True
 
     def initialise(self):

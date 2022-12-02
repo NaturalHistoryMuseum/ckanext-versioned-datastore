@@ -2,27 +2,28 @@ from ckan.plugins import interfaces
 
 
 class IVersionedDatastore(interfaces.Interface):
-    '''
+    """
     Allow modifying versioned datastore logic.
-    '''
+    """
 
     def datastore_modify_data_dict(self, context, data_dict):
-        '''
-        Allows modification of the data dict before it is validated and used to create the search
-        object. This function should be used to remove/add/alter parameters in the data dict.
+        """
+        Allows modification of the data dict before it is validated and used to create
+        the search object. This function should be used to remove/add/alter parameters
+        in the data dict.
 
         :param context: the context
         :type context: dictionary
         :param data_dict: the parameters received from the user
         :type data_dict: dictionary
-        '''
+        """
         return data_dict
 
     def datastore_modify_search(self, context, original_data_dict, data_dict, search):
-        '''
-        Allows modifications to the search before it is made. This is kind of analogous to
-        IDatastore.datastore_search however instead of passing around a query dict, instead an
-        elasticsearch-dsl Search object is passed.
+        """
+        Allows modifications to the search before it is made. This is kind of analogous
+        to IDatastore.datastore_search however instead of passing around a query dict,
+        instead an elasticsearch-dsl Search object is passed.
 
         Each extension which implements this interface will be called in the order CKAN loaded them
         in, The search parameter will be the output of the previous extension's interface
@@ -55,11 +56,11 @@ class IVersionedDatastore(interfaces.Interface):
 
         :returns: the search object with your modifications
         :rtype: elasticsearch-dsl Search object
-        '''
+        """
         return search
 
     def datastore_modify_result(self, context, original_data_dict, data_dict, result):
-        '''
+        """
         Allows modifications to the result after the search.
 
         Each extension which implements this interface will be called in the order CKAN loaded them
@@ -83,16 +84,16 @@ class IVersionedDatastore(interfaces.Interface):
 
         :returns: the result object with your modifications
         :rtype: elasticsearch result object
-        '''
+        """
         return result
 
     def datastore_modify_fields(self, resource_id, mapping, fields):
-        '''
-        Allows modification of the field definitions before they are returned with the results of
-        a datastore_search. The definitions are used in CKAN by the recline view and therefore need
-        to abide by any of its requirements. By default all fields are included and are simply made
-        up of a dict containing an id and type key. The id is the name of the field and the type is
-        always string.
+        """
+        Allows modification of the field definitions before they are returned with the
+        results of a datastore_search. The definitions are used in CKAN by the recline
+        view and therefore need to abide by any of its requirements. By default all
+        fields are included and are simply made up of a dict containing an id and type
+        key. The id is the name of the field and the type is always string.
 
         :param resource_id: the resource id that was searched
         :param mapping: the mapping for the elasticsearch index containing the resource's data. This
@@ -101,7 +102,7 @@ class IVersionedDatastore(interfaces.Interface):
         :param fields: the field definitions that have so far been extracted from the mapping, by
                        default this is all fields
         :return: the list of field definition dicts
-        '''
+        """
         return fields
 
     def datastore_modify_index_doc(self, resource_id, index_doc):
@@ -135,9 +136,9 @@ class IVersionedDatastore(interfaces.Interface):
         return index_doc
 
     def datastore_is_read_only_resource(self, resource_id):
-        '''
-        Allows implementors to designate certain resources as read only. This is purely a datastore
-        side concept and should be used to prevent actions such as:
+        """
+        Allows implementors to designate certain resources as read only. This is purely
+        a datastore side concept and should be used to prevent actions such as:
 
             - creating a new datastore for the resource (i.e. creating the index in elasticsearch)
             - upserting data into the datastore for this resource
@@ -146,25 +147,27 @@ class IVersionedDatastore(interfaces.Interface):
 
         :param resource_id: the resource id to check
         :return: True if the resource should be treated as read only, False if not
-        '''
+        """
         return False
 
     def datastore_after_indexing(self, request, eevee_stats, stats_id):
-        '''
-        Allows implementors to hook onto the completion of an indexing task. This function doesn't
-        return anything and any exceptions it raises will be caught and ignored.
+        """
+        Allows implementors to hook onto the completion of an indexing task. This
+        function doesn't return anything and any exceptions it raises will be caught and
+        ignored.
 
         :param request: the ResourceIndexRequest object that triggered the indexing task
         :param eevee_stats: the statistics about the indexing task from eevee
         :param stats_id: the id of the statistics entry in the ImportStats database table
-        '''
+        """
         pass
 
     def datastore_reserve_slugs(self):
-        '''
-        Allows implementors to reserve queries using reserved pretty slugs. Implementors should
-        return a dict made up of reserved pretty slugs as keys and then the slug parameters as the
-        values. These values should be another dict containing the following optional keys:
+        """
+        Allows implementors to reserve queries using reserved pretty slugs. Implementors
+        should return a dict made up of reserved pretty slugs as keys and then the slug
+        parameters as the values. These values should be another dict containing the
+        following optional keys:
 
             - query, a dict query (defaults to {})
             - query_version, the query schema version (defaults to the latest query schema version)
@@ -181,86 +184,90 @@ class IVersionedDatastore(interfaces.Interface):
 
         If a slug already exists in the database with the same query parameters but no reserved
         pretty slug then the reserved pretty slug is added to the slug.
-        '''
+        """
         return {}
 
     def datastore_modify_guess_fields(self, resource_ids, fields):
-        '''
-        Allows plugins to manipulate the Fields object used to figure out the groups that should be
-        returned by the datastore_guess_fields action.
+        """
+        Allows plugins to manipulate the Fields object used to figure out the groups
+        that should be returned by the datastore_guess_fields action.
 
         :param resource_ids: a list of resource ids
         :param fields: a Fields object
         :return: the Fields object
-        '''
+        """
         return fields
 
     def datastore_multisearch_modify_response(self, response):
-        '''
-        Allows plugins to alter the response dict returned from the datastore_multisearch action
-        before it is returned.
+        """
+        Allows plugins to alter the response dict returned from the
+        datastore_multisearch action before it is returned.
 
         :param response: the dict to be returned to the caller
         :return: the response dict
-        '''
+        """
         return response
 
 
 class IVersionedDatastoreQuerySchema(interfaces.Interface):
-
     def get_query_schemas(self):
-        '''
+        """
         Hook to allow registering custom query schemas.
 
         :return: a list of tuples of the format (query schema version, schema object) where the
                  query schema version is a string of format v#.#.# and the schema object is an
                  instance of ckanext.versioned_datastore.lib.query.Schema
-        '''
+        """
         return []
 
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
-
-    def download_modify_notifier_start_templates(self, text_template: str, html_template: str):
-        '''
-        Hook allowing other extensions to modify the templates used when sending notifications that
-        a download has started.
-        The templates can be modified in place or completely replaced.
+    def download_modify_notifier_start_templates(
+        self, text_template: str, html_template: str
+    ):
+        """
+        Hook allowing other extensions to modify the templates used when sending
+        notifications that a download has started. The templates can be modified in
+        place or completely replaced.
 
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template string
-        '''
+        """
         return text_template, html_template
 
-    def download_modify_notifier_end_templates(self, text_template: str, html_template: str):
-        '''
-        Hook allowing other extensions to modify the templates used when sending notifications that
-        a download has completed successfully.
-        The templates can be modified in place or completely replaced.
+    def download_modify_notifier_end_templates(
+        self, text_template: str, html_template: str
+    ):
+        """
+        Hook allowing other extensions to modify the templates used when sending
+        notifications that a download has completed successfully. The templates can be
+        modified in place or completely replaced.
 
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template string
-        '''
+        """
         return text_template, html_template
 
-    def download_modify_notifier_error_templates(self, text_template: str, html_template: str):
-        '''
-        Hook allowing other extensions to modify the templates used when sending notifications that
-        a download has failed.
-        The templates can be modified in place or completely replaced.
+    def download_modify_notifier_error_templates(
+        self, text_template: str, html_template: str
+    ):
+        """
+        Hook allowing other extensions to modify the templates used when sending
+        notifications that a download has failed. The templates can be modified in place
+        or completely replaced.
 
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template string
-        '''
+        """
         return text_template, html_template
 
     def download_modify_notifier_template_context(self, request, context):
-        '''
-        Hook allowing other extensions to modify the templating context used to generate the
-        download email (both plain text and HTML versions) before it is sent.
+        """
+        Hook allowing other extensions to modify the templating context used to generate
+        the download email (both plain text and HTML versions) before it is sent.
 
         The default context contains:
             - "download_url": the download zip's full URL
@@ -269,39 +276,43 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :param request: the DownloadRequest object
         :param context: templating context dict
         :return: context templating dict
-        '''
+        """
         return context
 
     def download_derivative_generators(self, registered_derivatives=None):
-        '''
+        """
         Extend or modify the list of derivative generators.
+
         :param registered_derivatives: a dict of existing derivative generator classes, returned from previously loaded plugins
         :return: a dict of loaded derivative generator classes, keyed on the name used to specify them in download requests
-        '''
+        """
         return registered_derivatives or {}
 
     def download_file_servers(self, registered_servers=None):
-        '''
+        """
         Extend or modify the list of file servers.
+
         :param registered_servers: a dict of existing file server classes, returned from previously loaded plugins
         :return: a dict of loaded file server classes, keyed on the name used to specify them in download requests
-        '''
+        """
         return registered_servers or {}
 
     def download_notifiers(self, registered_notifiers=None):
-        '''
+        """
         Extend or modify the list of download notifiers.
+
         :param registered_notifiers: a dict of existing notifier classes, returned from previously loaded plugins
         :return: a dict of loaded notifier classes, keyed on the name used to specify them in download requests
-        '''
+        """
         return registered_notifiers or {}
 
     def download_data_transformations(self, registered_transformations=None):
-        '''
+        """
         Extend or modify the list of data transformations.
+
         :param registered_transformations: a dict of existing data transformations, returned from
                                            previously loaded plugins
         :return: a dict of loaded transformations, keyed on the name used to specify them in
                  download requests
-        '''
+        """
         return registered_transformations or {}

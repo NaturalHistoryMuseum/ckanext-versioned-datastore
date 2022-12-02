@@ -1,16 +1,21 @@
+<!--header-start-->
 <img src=".github/nhm-logo.svg" align="left" width="150px" height="100px" hspace="40"/>
 
 # ckanext-versioned-datastore
 
 [![Tests](https://img.shields.io/github/workflow/status/NaturalHistoryMuseum/ckanext-versioned-datastore/Tests?style=flat-square)](https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore/actions/workflows/main.yml)
-[![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/master.svg?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
-[![CKAN](https://img.shields.io/badge/ckan-2.9.1-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
+[![Coveralls](https://img.shields.io/coveralls/github/NaturalHistoryMuseum/ckanext-versioned-datastore/main?style=flat-square)](https://coveralls.io/github/NaturalHistoryMuseum/ckanext-versioned-datastore)
+[![CKAN](https://img.shields.io/badge/ckan-2.9.7-orange.svg?style=flat-square)](https://github.com/ckan/ckan)
 [![Python](https://img.shields.io/badge/python-3.6%20%7C%203.7%20%7C%203.8-blue.svg?style=flat-square)](https://www.python.org/)
+[![Docs](https://img.shields.io/readthedocs/ckanext-versioned-datastore?style=flat-square)](https://ckanext-versioned-datastore.readthedocs.io)
 
 _A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch._
 
+<!--header-end-->
+
 # Overview
 
+<!--overview-start-->
 This plugin provides a complete replacement for ckan's datastore plugin and therefore shouldn't be used in conjunction with it.
 Rather than storing data in PostgreSQL, resource data is stored in MongoDB and then made available to frontend APIs using Elasticsearch.
 
@@ -22,93 +27,98 @@ This allows this plugin to:
   - store large resources (millions of rows) and still provide high speed search responses
   - store complex data as both MongoDB and Elasticsearch are JSON based, allowing object nesting and arrays
 
-This plugin is built on [Eevee](https://github.com/NaturalHistoryMuseum/eevee).
+This plugin is built on [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill).
 
+<!--overview-end-->
 
 # Installation
 
+<!--installation-start-->
 Path variables used below:
 - `$INSTALL_FOLDER` (i.e. where CKAN is installed), e.g. `/usr/lib/ckan/default`
 - `$CONFIG_FILE`, e.g. `/etc/ckan/default/development.ini`
 
-1. Clone the repository into the `src` folder:
+## Installing from PyPI
 
-  ```bash
-  cd $INSTALL_FOLDER/src
-  git clone https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore.git
-  ```
+```shell
+pip install ckanext-versioned-datastore
+```
+
+## Installing from source
+
+1. Clone the repository into the `src` folder:
+   ```shell
+   cd $INSTALL_FOLDER/src
+   git clone https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore.git
+   ```
 
 2. Activate the virtual env:
+   ```shell
+   . $INSTALL_FOLDER/bin/activate
+   ```
 
-  ```bash
-  . $INSTALL_FOLDER/bin/activate
-  ```
+3. Install via pip:
+   ```shell
+   pip install $INSTALL_FOLDER/src/ckanext-versioned-datastore
+   ```
 
-3. Install the requirements from requirements.txt:
+### Installing in editable mode
 
-  ```bash
-  cd $INSTALL_FOLDER/src/ckanext-versioned-datastore
-  pip install -r requirements.txt
-  ```
+Installing from a `pyproject.toml` in editable mode (i.e. `pip install -e`) requires `setuptools>=64`; however, CKAN 2.9 requires `setuptools==44.1.0`. See [our CKAN fork](https://github.com/NaturalHistoryMuseum/ckan) for a version of v2.9 that uses an updated setuptools if this functionality is something you need.
 
-4. Run setup.py:
+## Post-install setup
 
-  ```bash
-  cd $INSTALL_FOLDER/src/ckanext-versioned-datastore
-  python setup.py develop
-  ```
+1. Add 'versioned_datastore' to the list of plugins in your `$CONFIG_FILE`:
+   ```ini
+   ckan.plugins = ... versioned_datastore
+   ```
 
-5. Add 'versioned_datastore' to the list of plugins in your `$CONFIG_FILE`:
+## Other requirements
 
-  ```ini
-  ckan.plugins = ... versioned_datastore
-  ```
+At the version of [splitgill](https://github.com/NaturalHistoryMuseum/splitgill) this plugin uses, you will also need to install:
+  - MongoDB 4.x
+  - Elasticsearch 6.7.x (6.x is probably ok, but untested)
+
+This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to older versions using the ckanext-rq plugin.
+
+<!--installation-end-->
 
 # Configuration
 
+<!--configuration-start-->
 There are a number of options that can be specified in your .ini config file.
 All configuration options are currently required.
 
 ## **[REQUIRED]**
 
-Name|Description|Example
---|--|--
-`ckanext.versioned_datastore.elasticsearch_hosts`|A comma separated list of elasticsearch server hosts|`1.2.3.4,1.5.4.3,es.mydomain.local`
-`ckanext.versioned_datastore.elasticsearch_port`|The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option|`9200`
-`ckanext.versioned_datastore.elasticsearch_index_prefix`|The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended.|`nhm-`
-`ckanext.versioned_datastore.mongo_host`|The mongo server host|`10.54.24.10`
-`ckanext.versioned_datastore.mongo_port`|The port to use to connect to the mongo host|`27017`
-`ckanext.versioned_datastore.mongo_database`|The name of the mongo database to use to store datastore data in|`nhm`
+| Name                                                     | Description                                                                                                                                                               | Example                             |
+|----------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|
+| `ckanext.versioned_datastore.elasticsearch_hosts`        | A comma separated list of elasticsearch server hosts                                                                                                                      | `1.2.3.4,1.5.4.3,es.mydomain.local` |
+| `ckanext.versioned_datastore.elasticsearch_port`         | The port for to use for the elasticsearch server hosts listed in the elasticsearch_hosts option                                                                           | `9200`                              |
+| `ckanext.versioned_datastore.elasticsearch_index_prefix` | The prefix to use for index names in elasticsearch. Each resource in the datastore gets an index and the name of the index is the resource ID with this prefix prepended. | `nhm-`                              |
+| `ckanext.versioned_datastore.mongo_host`                 | The mongo server host                                                                                                                                                     | `10.54.24.10`                       |
+| `ckanext.versioned_datastore.mongo_port`                 | The port to use to connect to the mongo host                                                                                                                              | `27017`                             |
+| `ckanext.versioned_datastore.mongo_database`             | The name of the mongo database to use to store datastore data in                                                                                                          | `nhm`                               |
 
 ## **[OPTIONAL]**
 
-Name|Description|Example
---|--|--
-`ckanext.versioned_datastore.redis_host`|The redis server host. If this is provided slugging is enabled|`14.1.214.50`
-`ckanext.versioned_datastore.redis_port`|The port to use to connect to the redis host|`6379`
-`ckanext.versioned_datastore.redis_database`|The redis database index to use to store datastore multisearch slugs in|`1`
-`ckanext.versioned_datastore.slug_ttl`|The amount of time slugs should last for, in days. Default: `7`|`7`
-`ckanext.versioned_datastore.dwc_core_extension_name`|The name of the DwC core extension to use, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).|`gbif_occurrence`
-`ckanext.versioned_datastore.dwc_extension_names`|A comma-separated list of (non-core) DwC extension names, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).|`gbif_multimedia`
-`ckanext.versioned_datastore.dwc_org_name`|The organisation name to use in DwC-A metadata. Default: the value of `ckanext.doi.publisher` or `ckan.site_title`|`The Natural History Museum`
-`ckanext.versioned_datastore.dwc_org_email`|The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`|`contact@yoursite.com`
-`ckanext.versioned_datastore.dwc_default_license`|The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`|`http://creativecommons.org/publicdomain/zero/1.0/legalcode`
+| Name                                                  | Description                                                                                                                                        | Example                                                      |
+|-------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------|
+| `ckanext.versioned_datastore.redis_host`              | The redis server host. If this is provided slugging is enabled                                                                                     | `14.1.214.50`                                                |
+| `ckanext.versioned_datastore.redis_port`              | The port to use to connect to the redis host                                                                                                       | `6379`                                                       |
+| `ckanext.versioned_datastore.redis_database`          | The redis database index to use to store datastore multisearch slugs in                                                                            | `1`                                                          |
+| `ckanext.versioned_datastore.slug_ttl`                | The amount of time slugs should last for, in days. Default: `7`                                                                                    | `7`                                                          |
+| `ckanext.versioned_datastore.dwc_core_extension_name` | The name of the DwC core extension to use, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py).                | `gbif_occurrence`                                            |
+| `ckanext.versioned_datastore.dwc_extension_names`     | A comma-separated list of (non-core) DwC extension names, as defined in [dwc/writer.py](/ckanext/versioned_datastore/lib/downloads/dwc/writer.py). | `gbif_multimedia`                                            |
+| `ckanext.versioned_datastore.dwc_org_name`            | The organisation name to use in DwC-A metadata. Default: the value of `ckanext.doi.publisher` or `ckan.site_title`                                 | `The Natural History Museum`                                 |
+| `ckanext.versioned_datastore.dwc_org_email`           | The contact email to use in DwC-A metadata. Default: the value of `smtp.mail_from`                                                                 | `contact@yoursite.com`                                       |
+| `ckanext.versioned_datastore.dwc_default_license`     | The license to use in DwC-A metadata if the resources have differing licenses or no license is specified. Default: `null`                          | `http://creativecommons.org/publicdomain/zero/1.0/legalcode` |
 
-
-# Further Setup
-
-At the version of Eevee this plugin uses, you will also need to:
-
-  - install MongoDB 4.x
-  - install Elasticsearch 6.7.x (6.x is probably ok, but untested)
-
-See the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-
-This plugin also requires CKAN's job queue, which is included in recent versions of CKAN or can be added to old versions using the ckanext-rq plugin.
-
+<!--configuration-end-->
 
 # Usage
 
+<!--usage-start-->
 A brief tour!
 
 The plugin automatically detects resources on upload that can be added to the datastore.
@@ -125,8 +135,8 @@ Note that only the first sheet in multisheet XLS and XLSX files will be processe
 
 Adding data to the datastore is accomplished in two steps:
 
-1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
-2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Eevee](https://github.com/NaturalHistoryMuseum/eevee) repository for more details.
+1. Ingesting the records into MongoDB. A document is used per unique record ID to store all versions and the documents for a specific resource are stored in a collection named after the resource's ID. For more information on the structure of these documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
+2. Indexing the documents from MongoDB into Elasticsearch. One indexed is used for all versions of the records and a document in Elasticsearch is created per version of each record. The index is named after the resource's ID with the configured prefix prepended. For more information on the structure of these indexed documents see the [Splitgill](https://github.com/NaturalHistoryMuseum/splitgill) repository for more details.
 
 The ingesting and indexing is completed in the background using the CKAN's job queue.
 
@@ -204,25 +214,26 @@ Here is a brief overview of its functions:
 
 See the interface definition in this plugin for more details about these functions.
 
-# Testing
-_Test coverage is currently extremely limited._
+<!--usage-end-->
 
-To run the tests in this extension, there is a Docker compose configuration available in this
-repository to make it easy.
+# Testing
+
+<!--testing-start-->
+There is a Docker compose configuration available in this repository to make it easier to run tests. The ckan image uses the Dockerfile in the `docker/` folder.
 
 To run the tests against ckan 2.9.x on Python3:
 
-1. Build the required images
-```bash
-docker-compose build
-```
+1. Build the required images:
+   ```shell
+   docker-compose build
+   ```
 
 2. Then run the tests.
    The root of the repository is mounted into the ckan container as a volume by the Docker compose
    configuration, so you should only need to rebuild the ckan image if you change the extension's
    dependencies.
-```bash
-docker-compose run ckan
-```
+   ```shell
+   docker-compose run ckan
+   ```
 
-The ckan image uses the Dockerfile in the `docker/` folder which is based on `openknowledge/ckan-dev:2.9`.
+<!--testing-end-->

@@ -27,7 +27,7 @@ class QueryArgs(BaseArgs):
         'version': [ignore_missing, int_validator],
         'resource_ids': [ignore_missing, list_of_strings()],
         'resource_ids_and_versions': [ignore_missing, json_validator],
-        'slug_or_doi': [ignore_missing, str]
+        'slug_or_doi': [ignore_missing, str],
     }
 
 
@@ -43,14 +43,14 @@ class DerivativeArgs(BaseArgs):
         'format_args': [ignore_missing, json_validator],
         'separate_files': [ignore_missing, boolean_validator],
         'ignore_empty_fields': [ignore_missing, boolean_validator],
-        'transform': [ignore_missing, json_validator]
+        'transform': [ignore_missing, json_validator],
     }
 
     defaults = {
         'format_args': {},
         'separate_files': False,
         'ignore_empty_fields': False,
-        'transform': {}
+        'transform': {},
     }
 
 
@@ -58,27 +58,15 @@ class ServerArgs(BaseArgs):
     type: str
     type_args: dict
 
-    fields = {
-        'type': [not_missing, str],
-        'type_args': [ignore_missing, json_validator]
-    }
+    fields = {'type': [not_missing, str], 'type_args': [ignore_missing, json_validator]}
 
-    defaults = {
-        'type': 'direct',
-        'type_args': {}
-    }
+    defaults = {'type': 'direct', 'type_args': {}}
 
 
 class NotifierArgs(BaseArgs):
     type: str
     type_args: dict
 
-    fields = {
-        'type': [not_missing, str],
-        'type_args': [ignore_missing, json_validator]
-    }
+    fields = {'type': [not_missing, str], 'type_args': [ignore_missing, json_validator]}
 
-    defaults = {
-        'type': 'email',
-        'type_args': {}
-    }
+    defaults = {'type': 'email', 'type_args': {}}

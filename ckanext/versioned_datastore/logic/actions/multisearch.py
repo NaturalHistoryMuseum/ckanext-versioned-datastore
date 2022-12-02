@@ -11,26 +11,56 @@ from ckantools.decorators import action
 from ckantools.timer import Timer
 from ...interfaces import IVersionedDatastore
 from ...lib import common
-from ...lib.datastore_utils import prefix_resource, unprefix_index, iter_data_fields, \
-    trim_index_name, prefix_field
-from ...lib.query.fields import get_all_fields, select_fields, get_single_resource_fields, \
-    get_mappings
+from ...lib.datastore_utils import (
+    prefix_resource,
+    unprefix_index,
+    iter_data_fields,
+    trim_index_name,
+    prefix_field,
+)
+from ...lib.query.fields import (
+    get_all_fields,
+    select_fields,
+    get_single_resource_fields,
+    get_mappings,
+)
 from ...lib.query.query_log import log_query
-from ...lib.query.schema import get_latest_query_version, InvalidQuerySchemaVersionError, \
-    validate_query, translate_query, hash_query
+from ...lib.query.schema import (
+    get_latest_query_version,
+    InvalidQuerySchemaVersionError,
+    validate_query,
+    translate_query,
+    hash_query,
+)
 from ...lib.query.slugs import create_slug, resolve_slug
-from ...lib.query.utils import get_available_datastore_resources, determine_resources_to_search, \
-    determine_version_filter, calculate_after, find_searched_resources
+from ...lib.query.utils import (
+    get_available_datastore_resources,
+    determine_resources_to_search,
+    determine_version_filter,
+    calculate_after,
+    find_searched_resources,
+)
 
 
-@action(schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free)
-def datastore_multisearch(context, query=None, query_version=None, version=None, resource_ids=None,
-                          resource_ids_and_versions=None, size=100, after=None,
-                          top_resources=False, timings=False):
-    '''
-    Performs a search across multiple resources at the same time and returns the results in
-    descending _id and index name order (the index name is included to ensure unique sorting
-    otherwise the after value based pagination won't work properly).
+@action(
+    schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free
+)
+def datastore_multisearch(
+    context,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    size=100,
+    after=None,
+    top_resources=False,
+    timings=False,
+):
+    """
+    Performs a search across multiple resources at the same time and returns the results
+    in descending _id and index name order (the index name is included to ensure unique
+    sorting otherwise the after value based pagination won't work properly).
 
     :param context: the context dict from the action call
     :param query: the query dict. If None (default) then an empty query is used
@@ -54,7 +84,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
                           in them (defaults to False) in the result
     :param timings: whether to include timing information in the result dict
     :return: a dict of results including the records and total
-    '''
+    """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
         query = {}
@@ -74,14 +104,19 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
-    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
-                                                                       resource_ids_and_versions)
+    resource_ids, skipped_resource_ids = determine_resources_to_search(
+        context, resource_ids, resource_ids_and_versions
+    )
     timer.add_event('determine_resources')
     if not resource_ids:
-        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
 
     # add the version filter necessary given the parameters and the resources we're searching
-    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    version_filter = determine_version_filter(
+        version, resource_ids, resource_ids_and_versions
+    )
     search = search.filter(version_filter)
     timer.add_event('version_filter')
 
@@ -91,7 +126,7 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
         # not all indexes have a modified field so we need to provide the unmapped_type option
         {'data.modified': {'order': 'desc', 'unmapped_type': 'date'}},
         {'data._id': 'desc'},
-        {'_index': 'desc'}
+        {'_index': 'desc'},
     )
     # add the after if there is one
     if after is not None:
@@ -100,7 +135,9 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     # we find represent the last page of results or not
     search = search.extra(size=size + 1)
     # add the resource indexes we're searching on
-    search = search.index([prefix_resource(resource_id) for resource_id in resource_ids])
+    search = search.index(
+        [prefix_resource(resource_id) for resource_id in resource_ids]
+    )
 
     if top_resources:
         # gather the number of hits in the top 10 most frequently represented indexes if requested
@@ -120,12 +157,15 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
     response = {
         'total': result.hits.total,
         'after': next_after,
-        'records': [{
-            'data': hit.data.to_dict(),
-            # should we provide the name too? If so cache a map of id -> name, then update it if we
-            # don't find the id in the map
-            'resource': trim_index_name(hit.meta.index),
-        } for hit in hits],
+        'records': [
+            {
+                'data': hit.data.to_dict(),
+                # should we provide the name too? If so cache a map of id -> name, then update it if we
+                # don't find the id in the map
+                'resource': trim_index_name(hit.meta.index),
+            }
+            for hit in hits
+        ],
         'skipped_resources': skipped_resource_ids,
     }
 
@@ -151,13 +191,21 @@ def datastore_multisearch(context, query=None, query_version=None, version=None,
 
 
 @action(schema.datastore_create_slug(), help.datastore_create_slug)
-def datastore_create_slug(context, query=None, query_version=None, version=None, resource_ids=None,
-                          resource_ids_and_versions=None, pretty_slug=True):
-    '''
-    Creates a slug for the given multisearch parameters and returns it. This slug can be used, along
-    with the resolve_slug action, to retrieve, at any point after the slug is created, the query
-    parameters passed to this action. The slug is unique for the given query parameters and passing
-    the same query parameters again at a later point will result in the same slug being returned.
+def datastore_create_slug(
+    context,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    pretty_slug=True,
+):
+    """
+    Creates a slug for the given multisearch parameters and returns it. This slug can be
+    used, along with the resolve_slug action, to retrieve, at any point after the slug
+    is created, the query parameters passed to this action. The slug is unique for the
+    given query parameters and passing the same query parameters again at a later point
+    will result in the same slug being returned.
 
     :param context: the context dict from the action call
     :param query: the query dict. If None (default) then an empty query is used
@@ -177,15 +225,22 @@ def datastore_create_slug(context, query=None, query_version=None, version=None,
                         of 2 adjectives and an animal will be used to create the slug, otherwise if
                         False, a uuid will be used
     :return: a dict containing the slug and whether it was created during this function call or not
-    '''
+    """
     if query is None:
         query = {}
     if query_version is None:
         query_version = get_latest_query_version()
 
     try:
-        is_new, slug = create_slug(context, query, query_version, version, resource_ids,
-                                   resource_ids_and_versions, pretty_slug=pretty_slug)
+        is_new, slug = create_slug(
+            context,
+            query,
+            query_version,
+            version,
+            resource_ids,
+            resource_ids_and_versions,
+            pretty_slug=pretty_slug,
+        )
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
@@ -195,23 +250,35 @@ def datastore_create_slug(context, query=None, query_version=None, version=None,
     return {
         'slug': slug.get_slug_string(),
         'is_new': is_new,
-        'is_reserved': slug.reserved_pretty_slug == slug.get_slug_string()
+        'is_reserved': slug.reserved_pretty_slug == slug.get_slug_string(),
     }
 
 
-@action(schema.datastore_resolve_slug(), help.datastore_resolve_slug, toolkit.side_effect_free)
+@action(
+    schema.datastore_resolve_slug(),
+    help.datastore_resolve_slug,
+    toolkit.side_effect_free,
+)
 def datastore_resolve_slug(slug):
-    '''
+    """
     Resolves the given slug and returns the query parameters used to create it.
 
     :param slug: the slug
     :return: the query parameters and the creation time in a dict
-    '''
+    """
     # try resolving the slug first
     resolved = resolve_slug(slug)
     if resolved:
-        result = {k: getattr(resolved, k) for k in ('query', 'query_version', 'version',
-                                                    'resource_ids', 'resource_ids_and_versions')}
+        result = {
+            k: getattr(resolved, k)
+            for k in (
+                'query',
+                'query_version',
+                'version',
+                'resource_ids',
+                'resource_ids_and_versions',
+            )
+        }
         result['created'] = resolved.created.isoformat()
         return result
 
@@ -219,6 +286,7 @@ def datastore_resolve_slug(slug):
     if plugin_loaded('query_dois'):
         from ckanext.query_dois.model import QueryDOI
         from ckan import model
+
         resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
         if resolved:
             return {
@@ -227,19 +295,22 @@ def datastore_resolve_slug(slug):
                 'version': resolved.requested_version,
                 'resource_ids': list(resolved.resources_and_versions.keys()),
                 'resource_ids_and_versions': resolved.resources_and_versions,
-                'created': resolved.timestamp.isoformat()
+                'created': resolved.timestamp.isoformat(),
             }
 
     # if both slug and DOI have failed
     raise toolkit.ValidationError('Slug not found')
 
 
-@action(schema.datastore_field_autocomplete(), help.datastore_field_autocomplete,
-        toolkit.side_effect_free)
+@action(
+    schema.datastore_field_autocomplete(),
+    help.datastore_field_autocomplete,
+    toolkit.side_effect_free,
+)
 def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=False):
-    '''
-    Given a text value, finds fields that contain the given text from the given resource (or all
-    resource if no resources are passed).
+    """
+    Given a text value, finds fields that contain the given text from the given resource
+    (or all resource if no resources are passed).
 
     :param context: the context dict from the action call
     :param text: the text to search with (default is an empty string)
@@ -248,11 +319,13 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
     :param lowercase: whether to do a lowercase check or not, essentially whether to be case
                       insensitive. Default: True, be case insensitive.
     :return: the fields and the resources they came from as a dict
-    '''
+    """
     # figure out which resources should be searched
     resource_ids = get_available_datastore_resources(context, resource_ids)
     if not resource_ids:
-        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
 
     mappings = get_mappings(resource_ids)
 
@@ -262,10 +335,14 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
         resource_id = unprefix_index(index)
 
         for field_path, config in iter_data_fields(mapping):
-            if any(text in (part.lower() if lowercase else part) for part in field_path):
+            if any(
+                text in (part.lower() if lowercase else part) for part in field_path
+            ):
                 fields['.'.join(field_path)][resource_id] = {
                     'type': config['type'],
-                    'fields': {f: c['type'] for f, c in config.get('fields', {}).items()}
+                    'fields': {
+                        f: c['type'] for f, c in config.get('fields', {}).items()
+                    },
                 }
 
     return {
@@ -274,10 +351,22 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
     }
 
 
-@action(schema.datastore_guess_fields(), help.datastore_guess_fields, toolkit.side_effect_free)
-def datastore_guess_fields(context, query=None, query_version=None, version=None, resource_ids=None,
-                           resource_ids_and_versions=None, size=10, ignore_groups=None):
-    '''
+@action(
+    schema.datastore_guess_fields(),
+    help.datastore_guess_fields,
+    toolkit.side_effect_free,
+)
+def datastore_guess_fields(
+    context,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    size=10,
+    ignore_groups=None,
+):
+    """
     Guesses the fields that are most relevant to show with the given query.
 
     If only one resource is included in the search then the requested number of fields from the
@@ -300,13 +389,15 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
     :param size: the number of groups to return
     :param ignore_groups: a list of groups to ignore from the results (default: None)
     :return: a list of groups
-    '''
+    """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
         query = {}
     if query_version is None:
         query_version = get_latest_query_version()
-    ignore_groups = set(g.lower() for g in ignore_groups) if ignore_groups is not None else set()
+    ignore_groups = (
+        set(g.lower() for g in ignore_groups) if ignore_groups is not None else set()
+    )
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
@@ -316,15 +407,20 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
-    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
-                                                                       resource_ids_and_versions)
+    resource_ids, skipped_resource_ids = determine_resources_to_search(
+        context, resource_ids, resource_ids_and_versions
+    )
     if not resource_ids:
-        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
 
     if version is None:
         version = to_timestamp(datetime.now())
     # add the version filter necessary given the parameters and the resources we're searching
-    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    version_filter = determine_version_filter(
+        version, resource_ids, resource_ids_and_versions
+    )
     search = search.filter(version_filter)
 
     # add the size parameter, we don't want any records back
@@ -346,22 +442,37 @@ def datastore_guess_fields(context, query=None, query_version=None, version=None
             up_to_version = version
         else:
             up_to_version = resource_ids_and_versions[resource_id]
-        return get_single_resource_fields(all_fields, resource_id, up_to_version, search, size)
+        return get_single_resource_fields(
+            all_fields, resource_id, up_to_version, search, size
+        )
     else:
         size = max(0, min(size, 25))
         return select_fields(all_fields, search, size)
 
 
-@action(schema.datastore_value_autocomplete(), help.datastore_value_autocomplete,
-        toolkit.side_effect_free)
-def datastore_value_autocomplete(context, field, prefix, query=None, query_version=None,
-                                 version=None, resource_ids=None, resource_ids_and_versions=None,
-                                 size=20, after=None):
-    '''
-    Returns a list of values in alphabetical order from the given field that start with the given
-    prefix. The values have to be from the provided resource ids and be from documents that match
-    the given query. The after parameter can be used to get the next set of values providing
-    pagination. The resulting list is limited to a maximum size of 20 values.
+@action(
+    schema.datastore_value_autocomplete(),
+    help.datastore_value_autocomplete,
+    toolkit.side_effect_free,
+)
+def datastore_value_autocomplete(
+    context,
+    field,
+    prefix,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    size=20,
+    after=None,
+):
+    """
+    Returns a list of values in alphabetical order from the given field that start with
+    the given prefix. The values have to be from the provided resource ids and be from
+    documents that match the given query. The after parameter can be used to get the
+    next set of values providing pagination. The resulting list is limited to a maximum
+    size of 20 values.
 
     :param context: the context dict from the action call
     :param field: the field to get the values from
@@ -375,7 +486,7 @@ def datastore_value_autocomplete(context, field, prefix, query=None, query_versi
     :param size: the number of values to return
     :param after: the after value to use (provides pagination)
     :return: a list of values that match the given prefix
-    '''
+    """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
         query = {}
@@ -392,13 +503,18 @@ def datastore_value_autocomplete(context, field, prefix, query=None, query_versi
         raise toolkit.ValidationError(e.message)
 
     # figure out which resources we're searching
-    resource_ids, skipped_resource_ids = determine_resources_to_search(context, resource_ids,
-                                                                       resource_ids_and_versions)
+    resource_ids, skipped_resource_ids = determine_resources_to_search(
+        context, resource_ids, resource_ids_and_versions
+    )
     if not resource_ids:
-        raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
 
     # add the version filter necessary given the parameters and the resources we're searching
-    version_filter = determine_version_filter(version, resource_ids, resource_ids_and_versions)
+    version_filter = determine_version_filter(
+        version, resource_ids, resource_ids_and_versions
+    )
     search = search.filter(version_filter)
 
     # only add the prefix filter to the search if one is provided
@@ -409,14 +525,20 @@ def datastore_value_autocomplete(context, field, prefix, query=None, query_versi
     search = search.extra(size=0)
 
     # modify the search so that it has the aggregation required to get the autocompletion results
-    search.aggs.bucket('field_values', 'composite', size=size,
-                       sources={field: A('terms', field=prefix_field(field), order='asc')})
+    search.aggs.bucket(
+        'field_values',
+        'composite',
+        size=size,
+        sources={field: A('terms', field=prefix_field(field), order='asc')},
+    )
     # if there's an after included, add it into the aggregation
     if after:
         search.aggs['field_values'].after = {field: after}
 
     # add the resource indexes we're searching on
-    search = search.index([prefix_resource(resource_id) for resource_id in resource_ids])
+    search = search.index(
+        [prefix_resource(resource_id) for resource_id in resource_ids]
+    )
 
     # create a multisearch for this one query - this ensures there aren't any issues with the length
     # of the URL as the index list is passed as a part of the body
@@ -438,15 +560,17 @@ def datastore_value_autocomplete(context, field, prefix, query=None, query_versi
     return response
 
 
-@action(schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free)
+@action(
+    schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free
+)
 def datastore_hash_query(query=None, query_version=None):
-    '''
+    """
     Hashes the given query at the given query schema and returns the hex digest.
 
     :param query: the query dict
     :param query_version: the query version
     :return: the hex digest of the query
-    '''
+    """
     if query is None:
         query = {}
     if query_version is None:
@@ -460,13 +584,17 @@ def datastore_hash_query(query=None, query_version=None):
     return hash_query(query, query_version)
 
 
-@action(schema.datastore_edit_slug(), help.datastore_edit_slug, toolkit.side_effect_free)
+@action(
+    schema.datastore_edit_slug(), help.datastore_edit_slug, toolkit.side_effect_free
+)
 def datastore_edit_slug(context, current_slug, new_reserved_slug):
     slug = resolve_slug(current_slug)
     if slug is None:
         raise toolkit.Invalid(f'The slug {current_slug} does not exist')
     if slug.reserved_pretty_slug and not context['auth_user_obj'].sysadmin:
-        raise toolkit.NotAuthorized('Only sysadmins can replace existing reserved slugs.')
+        raise toolkit.NotAuthorized(
+            'Only sysadmins can replace existing reserved slugs.'
+        )
     slug.reserved_pretty_slug = new_reserved_slug.lower()
     slug.commit()
     return slug.as_dict()

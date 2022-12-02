@@ -11,8 +11,9 @@ class XlsxDerivativeGenerator(BaseDerivativeGenerator):
     DEFAULT_SHEET_NAME = 'Data'
 
     def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
-        super(XlsxDerivativeGenerator, self).__init__(output_dir, fields, query, resource_id,
-                                                      **format_args)
+        super(XlsxDerivativeGenerator, self).__init__(
+            output_dir, fields, query, resource_id, **format_args
+        )
         self.workbook = None
 
     def initialise(self):
@@ -37,4 +38,6 @@ class XlsxDerivativeGenerator(BaseDerivativeGenerator):
                 filtered_row[field] = value
         if self.resource_id:
             filtered_row[self.RESOURCE_ID_FIELD_NAME] = self.resource_id
-        self.workbook.active.append(filtered_row.get(field) for field in self.fields['main'])
+        self.workbook.active.append(
+            filtered_row.get(field) for field in self.fields['main']
+        )

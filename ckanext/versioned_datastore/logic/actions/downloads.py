@@ -10,13 +10,19 @@ from ...lib.downloads.download import DownloadRunManager
 def datastore_queue_download(context, query, file, server=None, notifier=None):
     server = server or ServerArgs(**ServerArgs.defaults)
     notifier = notifier or NotifierArgs(**NotifierArgs.defaults)
-    download_runner = DownloadRunManager(query_args=query, derivative_args=file, server_args=server,
-                            notifier_args=notifier)
+    download_runner = DownloadRunManager(
+        query_args=query,
+        derivative_args=file,
+        server_args=server,
+        notifier_args=notifier,
+    )
 
-    job = toolkit.enqueue_job(download_runner.run,
-                              queue='download',
-                              title=download_runner.request.created.strftime('%Y-%m-%d %H:%M:%S'),
-                              rq_kwargs={'timeout': 3600})
+    job = toolkit.enqueue_job(
+        download_runner.run,
+        queue='download',
+        title=download_runner.request.created.strftime('%Y-%m-%d %H:%M:%S'),
+        rq_kwargs={'timeout': 3600},
+    )
 
     return {
         'queued_at': job.enqueued_at.isoformat(),

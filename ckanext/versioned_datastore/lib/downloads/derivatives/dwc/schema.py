@@ -9,15 +9,24 @@ from .utils import load_schema
 
 
 class Schema(object):
-    def __init__(self, domains, props, core_extension=None, extensions=None, extension_props=None,
-                 row_type='http://rs.tdwg.org/dwc/terms/Occurrence'):
+    def __init__(
+        self,
+        domains,
+        props,
+        core_extension=None,
+        extensions=None,
+        extension_props=None,
+        row_type='http://rs.tdwg.org/dwc/terms/Occurrence',
+    ):
         self.domains = domains
         self.props = props
         self.core_extension = core_extension
         self.extensions = extensions or []
         self.extension_props = extension_props or PropCollection([])
         self.row_type = core_extension.row_type if core_extension else row_type
-        self.row_type_name = core_extension.name if core_extension else row_type.split('/')[-1]
+        self.row_type_name = (
+            core_extension.name if core_extension else row_type.split('/')[-1]
+        )
 
     @classmethod
     def regenerate(cls, core_extension_url=None, extension_urls=None):
@@ -33,7 +42,9 @@ class Schema(object):
         domains_df = domains_df.drop(['organized_in', 'rdf_type'], axis=1)
         domains = [Domain.create(d) for _, d in domains_df.iterrows()]
 
-        props_df = df[df.rdf_type == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property']
+        props_df = df[
+            df.rdf_type == 'http://www.w3.org/1999/02/22-rdf-syntax-ns#Property'
+        ]
         props_df = props_df.drop(['rdf_type'], axis=1)
 
         # supplementary property information is in the core schema
@@ -43,7 +54,9 @@ class Schema(object):
             xml_element = core_xsd.find(f'.//{{*}}element[@name="{p.term_localName}"]')
             # (hopefully) temporary fix for https://github.com/tdwg/dwc/issues/403
             if xml_element is None and p.term_localName == 'degreeOfEstablishment':
-                xml_element = core_xsd.find('.//{*}element[@name="degreeOfEstablishmentMeans"]')
+                xml_element = core_xsd.find(
+                    './/{*}element[@name="degreeOfEstablishmentMeans"]'
+                )
             elif xml_element is None and p.term_localName == 'waterBody':
                 xml_element = core_xsd.find('.//{*}element[@name="waterbody"]')
             prop = Prop.create(p, xml_element, flags=[p['flags']])
@@ -51,7 +64,9 @@ class Schema(object):
 
         if core_extension_url is not None:
             temp_props = {}
-            extension_schema = load_schema(core_extension_url.url, core_extension_url.base)
+            extension_schema = load_schema(
+                core_extension_url.url, core_extension_url.base
+            )
             ce_props = extension_schema.findall('.//{*}property')
             for p in ce_props:
                 domain_name = p.attrib['group']
@@ -77,7 +92,11 @@ class Schema(object):
             extensions.append(ext)
             schema_props = extension_schema.findall('.//{*}property')
             extension_props[ext.name] = PropCollection(
-                [Prop.create(xml_element_source=p, extension=ext.name) for p in schema_props])
+                [
+                    Prop.create(xml_element_source=p, extension=ext.name)
+                    for p in schema_props
+                ]
+            )
 
         return cls(domains, props, ce, extensions, extension_props)
 
@@ -85,14 +104,15 @@ class Schema(object):
         serialised_dict = {
             'domains': [d.serialise() for d in self.domains],
             'props': self.props.serialise(),
-            'row_type': self.row_type
+            'row_type': self.row_type,
         }
         if self.core_extension is not None:
             serialised_dict['core_extension'] = self.core_extension.serialise()
         if len(self.extensions) > 0:
             serialised_dict['extensions'] = [e.serialise() for e in self.extensions]
-            serialised_dict['extension_props'] = {k: v.serialise() for k, v in
-                                                  self.extension_props.items()}
+            serialised_dict['extension_props'] = {
+                k: v.serialise() for k, v in self.extension_props.items()
+            }
         return serialised_dict
 
     def save(self, cache_path):
@@ -109,10 +129,16 @@ class Schema(object):
             init_dict = {
                 'domains': [Domain.load(d) for d in content['domains']],
                 'props': PropCollection.load(content['props']),
-                'extensions': [Extension.load(e) for e in content.get('extensions', [])],
-                'extension_props': {k: PropCollection.load(v) for k, v in
-                                    content.get('extension_props', {}).items()},
-                'row_type': content.get('row_type', 'http://rs.tdwg.org/dwc/terms/Occurrence')
+                'extensions': [
+                    Extension.load(e) for e in content.get('extensions', [])
+                ],
+                'extension_props': {
+                    k: PropCollection.load(v)
+                    for k, v in content.get('extension_props', {}).items()
+                },
+                'row_type': content.get(
+                    'row_type', 'http://rs.tdwg.org/dwc/terms/Occurrence'
+                ),
             }
             ce = content.get('core_extension')
             if ce is not None:

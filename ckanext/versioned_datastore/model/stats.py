@@ -34,9 +34,10 @@ import_stats_table = Table(
 
 
 class ImportStats(DomainObject):
-    '''
+    """
     Object for holding resource import stats.
-    '''
+    """
+
     pass
 
 

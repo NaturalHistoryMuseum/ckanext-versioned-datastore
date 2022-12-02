@@ -12,26 +12,30 @@ from ..datastore_utils import prefix_resource, get_last_after, trim_index_name
 
 
 def get_available_datastore_resources(context, only=None):
-    '''
-    Returns a set of resource ids accessible to the current user based on the given context that
-    are also datastore resources. If the only parameter is passed then it is used to filter the set
-    of resources that are returned to include only ones in the only list. If the parameter is not
-    passed, or indeed is falsey in any way (such as an empty list) then all resource ids available
-    to the user are returned.
+    """
+    Returns a set of resource ids accessible to the current user based on the given
+    context that are also datastore resources. If the only parameter is passed then it
+    is used to filter the set of resources that are returned to include only ones in the
+    only list. If the parameter is not passed, or indeed is falsey in any way (such as
+    an empty list) then all resource ids available to the user are returned.
 
     :param context: the dict ckan context to request auth against
     :param only: optional list of resource ids to filter the returned list by. Defaults to None
                  which indicates all available resources should be returned
     :return: a set of resource ids
-    '''
+    """
     # retrieve all resource ids and associated package ids direct from the database for speed
-    query = model.Session.query(model.Resource).join(model.Package) \
-        .filter(model.Resource.state == 'active') \
-        .filter(model.Package.state == 'active') \
+    query = (
+        model.Session.query(model.Resource)
+        .join(model.Package)
+        .filter(model.Resource.state == 'active')
+        .filter(model.Package.state == 'active')
         .with_entities(model.Resource.id, model.Package.id)
+    )
     # retrieve the names in the status index
-    status_search = Search(index=common.CONFIG.elasticsearch_status_index_name,
-                           using=common.ES_CLIENT).source(['name'])
+    status_search = Search(
+        index=common.CONFIG.elasticsearch_status_index_name, using=common.ES_CLIENT
+    ).source(['name'])
 
     if only:
         # apply filters to only get the resources passed in the only list
@@ -78,13 +82,15 @@ def get_available_datastore_resources(context, only=None):
     return resource_ids
 
 
-def determine_resources_to_search(context, resource_ids=None, resource_ids_and_versions=None):
-    '''
-    Determines the resources to search from the given parameters. The set of resource ids returned
-    contains only the resources that the user has access to (this is determined using the context)
-    and are datastore active. If resource ids are provided through either the resource_ids or
-    resource_ids_and_versions parameters then only these resource ids will be returned, if indeed
-    they are accessible to the user.
+def determine_resources_to_search(
+    context, resource_ids=None, resource_ids_and_versions=None
+):
+    """
+    Determines the resources to search from the given parameters. The set of resource
+    ids returned contains only the resources that the user has access to (this is
+    determined using the context) and are datastore active. If resource ids are provided
+    through either the resource_ids or resource_ids_and_versions parameters then only
+    these resource ids will be returned, if indeed they are accessible to the user.
 
     :param context: the context dict allowing us to determine the user and do auth on the resources
     :param resource_ids: a list of resources to search
@@ -92,7 +98,7 @@ def determine_resources_to_search(context, resource_ids=None, resource_ids_and_v
     :return: 2-tuple containing a list of resource ids to search and a list of resource ids that
              have been skipped because the user doesn't have access to them or they aren't datastore
              resources
-    '''
+    """
     # validate the resource_ids passed in. If the resource_ids_and_versions parameter is in use then
     # it is taken as the resource_ids source and resource_ids is ignored
     if resource_ids_and_versions:
@@ -103,23 +109,27 @@ def determine_resources_to_search(context, resource_ids=None, resource_ids_and_v
     resource_ids = get_available_datastore_resources(context, requested_resource_ids)
 
     if requested_resource_ids is not None:
-        skipped_resources = [rid for rid in requested_resource_ids if rid not in resource_ids]
+        skipped_resources = [
+            rid for rid in requested_resource_ids if rid not in resource_ids
+        ]
     else:
         skipped_resources = []
     return list(resource_ids), skipped_resources
 
 
-def determine_version_filter(version=None, resource_ids=None, resource_ids_and_versions=None):
-    '''
-    Determine and return the elasticsearch-dsl filter which can filter on the version extracted from
-    the given parameters.
+def determine_version_filter(
+    version=None, resource_ids=None, resource_ids_and_versions=None
+):
+    """
+    Determine and return the elasticsearch-dsl filter which can filter on the version
+    extracted from the given parameters.
 
     :param version: the version to filter on across all resources
     :param resource_ids: the resource to search
     :param resource_ids_and_versions: a dict of resource ids -> versions providing resource specific
                                       versions for search
     :return: an elasticsearch-dsl object
-    '''
+    """
     if not resource_ids_and_versions:
         # default the version to now if necessary
         if version is None:
@@ -132,24 +142,28 @@ def determine_version_filter(version=None, resource_ids=None, resource_ids_and_v
         for resource_id in resource_ids:
             target_version = resource_ids_and_versions[resource_id]
             if target_version is None:
-                raise toolkit.ValidationError(f'Valid version not given for {resource_id}')
+                raise toolkit.ValidationError(
+                    f'Valid version not given for {resource_id}'
+                )
             index = prefix_resource(resource_id)
-            rounded_version = common.SEARCH_HELPER.get_rounded_versions([index],
-                                                                        target_version)[index]
+            rounded_version = common.SEARCH_HELPER.get_rounded_versions(
+                [index], target_version
+            )[index]
             indexes_and_versions[index] = rounded_version
 
         return create_index_specific_version_filter(indexes_and_versions)
 
 
 def calculate_after(result, size):
-    '''
-    Calculate the after value for the given search result. It is assumed that the size used when the
-    search was completed is 1 larger than the size passed as a parameter to this function.
+    """
+    Calculate the after value for the given search result. It is assumed that the size
+    used when the search was completed is 1 larger than the size passed as a parameter
+    to this function.
 
     :param result: the elasticsearch result object
     :param size: the number of results
     :return: a 2-tuple containing the list of hits and the next after value
-    '''
+    """
     if len(result.hits) > size:
         # there are more results, trim off the last hit as it wasn't requested
         hits = result.hits[:-1]
@@ -163,8 +177,9 @@ def calculate_after(result, size):
 
 def chunk_iterator(iterable, chunk_size):
     """
-    Iterates over an iterable, yielding lists of size chunk_size until the iterable is exhausted.
-    The final list could be smaller than chunk_size but will always have a length > 0.
+    Iterates over an iterable, yielding lists of size chunk_size until the iterable is
+    exhausted. The final list could be smaller than chunk_size but will always have a
+    length > 0.
 
     :param iterable: the iterable to chunk up
     :param chunk_size: the maximum size of each yielded chunk
@@ -181,21 +196,24 @@ def chunk_iterator(iterable, chunk_size):
 
 
 def find_searched_resources(search, resource_ids):
-    '''
-    Given a search and a list of resource ids to search in, returns a list of the resources that are
-    actually included in the search results.
+    """
+    Given a search and a list of resource ids to search in, returns a list of the
+    resources that are actually included in the search results.
 
     :param search: an elasticsearch-dsl object
     :param resource_ids: a list of resource ids
     :return: a list of resource ids
-    '''
+    """
     # we have to make a copy as aggs don't return a clone :(
     search_copy = copy(search)
-    search_copy = search_copy.index([prefix_resource(resource_id) for resource_id in resource_ids])
+    search_copy = search_copy.index(
+        [prefix_resource(resource_id) for resource_id in resource_ids]
+    )
     search_copy.aggs.bucket('indexes', 'terms', field='_index')
     multisearch = MultiSearch(using=common.ES_CLIENT).add(search_copy)
     result = next(iter(multisearch.execute()))
     return [
         trim_index_name(bucket['key'])
-        for bucket in result.aggs.to_dict()['indexes']['buckets'] if bucket['doc_count'] > 0
+        for bucket in result.aggs.to_dict()['indexes']['buckets']
+        if bucket['doc_count'] > 0
     ]

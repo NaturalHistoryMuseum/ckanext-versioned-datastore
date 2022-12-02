@@ -1,6 +1,14 @@
 from datetime import datetime
 
-from sqlalchemy import Column, Table, BigInteger, UnicodeText, DateTime, ForeignKey, desc
+from sqlalchemy import (
+    Column,
+    Table,
+    BigInteger,
+    UnicodeText,
+    DateTime,
+    ForeignKey,
+    desc,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, backref
 
@@ -24,7 +32,7 @@ datastore_downloads_core_files_table = Table(
     Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('total', BigInteger, nullable=True),
     Column('resource_totals', JSONB, nullable=False, default=dict),
-    Column('field_counts', JSONB, nullable=False, default=dict)
+    Column('field_counts', JSONB, nullable=False, default=dict),
 )
 
 # describes derived files generated from the core files
@@ -32,14 +40,17 @@ datastore_downloads_derivative_files_table = Table(
     'vds_download_derivative',
     meta.metadata,
     Column('id', UnicodeText, primary_key=True, default=make_uuid),
-    Column('core_id', UnicodeText,
-           ForeignKey('vds_download_core.id', onupdate='CASCADE', ondelete='CASCADE'),
-           nullable=False),
+    Column(
+        'core_id',
+        UnicodeText,
+        ForeignKey('vds_download_core.id', onupdate='CASCADE', ondelete='CASCADE'),
+        nullable=False,
+    ),
     Column('download_hash', UnicodeText, nullable=False, index=True),
     Column('created', DateTime, nullable=False, default=datetime.utcnow),
     Column('format', UnicodeText, nullable=False),
     Column('options', JSONB, nullable=True),
-    Column('filepath', UnicodeText, nullable=True)
+    Column('filepath', UnicodeText, nullable=True),
 )
 
 datastore_downloads_requests_table = Table(
@@ -50,19 +61,30 @@ datastore_downloads_requests_table = Table(
     Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('state', UnicodeText, nullable=False, default=state_initial),
     Column('message', UnicodeText, nullable=True),
-    Column('derivative_id', UnicodeText,
-           ForeignKey('vds_download_derivative.id', onupdate='CASCADE', ondelete='CASCADE'),
-           nullable=True),
-    Column('core_id', UnicodeText,
-           ForeignKey('vds_download_core.id', onupdate='CASCADE', ondelete='CASCADE'),
-           nullable=True)
+    Column(
+        'derivative_id',
+        UnicodeText,
+        ForeignKey(
+            'vds_download_derivative.id', onupdate='CASCADE', ondelete='CASCADE'
+        ),
+        nullable=True,
+    ),
+    Column(
+        'core_id',
+        UnicodeText,
+        ForeignKey('vds_download_core.id', onupdate='CASCADE', ondelete='CASCADE'),
+        nullable=True,
+    ),
 )
 
 
 class CoreFileRecord(DomainObject):
-    '''
-    A record of a generated core download file. Does not track individual downloads.
-    '''
+    """
+    A record of a generated core download file.
+
+    Does not track individual downloads.
+    """
+
     id: str
     query_hash: str
     query: dict
@@ -88,28 +110,41 @@ class CoreFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, query_hash, resource_hash):
-        return Session.query(cls).filter(cls.query_hash == query_hash,
-                                         cls.resource_hash == resource_hash).order_by(
-            desc(cls.modified)).all()
+        return (
+            Session.query(cls)
+            .filter(cls.query_hash == query_hash, cls.resource_hash == resource_hash)
+            .order_by(desc(cls.modified))
+            .all()
+        )
 
     @classmethod
     def find_resource(cls, query_hash, resource_id, resource_version):
-        have_resource = Session.query(cls).filter(cls.query_hash == query_hash,
-                                                  cls.resource_ids_and_versions.has_key(
-                                                      resource_id)).order_by(
-            desc(cls.modified)).all()
-        have_resource_version = [r for r in have_resource if
-                                 r.resource_ids_and_versions[resource_id] == resource_version]
+        have_resource = (
+            Session.query(cls)
+            .filter(
+                cls.query_hash == query_hash,
+                cls.resource_ids_and_versions.has_key(resource_id),
+            )
+            .order_by(desc(cls.modified))
+            .all()
+        )
+        have_resource_version = [
+            r
+            for r in have_resource
+            if r.resource_ids_and_versions[resource_id] == resource_version
+        ]
         if have_resource_version:
             return have_resource_version[0]
         return
 
 
 class DerivativeFileRecord(DomainObject):
-    '''
-    A record of a download file requested by a user in a specific format. Does not track individual
-    downloads, just lists the options used to generate a file.
-    '''
+    """
+    A record of a download file requested by a user in a specific format.
+
+    Does not track individual downloads, just lists the options used to generate a file.
+    """
+
     id: str
     core_id: str
     download_hash: str
@@ -131,18 +166,28 @@ class DerivativeFileRecord(DomainObject):
 
     @classmethod
     def get_by_hash(cls, download_hash):
-        return Session.query(cls).filter(cls.download_hash == download_hash).order_by(
-            desc(cls.created)).all()
+        return (
+            Session.query(cls)
+            .filter(cls.download_hash == download_hash)
+            .order_by(desc(cls.created))
+            .all()
+        )
 
     @classmethod
     def get_by_filepath(cls, filepath):
-        return Session.query(cls).filter(cls.filepath == filepath).order_by(desc(cls.created)).all()
+        return (
+            Session.query(cls)
+            .filter(cls.filepath == filepath)
+            .order_by(desc(cls.created))
+            .all()
+        )
 
 
 class DownloadRequest(DomainObject):
-    '''
+    """
     A record of an individual download request.
-    '''
+    """
+
     id: str
     created: datetime
     modified: datetime
@@ -178,17 +223,34 @@ class DownloadRequest(DomainObject):
 
 meta.mapper(CoreFileRecord, datastore_downloads_core_files_table, properties={})
 
-meta.mapper(DerivativeFileRecord, datastore_downloads_derivative_files_table, properties={
-    'core_record': relationship(CoreFileRecord,
-                                primaryjoin=datastore_downloads_derivative_files_table.c.core_id == CoreFileRecord.id,
-                                backref=backref('derivatives', cascade='all, delete-orphan'))
-})
+meta.mapper(
+    DerivativeFileRecord,
+    datastore_downloads_derivative_files_table,
+    properties={
+        'core_record': relationship(
+            CoreFileRecord,
+            primaryjoin=datastore_downloads_derivative_files_table.c.core_id
+            == CoreFileRecord.id,
+            backref=backref('derivatives', cascade='all, delete-orphan'),
+        )
+    },
+)
 
-meta.mapper(DownloadRequest, datastore_downloads_requests_table, properties={
-    'derivative_record': relationship(DerivativeFileRecord,
-                                      primaryjoin=datastore_downloads_requests_table.c.derivative_id == DerivativeFileRecord.id,
-                                      backref=backref('requests', cascade='all, delete-orphan')),
-    'core_record': relationship(CoreFileRecord,
-                                primaryjoin=datastore_downloads_requests_table.c.core_id == CoreFileRecord.id,
-                                backref=backref('requests', cascade='all, delete-orphan'))
-})
+meta.mapper(
+    DownloadRequest,
+    datastore_downloads_requests_table,
+    properties={
+        'derivative_record': relationship(
+            DerivativeFileRecord,
+            primaryjoin=datastore_downloads_requests_table.c.derivative_id
+            == DerivativeFileRecord.id,
+            backref=backref('requests', cascade='all, delete-orphan'),
+        ),
+        'core_record': relationship(
+            CoreFileRecord,
+            primaryjoin=datastore_downloads_requests_table.c.core_id
+            == CoreFileRecord.id,
+            backref=backref('requests', cascade='all, delete-orphan'),
+        ),
+    },
+)

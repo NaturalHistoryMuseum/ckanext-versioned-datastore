@@ -14,13 +14,13 @@ from ... import common
 
 
 def get_reader(resource_format):
-    '''
-    Given a format, return a ResourceReader instance for it. If no ResourceReader type cannot be
-    matched, None is returned.
+    """
+    Given a format, return a ResourceReader instance for it. If no ResourceReader type
+    cannot be matched, None is returned.
 
     :param resource_format: the format
     :return: a ResourceReader instance or None
-    '''
+    """
     resource_format = resource_format.lower()
     if resource_format in common.CSV_FORMATS:
         return SVReader('excel')
@@ -35,9 +35,9 @@ def get_reader(resource_format):
 
 
 class ResourceReader(abc.ABC):
-    '''
+    """
     Abstract class to read fields and rows from a resource.
-    '''
+    """
 
     def __init__(self, compressible):
         '''
@@ -48,42 +48,43 @@ class ResourceReader(abc.ABC):
 
     @abc.abstractmethod
     def get_fields(self, resource_data_fp):
-        '''
-        Returns a list of field names in the order they were provided in the source resource.
+        """
+        Returns a list of field names in the order they were provided in the source
+        resource.
 
         :param resource_data_fp: the file pointer to the source
         :return: a list of field names
-        '''
+        """
         pass
 
     @abc.abstractmethod
     def _get_rows(self, resource_data_fp):
-        '''
+        """
         Returns a generator which yields rows as dicts.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
-        '''
+        """
         pass
 
     def modify_metadata(self, metadata):
-        '''
-        Allows for modification of the metadata before it is written out in the intermediate file.
-        The metadata should be modified in place. By default this function does nothing and should
-        be overridden by subclasses.
+        """
+        Allows for modification of the metadata before it is written out in the
+        intermediate file. The metadata should be modified in place. By default this
+        function does nothing and should be overridden by subclasses.
 
         :param metadata: the current metadata as a dict
-        '''
+        """
         pass
 
     def iter_rows(self, resource_data_fp):
-        '''
-        Returns a generator which yields the rows as dicts. Each row is checked for an _id field
-        and if one is found its value is converted to an int.
+        """
+        Returns a generator which yields the rows as dicts. Each row is checked for an
+        _id field and if one is found its value is converted to an int.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
-        '''
+        """
         for row_number, row in enumerate(self._get_rows(resource_data_fp)):
             if '_id' in row:
                 try:
@@ -108,14 +109,15 @@ class SVReader(ResourceReader):
         self.encoding = None
 
     def _get_dict_reader(self, resource_data_fp):
-        '''
-        Returns a dict reader for the given source file pointer. If the encoding of the source
-        hasn't been guessed yet then this function will read the from the file pointer until EOF and
-        guess the encoding. The file pointer is reset to the start after this occurs.
+        """
+        Returns a dict reader for the given source file pointer. If the encoding of the
+        source hasn't been guessed yet then this function will read the from the file
+        pointer until EOF and guess the encoding. The file pointer is reset to the start
+        after this occurs.
 
         :param resource_data_fp: the file pointer to the source
         :return: a DictReader object
-        '''
+        """
         if self.encoding is None:
             with ensure_reset(resource_data_fp):
                 detector = UniversalDetector()
@@ -138,44 +140,46 @@ class SVReader(ResourceReader):
         return csv.DictReader(text_wrapper, dialect=self.dialect)
 
     def _get_rows(self, resource_data_fp):
-        '''
-        Returns a generator which yields rows as dicts using a DictReader. If the encoding of the
-        source hasn't been guessed yet then this function will read the from the file pointer until
-        EOF and guess the encoding. The file pointer is reset to the start after this occurs.
+        """
+        Returns a generator which yields rows as dicts using a DictReader. If the
+        encoding of the source hasn't been guessed yet then this function will read the
+        from the file pointer until EOF and guess the encoding. The file pointer is
+        reset to the start after this occurs.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
-        '''
+        """
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
             for row in reader:
                 yield row
 
     def get_fields(self, resource_data_fp):
-        '''
-        Returns a list of field names in the order they were provided in the source resource. This
-        is achieved by reading the first line from the given file pointer.
+        """
+        Returns a list of field names in the order they were provided in the source
+        resource. This is achieved by reading the first line from the given file
+        pointer.
 
         :param resource_data_fp: the file pointer to the source
         :return: a list of field names
-        '''
+        """
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
             return reader.fieldnames
 
     def modify_metadata(self, metadata):
-        '''
+        """
         Modify the metadata to include the original encoding of the file we've read.
 
         :param metadata: the current metadata as a dict
-        '''
+        """
         metadata['original_encoding'] = self.encoding
 
 
 class XLSReader(ResourceReader):
-    '''
+    """
     Old style Excel file reader.
-    '''
+    """
 
     def __init__(self):
         # compressible needs to be false here as xlrd opens the file using it's name, not the byte
@@ -183,12 +187,13 @@ class XLSReader(ResourceReader):
         super(XLSReader, self).__init__(False)
 
     def _iter_rows(self, resource_data_fp):
-        '''
-        Returns a generator of rows from the resource file pointer. Each row is a list of cells.
+        """
+        Returns a generator of rows from the resource file pointer. Each row is a list
+        of cells.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of cell lists
-        '''
+        """
         with ensure_reset(resource_data_fp):
             # open the xls file up
             book = xlrd.open_workbook(resource_data_fp.name)
@@ -198,12 +203,12 @@ class XLSReader(ResourceReader):
             return sheet.get_rows()
 
     def _get_rows(self, resource_data_fp):
-        '''
+        """
         Returns a generator of row dicts from the source.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
-        '''
+        """
         rows = self._iter_rows(resource_data_fp)
         # assume the first row is the header
         header = [str(cell.value) for cell in next(rows)]
@@ -230,45 +235,47 @@ class XLSReader(ResourceReader):
             yield data
 
     def get_fields(self, resource_data_fp):
-        '''
-        Returns a list of field names in the order they were provided in the source resource. This
-        is achieved by assuming the first line in the worksheet is the header row.
+        """
+        Returns a list of field names in the order they were provided in the source
+        resource. This is achieved by assuming the first line in the worksheet is the
+        header row.
 
         :param resource_data_fp: the file pointer to the source
         :return: a list of field names
-        '''
+        """
         # assume the first row is the header
         return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
 
 
 class XLSXReader(ResourceReader):
-    '''
+    """
     New style Excel file reader.
-    '''
+    """
 
     def __init__(self):
         # compressible needs to be false here as openpyxl can't handle it
         super(XLSXReader, self).__init__(False)
 
     def _iter_rows(self, resource_data_fp):
-        '''
-        Returns a generator of rows from the resource file pointer. Each row is a list of cells.
+        """
+        Returns a generator of rows from the resource file pointer. Each row is a list
+        of cells.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of cell lists
-        '''
+        """
         with ensure_reset(resource_data_fp):
             workbook = openpyxl.load_workbook(resource_data_fp, read_only=True)
             # get a generator for the rows in the first worksheet and return it
             return workbook.worksheets[0].iter_rows()
 
     def _get_rows(self, resource_data_fp):
-        '''
+        """
         Returns a generator of row dicts from the source.
 
         :param resource_data_fp: the file pointer to the source
         :return: a generator of row dicts
-        '''
+        """
         # get a generator for the rows in the first worksheet
         rows = self._iter_rows(resource_data_fp)
         # assume the first row is a header
@@ -296,21 +303,24 @@ class XLSXReader(ResourceReader):
             yield data
 
     def get_fields(self, resource_data_fp):
-        '''
-        Returns a list of field names in the order they were provided in the source resource. This
-        is achieved by assuming the first line in the worksheet is the header row.
+        """
+        Returns a list of field names in the order they were provided in the source
+        resource. This is achieved by assuming the first line in the worksheet is the
+        header row.
 
         :param resource_data_fp: the file pointer to the source
         :return: a list of field names
-        '''
+        """
         # assume the first row is the header
         return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
 
 
 class APIReader(ResourceReader):
-    '''
-    Direct API data upload reader. The data comes to us as a list of dicts.
-    '''
+    """
+    Direct API data upload reader.
+
+    The data comes to us as a list of dicts.
+    """
 
     def __init__(self, data):
         '''
@@ -320,21 +330,21 @@ class APIReader(ResourceReader):
         self.data = data
 
     def _get_rows(self, *args, **kwargs):
-        '''
-        Returns a generator of row dicts from the sent data, this just returns an iterator for the
-        data list.
+        """
+        Returns a generator of row dicts from the sent data, this just returns an
+        iterator for the data list.
 
         :return: a generator of row dicts
-        '''
+        """
         return iter(self.data)
 
     def get_fields(self, *args, **kwargs):
-        '''
-        Returns a list of field names. We can't really guarantee order here because python2 doesn't
-        guarantee dict key ordering :(
+        """
+        Returns a list of field names. We can't really guarantee order here because
+        python2 doesn't guarantee dict key ordering :(
 
         :return: a list of field names
-        '''
+        """
         fields = []
         for row in self.data:
             for field in row.keys():

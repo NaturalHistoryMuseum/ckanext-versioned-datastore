@@ -29,7 +29,7 @@ class Extension(object):
             'prop_names': self.prop_names,
             'row_type': self.row_type,
             'name': self.name,
-            'core': self.core
+            'core': self.core,
         }
 
 
@@ -46,13 +46,17 @@ class Prop(object):
         self.extension = kwargs.get('extension')
 
     @classmethod
-    def create(cls, row_source=None, xml_element_source=None, flags=None, extension=None):
+    def create(
+        cls, row_source=None, xml_element_source=None, flags=None, extension=None
+    ):
         flags = flags or []
         new_prop = cls()
         new_prop.update(row_source, xml_element_source, flags, extension)
         return new_prop
 
-    def update(self, row_source=None, xml_element_source=None, flags=None, extension=None):
+    def update(
+        self, row_source=None, xml_element_source=None, flags=None, extension=None
+    ):
         flags = flags or []
         if row_source is None and xml_element_source is None:
             raise Exception('At least one source required.')
@@ -68,8 +72,10 @@ class Prop(object):
             self.is_identifier = False
             thesaurus_url = None
         else:
-            self.is_identifier = xml_element_source.attrib.get(
-                'substitutionGroup') == 'dwc:anyIdentifier'
+            self.is_identifier = (
+                xml_element_source.attrib.get('substitutionGroup')
+                == 'dwc:anyIdentifier'
+            )
             prop_type = xml_element_source.attrib.get('type')
             if prop_type != 'xs:string':
                 self.prop_type = prop_type
@@ -77,11 +83,15 @@ class Prop(object):
         if thesaurus_url is not None:
             thesaurus = load_schema(thesaurus_url)
             terms = thesaurus.findall('.//{*}concept')
-            identifier_key = next(k for k in terms[0].attrib.keys() if 'identifier' in k)
+            identifier_key = next(
+                k for k in terms[0].attrib.keys() if 'identifier' in k
+            )
             self.vocabulary = [t.attrib[identifier_key] for t in terms]
         else:
             self.vocabulary = []
-        self._flags = [f.lower() for f in set(self._flags + flags) if isinstance(f, str)]
+        self._flags = [
+            f.lower() for f in set(self._flags + flags) if isinstance(f, str)
+        ]
         self.extension = extension
 
     @property
@@ -99,7 +109,7 @@ class Prop(object):
             'is_identifier': self.is_identifier,
             'domain': self.domain,
             'vocabulary': self.vocabulary,
-            'flags': self.flags
+            'flags': self.flags,
         }
 
     @classmethod
@@ -162,9 +172,7 @@ class Domain(object):
         return cls(name, label, iri)
 
     def serialise(self):
-        return {'name': self.name,
-                'label': self.label,
-                'iri': self.iri}
+        return {'name': self.name, 'label': self.label, 'iri': self.iri}
 
     @classmethod
     def load(cls, serialised):

@@ -11,7 +11,9 @@ def get_derivative_generator(derivative_name, *args, **kwargs):
         gens = plugin.download_derivative_generators(gens)
     derivative_class = gens.get(derivative_name)
     if derivative_class is None:
-        raise toolkit.ObjectNotFound(f'{derivative_name} is not a registered derivative generator type.')
+        raise toolkit.ObjectNotFound(
+            f'{derivative_name} is not a registered derivative generator type.'
+        )
     derivative = derivative_class(*args, **kwargs)
     return derivative
 
@@ -22,7 +24,9 @@ def get_file_server(server_name, *args, **kwargs):
         srvrs = plugin.download_file_servers(srvrs)
     server_class = srvrs.get(server_name)
     if server_class is None:
-        raise toolkit.ObjectNotFound(f'{server_name} is not a registered file server type.')
+        raise toolkit.ObjectNotFound(
+            f'{server_name} is not a registered file server type.'
+        )
     server = server_class(*args, **kwargs)
     return server
 
@@ -34,7 +38,8 @@ def get_notifier(notifier_type, *args, **kwargs):
     notifier_class = ntfrs.get(notifier_type)
     if notifier_class is None:
         raise toolkit.ObjectNotFound(
-            f'{notifier_type} is not a registered download notifier type.')
+            f'{notifier_type} is not a registered download notifier type.'
+        )
     notifier = notifier_class(*args, **kwargs)
     return notifier
 
@@ -46,5 +51,6 @@ def get_transformation(transform_name, *args, **kwargs):
     transform_func = trns.get(transform_name)
     if transform_func is None:
         raise toolkit.ObjectNotFound(
-            f'{transform_name} is not a registered download data transformation function.')
+            f'{transform_name} is not a registered download data transformation function.'
+        )
     return partial(transform_func, *args, **kwargs)

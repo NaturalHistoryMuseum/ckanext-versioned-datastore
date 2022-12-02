@@ -46,14 +46,21 @@ class BaseNotifier(metaclass=ABCMeta):
     def template_context(self, file_url=None):
         context = {
             'site_url': toolkit.config.get('ckan.site_url'),
-            'site_name': toolkit.config.get('ckan.site_name', toolkit.config.get('ckan.site_url')),
-            'status_page': toolkit.url_for('datastore_status.download_status',
-                                           download_id=self.request.id, qualified=True),
+            'site_name': toolkit.config.get(
+                'ckan.site_name', toolkit.config.get('ckan.site_url')
+            ),
+            'status_page': toolkit.url_for(
+                'datastore_status.download_status',
+                download_id=self.request.id,
+                qualified=True,
+            ),
             'download_url': file_url,
-            'contact_email': toolkit.config.get('smtp.mail_from')
+            'contact_email': toolkit.config.get('smtp.mail_from'),
         }
         for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-            context = plugin.download_modify_notifier_template_context(self.request, context)
+            context = plugin.download_modify_notifier_template_context(
+                self.request, context
+            )
         return context
 
     def _get_text(self, templates, interface_method_name, file_url=None):
@@ -61,7 +68,9 @@ class BaseNotifier(metaclass=ABCMeta):
             modify_templates = getattr(plugin, interface_method_name)
             templates = modify_templates(*templates)
         context = self.template_context(file_url)
-        body, body_html = (Template(template).render(**context) for template in templates)
+        body, body_html = (
+            Template(template).render(**context) for template in templates
+        )
         return body, body_html
 
     def start_text(self):
@@ -70,7 +79,9 @@ class BaseNotifier(metaclass=ABCMeta):
 
     def end_text(self, file_url):
         templates = (self.default_end_text, self.default_end_html)
-        return self._get_text(templates, 'download_modify_notifier_end_templates', file_url)
+        return self._get_text(
+            templates, 'download_modify_notifier_end_templates', file_url
+        )
 
     def error_text(self):
         templates = (self.default_error_text, self.default_error_html)

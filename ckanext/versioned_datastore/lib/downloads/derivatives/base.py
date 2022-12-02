@@ -3,9 +3,10 @@ from abc import ABCMeta, abstractmethod
 
 
 class BaseDerivativeGenerator(metaclass=ABCMeta):
-    '''
+    """
     A factory class for generating derivative files in a given format.
-    '''
+    """
+
     name = 'base'
     extension = None
 
@@ -13,7 +14,9 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
 
     def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
         self.output_dir = output_dir
-        self.output_name = os.extsep.join([resource_id or 'resource', self.extension or self.name])
+        self.output_name = os.extsep.join(
+            [resource_id or 'resource', self.extension or self.name]
+        )
 
         if resource_id:
             self.all_fields = fields + [self.RESOURCE_ID_FIELD_NAME]
@@ -70,15 +73,15 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
             return
 
     def initialise(self):
-        '''
+        """
         Runs after files have opened, before any records are processed.
-        '''
+        """
         self._initialised = True
 
     def validate(self, record):
-        '''
+        """
         Runs when the first record is processed.
-        '''
+        """
         self._validated = True
 
     def write(self, record):
@@ -87,26 +90,18 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         self._write(record)
 
     def finalise(self):
-        '''
+        """
         Runs when files close.
-        '''
+        """
         pass
 
     def cleanup(self):
-        '''
-        Runs when the generator has finished, i.e. after a single resource in separate-resources
-        requests and after all resources in combined requests.
-        '''
+        """
+        Runs when the generator has finished, i.e. after a single resource in separate-
+        resources requests and after all resources in combined requests.
+        """
         pass
 
     @abstractmethod
     def _write(self, record):
         raise NotImplemented
-
-
-
-
-
-
-
-

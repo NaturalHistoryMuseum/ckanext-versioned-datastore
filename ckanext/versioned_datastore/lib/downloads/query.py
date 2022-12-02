@@ -3,7 +3,12 @@ from datetime import datetime
 from ckan.plugins import toolkit
 from eevee.utils import to_timestamp
 
-from ..query.schema import get_latest_query_version, hash_query, translate_query, validate_query
+from ..query.schema import (
+    get_latest_query_version,
+    hash_query,
+    translate_query,
+    validate_query,
+)
 from ..query.utils import get_available_datastore_resources
 from .. import common
 from ..datastore_utils import prefix_resource
@@ -35,8 +40,9 @@ class Query(object):
 
         if query_args.slug_or_doi:
             try:
-                saved_query = toolkit.get_action('datastore_resolve_slug')({}, {
-                    'slug': query_args.slug_or_doi})
+                saved_query = toolkit.get_action('datastore_resolve_slug')(
+                    {}, {'slug': query_args.slug_or_doi}
+                )
                 query = saved_query.get('query')
                 query_version = saved_query.get('query_version')
                 resource_ids = saved_query.get('resource_ids')
@@ -54,7 +60,9 @@ class Query(object):
         # figure out which resources should be searched
         resource_ids = get_available_datastore_resources({}, resource_ids)
         if not resource_ids:
-            raise toolkit.ValidationError("The requested resources aren't accessible to this user")
+            raise toolkit.ValidationError(
+                "The requested resources aren't accessible to this user"
+            )
 
         rounded_resource_ids_and_versions = {}
         # see if a version was provided; we'll use this if a resource id we're searching doesn't
@@ -68,8 +76,9 @@ class Query(object):
             target_version = resource_ids_and_versions.get(resource_id, version)
             index = prefix_resource(resource_id)
             # round the version down to ensure we search the exact version requested
-            rounded_version = common.SEARCH_HELPER.get_rounded_versions([index], target_version)[
-                index]
+            rounded_version = common.SEARCH_HELPER.get_rounded_versions(
+                [index], target_version
+            )[index]
             if rounded_version is not None:
                 # resource ids without a rounded version are skipped
                 rounded_resource_ids_and_versions[resource_id] = rounded_version
@@ -93,10 +102,7 @@ class Query(object):
 
     @property
     def record_hash(self):
-        to_hash = [
-            self.hash,
-            self.resource_hash
-        ]
+        to_hash = [self.hash, self.resource_hash]
         download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
