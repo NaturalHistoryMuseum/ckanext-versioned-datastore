@@ -1,5 +1,5 @@
 import pytest
-from eevee.indexing.utils import DOC_TYPE
+from splitgill.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.basic_query.utils import format_facets, get_fields

@@ -14,7 +14,7 @@ datastore_resource_details_table = Table(
     # mongo, for indexing this means the version it's pulling from mongo and putting into
     # elasticsearch)
     Column('version', BigInteger, nullable=False),
-    # the detailed operation breakdown returned by eevee
+    # the detailed operation breakdown returned by splitgill
     Column('columns', UnicodeText, nullable=False),
     # a hash of the ingested file - can be None and will be if records are directly added using the
     # API

@@ -1,6 +1,6 @@
 from ckan import model
 from ckan.plugins import toolkit, PluginImplementations
-from eevee.indexing.utils import DOC_TYPE
+from splitgill.indexing.utils import DOC_TYPE
 
 from . import common
 from ..interfaces import IVersionedDatastore
@@ -43,10 +43,11 @@ def unprefix_index(index_name):
 
 def prefix_field(field):
     """
-    Prefixes a the given field name with "data.". All data from the resource in eevee is
-    stored under the data key in the elasticsearch record so to avoid end users needing
-    to know that all fields should be referenced by their non-data.-prefixed name until
-    they are internal to the code and can be prefixed before being passed on to eevee.
+    Prefixes a the given field name with "data.". All data from the resource in
+    splitgill is stored under the data key in the elasticsearch record so to avoid end
+    users needing to know that all fields should be referenced by their non-
+    data.-prefixed name until they are internal to the code and can be prefixed before
+    being passed on to splitgill.
 
     :param field: the field name
     :return: data.<field>

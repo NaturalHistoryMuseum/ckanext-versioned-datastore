@@ -2,10 +2,10 @@ import copy
 import logging
 
 from ckan.plugins import PluginImplementations
-from eevee.indexing.feeders import SimpleIndexFeeder
-from eevee.indexing.indexers import Indexer
-from eevee.indexing.indexes import Index
-from eevee.indexing.utils import get_versions_and_data, DOC_TYPE
+from splitgill.indexing.feeders import SimpleIndexFeeder
+from splitgill.indexing.indexers import Indexer
+from splitgill.indexing.indexes import Index
+from splitgill.indexing.utils import get_versions_and_data, DOC_TYPE
 
 from . import stats
 from .. import common
@@ -16,15 +16,15 @@ log = logging.getLogger(__name__)
 
 class DatastoreIndex(Index):
     """
-    Represents an index in elasticsearch for a resource in CKAN for the eevee indexing
-    process.
+    Represents an index in elasticsearch for a resource in CKAN for the splitgill
+    indexing process.
     """
 
     def __init__(
         self, config, name, version, latitude_field=None, longitude_field=None
     ):
         '''
-        :param config: the eevee config object
+        :param config: the splitgill config object
         :param name: the resource id, this will be used as the index name
         :param version: the version being indexed up to
         :param latitude_field: optional - the name of a field containing latitudinal data
@@ -105,8 +105,8 @@ class DatastoreIndex(Index):
     def get_index_create_body(self):
         """
         Returns a dict that should be used to define the index in elasticsearch. This
-        should be built off of the default eevee one unless you super know what you're
-        doing.
+        should be built off of the default splitgill one unless you super know what
+        you're doing.
 
         :return: a dict
         """

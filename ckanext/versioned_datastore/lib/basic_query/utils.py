@@ -1,6 +1,6 @@
 from ckan.lib.search import SearchIndexError
-from eevee.indexing.utils import DOC_TYPE
-from eevee.search import create_version_query
+from splitgill.indexing.utils import DOC_TYPE
+from splitgill.search import create_version_query
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import MultiSearch, Search
 
@@ -55,7 +55,7 @@ def format_facets(aggs):
 
     etc.
 
-    :param aggs: the aggregation dict returned from eevee/elasticsearch
+    :param aggs: the aggregation dict returned from splitgill/elasticsearch
     :return: the facet information as a dict
     '''
     facets = {}

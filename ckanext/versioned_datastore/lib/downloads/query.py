@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit
-from eevee.utils import to_timestamp
+from splitgill.utils import to_timestamp
 
 from ..query.schema import (
     get_latest_query_version,

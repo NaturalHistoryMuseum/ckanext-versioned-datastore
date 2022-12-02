@@ -13,10 +13,10 @@ import simplejson
 import unicodedata
 from contextlib import suppress
 from datetime import datetime
-from eevee.ingestion.converters import RecordToMongoConverter
-from eevee.ingestion.feeders import IngestionFeeder
-from eevee.ingestion.ingesters import Ingester
-from eevee.mongo import get_mongo
+from splitgill.ingestion.converters import RecordToMongoConverter
+from splitgill.ingestion.feeders import IngestionFeeder
+from splitgill.ingestion.ingesters import Ingester
+from splitgill.mongo import get_mongo
 
 from . import exceptions
 from .deletion import ReplaceDeletionFeeder
@@ -35,7 +35,7 @@ def ingest_resource(version, config, resource, data, replace, api_key):
     Ingest a new version of a resource's data.
 
     :param version: the new version
-    :param config: the eevee config object
+    :param config: the splitgill config object
     :param resource: the resource dict
     :param data: the data to ingest (can be None if not using the API)
     :param replace: boolean indicating whether to replace the existing data or not
@@ -310,7 +310,7 @@ class DatastoreFeeder(IngestionFeeder):
 
     def __init__(self, config, resource_id, version, data_file_name):
         '''
-        :param config: the eevee config object
+        :param config: the splitgill config object
         :param resource_id: the resource id
         :param version: the version of the data we're ingesting
         :param data_file_name: the name of the intermediate data file to read the data from

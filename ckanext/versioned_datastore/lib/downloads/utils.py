@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 from fastavro import parse_schema
-from eevee.search import create_version_query
+from splitgill.search import create_version_query
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
 import json

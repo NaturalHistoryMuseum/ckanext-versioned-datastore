@@ -28,7 +28,7 @@ import_stats_table = Table(
     Column('error', UnicodeText),
     # the number of records handled during the operation
     Column('count', BigInteger),
-    # the detailed operation breakdown returned by eevee
+    # the detailed operation breakdown returned by splitgill
     Column('operations', JsonDictType),
 )
 

@@ -1,4 +1,4 @@
-from eevee.indexing.utils import DOC_TYPE
+from splitgill.indexing.utils import DOC_TYPE
 from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS, DATASTORE_ONLY_RESOURCE

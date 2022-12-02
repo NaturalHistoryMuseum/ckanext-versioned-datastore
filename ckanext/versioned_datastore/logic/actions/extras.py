@@ -1,8 +1,8 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit
-from eevee.search import create_version_query
-from eevee.utils import to_timestamp
+from splitgill.search import create_version_query
+from splitgill.utils import to_timestamp
 from elasticsearch_dsl import Search
 
 from .meta import help, schema

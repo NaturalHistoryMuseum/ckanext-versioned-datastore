@@ -10,8 +10,8 @@ from functools import partial
 from glob import iglob
 
 import fastavro
-from eevee.indexing.utils import get_elasticsearch_client
-from eevee.search import create_version_query
+from splitgill.indexing.utils import get_elasticsearch_client
+from splitgill.search import create_version_query
 from elasticsearch_dsl import Search
 
 from ckan.plugins import toolkit

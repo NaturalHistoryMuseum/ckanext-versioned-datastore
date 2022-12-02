@@ -3,7 +3,7 @@ from datetime import datetime
 
 import jsonschema
 from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
-from eevee.utils import to_timestamp
+from splitgill.utils import to_timestamp
 from elasticsearch_dsl import MultiSearch, A
 
 from .meta import help, schema
