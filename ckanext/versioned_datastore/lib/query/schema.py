@@ -7,12 +7,11 @@ import itertools
 import os
 import six
 from jsonschema.validators import validator_for, RefResolver
+from importlib_resources import files
 
 schemas = OrderedDict()
-schema_base_path = os.path.abspath(
-    os.path.join(
-        os.path.dirname(__file__), '..', '..', 'theme', 'public', 'querySchemas'
-    )
+schema_base_path = files('ckanext.versioned_datastore.theme').joinpath(
+    'public/querySchemas'
 )
 
 
@@ -106,7 +105,7 @@ def load_core_schema(version):
     :param version: the version to load
     :return: the loaded schema (as a dict) and a jsonschmea validator object for the schema
     """
-    schema_file = os.path.join(schema_base_path, version, f'{version}.json')
+    schema_file = schema_base_path.joinpath(version).joinpath(f'{version}.json')
     with io.open(schema_file, 'r', encoding='utf-8') as f:
         schema = json.load(f)
         validator_cls = validator_for(schema)

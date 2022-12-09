@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8"
 ]
 dependencies = [
+    "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
     "ckantools>=0.3.0",
@@ -60,6 +61,10 @@ zip-safe = false
 
 [tool.setuptools.packages.find]
 exclude = ["tests", "docs"]
+
+[tool.setuptools.package-data]
+"ckanext.versioned_datastore" = ["package.json"]
+"ckanext.versioned_datastore.theme" = ["**/*"]
 
 [tool.commitizen]
 name = "cz_nhm"
