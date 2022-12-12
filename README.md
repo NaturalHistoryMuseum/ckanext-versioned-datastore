@@ -73,6 +73,11 @@ Installing from a `pyproject.toml` in editable mode (i.e. `pip install -e`) requ
    ckan.plugins = ... versioned_datastore
    ```
 
+2. Install `lessc` globally:
+   ```shell
+   npm install -g "less@~4.1"
+   ```
+
 ## Other requirements
 
 At the version of [splitgill](https://github.com/NaturalHistoryMuseum/splitgill) this plugin uses, you will also need to install:
