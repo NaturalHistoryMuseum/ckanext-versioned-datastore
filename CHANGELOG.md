@@ -1,5 +1,20 @@
 # Changelog
 
+## v3.7.2 (2022-12-12)
+
+### Docs
+
+- **readme**: add instruction to install lessc globally
+
+### Style
+
+- change quotes in setup.py to single quotes
+
+### Build System(s)
+
+- remove local less installation
+- add package data
+
 ## v3.7.1 (2022-12-01)
 
 ### Docs
