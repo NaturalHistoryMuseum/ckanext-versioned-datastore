@@ -1,16 +1,12 @@
 datastore-activities:
   output: ckanext-versioned-datastore/%(version)s_datastore-activities.css
   filters: less
-  config:
-    LESS_BIN: ../../../../../node_modules/less/bin/lessc
   contents:
     - less/datastore-activities.less
 
 search-css:
   output: ckanext-versioned-datastore/%(version)s_search.css
   filters: less
-  config:
-    LESS_BIN: ../../../../../node_modules/less/bin/lessc
   contents:
     - less/search.less
 
@@ -24,7 +20,5 @@ search-js:
 slugerator:
   output: ckanext-versioned-datastore/%(version)s_slugerator.css
   filters: less
-  config:
-    LESS_BIN: ../../../../../node_modules/less/bin/lessc
   contents:
     - less/slugerator.less

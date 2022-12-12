@@ -22,7 +22,6 @@ dependencies = [
     "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
-    "ckantools>=0.3.0",
     "splitgill==2.0.0",
     "elasticsearch-dsl>=6.0.0,<7.0.0",
     "elasticsearch>=6.0.0,<7.0.0",
@@ -31,7 +30,8 @@ dependencies = [
     "pandas==1.4.1",
     "requests",
     "six>=1.11.0",
-    "xlrd==1.1.0"
+    "xlrd==1.1.0",
+    "ckantools>=0.3.0"
 ]
 
 [project.optional-dependencies]
@@ -63,8 +63,7 @@ zip-safe = false
 exclude = ["tests", "docs"]
 
 [tool.setuptools.package-data]
-"ckanext.versioned_datastore" = ["package.json"]
-"ckanext.versioned_datastore.theme" = ["**/*"]
+"ckanext.versioned_datastore.theme" = ["*", "**/*"]
 
 [tool.commitizen]
 name = "cz_nhm"
@@ -73,7 +72,6 @@ tag_format = "v$version"
 update_changelog_on_bump = true
 changelog_incremental = true
 version_files = [
-    "package.json",
     "pyproject.toml:version"
 ]
 
