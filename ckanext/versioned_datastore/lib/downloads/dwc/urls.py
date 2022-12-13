@@ -59,4 +59,9 @@ extensions = {
         GBIFUrls.base_url,
         ['vernacularName'],
     ),
+    'gbif_references': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/references.xml',
+        GBIFUrls.base_url,
+        ['references'],
+    ),
 }
