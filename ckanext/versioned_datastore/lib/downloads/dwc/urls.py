@@ -53,5 +53,10 @@ extensions = {
         'https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
         GBIFUrls.base_url,
         ['associatedMedia'],
-    )
+    ),
+    'gbif_vernacular': SchemaUrl(
+        'http://rs.gbif.org/extension/gbif/1.0/vernacularname.xml',
+        GBIFUrls.base_url,
+        ['vernacularName'],
+    ),
 }
