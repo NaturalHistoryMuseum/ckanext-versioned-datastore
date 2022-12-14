@@ -53,5 +53,40 @@ extensions = {
         'https://rs.gbif.org/extension/gbif/1.0/multimedia.xml',
         GBIFUrls.base_url,
         ['associatedMedia'],
-    )
+    ),
+    'gbif_vernacular': SchemaUrl(
+        'http://rs.gbif.org/extension/gbif/1.0/vernacularname.xml',
+        GBIFUrls.base_url,
+        ['vernacularName'],
+    ),
+    'gbif_references': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/references.xml',
+        GBIFUrls.base_url,
+        ['references'],
+    ),
+    'gbif_description': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/description.xml',
+        GBIFUrls.base_url,
+        ['taxonDescription'],  # not a standard field
+    ),
+    'gbif_distribution': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/distribution.xml',
+        GBIFUrls.base_url,
+        ['locality'],  # not a standard Taxon field but is a valid DwC field
+    ),
+    'gbif_species_profile': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/speciesprofile.xml',
+        GBIFUrls.base_url,
+        ['speciesProfile'],  # not a standard field
+    ),
+    'gbif_types_and_specimen': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/typesandspecimen.xml',
+        GBIFUrls.base_url,
+        ['typeStatus'],
+    ),
+    'gbif_identifier': SchemaUrl(
+        'https://rs.gbif.org/extension/gbif/1.0/identifier.xml',
+        GBIFUrls.base_url,
+        ['verbatimIdentification'],  # an Identification field
+    ),
 }
