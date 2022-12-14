@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.8.0 (2022-12-14)
+
+### Feature
+
+- add more gbif dwc extensions
+- add the references extension
+- add vernacular name dwc extension
+
+### Fix
+
+- ignore fields that aren't in the dwc schema
+
 ## v3.7.2 (2022-12-12)
 
 ### Docs
