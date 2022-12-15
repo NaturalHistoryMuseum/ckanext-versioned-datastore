@@ -32,6 +32,8 @@ from ...model.downloads import DerivativeFileRecord
 
 class DownloadRunManager:
     download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+    if download_dir is None:
+        raise Exception('ckanext.versioned_datastore.download_dir must be set.')
     core_dir = os.path.join(download_dir, 'core')
 
     def __init__(self, query_args, derivative_args, server_args, notifier_args):
