@@ -1,7 +1,6 @@
 import hashlib
 import io
 import json
-import os
 import string
 from collections import defaultdict
 
@@ -393,10 +392,10 @@ class v1_0_0Schema(Schema):
         :param name_keys: a priority ordered sequence of keys to use for feature name retrieval
         :return: a dict of names -> MultiPolygons
         """
-        path = os.path.join(schema_base_path, v1_0_0Schema.version, 'geojson')
+        path = schema_base_path.joinpath(v1_0_0Schema.version).joinpath('geojson')
 
         # make sure we read the file using utf-8
-        with io.open(os.path.join(path, filename), 'r', encoding='utf-8') as f:
+        with io.open(path.joinpath(filename), 'r', encoding='utf-8') as f:
             lookup = defaultdict(list)
             for feature in json.load(f)['features']:
                 # find the first name key with a value and pass it to string.capwords

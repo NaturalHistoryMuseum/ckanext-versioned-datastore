@@ -249,9 +249,10 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         for i, c in enumerate(self.writers['core'].fieldnames):
             if c == '_id':
                 continue
-            etree.SubElement(
-                core, 'field', index=str(i), term=self.schema.props.get(c).iri
-            )
+            prop = self.schema.props.get(c)
+            if prop is None:
+                continue
+            etree.SubElement(core, 'field', index=str(i), term=prop.iri)
         for e in self.schema.extensions:
             ext_root = etree.SubElement(
                 root, 'extension', rowType=e.row_type, **attributes

@@ -1,5 +1,32 @@
 # Changelog
 
+## v3.8.0 (2022-12-14)
+
+### Feature
+
+- add more gbif dwc extensions
+- add the references extension
+- add vernacular name dwc extension
+
+### Fix
+
+- ignore fields that aren't in the dwc schema
+
+## v3.7.2 (2022-12-12)
+
+### Docs
+
+- **readme**: add instruction to install lessc globally
+
+### Style
+
+- change quotes in setup.py to single quotes
+
+### Build System(s)
+
+- remove local less installation
+- add package data
+
 ## v3.7.1 (2022-12-01)
 
 ### Docs
