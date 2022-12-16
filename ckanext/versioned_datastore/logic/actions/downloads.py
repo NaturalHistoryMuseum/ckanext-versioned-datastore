@@ -1,13 +1,19 @@
-from ckan.plugins import toolkit
 from ckantools.decorators import action
 
+from ckan.plugins import toolkit
 from .meta import help, schema
-from .meta.arg_objects import ServerArgs, NotifierArgs
+from .meta.arg_objects import ServerArgs, NotifierArgs, QueryArgs, DerivativeArgs
 from ...lib.downloads.download import DownloadRunManager
 
 
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
-def datastore_queue_download(context, query, file, server=None, notifier=None):
+def datastore_queue_download(
+    context,
+    query: QueryArgs,
+    file: DerivativeArgs,
+    server: ServerArgs = None,
+    notifier: NotifierArgs = None,
+):
     server = server or ServerArgs(**ServerArgs.defaults)
     notifier = notifier or NotifierArgs(**NotifierArgs.defaults)
     download_runner = DownloadRunManager(
