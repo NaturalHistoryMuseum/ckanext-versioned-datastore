@@ -1,15 +1,20 @@
-from collections import defaultdict
-
-from fastavro import parse_schema
-from splitgill.search import create_version_query
 from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
-import json
+from fastavro import parse_schema
+from splitgill.search import create_version_query
 
 from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
+from .query import Query
 
 
-def get_schema(query, es_client: Elasticsearch):
+def get_schema(query: Query, es_client: Elasticsearch):
+    """
+    Creates an avro schema from the elasticsearch index metadata.
+
+    :param query: the Query object for this request
+    :param es_client: a connected elasticsearch client
+    :return: a parsed avro schema
+    """
     resource_mapping = es_client.indices.get_mapping(
         index=','.join(
             [prefix_resource(r) for r in query.resource_ids_and_versions.keys()]
@@ -55,10 +60,10 @@ def get_fields(field_counts, ignore_empty_fields, resource_id=None):
     The list is sorted in ascending order using lowercase comparisons.
 
     :param field_counts: the dict of resource ids -> fields -> counts
-    :param ignore_empty_fields: whether fields with no values should be included in the resulting
-                                list or not
-    :param resource_id: the resource id to get the fields for. The default is None which means
-                         that the fields from all resources will be returned
+    :param ignore_empty_fields: whether fields with no values should be included in the
+                                resulting list or not
+    :param resource_id: the resource id to get the fields for. The default is None which
+                        means that the fields from all resources will be returned
     :return: a list of fields in case-insensitive ascending order
     """
     # TODO: retrieve the sort order for resources from the database and use
