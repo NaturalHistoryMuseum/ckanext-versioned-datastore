@@ -1,7 +1,7 @@
 import pytest
 from ckan.tests import factories
 from collections import namedtuple
-from mock import patch
+from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 
@@ -31,10 +31,15 @@ def patch_elasticsearch_scan():
     """
     Fixture that patches elasticsearch_dsl.Search.scan to return a test resource.
     """
-    MockHit = namedtuple('MockHit', ['name'])
+    MockHit = namedtuple('MockHit', ['name', 'data'])
     resource_dict = factories.Resource()
     with patch(
         'ckanext.versioned_datastore.lib.query.utils.Search.scan',
-        return_value=[MockHit(name=resource_dict['id'])],
+        return_value=[
+            MockHit(
+                name=resource_dict['id'],
+                data=MagicMock(**{'to_dict.return_value': {'a': 1, 'b': 2}}),
+            )
+        ],
     ) as m:
         yield m
