@@ -1,4 +1,7 @@
 import pytest
+from ckan.tests import factories
+from collections import namedtuple
+from mock import patch
 
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 
@@ -21,3 +24,17 @@ def with_versioned_datastore_tables(reset_db):
     for table in tables:
         if not table.exists():
             table.create()
+
+
+@pytest.fixture(scope='module')
+def patch_elasticsearch_scan():
+    """
+    Fixture that patches elasticsearch_dsl.Search.scan to return a test resource.
+    """
+    MockHit = namedtuple('MockHit', ['name'])
+    resource_dict = factories.Resource()
+    with patch(
+        'ckanext.versioned_datastore.lib.query.utils.Search.scan',
+        return_value=[MockHit(name=resource_dict['id'])],
+    ) as m:
+        yield m
