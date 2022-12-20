@@ -1,3 +1,4 @@
+import os
 import pytest
 from ckan.plugins import toolkit
 from collections import defaultdict, namedtuple
@@ -15,6 +16,10 @@ def sync_enqueue_download(
     job_func(*args, **kwargs)
 
     return Job(enqueued_at=dt.now(), id=1)
+
+
+def rounded_versions_mock(indices, target_version):
+    return defaultdict(lambda: target_version)
 
 
 class TestQueueDownload:
@@ -45,10 +50,7 @@ class TestQueueDownload:
     @pytest.mark.usefixtures(
         'with_plugins', 'with_versioned_datastore_tables', 'patch_elasticsearch_scan'
     )
-    def test_run_download(self):
-        def rounded_versions_mock(indices, target_version):
-            return defaultdict(lambda: target_version)
-
+    def test_run_basic_download(self):
         with patch(
             'ckan.plugins.toolkit.enqueue_job', side_effect=sync_enqueue_download
         ), patch(
@@ -58,7 +60,7 @@ class TestQueueDownload:
             'ckanext.versioned_datastore.lib.downloads.download.get_elasticsearch_client',
             side_effect=MagicMock(),
         ) as patched_elasticsearch_client:
-            toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
                     'query': {'query': {}},
@@ -68,3 +70,59 @@ class TestQueueDownload:
             )
             patched_rounded_versions.assert_called()
             patched_elasticsearch_client.assert_called()
+            download_dir = toolkit.config.get(
+                'ckanext.versioned_datastore.download_dir'
+            )
+            assert any(
+                [
+                    f.startswith(download_details['download_id'])
+                    for f in os.listdir(download_dir)
+                ]
+            )
+
+    @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
+    @pytest.mark.usefixtures(
+        'with_plugins', 'with_versioned_datastore_tables', 'patch_elasticsearch_scan'
+    )
+    def test_run_download_with_query(self):
+        with patch(
+            'ckan.plugins.toolkit.enqueue_job', side_effect=sync_enqueue_download
+        ), patch(
+            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
+            side_effect=rounded_versions_mock,
+        ) as patched_rounded_versions, patch(
+            'ckanext.versioned_datastore.lib.downloads.download.get_elasticsearch_client',
+            side_effect=MagicMock(),
+        ) as patched_elasticsearch_client:
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['colour'],
+                                            'value': 'green',
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    },
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
+                },
+            )
+            patched_rounded_versions.assert_called()
+            patched_elasticsearch_client.assert_called()
+            download_dir = toolkit.config.get(
+                'ckanext.versioned_datastore.download_dir'
+            )
+            assert any(
+                [
+                    f.startswith(download_details['download_id'])
+                    for f in os.listdir(download_dir)
+                ]
+            )
