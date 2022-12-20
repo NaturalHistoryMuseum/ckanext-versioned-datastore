@@ -1,9 +1,12 @@
 import os
+from collections import namedtuple
+from datetime import datetime as dt
+
 import pytest
 from ckan.plugins import toolkit
-from collections import defaultdict, namedtuple
-from datetime import datetime as dt
 from mock import patch, MagicMock
+
+from tests.helpers import patches
 
 Job = namedtuple('Job', ['enqueued_at', 'id'])
 
@@ -16,10 +19,6 @@ def sync_enqueue_download(
     job_func(*args, **kwargs)
 
     return Job(enqueued_at=dt.now(), id=1)
-
-
-def rounded_versions_mock(indices, target_version):
-    return defaultdict(lambda: target_version)
 
 
 class TestQueueDownload:
@@ -53,10 +52,7 @@ class TestQueueDownload:
     def test_run_basic_download(self):
         with patch(
             'ckan.plugins.toolkit.enqueue_job', side_effect=sync_enqueue_download
-        ), patch(
-            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
-            side_effect=rounded_versions_mock,
-        ) as patched_rounded_versions, patch(
+        ), patches.patch_rounded_versions() as patched_rounded_versions, patch(
             'ckanext.versioned_datastore.lib.downloads.download.get_elasticsearch_client',
             side_effect=MagicMock(),
         ) as patched_elasticsearch_client:
@@ -87,10 +83,7 @@ class TestQueueDownload:
     def test_run_download_with_query(self):
         with patch(
             'ckan.plugins.toolkit.enqueue_job', side_effect=sync_enqueue_download
-        ), patch(
-            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
-            side_effect=rounded_versions_mock,
-        ) as patched_rounded_versions, patch(
+        ), patches.patch_rounded_versions() as patched_rounded_versions, patch(
             'ckanext.versioned_datastore.lib.downloads.download.get_elasticsearch_client',
             side_effect=MagicMock(),
         ) as patched_elasticsearch_client:
