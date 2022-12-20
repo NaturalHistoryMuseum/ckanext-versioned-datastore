@@ -185,7 +185,7 @@ class DownloadRunManager:
         self.request.update(core_id=self.core_record.id)
 
         if not os.path.exists(self.core_folder_path):
-            os.mkdir(self.core_folder_path)
+            os.makedirs(self.core_folder_path)
 
         # check if there are new resources to generate
         existing_files = os.listdir(self.core_folder_path)
