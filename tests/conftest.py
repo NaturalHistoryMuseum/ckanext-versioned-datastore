@@ -1,9 +1,10 @@
 import pytest
-from ckan.tests import factories
-from collections import namedtuple
-from mock import patch, MagicMock
+from ckan import plugins
+from ckan.tests import factories, helpers
+from mock import patch
 
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
+from tests.helpers import utils
 
 
 @pytest.fixture(scope='module')
@@ -27,19 +28,49 @@ def with_versioned_datastore_tables(reset_db):
 
 
 @pytest.fixture(scope='module')
-def patch_elasticsearch_scan():
-    """
-    Fixture that patches elasticsearch_dsl.Search.scan to return a test resource.
-    """
-    MockHit = namedtuple('MockHit', ['name', 'data'])
-    resource_dict = factories.Resource()
+def with_vds_resource():
+    plugins.load('versioned_datastore')
+    # because user_show is called in datastore_upsert
+    user = factories.Sysadmin()
+    package = factories.Dataset()
+
+    def queue_mock(task, request):
+        return utils.sync_enqueue_job(
+            task, args=[request], queue='importing', title=str(request)
+        )
+
+    def get_action_mock(action_name):
+        """
+        Adds the user to the context.
+        """
+
+        def call_action_mock(context=None, data_dict=None):
+            context = context or {}
+            data_dict = data_dict or {}
+            context['user'] = user['id']
+            return helpers.call_action(action_name, context=context, **data_dict)
+
+        return call_action_mock
+
+    with patch('ckan.plugins.toolkit.get_action', get_action_mock), patch(
+        'ckanext.versioned_datastore.lib.importing.queuing.queue', queue_mock
+    ):
+        resource = factories.Resource(
+            package_id=package['id'], url_type='datastore', format='csv'
+        )
+    records = [
+        {'scientificName': 'Boops boops'},
+        {'scientificName': 'Felis catus'},
+    ]
+    helpers.call_action('datastore_create', resource_id=resource['id'], records=records)
     with patch(
-        'ckanext.versioned_datastore.lib.query.utils.Search.scan',
-        return_value=[
-            MockHit(
-                name=resource_dict['id'],
-                data=MagicMock(**{'to_dict.return_value': {'a': 1, 'b': 2}}),
-            )
-        ],
-    ) as m:
-        yield m
+        'ckanext.versioned_datastore.lib.importing.queuing.queue',
+        queue_mock,
+    ):
+        helpers.call_action(
+            'datastore_upsert',
+            context={'user': user['id']},
+            resource_id=resource['id'],
+            records=records,
+            replace=True,
+        )
