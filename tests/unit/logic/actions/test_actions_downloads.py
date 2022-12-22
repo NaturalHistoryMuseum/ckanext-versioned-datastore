@@ -7,13 +7,12 @@ from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
     DerivativeArgs,
     NotifierArgs,
 )
+from tests.helpers import patches
 
 
 class TestQueueDownload:
     @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
-    @pytest.mark.usefixtures(
-        'with_plugins', 'with_versioned_datastore_tables', 'patch_elasticsearch_scan'
-    )
+    @pytest.mark.usefixtures('with_plugins', 'with_versioned_datastore_tables')
     def test_queue_direct_call(self):
         # there is a very similar test in test_downloads.py that calls this via the API
         # instead
@@ -22,7 +21,7 @@ class TestQueueDownload:
         ) as enqueue_mock, patch(
             'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
             new=MagicMock(),
-        ):
+        ), patches.elasticsearch_scan():
             datastore_queue_download(
                 {},
                 QueryArgs(),

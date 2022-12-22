@@ -1,5 +1,5 @@
-from mock import MagicMock, patch
 import pytest
+from mock import MagicMock, patch
 
 from ckanext.versioned_datastore.lib.downloads import query
 from ckanext.versioned_datastore.logic.actions.meta.arg_objects import QueryArgs
@@ -23,26 +23,26 @@ class TestDownloadQuery:
 
     @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
     @pytest.mark.usefixtures('with_plugins', 'with_versioned_datastore_tables')
-    def test_create_query_from_query_args(self, patch_elasticsearch_scan):
-        query_args = QueryArgs(
-            query={
-                'filters': {
-                    'and': [
-                        {
-                            'string_equals': {
-                                'fields': ['collectionCode'],
-                                'value': 'bot',
-                            }
-                        }
-                    ]
-                },
-                'resource_ids': [patch_elasticsearch_scan.return_value[0].name],
-            }
-        )
+    def test_create_query_from_query_args(self):
         test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
-        with patch(
+        with patches.elasticsearch_scan() as patched_scan, patch(
             'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
-        ), patches.patch_rounded_versions():
+        ), patches.rounded_versions():
+            query_args = QueryArgs(
+                query={
+                    'filters': {
+                        'and': [
+                            {
+                                'string_equals': {
+                                    'fields': ['collectionCode'],
+                                    'value': 'bot',
+                                }
+                            }
+                        ]
+                    },
+                    'resource_ids': [patched_scan.return_value[0].name],
+                }
+            )
             q = query.Query.from_query_args(query_args)
 
         assert q.query_version == 'v1.0.0'
