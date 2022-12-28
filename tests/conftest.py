@@ -4,6 +4,8 @@ import pytest
 from ckan import plugins
 from ckan.tests import factories, helpers
 from mock import patch
+from splitgill.indexing.utils import get_elasticsearch_client
+from splitgill.mongo import get_mongo
 
 from ckanext.versioned_datastore.lib import common
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
@@ -31,8 +33,38 @@ def with_versioned_datastore_tables(reset_db):
 
 
 @pytest.fixture(scope='module')
-def with_vds_resource():
-    plugins.load('versioned_datastore')
+def clear_es_mongo():
+    """
+    Deletes all documents from mongo and elasticsearch.
+    """
+    if not plugins.plugin_loaded('versioned_datastore'):
+        plugins.load('versioned_datastore')
+
+    with get_mongo(common.CONFIG, common.CONFIG.mongo_database) as mongo_client:
+        cols = mongo_client.list_collection_names()
+        for c in cols:
+            mongo_client[c].drop()
+    es_client = get_elasticsearch_client(
+        common.CONFIG,
+        sniff_on_start=True,
+        sniffer_timeout=60,
+        sniff_on_connection_fail=True,
+        sniff_timeout=10,
+        http_compress=False,
+        timeout=30,
+    )
+    es_client.delete_by_query(
+        index=common.CONFIG.search_default_indexes, body={'query': {'match_all': {}}}
+    )
+
+
+@pytest.fixture(scope='module')
+def with_vds_resource(clear_es_mongo):
+    """
+    Adds some test data to the datastore.
+    """
+    if not plugins.plugin_loaded('versioned_datastore'):
+        plugins.load('versioned_datastore')
 
     # because user_show is called in datastore_upsert
     user = factories.Sysadmin()
