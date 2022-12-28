@@ -35,7 +35,7 @@ def with_vds_resource():
     package = factories.Dataset()
 
     def queue_mock(task, request):
-        return utils.sync_enqueue_job(
+        return utils.sync_enqueue_job_thread(
             task, args=[request], queue='importing', title=str(request)
         )
 
