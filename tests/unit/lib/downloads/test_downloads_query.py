@@ -25,7 +25,11 @@ class TestDownloadQuery:
     @pytest.mark.usefixtures('with_plugins', 'with_versioned_datastore_tables')
     def test_create_query_from_query_args(self):
         test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
-        with patches.elasticsearch_scan() as patched_scan, patch(
+        resource_ids = sorted(['test-resource-id'])
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.query.get_available_datastore_resources',
+            return_value=resource_ids,
+        ), patch(
             'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
         ), patches.rounded_versions():
             query_args = QueryArgs(
@@ -40,9 +44,13 @@ class TestDownloadQuery:
                             }
                         ]
                     },
-                    'resource_ids': [patched_scan.return_value[0].name],
+                    'resource_ids': resource_ids,
                 }
             )
             q = query.Query.from_query_args(query_args)
 
         assert q.query_version == 'v1.0.0'
+        assert len(q.resource_ids_and_versions) == len(resource_ids)
+        assert sorted(q.resource_ids_and_versions.keys()) == resource_ids
+        assert 'filters' in q.query
+        assert q.hash == '83fc3087623dfd7371cf697d1de6c879de3e722a'
