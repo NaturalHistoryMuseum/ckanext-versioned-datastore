@@ -3,6 +3,7 @@ from ckan import plugins
 from ckan.tests import factories, helpers
 from mock import patch
 
+from ckanext.versioned_datastore.lib import common
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 from tests.helpers import utils
 
@@ -56,13 +57,16 @@ def with_vds_resource():
         'ckanext.versioned_datastore.lib.importing.queuing.queue', queue_mock
     ):
         resource = factories.Resource(
-            package_id=package['id'], url_type='datastore', format='csv'
+            package_id=package['id'],
+            url_type='datastore',
+            url=common.DATASTORE_ONLY_RESOURCE,
         )
     records = [
         {'scientificName': 'Boops boops'},
         {'scientificName': 'Felis catus'},
     ]
     helpers.call_action('datastore_create', resource_id=resource['id'], records=records)
+
     with patch(
         'ckanext.versioned_datastore.lib.importing.queuing.queue',
         queue_mock,
