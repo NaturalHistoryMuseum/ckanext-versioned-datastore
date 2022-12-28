@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from ckan import plugins
 from ckan.tests import factories, helpers
@@ -31,6 +33,7 @@ def with_versioned_datastore_tables(reset_db):
 @pytest.fixture(scope='module')
 def with_vds_resource():
     plugins.load('versioned_datastore')
+
     # because user_show is called in datastore_upsert
     user = factories.Sysadmin()
     package = factories.Dataset()
@@ -78,3 +81,14 @@ def with_vds_resource():
             records=records,
             replace=True,
         )
+
+    # TODO: do this better somehow
+    # even though we've replaced the queues with sync versions, the new data still seems
+    # to be added to the datastore asynchronously
+    wait_loop = 0
+    while (
+        wait_loop < 10
+        and helpers.call_action('datastore_count', resource_ids=[resource['id']]) == 0
+    ):
+        wait_loop += 1
+        time.sleep(2)
