@@ -13,4 +13,4 @@ RUN pip install -e .[test]
 ENTRYPOINT ["/bin/bash", "/opt/waits/all.sh"]
 
 # run the tests with coverage output
-CMD ["bash", "/opt/scripts/run-tests.sh", "ckanext.versioned_datastore"]
+CMD ["source", "/opt/scripts/run-tests.sh", "ckanext.versioned_datastore"]
