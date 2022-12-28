@@ -1,4 +1,4 @@
-FROM naturalhistorymuseum/ckantest:0.2
+FROM naturalhistorymuseum/ckantest:0.2.1
 
 WORKDIR /base/src/ckanext-versioned-datastore
 
@@ -13,4 +13,4 @@ RUN pip install -e .[test]
 ENTRYPOINT ["/bin/bash", "/opt/waits/all.sh"]
 
 # run the tests with coverage output
-CMD ["source", "/opt/scripts/run-tests.sh", "ckanext.versioned_datastore"]
+CMD ["bash", "/opt/scripts/run-tests.sh", "ckanext.versioned_datastore"]
