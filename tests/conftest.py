@@ -126,3 +126,5 @@ def with_vds_resource(clear_es_mongo):
     ):
         wait_loop += 1
         time.sleep(2)
+
+    yield resource
