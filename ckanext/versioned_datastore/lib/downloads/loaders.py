@@ -44,13 +44,13 @@ def get_notifier(notifier_type, *args, **kwargs):
     return notifier
 
 
-def get_transformation(transform_name, *args, **kwargs):
+def get_transformation(transform_name, **kwargs):
     trns = {t.name: t for t in transforms.transforms}
     for plugin in PluginImplementations(IVersionedDatastoreDownloads):
         trns = plugin.download_data_transformations(transforms)
-    transform_func = trns.get(transform_name)
-    if transform_func is None:
+    transform_class = trns.get(transform_name)
+    if transform_class is None:
         raise toolkit.ObjectNotFound(
             f'{transform_name} is not a registered download data transformation function.'
         )
-    return partial(transform_func, *args, **kwargs)
+    return transform_class(**kwargs)

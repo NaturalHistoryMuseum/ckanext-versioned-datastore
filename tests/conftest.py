@@ -99,8 +99,12 @@ def with_vds_resource(clear_es_mongo):
             url=common.DATASTORE_ONLY_RESOURCE,
         )
     records = [
-        {'scientificName': 'Boops boops'},
-        {'scientificName': 'Felis catus'},
+        {
+            'scientificName': 'Boops boops',
+            'img': 'img-url-here',
+            'urlSlug': 'boops-boops',
+        },
+        {'scientificName': 'Felis catus', 'urlSlug': 'felis-catus'},
     ]
     helpers.call_action('datastore_create', resource_id=resource['id'], records=records)
 

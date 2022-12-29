@@ -353,10 +353,10 @@ class DownloadRunManager:
             components = defaultdict(lambda: gen)
 
         # load transformation functions
-        transformations = {
-            t: get_transformation(t, **targs)
+        transformations = [
+            get_transformation(t, **targs)
             for t, targs in (self.derivative_options.transform or {}).items()
-        }
+        ]
 
         for resource_id, version in self.query.resource_ids_and_versions.items():
             # add the resource ID as the message for use in the status page

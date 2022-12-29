@@ -8,6 +8,9 @@ class BaseTransform(metaclass=ABCMeta):
 
     name = 'base'
 
+    def __init__(self, **kwargs):
+        self.transformer_args = kwargs
+
     @abstractmethod
-    def __call__(self, data, **kwargs):
+    def __call__(self, data):
         return data

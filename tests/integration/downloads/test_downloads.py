@@ -105,3 +105,23 @@ class TestQueueDownload:
                 for f in os.listdir(download_dir)
             ]
         )
+
+    @patches.enqueue_job()
+    @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
+    def test_run_download_with_transform(self, enqueue_job, transform):
+        download_details = toolkit.get_action('datastore_queue_download')(
+            {},
+            {
+                'query': {'query': {}},
+                'file': {'format': 'csv', 'transform': transform},
+                'notifier': {'type': 'none'},
+            },
+        )
+        enqueue_job.assert_called()
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        assert any(
+            [
+                f.startswith(download_details['download_id'])
+                for f in os.listdir(download_dir)
+            ]
+        )
