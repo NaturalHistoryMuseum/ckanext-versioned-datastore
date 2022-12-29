@@ -40,6 +40,8 @@ def clear_es_mongo():
     if not plugins.plugin_loaded('versioned_datastore'):
         plugins.load('versioned_datastore')
 
+    yield
+
     with get_mongo(common.CONFIG, common.CONFIG.mongo_database) as mongo_client:
         cols = mongo_client.list_collection_names()
         for c in cols:
