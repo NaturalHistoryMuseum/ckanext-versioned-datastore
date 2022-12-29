@@ -6,7 +6,7 @@ WORKDIR /base/src/ckanext-versioned-datastore
 COPY . .
 
 # install the base + test dependencies
-RUN pip install -e .[test]
+RUN pip install -e .[test,doi,attribution]
 
 # this entrypoint ensures our service dependencies (postgresql, solr, redis, elasticsearch, and
 # mongodb) are running before running the cmd
