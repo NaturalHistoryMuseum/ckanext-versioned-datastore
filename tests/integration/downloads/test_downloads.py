@@ -122,3 +122,43 @@ class TestQueueDownload:
                 for f in os.listdir(download_dir)
             ]
         )
+
+
+@pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
+@pytest.mark.usefixtures(
+    'with_plugins', 'with_versioned_datastore_tables', 'with_vds_resource'
+)
+@patches.enqueue_job()
+class TestDownloadWithQueryDois:
+    @classmethod
+    def setup_class(cls):
+        from ckanext.query_dois.model import query_doi_table, query_doi_stat_table
+
+        cls.tables = [query_doi_table, query_doi_stat_table]
+
+        for table in cls.tables:
+            table.create(checkfirst=True)
+
+    @classmethod
+    def teardown_class(cls):
+        for table in cls.tables:
+            if table.exists():
+                table.drop()
+
+    def test_run_download_with_query_dois(self, enqueue_job):
+        download_details = toolkit.get_action('datastore_queue_download')(
+            {},
+            {
+                'query': {'query': {}},
+                'file': {'format': 'dwc'},
+                'notifier': {'type': 'none'},
+            },
+        )
+        enqueue_job.assert_called()
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        assert any(
+            [
+                f.startswith(download_details['download_id'])
+                for f in os.listdir(download_dir)
+            ]
+        )
