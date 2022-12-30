@@ -17,6 +17,7 @@ def with_versioned_datastore_tables(reset_db):
     """
     Simple fixture which resets the database and creates the versioned-datastore tables.
     """
+    # setup
     reset_db()
     tables = [
         stats.import_stats_table,
@@ -31,17 +32,28 @@ def with_versioned_datastore_tables(reset_db):
         if not table.exists():
             table.create()
 
+    # test method here
+    yield
+
+    # teardown
+    for table in tables[::-1]:
+        if table.exists():
+            table.drop()
+
 
 @pytest.fixture(scope='module')
 def clear_es_mongo():
     """
     Deletes all documents from mongo and elasticsearch.
     """
+    # setup
     if not plugins.plugin_loaded('versioned_datastore'):
         plugins.load('versioned_datastore')
 
+    # test method here
     yield
 
+    # teardown
     with get_mongo(common.CONFIG, common.CONFIG.mongo_database) as mongo_client:
         cols = mongo_client.list_collection_names()
         for c in cols:
@@ -65,6 +77,7 @@ def with_vds_resource(clear_es_mongo):
     """
     Adds some test data to the datastore.
     """
+    # setup
     if not plugins.plugin_loaded('versioned_datastore'):
         plugins.load('versioned_datastore')
 
@@ -131,4 +144,5 @@ def with_vds_resource(clear_es_mongo):
         wait_loop += 1
         time.sleep(2)
 
+    # test method here
     yield resource
