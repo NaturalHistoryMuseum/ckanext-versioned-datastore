@@ -129,10 +129,9 @@ def with_vds_resource(clear_es_mongo):
     # even though we've replaced the queues with sync versions, the new data still seems
     # to be added to the datastore asynchronously
     wait_loop = 0
-    while (
-        wait_loop < 10
-        and helpers.call_action('datastore_count', resource_ids=[resource['id']]) == 0
-    ):
+    while helpers.call_action('datastore_count', resource_ids=[resource['id']]) == 0:
+        if wait_loop >= 10:
+            raise Exception('Test data not being ingested (exceeded wait time).')
         wait_loop += 1
         time.sleep(2)
 
