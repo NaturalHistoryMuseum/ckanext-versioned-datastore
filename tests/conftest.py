@@ -32,14 +32,6 @@ def with_versioned_datastore_tables(reset_db):
         if not table.exists():
             table.create()
 
-    # test method here
-    yield
-
-    # teardown
-    for table in tables[::-1]:
-        if table.exists():
-            table.drop()
-
 
 @pytest.fixture(scope='module')
 def clear_es_mongo():
