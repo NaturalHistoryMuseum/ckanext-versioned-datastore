@@ -26,8 +26,8 @@ scenarios = [
 @pytest.mark.usefixtures(
     'with_plugins', 'with_versioned_datastore_tables', 'with_vds_resource'
 )
+@patches.enqueue_job()
 class TestQueueDownload:
-    @patches.enqueue_job()
     @pytest.mark.parametrize('file_format,format_args', scenarios)
     @pytest.mark.parametrize('separate_files', [True, False])
     def test_run_download_without_query(
@@ -54,7 +54,6 @@ class TestQueueDownload:
             ]
         )
 
-    @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
@@ -87,7 +86,6 @@ class TestQueueDownload:
             ]
         )
 
-    @patches.enqueue_job()
     def test_run_download_ignore_empty(self, enqueue_job):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
@@ -106,7 +104,6 @@ class TestQueueDownload:
             ]
         )
 
-    @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
     def test_run_download_with_transform(self, enqueue_job, transform):
         download_details = toolkit.get_action('datastore_queue_download')(
