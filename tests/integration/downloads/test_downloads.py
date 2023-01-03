@@ -2,9 +2,9 @@ import os
 
 import pytest
 from ckan.plugins import toolkit
+from mock import patch, MagicMock
 
 from tests.helpers import patches
-from mock import patch
 
 scenarios = [
     ('csv', {}),
@@ -133,6 +133,7 @@ class TestQueueDownload:
 
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
+@pytest.mark.ckan_config('ckanext.query_dois.prefix', 'xx.xxxx')
 @pytest.mark.usefixtures(
     'with_plugins',
     'with_versioned_datastore_tables',
@@ -157,14 +158,27 @@ class TestDownloadWithQueryDois:
 
     @patches.enqueue_job()
     def test_run_download_with_query_dois(self, enqueue_job):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {'format': 'dwc'},
-                'notifier': {'type': 'none'},
-            },
-        )
+
+        # I cannot get the query_doi endpoints to load for the life of me so we're just
+        # going to mock it before I lose my mind
+        def _url_for_mock(endpoint, **kwargs):
+            if endpoint == 'query_doi.landing_page':
+                return f'/{kwargs["data_centre"]}/{kwargs["identifier"]}'
+            else:
+                return toolkit.url_for(endpoint, **kwargs)
+
+        with patch(
+            'ckanext.query_dois.lib.doi.find_existing_doi',
+            return_value=MagicMock(doi='123456'),
+        ), patch('ckan.plugins.toolkit.url_for', _url_for_mock):
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'dwc'},
+                    'notifier': {'type': 'none'},
+                },
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         assert any(
