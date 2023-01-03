@@ -25,7 +25,10 @@ scenarios = [
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
 @pytest.mark.usefixtures(
-    'with_plugins', 'with_versioned_datastore_tables', 'with_vds_resource'
+    'with_plugins',
+    'with_versioned_datastore_tables',
+    'with_vds_resource',
+    'clear_download_dir',
 )
 class TestQueueDownload:
     @patches.enqueue_job()
@@ -131,7 +134,10 @@ class TestQueueDownload:
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
 @pytest.mark.usefixtures(
-    'with_plugins', 'with_versioned_datastore_tables', 'with_vds_resource'
+    'with_plugins',
+    'with_versioned_datastore_tables',
+    'with_vds_resource',
+    'clear_download_dir',
 )
 class TestDownloadWithQueryDois:
     @classmethod

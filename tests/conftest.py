@@ -1,7 +1,10 @@
+import os
+import shutil
 import time
 
 import pytest
 from ckan import plugins
+from ckan.plugins import toolkit
 from ckan.tests import factories, helpers
 from mock import patch
 from splitgill.indexing.utils import get_elasticsearch_client
@@ -33,7 +36,7 @@ def with_versioned_datastore_tables(reset_db):
             table.create()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def clear_es_mongo():
     """
     Deletes all documents from mongo and elasticsearch.
@@ -64,7 +67,7 @@ def clear_es_mongo():
     )
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def with_vds_resource(clear_es_mongo):
     """
     Adds some test data to the datastore.
@@ -137,3 +140,10 @@ def with_vds_resource(clear_es_mongo):
 
     # test method here
     yield resource
+
+
+@pytest.fixture
+def clear_download_dir():
+    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+    if os.path.exists(download_dir):
+        shutil.rmtree(download_dir)
