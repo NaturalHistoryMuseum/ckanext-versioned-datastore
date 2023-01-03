@@ -4,6 +4,7 @@ import pytest
 from ckan.plugins import toolkit
 
 from tests.helpers import patches
+from mock import patch
 
 scenarios = [
     ('csv', {}),
@@ -109,14 +110,15 @@ class TestQueueDownload:
     @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
     def test_run_download_with_transform(self, enqueue_job, transform):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {'format': 'csv', 'transform': transform},
-                'notifier': {'type': 'none'},
-            },
-        )
+        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'csv', 'transform': transform},
+                    'notifier': {'type': 'none'},
+                },
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         assert any(
