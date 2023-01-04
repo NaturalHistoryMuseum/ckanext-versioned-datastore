@@ -1,3 +1,4 @@
+from .urls import SchemaUrl
 from .utils import load_schema
 
 
@@ -10,9 +11,9 @@ class Extension(object):
         self.core = core
 
     @classmethod
-    def create(cls, url, extension_schema=None, core=False):
+    def create(cls, url: SchemaUrl, extension_schema=None, core=False):
         if extension_schema is None:
-            extension_schema = load_schema(url)
+            extension_schema = load_schema(url.url)
         row_type = extension_schema.attrib['rowType']
         name = extension_schema.attrib['name']
         schema_props = extension_schema.findall('.//{*}property')
@@ -21,11 +22,12 @@ class Extension(object):
 
     @classmethod
     def load(cls, serialised):
+        serialised['location'] = SchemaUrl(**serialised['location'])
         return cls(**serialised)
 
     def serialise(self):
         return {
-            'location': self.location,
+            'location': self.location.__dict__,
             'prop_names': self.prop_names,
             'row_type': self.row_type,
             'name': self.name,
