@@ -81,3 +81,53 @@ class TestGetSchema:
         assert parsed_schema['name'] == 'ResourceRecord'
         assert len(parsed_schema['fields']) == 3
         assert isinstance(parsed_schema['fields'][0]['type'], list)
+
+
+class TestFilterDataFields:
+    def test_excludes_field_with_zero_count(self):
+        data = {'one': 1, 'two': 2, 'three': 3}
+        field_counts = {'one': 1, 'two': 1, 'three': 0}
+
+        filtered_data = utils.filter_data_fields(data, field_counts)
+        assert 'one' in filtered_data
+        assert 'two' in filtered_data
+        assert 'three' not in filtered_data
+
+    def test_excludes_field_with_no_count(self):
+        data = {'one': 1, 'two': 2, 'three': 3}
+        field_counts = {'one': 1, 'two': 1}
+
+        filtered_data = utils.filter_data_fields(data, field_counts)
+        assert 'one' in filtered_data
+        assert 'two' in filtered_data
+        assert 'three' not in filtered_data
+
+    def test_includes_null_field_with_count(self):
+        data = {'one': 1, 'two': 2, 'three': None}
+        field_counts = {'one': 1, 'two': 1, 'three': 1}
+
+        filtered_data = utils.filter_data_fields(data, field_counts)
+        assert 'one' in filtered_data
+        assert 'two' in filtered_data
+        assert 'three' in filtered_data
+
+    def test_excludes_empty_nested_fields(self):
+        data = {'one': {'two': 2, 'three': 3}}
+        field_counts = {'one.two': 1}
+
+        filtered_data = utils.filter_data_fields(data, field_counts)
+        assert 'one' in filtered_data
+        assert 'two' in filtered_data['one']
+        assert 'three' not in filtered_data['one']
+
+    def test_excludes_empty_listed_fields(self):
+        data = {'one': [{'two': 2, 'three': 3}, {'two': 2, 'four': 4}]}
+        field_counts = {'one.two': 2, 'one.four': 1}
+
+        filtered_data = utils.filter_data_fields(data, field_counts)
+        assert 'one' in filtered_data
+        assert len(filtered_data['one']) == 2
+        assert 'four' in filtered_data['one'][1]
+        for r in filtered_data['one']:
+            assert 'two' in r
+            assert 'three' not in r
