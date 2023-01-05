@@ -1,11 +1,14 @@
+import csv
 import os
+import shutil
+import tempfile
+import zipfile
 
 import pytest
 from ckan.plugins import toolkit
 from mock import patch, MagicMock
-import zipfile
 
-from tests.helpers import patches
+from tests.helpers import patches, data as test_data
 
 scenarios = [
     ('csv', {}),
@@ -37,7 +40,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     @pytest.mark.parametrize('file_format,format_args', scenarios)
     @pytest.mark.parametrize('separate_files', [True, False])
-    def test_run_download_without_query(
+    def test_run_download_formats(
         self, enqueue_job, with_vds_resource, file_format, format_args, separate_files
     ):
         download_details = toolkit.get_action('datastore_queue_download')(
@@ -73,6 +76,47 @@ class TestQueueDownload:
                 )
 
     @patches.enqueue_job()
+    def test_run_download_without_query(self, enqueue_job, with_vds_resource):
+        download_details = toolkit.get_action('datastore_queue_download')(
+            {},
+            {
+                'query': {'query': {}},
+                'file': {'format': 'csv'},
+                'notifier': {'type': 'none'},
+            },
+        )
+        enqueue_job.assert_called()
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
+            reader = csv.DictReader(f)
+            records = [row for row in reader]
+            assert len(records) == len(test_data.records)
+            for record in records:
+                assert 'emptyField' in record
+                test_data_record = next(
+                    r
+                    for r in test_data.records
+                    if r['scientificName'] == record['scientificName']
+                )
+                for k, v in test_data_record.items():
+                    assert v == record[k]
+
+        shutil.rmtree(self.temp_dir)
+
+    @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
@@ -98,12 +142,25 @@ class TestQueueDownload:
         )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-        assert any(
-            [
-                f.startswith(download_details['download_id'])
-                for f in os.listdir(download_dir)
-            ]
-        )
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
+            reader = csv.DictReader(f)
+            records = [row for row in reader]
+            assert len(records) == 0
+
+        shutil.rmtree(self.temp_dir)
 
     @patches.enqueue_job()
     def test_run_download_ignore_empty(self, enqueue_job):
@@ -117,12 +174,27 @@ class TestQueueDownload:
         )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-        assert any(
-            [
-                f.startswith(download_details['download_id'])
-                for f in os.listdir(download_dir)
-            ]
-        )
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
+            reader = csv.DictReader(f)
+            records = [row for row in reader]
+            assert len(records) == len(test_data.records)
+            for record in records:
+                assert 'emptyField' not in record
+
+        shutil.rmtree(self.temp_dir)
 
     @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
@@ -138,12 +210,27 @@ class TestQueueDownload:
             )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-        assert any(
-            [
-                f.startswith(download_details['download_id'])
-                for f in os.listdir(download_dir)
-            ]
-        )
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
+            reader = csv.DictReader(f)
+            records = [row for row in reader]
+            assert len(records) == len(test_data.records)
+            for record in records:
+                assert record['urlSlug'].endswith('/banana')
+
+        shutil.rmtree(self.temp_dir)
 
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
