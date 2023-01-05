@@ -12,7 +12,7 @@ from splitgill.mongo import get_mongo
 
 from ckanext.versioned_datastore.lib import common
 from ckanext.versioned_datastore.model import stats, slugs, details, downloads
-from tests.helpers import utils
+from tests.helpers import utils, data as test_data
 
 
 @pytest.fixture(scope='module')
@@ -106,15 +106,9 @@ def with_vds_resource(clear_es_mongo):
             url_type='datastore',
             url=common.DATASTORE_ONLY_RESOURCE,
         )
-    records = [
-        {
-            'scientificName': 'Boops boops',
-            'img': 'img-url-here',
-            'urlSlug': 'boops-boops',
-        },
-        {'scientificName': 'Felis catus', 'urlSlug': 'felis-catus'},
-    ]
-    helpers.call_action('datastore_create', resource_id=resource['id'], records=records)
+    helpers.call_action(
+        'datastore_create', resource_id=resource['id'], records=test_data.records
+    )
 
     with patch(
         'ckanext.versioned_datastore.lib.importing.queuing.queue',
@@ -124,7 +118,7 @@ def with_vds_resource(clear_es_mongo):
             'datastore_upsert',
             context={'user': user['id']},
             resource_id=resource['id'],
-            records=records,
+            records=test_data.records,
             replace=True,
         )
 
