@@ -85,7 +85,7 @@ class TestGetSchema:
 
 class TestFilterDataFields:
     def test_excludes_field_with_zero_count(self):
-        data = {'one': 1, 'two': 2, 'three': 3}
+        data = {'one': 'a', 'two': 'b', 'three': 'c'}
         field_counts = {'one': 1, 'two': 1, 'three': 0}
 
         filtered_data = utils.filter_data_fields(data, field_counts)
@@ -94,7 +94,7 @@ class TestFilterDataFields:
         assert 'three' not in filtered_data
 
     def test_excludes_field_with_no_count(self):
-        data = {'one': 1, 'two': 2, 'three': 3}
+        data = {'one': 'a', 'two': 'b', 'three': 'c'}
         field_counts = {'one': 1, 'two': 1}
 
         filtered_data = utils.filter_data_fields(data, field_counts)
@@ -103,7 +103,7 @@ class TestFilterDataFields:
         assert 'three' not in filtered_data
 
     def test_includes_null_field_with_count(self):
-        data = {'one': 1, 'two': 2, 'three': None}
+        data = {'one': 'a', 'two': 'b', 'three': None}
         field_counts = {'one': 1, 'two': 1, 'three': 1}
 
         filtered_data = utils.filter_data_fields(data, field_counts)
@@ -112,7 +112,7 @@ class TestFilterDataFields:
         assert 'three' in filtered_data
 
     def test_excludes_empty_nested_fields(self):
-        data = {'one': {'two': 2, 'three': 3}}
+        data = {'one': {'two': 'a', 'three': 'b'}}
         field_counts = {'one.two': 1}
 
         filtered_data = utils.filter_data_fields(data, field_counts)
@@ -121,7 +121,7 @@ class TestFilterDataFields:
         assert 'three' not in filtered_data['one']
 
     def test_excludes_empty_listed_fields(self):
-        data = {'one': [{'two': 2, 'three': 3}, {'two': 2, 'four': 4}]}
+        data = {'one': [{'two': 'a', 'three': 'b'}, {'two': 'c', 'four': 'd'}]}
         field_counts = {'one.two': 2, 'one.four': 1}
 
         filtered_data = utils.filter_data_fields(data, field_counts)
@@ -131,3 +131,35 @@ class TestFilterDataFields:
         for r in filtered_data['one']:
             assert 'two' in r
             assert 'three' not in r
+
+
+class TestFlattenDict:
+    def test_flattens_dict(self):
+        data = {'one': {'two': 2, 'three': 3}}
+        expected_output = {'one.two': 2, 'one.three': 3}
+
+        flattened = utils.flatten_dict(data)
+        assert len(flattened) == len(expected_output)
+        for k, v in expected_output.items():
+            assert k in flattened
+            assert v == flattened[k]
+
+    def test_flattens_nested_lists(self):
+        data = {'one': [{'two': 'a', 'three': 'b'}, {'two': 'c', 'four': 'd'}]}
+        expected_output = {'one.two': 'a | c', 'one.three': 'b', 'one.four': 'd'}
+
+        flattened = utils.flatten_dict(data)
+        assert len(flattened) == len(expected_output)
+        for k, v in expected_output.items():
+            assert k in flattened
+            assert v == flattened[k]
+
+    def test_flattens_lists(self):
+        data = {'one': ['a', 'b']}
+        expected_output = {'one': 'a | b'}
+
+        flattened = utils.flatten_dict(data)
+        assert len(flattened) == len(expected_output)
+        for k, v in expected_output.items():
+            assert k in flattened
+            assert v == flattened[k]
