@@ -49,6 +49,7 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         for fn, fp in self.file_paths.items():
             self.files[fn] = open(fp, 'a')
         self._opened = True
+        self.setup()
         if not self._initialised:
             self.initialise()
         return self
@@ -75,8 +76,20 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
     def initialise(self):
         """
         Runs after files have opened, before any records are processed.
+
+        Only runs the first time the files are opened; in a multi-resource generator,
+        files may be opened multiple times, but this will only be run once. Use setup()
+        for things that need to be run every time.
         """
         self._initialised = True
+
+    def setup(self):
+        """
+        Runs every time files are opened, before any records are processed.
+
+        Runs before initialise().
+        """
+        pass
 
     def validate(self, record):
         """

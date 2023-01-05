@@ -24,11 +24,18 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
         self.writer = None
 
     def initialise(self):
+        self.writer.writeheader()
+        super(CsvDerivativeGenerator, self).initialise()
+
+    def setup(self):
         self.writer = csv.DictWriter(
             self.main_file, self.fields['main'], delimiter=self.delimiter
         )
-        self.writer.writeheader()
-        super(CsvDerivativeGenerator, self).initialise()
+        super(CsvDerivativeGenerator, self).setup()
+
+    def finalise(self):
+        self.writer = None
+        super(CsvDerivativeGenerator, self).finalise()
 
     def _write(self, record):
         row = flatten_dict(record)

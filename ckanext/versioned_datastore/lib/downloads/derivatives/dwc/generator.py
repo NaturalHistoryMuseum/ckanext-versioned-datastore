@@ -128,7 +128,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             self._build_dir,
         )
 
-    def initialise(self):
+    def setup(self):
         if not self._opened:
             raise Exception('Files should be open.')
         self.writers = {
@@ -136,7 +136,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             for k in self.fields
         }
         # headers are written in .validate()
-        super(DwcDerivativeGenerator, self).initialise()
+        super(DwcDerivativeGenerator, self).setup()
 
     def validate(self, record):
         if 'type' in record and record['type'] not in utils.valid_types:
@@ -150,6 +150,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
     def finalise(self):
         self.files['_meta'].write(self.make_meta())
         self.files['_eml'].write(self.make_eml())
+        self.writers = {}
 
     def cleanup(self):
         try:

@@ -1,4 +1,4 @@
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 
 from .base import BaseDerivativeGenerator
 from ..utils import flatten_dict
@@ -17,14 +17,21 @@ class XlsxDerivativeGenerator(BaseDerivativeGenerator):
         self.workbook = None
 
     def initialise(self):
-        self.workbook = Workbook(write_only=True)
         self.workbook.create_sheet(self.DEFAULT_SHEET_NAME)
         self.workbook.active.append(self.fields['main'])
         super(XlsxDerivativeGenerator, self).initialise()
 
+    def setup(self):
+        try:
+            self.workbook = load_workbook(self.file_paths['main'])
+        except Exception as e:
+            self.workbook = Workbook(write_only=True)
+        super(XlsxDerivativeGenerator, self).setup()
+
     def finalise(self):
         self.workbook.save(self.file_paths['main'])
         self.workbook.close()
+        super(XlsxDerivativeGenerator, self).finalise()
 
     def _write(self, record):
         row = flatten_dict(record)
