@@ -3,6 +3,7 @@ import os
 import pytest
 from ckan.plugins import toolkit
 from mock import patch, MagicMock
+import zipfile
 
 from tests.helpers import patches
 
@@ -22,6 +23,8 @@ scenarios = [
     ),
 ]
 
+expected_extensions = {'csv': '.csv', 'json': '.json', 'xlsx': '.xlsx', 'dwc': '.zip'}
+
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
 @pytest.mark.usefixtures(
@@ -35,7 +38,7 @@ class TestQueueDownload:
     @pytest.mark.parametrize('file_format,format_args', scenarios)
     @pytest.mark.parametrize('separate_files', [True, False])
     def test_run_download_without_query(
-        self, enqueue_job, file_format, format_args, separate_files
+        self, enqueue_job, with_vds_resource, file_format, format_args, separate_files
     ):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
@@ -51,12 +54,23 @@ class TestQueueDownload:
         )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-        assert any(
-            [
-                f.startswith(download_details['download_id'])
-                for f in os.listdir(download_dir)
-            ]
-        )
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            if not separate_files:
+                assert f'resource{expected_extensions[file_format]}' in archive_files
+                assert len(archive_files) == 2
+            else:
+                assert (
+                    f'{with_vds_resource["id"]}{expected_extensions[file_format]}'
+                    in archive_files
+                )
 
     @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
