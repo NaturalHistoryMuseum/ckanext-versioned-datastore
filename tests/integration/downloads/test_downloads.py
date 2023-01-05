@@ -70,13 +70,18 @@ class TestQueueDownload:
                 assert f'resource{expected_extensions[file_format]}' in archive_files
                 assert len(archive_files) == 2
             else:
+                assert len(archive_files) == 3
                 assert (
-                    f'{with_vds_resource["id"]}{expected_extensions[file_format]}'
+                    f'{with_vds_resource[0]["id"]}{expected_extensions[file_format]}'
+                    in archive_files
+                )
+                assert (
+                    f'{with_vds_resource[1]["id"]}{expected_extensions[file_format]}'
                     in archive_files
                 )
 
     @patches.enqueue_job()
-    def test_run_download_without_query(self, enqueue_job, with_vds_resource):
+    def test_run_download_without_query(self, enqueue_job):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
             {
@@ -103,12 +108,12 @@ class TestQueueDownload:
         with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
             reader = csv.DictReader(f)
             records = [row for row in reader]
-            assert len(records) == len(test_data.records)
+            assert len(records) == len(test_data.records + test_data.records_addtl)
             for record in records:
                 assert 'emptyField' in record
                 test_data_record = next(
                     r
-                    for r in test_data.records
+                    for r in test_data.records + test_data.records_addtl
                     if r['scientificName'] == record['scientificName']
                 )
                 for k, v in test_data_record.items():
@@ -133,8 +138,7 @@ class TestQueueDownload:
                                 }
                             ]
                         },
-                    },
-                    'resource_ids': [with_vds_resource['id']],
+                    }
                 },
                 'file': {'format': 'csv'},
                 'notifier': {'type': 'none'},
@@ -158,17 +162,34 @@ class TestQueueDownload:
         with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
             reader = csv.DictReader(f)
             records = [row for row in reader]
-            assert len(records) == 0
+            assert len(records) == 1  # the number of records that should match the q
 
         shutil.rmtree(self.temp_dir)
 
     @patches.enqueue_job()
-    def test_run_download_ignore_empty(self, enqueue_job):
+    def test_run_download_keep_empty(self, enqueue_job, with_vds_resource):
         download_details = toolkit.get_action('datastore_queue_download')(
             {},
             {
-                'query': {'query': {}},
-                'file': {'format': 'csv', 'ignore_empty_fields': True},
+                'query': {
+                    'query': {
+                        'filters': {
+                            'and': [
+                                {
+                                    'string_equals': {
+                                        'fields': ['group'],
+                                        'value': 'b',
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                },
+                'file': {
+                    'format': 'csv',
+                    'ignore_empty_fields': False,
+                    'separate_files': False,
+                },
                 'notifier': {'type': 'none'},
             },
         )
@@ -188,11 +209,58 @@ class TestQueueDownload:
             zf.extract('resource.csv', self.temp_dir)
 
         with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
-            reader = csv.DictReader(f)
-            records = [row for row in reader]
-            assert len(records) == len(test_data.records)
-            for record in records:
-                assert 'emptyField' not in record
+            reader = csv.reader(f)
+            header = [row for row in reader][0]
+            assert 'emptyField' in header
+
+        shutil.rmtree(self.temp_dir)
+
+    @patches.enqueue_job()
+    def test_run_download_ignore_empty(self, enqueue_job, with_vds_resource):
+        download_details = toolkit.get_action('datastore_queue_download')(
+            {},
+            {
+                'query': {
+                    'query': {
+                        'filters': {
+                            'and': [
+                                {
+                                    'string_equals': {
+                                        'fields': ['group'],
+                                        'value': 'b',
+                                    }
+                                }
+                            ]
+                        },
+                    }
+                },
+                'file': {
+                    'format': 'csv',
+                    'ignore_empty_fields': True,
+                    'separate_files': False,
+                },
+                'notifier': {'type': 'none'},
+            },
+        )
+        enqueue_job.assert_called()
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
+            reader = csv.reader(f)
+            header = [row for row in reader][0]
+            assert 'emptyField' not in header
 
         shutil.rmtree(self.temp_dir)
 
@@ -226,7 +294,7 @@ class TestQueueDownload:
         with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
             reader = csv.DictReader(f)
             records = [row for row in reader]
-            assert len(records) == len(test_data.records)
+            assert len(records) == len(test_data.records + test_data.records_addtl)
             for record in records:
                 assert record['urlSlug'].endswith('/banana')
 

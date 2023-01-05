@@ -101,13 +101,23 @@ def with_vds_resource(clear_es_mongo):
     with patch('ckan.plugins.toolkit.get_action', get_action_mock), patch(
         'ckanext.versioned_datastore.lib.importing.queuing.queue', queue_mock
     ):
-        resource = factories.Resource(
+        resource_one = factories.Resource(
+            package_id=package['id'],
+            url_type='datastore',
+            url=common.DATASTORE_ONLY_RESOURCE,
+        )
+        resource_two = factories.Resource(
             package_id=package['id'],
             url_type='datastore',
             url=common.DATASTORE_ONLY_RESOURCE,
         )
     helpers.call_action(
-        'datastore_create', resource_id=resource['id'], records=test_data.records
+        'datastore_create', resource_id=resource_one['id'], records=test_data.records
+    )
+    helpers.call_action(
+        'datastore_create',
+        resource_id=resource_two['id'],
+        records=test_data.records_addtl,
     )
 
     with patch(
@@ -117,8 +127,15 @@ def with_vds_resource(clear_es_mongo):
         helpers.call_action(
             'datastore_upsert',
             context={'user': user['id']},
-            resource_id=resource['id'],
+            resource_id=resource_one['id'],
             records=test_data.records,
+            replace=True,
+        )
+        helpers.call_action(
+            'datastore_upsert',
+            context={'user': user['id']},
+            resource_id=resource_two['id'],
+            records=test_data.records_addtl,
             replace=True,
         )
 
@@ -126,14 +143,19 @@ def with_vds_resource(clear_es_mongo):
     # even though we've replaced the queues with sync versions, the new data still seems
     # to be added to the datastore asynchronously
     wait_loop = 0
-    while helpers.call_action('datastore_count', resource_ids=[resource['id']]) == 0:
+    while (
+        helpers.call_action(
+            'datastore_count', resource_ids=[resource_one['id'], resource_two['id']]
+        )
+        < 2
+    ):
         if wait_loop >= 10:
             raise Exception('Test data not being ingested (exceeded wait time).')
         wait_loop += 1
         time.sleep(2)
 
     # test method here
-    yield resource
+    yield resource_one, resource_two
 
 
 @pytest.fixture
