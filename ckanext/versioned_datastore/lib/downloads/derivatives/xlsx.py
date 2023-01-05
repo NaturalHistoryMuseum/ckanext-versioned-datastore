@@ -6,7 +6,7 @@ from ..utils import flatten_dict
 
 class XlsxDerivativeGenerator(BaseDerivativeGenerator):
     name = 'xlsx'
-    extension = 'xslx'
+    extension = 'xlsx'
 
     DEFAULT_SHEET_NAME = 'Data'
 
