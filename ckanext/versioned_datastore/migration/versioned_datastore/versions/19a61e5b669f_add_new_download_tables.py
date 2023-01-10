@@ -123,12 +123,12 @@ def upgrade():
         # calculate hashes first
         resource_hash = make_hash(sorted(download.resource_ids_and_versions.items()))
         record_hash = make_hash([download.query_hash, resource_hash])
-        file_options = {
-            'format': download.options['format'],
-            'format_args': download.options['format_args'],
-            'separate_files': download.options['separate_files'],
-            'ignore_empty_fields': download.options['ignore_empty_fields'],
-            'transform': download.options['transform'],
+        file_options = {  # use defaults from old datastore_queue_download def
+            'format': download.options.get('format', 'csv'),
+            'format_args': download.options.get('format_args', {}),
+            'separate_files': download.options.get('separate_files', True),
+            'ignore_empty_fields': download.options.get('ignore_empty_fields', True),
+            'transform': download.options.get('transform'),
         }
         derivative_hash = make_hash(json.dumps(file_options))
         download_hash = make_hash([record_hash, derivative_hash])
