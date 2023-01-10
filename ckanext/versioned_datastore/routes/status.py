@@ -31,8 +31,9 @@ def download_status(download_id):
     }
 
     time_now = dt.utcnow()
+    end_time = dl.modified if dl.state == DownloadRequest.state_complete else time_now
     total_time_elapsed = timedelta(
-        seconds=round((time_now - dl.created).total_seconds())
+        seconds=round((end_time - dl.created).total_seconds())
     )
     since_last_updated = timedelta(
         seconds=round((time_now - dl.modified).total_seconds())
