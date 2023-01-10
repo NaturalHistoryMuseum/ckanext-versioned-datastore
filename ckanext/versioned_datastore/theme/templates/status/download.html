@@ -139,12 +139,11 @@
                 <tr>
                     <th scope="row">Downloads</th>
                     <td>
-                        <dl>
+                        <ul class="download-links">
                             {% for server_name, url in urls.items() %}
-                            <dt>{{ server_name }}</dt>
-                            <dd><a href="{{ url }}">{{ url }}</a></dd>
+                            <li><a href="{{ url }}" class="btn btn-primary"><i class="fas fa-download"></i> {{ server_name }} </a></li>
                             {% endfor %}
-                        </dl>
+                        </ul>
                     </td>
                 </tr>
                 {% endif %}
