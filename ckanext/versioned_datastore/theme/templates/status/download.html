@@ -85,7 +85,7 @@
                     <td>
                         <dl>
                             <dt>Total</dt>
-                            <dd>{{ download_request.core_record.total }}</dd>
+                            <dd>{{ download_request.core_record.total or _('processing') }}</dd>
                             {% if download_request.core_record.resource_totals %}
                             {% for res_id, res in resources.items() %}
                             <dt>{{ res['name'] }}</dt>
