@@ -71,6 +71,7 @@ exclude = ["tests", "docs"]
 
 [tool.setuptools.package-data]
 "ckanext.versioned_datastore.theme" = ["*", "**/*"]
+"ckanext.versioned_datastore.migration" = ["*", "**/*"]
 
 [tool.commitizen]
 name = "cz_nhm"
