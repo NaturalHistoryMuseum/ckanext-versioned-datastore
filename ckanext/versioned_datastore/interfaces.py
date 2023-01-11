@@ -333,3 +333,30 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
                  them in download requests
         """
         return registered_transformations or {}
+
+    def download_before_run(
+        self, query_args, derivative_args, server_args, notifier_args
+    ):
+        """
+        Hook allowing other extensions to modify args before any search is run or files
+        generated.
+
+        :param query_args: a QueryArgs object
+        :param derivative_args: a DerivativeArgs object
+        :param server_args: a ServerArgs object
+        :param notifier_args: a NotifierArgs object
+        :return: all four args objects (query_args, derivative_args, server_args,
+                 notifier_args)
+        """
+        return query_args, derivative_args, server_args, notifier_args
+
+    def download_modify_manifest(self, manifest, request):
+        """
+        Hook allowing other extensions to modify the manifest before the download file
+        is written. Modifications to the request object are not saved.
+
+        :param manifest: the manifest dict
+        :param request: the DownloadRequest object
+        :return: the manifest dict
+        """
+        return manifest

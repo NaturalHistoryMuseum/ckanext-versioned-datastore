@@ -10,7 +10,7 @@ from functools import partial
 from glob import iglob
 
 import fastavro
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit, PluginImplementations
 from elasticsearch_dsl import Search
 from splitgill.indexing.utils import get_elasticsearch_client
 from splitgill.search import create_version_query
@@ -25,6 +25,7 @@ from .query import Query
 from .utils import get_schema, calculate_field_counts, filter_data_fields, get_fields
 from .. import common
 from ..datastore_utils import prefix_resource
+from ...interfaces import IVersionedDatastoreDownloads
 from ...logic.actions.meta.arg_objects import DerivativeArgs
 from ...model.downloads import CoreFileRecord, DownloadRequest
 from ...model.downloads import DerivativeFileRecord
@@ -37,6 +38,17 @@ class DownloadRunManager:
     core_dir = os.path.join(download_dir, 'core')
 
     def __init__(self, query_args, derivative_args, server_args, notifier_args):
+        # allow plugins to make changes to the args
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            (
+                query_args,
+                derivative_args,
+                server_args,
+                notifier_args,
+            ) = plugin.download_before_run(
+                query_args, derivative_args, server_args, notifier_args
+            )
+
         self.query = Query.from_query_args(query_args)
         self.derivative_options = derivative_args
         for field, default_value in DerivativeArgs.defaults.items():
@@ -386,6 +398,10 @@ class DownloadRunManager:
 
         files_to_zip = os.listdir(temp_dir) + ['manifest.json']
         manifest['files'] = files_to_zip
+
+        # allow plugins to make changes
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            manifest = plugin.download_modify_manifest(manifest, self.request)
 
         # write out manifest
         with open(os.path.join(temp_dir, 'manifest.json'), 'w', encoding='utf8') as f:
