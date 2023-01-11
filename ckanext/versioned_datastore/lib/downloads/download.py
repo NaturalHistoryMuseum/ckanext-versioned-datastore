@@ -119,8 +119,6 @@ class DownloadRunManager:
         # check the download dir exists
         if not os.path.exists(self.download_dir):
             os.mkdir(self.download_dir)
-            # if it doesn't then the file obviously doesn't exist either
-            return None, None
 
         # also check the core dir exists
         if not os.path.exists(self.core_dir):
