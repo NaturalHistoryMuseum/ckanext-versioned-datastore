@@ -17,11 +17,9 @@ class TestQueueDownload:
         # instead
         resource_ids = sorted(['test-resource-id'])
 
-        with patch(
-            'ckan.plugins.toolkit.enqueue_job', side_effect=MagicMock()
-        ) as enqueue_mock, patch(
-            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER',
-            new=MagicMock(),
+        with patch('ckan.plugins.toolkit.enqueue_job') as enqueue_mock, patch(
+            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
+            lambda indices, version: {ix: version for ix in indices},
         ), patch(
             'ckanext.versioned_datastore.lib.downloads.query.get_available_datastore_resources',
             return_value=resource_ids,
