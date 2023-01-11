@@ -15,7 +15,7 @@ from ckanext.versioned_datastore.model import stats, slugs, details, downloads
 from tests.helpers import utils, data as test_data
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='class')
 def with_versioned_datastore_tables(reset_db):
     """
     Simple fixture which resets the database and creates the versioned-datastore tables.
