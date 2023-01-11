@@ -10,11 +10,11 @@ from functools import partial
 from glob import iglob
 
 import fastavro
+from ckan.plugins import toolkit
+from elasticsearch_dsl import Search
 from splitgill.indexing.utils import get_elasticsearch_client
 from splitgill.search import create_version_query
-from elasticsearch_dsl import Search
 
-from ckan.plugins import toolkit
 from .loaders import (
     get_derivative_generator,
     get_file_server,
@@ -44,17 +44,18 @@ class DownloadRunManager:
                 setattr(self.derivative_options, field, default_value)
         self.server = get_file_server(server_args.type, **server_args.type_args)
 
+        # initialise core and derivative records
+        self.core_record, self.derivative_record = self.check_for_records()
+
         # initialises a log entry in the database
-        self.request = DownloadRequest()
+        self.request = DownloadRequest(
+            core_id=self.core_record.id, derivative_id=self.derivative_record.id
+        )
         self.request.save()
 
         self.notifier = get_notifier(
             notifier_args.type, request=self.request, **notifier_args.type_args
         )
-
-        # initialise attributes for completing later
-        self.derivative_record = None
-        self.core_record = None
 
     @property
     def derivative_hash(self):
@@ -129,8 +130,8 @@ class DownloadRunManager:
             os.mkdir(self.core_dir)
 
         # initialise empty variables
-        self.core_record = None
-        self.derivative_record = None
+        core_record = None
+        derivative_record = None
 
         # search for derivative first
         fn = f'*_{self.hash}.zip'
@@ -140,15 +141,11 @@ class DownloadRunManager:
             possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
             if possible_records:
                 # use the most recent one
-                self.derivative_record = possible_records[0]
-                self.core_record = self.derivative_record.core_record
-                # we want to update the request with the IDs ASAP in case of errors
-                self.request.update(
-                    core_id=self.core_record.id, derivative_id=self.derivative_record.id
-                )
+                derivative_record = possible_records[0]
+                core_record = derivative_record.core_record
 
         # if the core record hasn't been found by searching for the derivative, try and find it now
-        if self.core_record is None:
+        if core_record is None:
             if os.path.exists(self.core_folder_path):
                 # could return multiple options, sorted by most recent first
                 possible_records = CoreFileRecord.get_by_hash(
@@ -156,12 +153,32 @@ class DownloadRunManager:
                 )
                 if possible_records:
                     # use the most recent one
-                    self.core_record = possible_records[0]
-                    # update core_id ASAP in case of errors
-                    self.request.update(core_id=self.core_record.id)
+                    core_record = possible_records[0]
 
-        # these don't really need to be returned but we may as well
-        return self.core_record, self.derivative_record
+        if core_record is None:
+            core_record = CoreFileRecord(
+                query_hash=self.query.hash,
+                query=self.query.query,
+                query_version=self.query.query_version,
+                resource_ids_and_versions=self.query.resource_ids_and_versions,
+                resource_hash=self.query.resource_hash,
+            )
+            core_record.save()
+
+        if derivative_record is None:
+            derivative_record = DerivativeFileRecord(
+                core_id=core_record.id,
+                download_hash=self.hash,
+                format=self.derivative_options.format,
+                options={
+                    f: getattr(self.derivative_options, f)
+                    for f in self.derivative_options.fields
+                    if f != 'format'
+                },
+            )
+            derivative_record.save()
+
+        return core_record, derivative_record
 
     def generate_core(self):
         """
@@ -171,19 +188,6 @@ class DownloadRunManager:
         with identical filters, reducing data duplication.
         :return: the core record
         """
-        if self.core_record is None:
-            record = CoreFileRecord(
-                query_hash=self.query.hash,
-                query=self.query.query,
-                query_version=self.query.query_version,
-                resource_ids_and_versions=self.query.resource_ids_and_versions,
-                resource_hash=self.query.resource_hash,
-            )
-            record.save()
-            self.core_record = record
-        # if self.core_record was already set then core_id should already be set, but just in case:
-        self.request.update(core_id=self.core_record.id)
-
         if not os.path.exists(self.core_folder_path):
             os.makedirs(self.core_folder_path)
 
@@ -275,28 +279,12 @@ class DownloadRunManager:
         :return:
         """
 
-        if self.derivative_record is None:
+        if self.derivative_record.filepath is None:
             zip_name = f'{self.request.id}_{self.hash}.zip'
             zip_path = os.path.join(self.download_dir, zip_name)
 
-            record = DerivativeFileRecord(
-                core_id=self.core_record.id,
-                download_hash=self.hash,
-                format=self.derivative_options.format,
-                options={
-                    f: getattr(self.derivative_options, f)
-                    for f in self.derivative_options.fields
-                    if f != 'format'
-                },
-                filepath=zip_path,
-            )
-            record.save()
-            self.derivative_record = record
-            self.request.update(derivative_id=self.derivative_record.id)
+            self.derivative_record.update(filepath=zip_path)
         else:
-            # if self.derivative_record was already set then derivative_id should already be set,
-            # but just in case:
-            self.request.update(derivative_id=self.derivative_record.id)
             # we don't want to proceed with the rest of the generation
             return self.derivative_record
 
