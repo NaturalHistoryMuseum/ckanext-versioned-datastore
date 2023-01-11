@@ -232,6 +232,7 @@ meta.mapper(
             primaryjoin=datastore_downloads_derivative_files_table.c.core_id
             == CoreFileRecord.id,
             backref=backref('derivatives', cascade='all, delete-orphan'),
+            lazy='joined',
         )
     },
 )
@@ -245,12 +246,14 @@ meta.mapper(
             primaryjoin=datastore_downloads_requests_table.c.derivative_id
             == DerivativeFileRecord.id,
             backref=backref('requests', cascade='all, delete-orphan'),
+            lazy='joined',
         ),
         'core_record': relationship(
             CoreFileRecord,
             primaryjoin=datastore_downloads_requests_table.c.core_id
             == CoreFileRecord.id,
             backref=backref('requests', cascade='all, delete-orphan'),
+            lazy='joined',
         ),
     },
 )
