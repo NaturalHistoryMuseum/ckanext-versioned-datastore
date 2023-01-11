@@ -139,7 +139,7 @@ def upgrade():
                 Core.query_hash == download.query_hash,
                 Core.resource_hash == resource_hash,
             )
-            .one_or_none()
+            .first()
         )
         if core_record:
             if (
@@ -167,8 +167,11 @@ def upgrade():
 
         derivative_record = (
             session.query(Derivative)
-            .filter(Derivative.download_hash == download_hash)
-            .one_or_none()
+            .filter(
+                Derivative.download_hash == download_hash,
+                Derivative.core_id == core_record.id,
+            )
+            .first()
         )
         if not derivative_record:
             file_format = file_options.pop('format')
