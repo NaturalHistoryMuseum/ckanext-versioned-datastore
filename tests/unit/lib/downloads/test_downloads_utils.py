@@ -4,6 +4,7 @@ from ckan.tests import factories
 from mock import MagicMock, patch
 
 from ckanext.versioned_datastore.lib.downloads import utils, query
+from tests.helpers import patches
 
 
 class TestGetSchema:
@@ -11,10 +12,7 @@ class TestGetSchema:
     @pytest.mark.usefixtures('with_plugins', 'clean_db')
     def test_get_schema(self):
         resource_dict = factories.Resource()
-        test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
-        with patch(
-            'ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas
-        ):
+        with patches.query_schemas():
             q = query.Query(
                 query={
                     'filters': {

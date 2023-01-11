@@ -48,3 +48,16 @@ def elasticsearch_client():
         'ckanext.versioned_datastore.lib.downloads.download.get_elasticsearch_client',
         side_effect=MagicMock(),
     )
+
+
+def get_available_resources(resource_ids=None):
+    resource_ids = resource_ids or ['test-resource-id']
+    return patch(
+        'ckanext.versioned_datastore.lib.downloads.query.get_available_datastore_resources',
+        return_value=resource_ids,
+    )
+
+
+def query_schemas():
+    test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
+    return patch('ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas)

@@ -1,5 +1,5 @@
 import pytest
-from mock import patch, MagicMock
+from mock import patch
 
 from ckanext.versioned_datastore.logic.actions.downloads import datastore_queue_download
 from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
@@ -7,6 +7,7 @@ from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
     DerivativeArgs,
     NotifierArgs,
 )
+from tests.helpers import patches
 
 
 class TestQueueDownload:
@@ -15,14 +16,12 @@ class TestQueueDownload:
     def test_queue_direct_call(self):
         # there is a very similar test in test_downloads.py that calls this via the API
         # instead
-        resource_ids = sorted(['test-resource-id'])
+        resource_ids = ['test-resource-id']
 
-        with patch('ckan.plugins.toolkit.enqueue_job') as enqueue_mock, patch(
-            'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
-            lambda indices, version: {ix: version for ix in indices},
-        ), patch(
-            'ckanext.versioned_datastore.lib.downloads.query.get_available_datastore_resources',
-            return_value=resource_ids,
+        with patch(
+            'ckan.plugins.toolkit.enqueue_job'
+        ) as enqueue_mock, patches.rounded_versions(), patches.get_available_resources(
+            resource_ids
         ):
             datastore_queue_download(
                 {},
