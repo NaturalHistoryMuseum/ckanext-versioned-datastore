@@ -363,6 +363,12 @@ class DownloadRunManager:
             self.request.update_status(
                 DownloadRequest.state_derivative_gen, resource_id
             )
+            if (
+                len(self.query.resource_ids_and_versions) > 1
+                and self.core_record.resource_totals[resource_id] == 0
+            ):
+                # don't generate empty files unless there's only one resource
+                continue
             derivative_generator = components[resource_id]
             core_file_path = os.path.join(
                 self.core_folder_path, f'{resource_id}_{version}.avro'
