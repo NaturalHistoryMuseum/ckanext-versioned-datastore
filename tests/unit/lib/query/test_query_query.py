@@ -68,11 +68,10 @@ class TestQuery(object):
 
     def test_register_schema(self):
         # remove any existing registered schemas
-        schema_lib.schemas = {}
-
-        schema_lib.register_schema('v1.0.1', MagicMock())
-        assert list(schema_lib.schemas.keys()) == ['v1.0.1']
-        schema_lib.register_schema('v1.0.0', MagicMock())
-        assert list(schema_lib.schemas.keys()) == ['v1.0.0', 'v1.0.1']
-        schema_lib.register_schema('v2.0.1', MagicMock())
-        assert list(schema_lib.schemas.keys()) == ['v1.0.0', 'v1.0.1', 'v2.0.1']
+        with patch('ckanext.versioned_datastore.lib.query.schema.schemas', {}):
+            schema_lib.register_schema('v1.0.1', MagicMock())
+            assert list(schema_lib.schemas.keys()) == ['v1.0.1']
+            schema_lib.register_schema('v1.0.0', MagicMock())
+            assert list(schema_lib.schemas.keys()) == ['v1.0.0', 'v1.0.1']
+            schema_lib.register_schema('v2.0.1', MagicMock())
+            assert list(schema_lib.schemas.keys()) == ['v1.0.0', 'v1.0.1', 'v2.0.1']
