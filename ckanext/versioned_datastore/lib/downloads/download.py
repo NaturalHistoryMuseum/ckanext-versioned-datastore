@@ -94,9 +94,6 @@ class DownloadRunManager:
         self.request.update_status(DownloadRequest.state_initial)
 
         try:
-            # load records, if they exist
-            self.check_for_records()
-
             # generate core file if needed
             self.generate_core()
 
@@ -123,7 +120,7 @@ class DownloadRunManager:
         if not os.path.exists(self.download_dir):
             os.mkdir(self.download_dir)
             # if it doesn't then the file obviously doesn't exist either
-            return False
+            return None, None
 
         # also check the core dir exists
         if not os.path.exists(self.core_dir):
