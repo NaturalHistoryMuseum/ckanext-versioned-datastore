@@ -1,4 +1,5 @@
 import csv
+import json
 import os
 import shutil
 import tempfile
@@ -102,8 +103,20 @@ class TestQueueDownload:
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
             archive_files = zf.namelist()
             assert 'manifest.json' in archive_files
+            zf.extract('manifest.json', self.temp_dir)
             assert 'resource.csv' in archive_files
             zf.extract('resource.csv', self.temp_dir)
+
+        with open(os.path.join(self.temp_dir, 'manifest.json')) as f:
+            manifest = json.load(f)
+            assert manifest['download_id'] == download_details['download_id']
+            assert manifest['file_format'] == 'csv'
+            assert sorted(manifest['files']) == sorted(archive_files)
+            assert not manifest['ignore_empty_fields']
+            assert not manifest['separate_files']
+            assert manifest['total_records'] == len(
+                test_data.records + test_data.records_addtl
+            )
 
         with open(os.path.join(self.temp_dir, 'resource.csv')) as f:
             reader = csv.DictReader(f)
@@ -356,3 +369,100 @@ class TestDownloadWithQueryDois:
                 for f in os.listdir(download_dir)
             ]
         )
+
+
+@pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
+@pytest.mark.usefixtures(
+    'with_plugins',
+    'with_versioned_datastore_tables',
+    'with_vds_resource',
+    'clear_download_dir',
+)
+@patches.enqueue_job()
+class TestDownloadInterfaces:
+    def test_modify_args(self, enqueue_job):
+        mock_plugin = ModifyArgsPlugin()
+
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
+            return_value=[mock_plugin],
+        ):
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
+                },
+            )
+
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.xlsx' in archive_files
+            assert len(archive_files) == 2
+
+    def test_modify_manifest(self, enqueue_job):
+        mock_plugin = ModifyManifestPlugin()
+
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
+            return_value=[mock_plugin],
+        ):
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
+                },
+            )
+
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            assert 'resource.csv' in archive_files
+            assert len(archive_files) == 2
+            zf.extract('manifest.json', temp_dir)
+
+        with open(os.path.join(temp_dir, 'manifest.json')) as f:
+            manifest = json.load(f)
+            assert manifest['download_id'] == download_details['download_id']
+            assert manifest['totally-new-key'] == 'bananas'
+
+        shutil.rmtree(temp_dir)
+
+
+class ModifyArgsPlugin:
+    def download_before_run(
+        self, query_args, derivative_args, server_args, notifier_args
+    ):
+        derivative_args.format = 'xlsx'
+        return query_args, derivative_args, server_args, notifier_args
+
+    def download_modify_manifest(self, manifest, request):
+        return manifest
+
+
+class ModifyManifestPlugin:
+    def download_before_run(self, *args):
+        return args
+
+    def download_modify_manifest(self, manifest, request):
+        manifest['totally-new-key'] = 'bananas'
+        return manifest
