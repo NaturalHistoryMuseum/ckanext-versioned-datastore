@@ -11,6 +11,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship, backref
+from sqlalchemy.exc import InvalidRequestError
 
 from ckan.model import meta, DomainObject, Session
 from ckan.model.types import make_uuid
@@ -106,7 +107,10 @@ class CoreFileRecord(DomainObject):
         for field, value in kwargs.items():
             setattr(self, field, value)
         self.modified = datetime.utcnow()
-        self.save()
+        try:
+            self.save()
+        except InvalidRequestError:
+            self.commit()
 
     @classmethod
     def get_by_hash(cls, query_hash, resource_hash):
@@ -162,7 +166,10 @@ class DerivativeFileRecord(DomainObject):
     def update(self, **kwargs):
         for field, value in kwargs.items():
             setattr(self, field, value)
-        self.save()
+        try:
+            self.save()
+        except InvalidRequestError:
+            self.commit()
 
     @classmethod
     def get_by_hash(cls, download_hash):
@@ -213,7 +220,10 @@ class DownloadRequest(DomainObject):
         for field, value in kwargs.items():
             setattr(self, field, value)
         self.modified = datetime.utcnow()
-        self.save()
+        try:
+            self.save()
+        except InvalidRequestError:
+            self.commit()
 
     def update_status(self, status_text, message=None):
         self.state = status_text
