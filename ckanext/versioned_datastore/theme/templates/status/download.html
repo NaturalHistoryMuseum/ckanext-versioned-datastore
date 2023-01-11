@@ -118,6 +118,12 @@
             <h3>Results</h3>
             <table class="table table-striped table-bordered table-condensed">
                 <tbody>
+                {% if doi %}
+                <tr>
+                    <th scope="row">Query DOI</th>
+                    <td><a href="https://doi.org/{{ doi.doi }}">{{ doi.doi }}</a></td>
+                </tr>
+                {% endif %}
                 {% if download_request.core_record %}
                 <tr>
                     <th scope="row">Records</th>

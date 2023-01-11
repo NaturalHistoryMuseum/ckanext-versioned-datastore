@@ -1,9 +1,10 @@
+from datetime import datetime as dt, timedelta
+
+from ckan.plugins import toolkit, plugin_loaded
 from flask import Blueprint
 
-from ckan.plugins import toolkit
-from ..model.downloads import DownloadRequest
-from datetime import datetime as dt, timedelta
 from ..lib.downloads.servers import servers
+from ..model.downloads import DownloadRequest
 
 blueprint = Blueprint(
     name='datastore_status', import_name=__name__, url_prefix='/status'
@@ -44,6 +45,23 @@ def download_status(download_id):
     else:
         urls = {}
 
+    query_doi = None
+    if plugin_loaded('query_dois'):
+        from ckanext.query_dois.lib.doi import find_existing_doi
+
+        # query-dois only saves resources that return records
+        non_zero_resources = {
+            k: v
+            for k, v in dl.core_record.resource_ids_and_versions.items()
+            if dl.core_record.resource_totals[k] > 0
+        }
+
+        query_doi = find_existing_doi(
+            non_zero_resources,
+            dl.core_record.query_hash,
+            dl.core_record.query_version,
+        )
+
     return toolkit.render(
         'status/download.html',
         extra_vars={
@@ -53,5 +71,6 @@ def download_status(download_id):
             'total_time': total_time_elapsed,
             'since_last_update': since_last_updated,
             'urls': urls,
+            'doi': query_doi,
         },
     )
