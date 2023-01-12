@@ -122,12 +122,15 @@ class CoreFileRecord(DomainObject):
         )
 
     @classmethod
-    def find_resource(cls, query_hash, resource_id, resource_version):
+    def find_resource(cls, query_hash, resource_id, resource_version, exclude=None):
+        exclude = exclude or []
         have_resource = (
             Session.query(cls)
             .filter(
                 cls.query_hash == query_hash,
                 cls.resource_ids_and_versions.has_key(resource_id),
+                cls.resource_totals.has_key(resource_id),
+                cls.id.notin_(exclude),
             )
             .order_by(desc(cls.modified))
             .all()
