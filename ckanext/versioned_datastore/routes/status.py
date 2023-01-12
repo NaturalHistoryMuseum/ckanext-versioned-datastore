@@ -53,7 +53,7 @@ def download_status(download_id):
         non_zero_resources = {
             k: v
             for k, v in dl.core_record.resource_ids_and_versions.items()
-            if dl.core_record.resource_totals[k] > 0
+            if dl.core_record.resource_totals.get(k, 0) > 0
         }
 
         query_doi = find_existing_doi(
