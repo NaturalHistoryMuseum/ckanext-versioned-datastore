@@ -211,6 +211,33 @@ class DownloadRunManager:
         resource_totals = {k: None for k in self.core_record.resource_ids_and_versions}
         field_counts = {k: None for k in self.core_record.resource_ids_and_versions}
 
+        # get info for resources that weren't just generated first, so we know if they
+        # need regenerating
+        existing_resources = [
+            k
+            for k in self.query.resource_ids_and_versions
+            if k not in resources_to_generate
+        ]
+        for resource_id in existing_resources:
+            # find a matching core record
+            record = CoreFileRecord.find_resource(
+                self.query.hash,
+                resource_id,
+                self.query.resource_ids_and_versions[resource_id],
+                exclude=[self.core_record.id],
+            )
+            if record:
+                resource_totals[resource_id] = record.resource_totals[resource_id]
+                field_counts[resource_id] = record.field_counts[resource_id]
+            else:
+                # if there's no record we should regenerate the avro file
+                resource_version = self.query.resource_ids_and_versions[resource_id]
+                core_file_path = os.path.join(
+                    self.core_folder_path, f'{resource_id}_{resource_version}.avro'
+                )
+                os.remove(core_file_path)
+                resources_to_generate[resource_id] = resource_version
+
         if len(resources_to_generate) > 0:
             es_client = get_elasticsearch_client(
                 common.CONFIG,
@@ -259,19 +286,6 @@ class DownloadRunManager:
                         _flush(chunk)
                         chunk = []
                 _flush(chunk)
-
-        # now get info for resources that weren't just generated
-        existing_resources = [k for k, v in resource_totals.items() if v is None]
-        for resource_id in existing_resources:
-            # find a matching core record
-            record = CoreFileRecord.find_resource(
-                self.query.hash,
-                resource_id,
-                self.query.resource_ids_and_versions[resource_id],
-            )
-            if record:
-                resource_totals[resource_id] = record.resource_totals[resource_id]
-                field_counts[resource_id] = record.field_counts[resource_id]
 
         self.core_record.update(
             resource_totals=resource_totals,
