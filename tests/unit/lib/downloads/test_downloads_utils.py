@@ -71,9 +71,10 @@ class TestGetSchema:
                 }
             }
         )
-        parsed_schema = utils.get_schema(
+        parsed_schemas = utils.get_schemas(
             q, MagicMock(**{'indices.get_mapping': indices_mock})
         )
+        parsed_schema = parsed_schemas[resource_dict['id']]
         assert isinstance(parsed_schema, dict)
         assert parsed_schema['type'] == 'record'
         assert parsed_schema['name'] == 'ResourceRecord'
