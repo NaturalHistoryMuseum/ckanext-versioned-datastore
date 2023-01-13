@@ -22,7 +22,7 @@ from .loaders import (
     get_transformation,
 )
 from .query import Query
-from .utils import get_schema, calculate_field_counts, filter_data_fields, get_fields
+from .utils import get_schemas, calculate_field_counts, filter_data_fields, get_fields
 from .. import common
 from ..datastore_utils import prefix_resource
 from ...interfaces import IVersionedDatastoreDownloads
@@ -249,7 +249,7 @@ class DownloadRunManager:
                 timeout=30,
             )
 
-            schema = get_schema(self.query, es_client)
+            schemas = get_schemas(self.query, es_client)
 
             for resource_id, version in resources_to_generate.items():
                 self.request.update_status(DownloadRequest.state_core_gen, resource_id)
@@ -271,7 +271,7 @@ class DownloadRunManager:
                 codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
                 chunk_size = 10000
                 with open(fp, 'wb') as f:
-                    fastavro.writer(f, schema, [], **codec_kwargs)
+                    fastavro.writer(f, schemas[resource_id], [], **codec_kwargs)
 
                 def _flush(record_block):
                     with open(fp, 'a+b') as outfile:

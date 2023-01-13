@@ -4,10 +4,15 @@ from fastavro import parse_schema
 from splitgill.search import create_version_query
 
 from .query import Query
-from ..datastore_utils import prefix_resource, prefix_field, iter_data_fields
+from ..datastore_utils import (
+    prefix_resource,
+    prefix_field,
+    iter_data_fields,
+    unprefix_index,
+)
 
 
-def get_schema(query: Query, es_client: Elasticsearch):
+def get_schemas(query: Query, es_client: Elasticsearch):
     """
     Creates an avro schema from the elasticsearch index metadata.
 
@@ -21,7 +26,7 @@ def get_schema(query: Query, es_client: Elasticsearch):
         )
     )
 
-    avro_types = [
+    basic_avro_types = [
         'null',
         'boolean',
         'int',
@@ -31,22 +36,55 @@ def get_schema(query: Query, es_client: Elasticsearch):
         'bytes',
         'string',
     ]
-    avro_types += [{'type': 'map', 'values': avro_types.copy()}]
-    avro_types += [{'type': 'array', 'items': avro_types.copy()}]
+    avro_types = basic_avro_types + [
+        {'type': 'array', 'items': basic_avro_types.copy()}
+    ]
+    avro_map_type = {'type': 'map', 'values': avro_types.copy()}
+    object_avro_types = [
+        avro_map_type,
+        {'type': 'array', 'items': avro_map_type.copy()},
+    ]
 
-    schema_fields = {}
+    def _get_nest_level(field_data, nest_level=1):
+        if 'properties' in field_data:
+            return max(
+                [
+                    _get_nest_level(fd, nest_level + 1)
+                    for fd in field_data['properties'].values()
+                ]
+            )
+        if field_data['type'] == 'object':
+            # 20 is the default nesting limit for ES but that makes things so slow that
+            # it breaks, so we'll just hope that our data have max 5 levels
+            # https://www.elastic.co/guide/en/elasticsearch/reference/master/mapping-settings-limit.html
+            return 5
+        else:
+            return nest_level
+
+    resource_schemas = {}
     for prefixed_resource, mapping in resource_mapping.items():
+        schema_fields = {}
         field_list = mapping['mappings']['_doc']['properties']['data']['properties']
         for field_name, type_dict in field_list.items():
-            if field_name in schema_fields:
-                continue
-            schema_fields[field_name] = {'name': field_name, 'type': avro_types}
-    schema_json = {
-        'type': 'record',
-        'name': 'ResourceRecord',
-        'fields': list(schema_fields.values()),
-    }
-    return parse_schema(schema_json)
+            max_nest_level = _get_nest_level(type_dict)
+            if max_nest_level > 1:
+                nested_type = object_avro_types.copy()
+                for level in range(max_nest_level):
+                    nested_type += [
+                        {'type': 'array', 'items': nested_type.copy()},
+                        {'type': 'map', 'values': nested_type.copy()},
+                    ]
+                schema_fields[field_name] = {'name': field_name, 'type': nested_type}
+            else:
+                schema_fields[field_name] = {'name': field_name, 'type': avro_types}
+        schema_json = {
+            'type': 'record',
+            'name': 'ResourceRecord',
+            'fields': list(schema_fields.values()),
+        }
+        resource_schemas[unprefix_index(prefixed_resource)] = parse_schema(schema_json)
+
+    return resource_schemas
 
 
 def get_fields(field_counts, ignore_empty_fields, resource_id=None):
