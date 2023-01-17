@@ -41,6 +41,7 @@ def get_schemas(query: Query, es_client: Elasticsearch):
     ]
     avro_map_type = {'type': 'map', 'values': avro_types.copy()}
     object_avro_types = [
+        'null',
         avro_map_type,
         {'type': 'array', 'items': avro_map_type.copy()},
     ]
