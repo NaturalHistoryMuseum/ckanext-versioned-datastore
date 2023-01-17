@@ -117,8 +117,10 @@ class DownloadRunManager:
             url = self.server.serve(self.request)
             self.notifier.notify_end(url)
         except Exception as e:
+            current_state = self.request.state
             self.request.update_status(
-                DownloadRequest.state_failed, f'{e.__class__.__name__}: {str(e)}'
+                DownloadRequest.state_failed,
+                f'{current_state}, {e.__class__.__name__}: {str(e)}',
             )
             self.notifier.notify_error()
             raise e
