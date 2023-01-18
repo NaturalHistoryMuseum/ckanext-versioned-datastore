@@ -14,6 +14,13 @@ blueprint = Blueprint(
 @blueprint.route('/download/<download_id>')
 def download_status(download_id):
     dl = DownloadRequest.get(download_id)
+
+    if dl is None:
+        return toolkit.render(
+            'status/download.html',
+            extra_vars={'download_request': None},
+        )
+
     res_show = toolkit.get_action('resource_show')
     resources = (
         {k: res_show({}, {'id': k}) for k in dl.core_record.resource_ids_and_versions}
@@ -22,7 +29,7 @@ def download_status(download_id):
     )
 
     status_friendly = {
-        DownloadRequest.state_initial: toolkit._('Initialising'),
+        DownloadRequest.state_initial: toolkit._('Waiting to start'),
         DownloadRequest.state_core_gen: toolkit._('Searching resources'),
         DownloadRequest.state_derivative_gen: toolkit._('Generating files'),
         DownloadRequest.state_retrieving: toolkit._('Retrieving files'),
