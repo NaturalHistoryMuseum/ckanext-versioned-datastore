@@ -53,8 +53,10 @@ def download_status(download_id):
         urls = {}
 
     query_doi = None
+    doi_url = None
     if plugin_loaded('query_dois'):
         from ckanext.query_dois.lib.doi import find_existing_doi
+        from ckanext.query_dois.helpers import get_landing_page_url
 
         # query-dois only saves resources that return records
         non_zero_resources = {
@@ -68,6 +70,8 @@ def download_status(download_id):
             dl.core_record.query_hash,
             dl.core_record.query_version,
         )
+        if query_doi:
+            doi_url = get_landing_page_url(query_doi)
 
     return toolkit.render(
         'status/download.html',
@@ -79,5 +83,6 @@ def download_status(download_id):
             'since_last_update': since_last_updated,
             'urls': urls,
             'doi': query_doi,
+            'doi_url': doi_url,
         },
     )
