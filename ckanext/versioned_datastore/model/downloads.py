@@ -229,9 +229,7 @@ class DownloadRequest(DomainObject):
             self.commit()
 
     def update_status(self, status_text, message=None):
-        self.state = status_text
-        self.message = message
-        self.save()
+        self.update(state=status_text, message=message)
 
 
 meta.mapper(CoreFileRecord, datastore_downloads_core_files_table, properties={})
