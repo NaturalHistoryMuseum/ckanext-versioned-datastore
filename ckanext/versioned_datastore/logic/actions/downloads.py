@@ -27,7 +27,7 @@ def datastore_queue_download(
         download_runner.run,
         queue='download',
         title=download_runner.request.created.strftime('%Y-%m-%d %H:%M:%S'),
-        rq_kwargs={'timeout': 3600},
+        rq_kwargs={'timeout': '24h'},
     )
 
     return {
