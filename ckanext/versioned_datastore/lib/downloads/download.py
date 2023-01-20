@@ -133,6 +133,8 @@ class DownloadRunManager:
                     shutil.rmtree(t)
                 except FileNotFoundError:
                     pass
+            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+                plugin.download_after_run(self.request)
 
     def check_for_records(self):
         """

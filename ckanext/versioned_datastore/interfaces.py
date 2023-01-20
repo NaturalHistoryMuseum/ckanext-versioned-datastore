@@ -360,3 +360,13 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :return: the manifest dict
         """
         return manifest
+
+    def download_after_run(self, request):
+        """
+        Hook notifying that a download has finished (whether failed or completed). Does
+        not allow modification; purely for notification purposes.
+
+        :param request: the DownloadRequest object
+        :return: None
+        """
+        return
