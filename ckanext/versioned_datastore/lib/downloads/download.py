@@ -131,7 +131,7 @@ class DownloadRunManager:
             for t in self._temp:
                 try:
                     shutil.rmtree(t)
-                except shutil.Error:
+                except FileNotFoundError:
                     pass
 
     def check_for_records(self):
