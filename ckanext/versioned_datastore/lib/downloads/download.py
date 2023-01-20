@@ -8,6 +8,7 @@ from collections import defaultdict
 from datetime import datetime as dt
 from functools import partial
 from glob import iglob
+import shutil
 
 import fastavro
 from ckan.plugins import toolkit, PluginImplementations
@@ -69,6 +70,8 @@ class DownloadRunManager:
             notifier_args.type, request=self.request, **notifier_args.type_args
         )
 
+        self._temp = []
+
     @property
     def derivative_hash(self):
         """
@@ -124,6 +127,12 @@ class DownloadRunManager:
             )
             self.notifier.notify_error()
             raise e
+        finally:
+            for t in self._temp:
+                try:
+                    shutil.rmtree(t)
+                except shutil.Error:
+                    pass
 
     def check_for_records(self):
         """
@@ -317,6 +326,7 @@ class DownloadRunManager:
         start = dt.utcnow()
         # for storing build files
         temp_dir = tempfile.mkdtemp()
+        self._temp.append(temp_dir)
 
         manifest = {
             'download_id': self.request.id,
