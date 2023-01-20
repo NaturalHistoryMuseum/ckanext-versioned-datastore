@@ -35,7 +35,7 @@
                 {% elif download_request.state in ['gen_core', 'gen_derivative'] %}
                 <tr>
                     <th scope="row">Processing</th>
-                    <td>{{ resources[download_request.message]['name'] }}</td>
+                    <td>{{ resources.get(download_request.message, {}).get('name', 'Unknown') }}</td>
                 </tr>
                 {% endif %}
                 <tr>

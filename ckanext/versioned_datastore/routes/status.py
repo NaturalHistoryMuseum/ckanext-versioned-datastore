@@ -22,11 +22,13 @@ def download_status(download_id):
         )
 
     res_show = toolkit.get_action('resource_show')
-    resources = (
-        {k: res_show({}, {'id': k}) for k in dl.core_record.resource_ids_and_versions}
-        if dl.core_record
-        else {}
-    )
+    resources = {}
+    if dl.core_record:
+        for k in dl.core_record.resource_ids_and_versions:
+            try:
+                resources[k] = res_show({}, {'id': k})
+            except:
+                continue
 
     status_friendly = {
         DownloadRequest.state_initial: toolkit._('Waiting to start'),
