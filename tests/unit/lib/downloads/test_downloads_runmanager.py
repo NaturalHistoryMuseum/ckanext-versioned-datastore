@@ -1,6 +1,6 @@
 import pytest
 from ckan.model import Session
-from mock import patch
+from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.downloads.download import DownloadRunManager
 from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
@@ -69,9 +69,13 @@ class TestDownloadRunManager:
             )
 
         assert run_manager.derivative_options.format == 'dwc'
+        mock_plugin.download_after_run.assert_called()
 
 
 class MockPlugin:
+    def __init__(self):
+        self.download_after_run = MagicMock()
+
     def download_before_run(
         self, query_args, derivative_args, server_args, notifier_args
     ):

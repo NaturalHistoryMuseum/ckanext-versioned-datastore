@@ -458,6 +458,9 @@ class ModifyArgsPlugin:
     def download_modify_manifest(self, manifest, request):
         return manifest
 
+    def download_after_run(self, request):
+        return
+
 
 class ModifyManifestPlugin:
     def download_before_run(self, *args):
@@ -466,3 +469,6 @@ class ModifyManifestPlugin:
     def download_modify_manifest(self, manifest, request):
         manifest['totally-new-key'] = 'bananas'
         return manifest
+
+    def download_after_run(self, request):
+        return
