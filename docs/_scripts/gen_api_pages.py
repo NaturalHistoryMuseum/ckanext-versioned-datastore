@@ -18,6 +18,9 @@ root = 'ckanext'
 py_files = sorted(Path(root).rglob('*.py'))
 
 for path in py_files:
+    if path.is_relative_to('ckanext/versioned_datastore/migration'):
+        continue
+
     module_path = path.relative_to(root).with_suffix('')
     doc_path = path.relative_to(root).with_suffix('.md')
     full_doc_path = Path('API', doc_path)
