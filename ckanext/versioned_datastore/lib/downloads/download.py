@@ -237,7 +237,6 @@ class DownloadRunManager:
                 self.query.hash,
                 resource_id,
                 self.query.resource_ids_and_versions[resource_id],
-                exclude=[self.core_record.id],
             )
             if record:
                 resource_totals[resource_id] = record.resource_totals[resource_id]
