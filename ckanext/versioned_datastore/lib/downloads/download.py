@@ -315,6 +315,8 @@ class DownloadRunManager:
         :return:
         """
 
+        self.request.update_status(DownloadRequest.state_derivative_gen)
+
         if self.derivative_record.filepath is None:
             zip_name = f'{self.request.id}_{self.hash}.zip'
             zip_path = os.path.join(self.download_dir, zip_name)
