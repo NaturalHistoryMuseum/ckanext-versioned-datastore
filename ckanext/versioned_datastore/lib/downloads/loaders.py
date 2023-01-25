@@ -47,7 +47,7 @@ def get_notifier(notifier_type, *args, **kwargs):
 def get_transformation(transform_name, **kwargs):
     trns = {t.name: t for t in transforms.transforms}
     for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-        trns = plugin.download_data_transformations(transforms)
+        trns = plugin.download_data_transformations(trns)
     transform_class = trns.get(transform_name)
     if transform_class is None:
         raise toolkit.ObjectNotFound(
