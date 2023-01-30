@@ -1,373 +1,453 @@
-import functools
 import hashlib
 import json
 import os
-import shutil
-import socket
+import os.path
 import tempfile
 import zipfile
-from ckan import model
-from ckan.lib import mailer
+from collections import defaultdict
+from datetime import datetime as dt
+from functools import partial
+from glob import iglob
+import shutil
+
+import fastavro
 from ckan.plugins import toolkit, PluginImplementations
-from datetime import datetime
+from elasticsearch_dsl import Search
 from splitgill.indexing.utils import get_elasticsearch_client
 from splitgill.search import create_version_query
-from elasticsearch_dsl import Search
-from glob import iglob
-from jinja2 import Template
-from traceback import format_exception_only
 
-from .dwc import dwc_writer
-from .jsonl import jsonl_writer
-from .sv import sv_writer
-from .xlsx import xlsx_writer
-from .utils import calculate_field_counts
-from .transform import Transform
-from .. import common
-from ..datastore_utils import trim_index_name, prefix_resource
-from ...interfaces import IVersionedDatastoreDownloads
-from ...model.downloads import (
-    DatastoreDownload,
-    state_complete,
-    state_failed,
-    state_processing,
-    state_zipping,
+from .loaders import (
+    get_derivative_generator,
+    get_file_server,
+    get_notifier,
+    get_transformation,
 )
-
-format_registry = {
-    'csv': functools.partial(sv_writer, dialect='excel', extension='csv'),
-    'tsv': functools.partial(sv_writer, dialect='excel-tab', extension='tsv'),
-    'jsonl': jsonl_writer,
-    'dwc': dwc_writer,
-    'xlsx': xlsx_writer,
-}
-
-default_body = '''
-Hello,
-The link to the resource data you requested on {{ site_url }} is available at {{ download_url }}.
-
-Best Wishes,
-The Download Bot
-'''.strip()
-
-default_html_body = '''
-<html lang="en">
-<body>
-<p>Hello,</p>
-<p>The link to the resource data you requested on <a href="{{ site_url }}">{{ site_url }}</a> is
-available at <a href="{{ download_url }}">here</a>.</p>
-<br />
-<p>Best Wishes,</p>
-<p>The Download Bot</p>
-</body>
-</html>
-'''.strip()
+from .query import Query
+from .utils import get_schemas, calculate_field_counts, filter_data_fields, get_fields
+from .. import common
+from ..datastore_utils import prefix_resource
+from ...interfaces import IVersionedDatastoreDownloads
+from ...logic.actions.meta.arg_objects import DerivativeArgs
+from ...model.downloads import CoreFileRecord, DownloadRequest
+from ...model.downloads import DerivativeFileRecord
 
 
-def queue_download(
-    email_address,
-    download_id,
-    query_hash,
-    query,
-    query_version,
-    search,
-    resource_ids_and_versions,
-    separate_files,
-    file_format,
-    format_args,
-    ignore_empty_fields,
-    transform,
-):
-    """
-    Queues a job which when run will download the data for the resource.
+class DownloadRunManager:
+    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+    if download_dir is None:
+        raise Exception('ckanext.versioned_datastore.download_dir must be set.')
+    core_dir = os.path.join(download_dir, 'core')
 
-    :return: the queued job
-    """
-    request = DownloadRequest(
-        email_address,
-        download_id,
-        query_hash,
-        query,
-        query_version,
-        search,
-        resource_ids_and_versions,
-        separate_files,
-        file_format,
-        format_args,
-        ignore_empty_fields,
-        transform,
-    )
-    # pass a timeout of 1 hour (3600 seconds)
-    return toolkit.enqueue_job(
-        download,
-        args=[request],
-        queue='download',
-        title=str(request),
-        rq_kwargs={'timeout': 3600},
-    )
+    def __init__(self, query_args, derivative_args, server_args, notifier_args):
+        # allow plugins to make changes to the args
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            (
+                query_args,
+                derivative_args,
+                server_args,
+                notifier_args,
+            ) = plugin.download_before_run(
+                query_args, derivative_args, server_args, notifier_args
+            )
 
+        self.query = Query.from_query_args(query_args)
+        self.derivative_options = derivative_args
+        for field, default_value in DerivativeArgs.defaults.items():
+            if getattr(self.derivative_options, field) is None:
+                setattr(self.derivative_options, field, default_value)
+        self.server = get_file_server(server_args.type, **server_args.type_args)
 
-class DownloadRequest(object):
-    """
-    Class representing a request to download data.
+        # initialise core and derivative records
+        self.core_record, self.derivative_record = self.check_for_records()
 
-    We use a class like this for two reasons, firstly to avoid having a long list of
-    arguments passed through to queued functions, and secondly because rq by default
-    logs the arguments sent to a function and if the records argument is a large list of
-    dicts this becomes insane.
-    """
+        # initialises a log entry in the database
+        self.request = DownloadRequest(
+            core_id=self.core_record.id, derivative_id=self.derivative_record.id
+        )
+        self.request.save()
 
-    def __init__(
-        self,
-        email_address,
-        download_id,
-        query_hash,
-        query,
-        query_version,
-        search,
-        resource_ids_and_versions,
-        separate_files,
-        file_format,
-        format_args,
-        ignore_empty_fields,
-        transform,
-    ):
-        self.email_address = email_address
-        self.download_id = download_id
-        self.query_hash = query_hash
-        self.query = query
-        self.query_version = query_version
-        self.search = search
-        self.resource_ids_and_versions = resource_ids_and_versions
-        self.separate_files = separate_files
-        self.file_format = file_format
-        self.format_args = format_args
-        self.ignore_empty_fields = ignore_empty_fields
-        self.transform = transform
+        self.notifier = get_notifier(
+            notifier_args.type, request=self.request, **notifier_args.type_args
+        )
+
+        self._temp = []
 
     @property
-    def resource_ids(self):
-        return sorted(self.resource_ids_and_versions.keys())
-
-    def update_download(self, **kwargs):
+    def derivative_hash(self):
         """
-        Update the DatastoreDownload object with the given database id with the given
-        update dict. The update dict will be passed directly to SQLAlchemy.
-
-        :param kwargs: a dict of fields to update with the corresponding values
+        Unique hash for the derivative file options.
         """
-        download_entry = model.Session.query(DatastoreDownload).get(self.download_id)
-        for field, value in kwargs.items():
-            setattr(download_entry, field, value)
-        download_entry.save()
+        file_options = {
+            f: getattr(self.derivative_options, f)
+            for f in self.derivative_options.fields
+        }
+        file_options_hash = hashlib.sha1(json.dumps(file_options).encode('utf-8'))
+        return file_options_hash.hexdigest()
 
-    def generate_download_hash(self):
-        to_hash = [
-            self.query_hash,
-            self.query_version,
-            sorted(self.resource_ids_and_versions.items()),
-            self.separate_files,
-            self.file_format,
-            self.format_args,
-            self.ignore_empty_fields,
-            self.transform,
-        ]
-        download_hash = hashlib.sha1('|'.join(map(str, to_hash)).encode('utf-8'))
+    @property
+    def hash(self):
+        """
+        Unique hash for this download request, identified by the query and the
+        derivative options.
+        """
+        to_hash = [self.query.record_hash, self.derivative_hash]
+        download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
-    def __repr__(self):
-        return self.__str__()
+    @property
+    def core_folder_path(self):
+        """
+        Location of the core files for this query.
+        """
+        return os.path.join(self.core_dir, self.query.hash)
 
-    def __str__(self):
-        return f'Download data, id: {self.download_id}'
+    def run(self):
+        """
+        Run the download process.
+        """
+        self.notifier.notify_start()
+        self.request.update_status(DownloadRequest.state_initial)
 
+        try:
+            # refresh the db objects because they were probably retrieved in a
+            # different session (the __init__ is run by the main ckan process,
+            # this is run by the download worker)
+            self.request = DownloadRequest.get(self.request.id)
+            self.core_record = CoreFileRecord.get(self.core_record.id)
+            self.derivative_record = DerivativeFileRecord.get(self.derivative_record.id)
 
-def download(request):
-    """
-    Downloads the data found by the query in the request and writes it to a zip.
+            # generate core file if needed
+            self.generate_core()
 
-    :param request: the DownloadRequest object, see that for parameter details
-    """
-    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-    # make sure this download dir exists
-    if not os.path.exists(download_dir):
-        os.mkdir(download_dir)
-    download_hash = request.generate_download_hash()
-    existing_file = next(
-        iglob(os.path.join(download_dir, f'*_{download_hash}.zip')), None
-    )
-    if existing_file is not None:
-        previous_download_id = os.path.split(existing_file)[1].split('_')[0]
-        existing_download = model.Session.query(DatastoreDownload).get(
-            previous_download_id
-        )
-        if existing_download is not None:
-            request.update_download(
-                state='complete',
-                total=existing_download.total,
-                resource_totals=existing_download.resource_totals,
+            # generate derivative file if needed
+            self.generate_derivative()
+
+            # finish up
+            self.request.update_status(DownloadRequest.state_complete)
+            url = self.server.serve(self.request)
+            self.notifier.notify_end(url)
+        except Exception as e:
+            current_state = self.request.state
+            self.request.update_status(
+                DownloadRequest.state_failed,
+                f'{current_state}, {e.__class__.__name__}: {str(e)}',
             )
-            zip_name = f'{existing_download.id}_{download_hash}.zip'
-            send_email(request, zip_name)
-            return
+            self.notifier.notify_error()
+            raise e
+        finally:
+            for t in self._temp:
+                try:
+                    shutil.rmtree(t)
+                except FileNotFoundError:
+                    pass
+            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+                plugin.download_after_run(self.request)
 
-    zip_name = f'{request.download_id}_{download_hash}.zip'
-    zip_path = os.path.join(download_dir, zip_name)
+    def check_for_records(self):
+        """
+        Check if relevant files and records already exist and returns the records if
+        they exist.
 
-    start = datetime.now()
-    request.update_download(state=state_processing)
-    target_dir = tempfile.mkdtemp()
+        :return: tuple of core_record (or None) and derivative_record (or None)
+        """
+        # check the download dir exists
+        if not os.path.exists(self.download_dir):
+            os.mkdir(self.download_dir)
 
-    try:
-        es_client = get_elasticsearch_client(
-            common.CONFIG,
-            sniff_on_start=True,
-            sniffer_timeout=60,
-            sniff_on_connection_fail=True,
-            sniff_timeout=10,
-            http_compress=False,
-            timeout=30,
-        )
+        # also check the core dir exists
+        if not os.path.exists(self.core_dir):
+            os.mkdir(self.core_dir)
 
-        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-            request = plugin.download_before_write(request)
+        # initialise empty variables
+        core_record = None
+        derivative_record = None
 
-        # this manifest will be written out as JSON and put in the download zip
-        manifest = {
-            'download_id': request.download_id,
-            'resources': {},
-            'separate_files': request.separate_files,
-            'file_format': request.file_format,
-            'format_args': request.format_args,
-            'ignore_empty_fields': request.ignore_empty_fields,
-            'transform': request.transform,
+        # search for derivative first
+        fn = f'*_{self.hash}.zip'
+        existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
+        if existing_file is not None:
+            # could return multiple options, sorted by most recent first
+            possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
+            if possible_records:
+                # use the most recent one
+                derivative_record = possible_records[0]
+                core_record = derivative_record.core_record
+
+        # if the core record hasn't been found by searching for the derivative, try and find it now
+        if core_record is None:
+            if os.path.exists(self.core_folder_path):
+                # could return multiple options, sorted by most recent first
+                possible_records = CoreFileRecord.get_by_hash(
+                    self.query.hash, self.query.resource_hash
+                )
+                if possible_records:
+                    # use the most recent one
+                    core_record = possible_records[0]
+
+        if core_record is None:
+            core_record = CoreFileRecord(
+                query_hash=self.query.hash,
+                query=self.query.query,
+                query_version=self.query.query_version,
+                resource_ids_and_versions=self.query.resource_ids_and_versions,
+                resource_hash=self.query.resource_hash,
+            )
+            core_record.save()
+
+        if derivative_record is None:
+            derivative_record = DerivativeFileRecord(
+                core_id=core_record.id,
+                download_hash=self.hash,
+                format=self.derivative_options.format,
+                options={
+                    f: getattr(self.derivative_options, f)
+                    for f in self.derivative_options.fields
+                    if f != 'format'
+                },
+            )
+            derivative_record.save()
+
+        return core_record, derivative_record
+
+    def generate_core(self):
+        """
+        Generates and loads core files.
+
+        This method will add new resources to existing core records
+        with identical filters, reducing data duplication.
+        :return: the core record
+        """
+        if not os.path.exists(self.core_folder_path):
+            os.makedirs(self.core_folder_path)
+
+        # check if there are new resources to generate
+        existing_files = os.listdir(self.core_folder_path)
+        resources_to_generate = {
+            rid: v
+            for rid, v in self.query.resource_ids_and_versions.items()
+            if f'{rid}_{v}.avro' not in existing_files
         }
-        # calculate, per resource, the number of values for each field present in the search
-        field_counts = calculate_field_counts(request, es_client)
-        # choose the writer function based on the requested file format
-        writer_function = format_registry[request.file_format]
-        # we shouldn't auth anything
-        context = {'ignore_auth': True}
-        # keep track of the resource record counts
-        resource_counts = {}
 
-        with writer_function(request, target_dir, field_counts) as writer:
-            # handle each resource individually. We could search across all resources at the same
-            # but we don't need to seeing as we're not doing sorting here. By handling each index
-            # one at a time we should be less of an es server burden and also it means we can use
-            # the scroll api - if we were to search all resources requested at once we'd probably
-            # have to use the multisearch endpoint on es and that doesn't support the scroll api
-            for resource_id, version in request.resource_ids_and_versions.items():
+        resource_totals = {k: None for k in self.core_record.resource_ids_and_versions}
+        field_counts = {k: None for k in self.core_record.resource_ids_and_versions}
+
+        # get info for resources that weren't just generated first, so we know if they
+        # need regenerating
+        existing_resources = [
+            k
+            for k in self.query.resource_ids_and_versions
+            if k not in resources_to_generate
+        ]
+        for resource_id in existing_resources:
+            # find a matching core record
+            record = CoreFileRecord.find_resource(
+                self.query.hash,
+                resource_id,
+                self.query.resource_ids_and_versions[resource_id],
+            )
+            if record:
+                resource_totals[resource_id] = record.resource_totals[resource_id]
+                field_counts[resource_id] = record.field_counts[resource_id]
+            else:
+                # if there's no record we should regenerate the avro file
+                resource_version = self.query.resource_ids_and_versions[resource_id]
+                core_file_path = os.path.join(
+                    self.core_folder_path, f'{resource_id}_{resource_version}.avro'
+                )
+                os.remove(core_file_path)
+                resources_to_generate[resource_id] = resource_version
+
+        if len(resources_to_generate) > 0:
+            es_client = get_elasticsearch_client(
+                common.CONFIG,
+                sniff_on_start=True,
+                sniffer_timeout=60,
+                sniff_on_connection_fail=True,
+                sniff_timeout=10,
+                http_compress=False,
+                timeout=30,
+            )
+
+            schemas = get_schemas(self.query, es_client)
+
+            for resource_id, version in resources_to_generate.items():
+                self.request.update_status(DownloadRequest.state_core_gen, resource_id)
+                resource_totals[resource_id] = 0
+                field_counts[resource_id] = calculate_field_counts(
+                    self.query, es_client, resource_id, version
+                )
+
                 search = (
-                    Search.from_dict(request.search)
+                    Search.from_dict(self.query.translate().to_dict())
                     .index(prefix_resource(resource_id))
                     .using(es_client)
                     .filter(create_version_query(version))
                 )
 
-                total_records = 0
+                fn = f'{resource_id}_{version}.avro'
+                fp = os.path.join(self.core_folder_path, fn)
+
+                codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
+                chunk_size = 10000
+                with open(fp, 'wb') as f:
+                    fastavro.writer(f, schemas[resource_id], [], **codec_kwargs)
+
+                def _flush(record_block):
+                    with open(fp, 'a+b') as outfile:
+                        fastavro.writer(outfile, None, record_block, **codec_kwargs)
+
+                chunk = []
                 for hit in search.scan():
                     data = hit.data.to_dict()
-                    data = Transform.transform_data(data, request.transform)
-                    resource_id = trim_index_name(hit.meta.index)
-                    # call the write function returned by our format specific writer context manager
-                    writer(hit, data, resource_id)
-                    total_records += 1
+                    resource_totals[resource_id] += 1
+                    chunk.append(data)
+                    if len(chunk) == chunk_size:
+                        _flush(chunk)
+                        chunk = []
+                _flush(chunk)
 
-                # if no records were written, move on and don't populate the manifest
-                if total_records == 0:
-                    continue
-
-                # retrieve information about the resource and package and add it to the manifest
-                resource_dict = toolkit.get_action('resource_show')(
-                    context, {'id': resource_id}
-                )
-                package_id = resource_dict['package_id']
-                package_dict = toolkit.get_action('package_show')(
-                    context, {'id': package_id}
-                )
-                manifest['resources'][resource_id] = {
-                    'name': resource_dict['name'],
-                    'package_id': package_id,
-                    'package_title': package_dict['title'],
-                    'total_records': total_records,
-                    'field_counts': field_counts[resource_id],
-                    'version': version,
-                }
-                resource_counts[resource_id] = total_records
-
-        overall_total = sum(resource_counts.values())
-        request.update_download(
-            state=state_zipping, total=overall_total, resource_totals=resource_counts
+        self.core_record.update(
+            resource_totals=resource_totals,
+            total=sum(resource_totals.values()),
+            field_counts=field_counts,
         )
 
-        # create a list of files that should be added to the zip, this should include the manifest
-        files_to_zip = ['manifest.json'] + os.listdir(target_dir)
+        return self.core_record
 
-        # add the final data to the manifest
-        manifest['total_records'] = overall_total
-        manifest['files'] = files_to_zip
-        end = datetime.now()
-        manifest['start'] = start.isoformat()
+    def generate_derivative(self):
+        """
+        Generates derivative files, if necessary.
+
+        :return:
+        """
+
+        self.request.update_status(DownloadRequest.state_derivative_gen)
+
+        if self.derivative_record.filepath is None:
+            zip_name = f'{self.request.id}_{self.hash}.zip'
+            zip_path = os.path.join(self.download_dir, zip_name)
+
+            self.derivative_record.update(filepath=zip_path)
+        else:
+            # we don't want to proceed with the rest of the generation
+            return self.derivative_record
+
+        # for keeping track of elapsed generation time
+        start = dt.utcnow()
+        # for storing build files
+        temp_dir = tempfile.mkdtemp()
+        self._temp.append(temp_dir)
+
+        manifest = {
+            'download_id': self.request.id,
+            'resources': {},
+            'separate_files': self.derivative_options.separate_files,
+            'file_format': self.derivative_options.format,
+            'format_args': self.derivative_options.format_args,
+            'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
+            'transform': self.derivative_options.transform,
+            'total_records': self.core_record.total,
+            'start': start.isoformat(),
+            # these get filled in later but we'll initialise them here
+            'files': [],
+            'end': None,
+            'duration_in_seconds': 0,
+        }
+
+        # set up the derivative generators; each generator creates one component.
+        # components = individual file groups within the main zip, e.g. one CSV for each
+        # resource (multiple components), or multiple files comprising a single DarwinCore
+        # archive (single component)
+        fields = partial(
+            get_fields,
+            self.core_record.field_counts,
+            self.derivative_options.ignore_empty_fields,
+        )
+        if self.derivative_options.separate_files:
+            components = {
+                rid: get_derivative_generator(
+                    self.derivative_options.format,
+                    output_dir=temp_dir,
+                    fields=fields(resource_id=rid),
+                    resource_id=rid,
+                    query=self.query,
+                    **self.derivative_options.format_args,
+                )
+                for rid in self.query.resource_ids_and_versions
+            }
+        else:
+            gen = get_derivative_generator(
+                self.derivative_options.format,
+                output_dir=temp_dir,
+                fields=fields(),
+                query=self.query,
+                **self.derivative_options.format_args,
+            )
+            components = defaultdict(lambda: gen)
+
+        # load transformation functions
+        transformations = [
+            get_transformation(t, **targs)
+            for t, targs in (self.derivative_options.transform or {}).items()
+        ]
+
+        for resource_id, version in self.query.resource_ids_and_versions.items():
+            # add the resource ID as the message for use in the status page
+            self.request.update_status(
+                DownloadRequest.state_derivative_gen, resource_id
+            )
+            if (
+                len(self.query.resource_ids_and_versions) > 1
+                and self.core_record.resource_totals[resource_id] == 0
+            ):
+                # don't generate empty files unless there's only one resource
+                continue
+            derivative_generator = components[resource_id]
+            core_file_path = os.path.join(
+                self.core_folder_path, f'{resource_id}_{version}.avro'
+            )
+            with derivative_generator, open(core_file_path, 'rb') as core_file:
+                for record in fastavro.reader(core_file):
+                    # apply the transformations first
+                    for transform in transformations:
+                        record = transform(record)
+                    # filter out fields that are empty for all records
+                    if self.derivative_options.ignore_empty_fields:
+                        record = filter_data_fields(
+                            record, self.core_record.field_counts[resource_id]
+                        )
+                    # then write the record
+                    derivative_generator.write(record)
+
+        if self.derivative_options.separate_files:
+            for generator in components.values():
+                generator.cleanup()
+        else:
+            components.default_factory().cleanup()
+
+        # generation finished
+        self.request.update_status(DownloadRequest.state_packaging)
+
+        end = dt.utcnow()
         manifest['end'] = end.isoformat()
-        manifest['duration_in_seconds'] = (end - start).total_seconds()
 
-        # write the manifest out
-        with open(os.path.join(target_dir, 'manifest.json'), 'w', encoding='utf8') as f:
+        duration = (end - start).total_seconds()
+        manifest['duration_in_seconds'] = duration
+
+        files_to_zip = os.listdir(temp_dir) + ['manifest.json']
+        manifest['files'] = files_to_zip
+
+        # allow plugins to make changes
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            manifest = plugin.download_modify_manifest(manifest, self.request)
+
+        # write out manifest
+        with open(os.path.join(temp_dir, 'manifest.json'), 'w', encoding='utf8') as f:
             json.dump(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
 
-        # zip up the files into the downloads directory
+        # zip everything up
         with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
             for filename in files_to_zip:
-                z.write(os.path.join(target_dir, filename), arcname=filename)
+                z.write(os.path.join(temp_dir, filename), arcname=filename)
 
-        # drop the user an email to let them know their download is ready
-        try:
-            send_email(request, zip_name)
-        except (mailer.MailerException, socket.error):
-            raise
-
-        request.update_download(state=state_complete)
-    except Exception as error:
-        error_message = str(format_exception_only(type(error), error)[-1].strip())
-        request.update_download(state=state_failed, error=error_message)
-        raise
-    finally:
-        # remove the temp dir we were using
-        shutil.rmtree(target_dir)
-
-
-def send_email(request, zip_name):
-    """
-    Sends an email to the email address in the passed request informing them that a
-    download has completed and providing them with a link to go get it from.
-
-    :param request: the DownloadRequest object
-    :param zip_name: the name of the zip file that has been created
-    """
-    # get the templates as strings
-    templates = (default_body, default_html_body)
-    for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-        templates = plugin.download_modify_email_templates(*templates)
-
-    site_url = toolkit.config.get('ckan.site_url')
-    context = {
-        'site_url': site_url,
-        'download_url': f'{site_url}/downloads/{zip_name}',
-    }
-
-    # allow plugins to modify the context passed to the templates
-    for plugin in PluginImplementations(IVersionedDatastoreDownloads):
-        context = plugin.download_modify_email_template_context(request, context)
-
-    # render both templates
-    body, body_html = (Template(template).render(**context) for template in templates)
-
-    # vend
-    mailer.mail_recipient(
-        recipient_email=request.email_address,
-        recipient_name='Downloader',
-        subject='Data download',
-        body=body,
-        body_html=body_html,
-    )
+        return self.derivative_record

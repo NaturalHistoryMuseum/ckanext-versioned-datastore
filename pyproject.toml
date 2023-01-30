@@ -31,6 +31,7 @@ dependencies = [
     "requests",
     "six>=1.11.0",
     "xlrd==1.1.0",
+    "fastavro==1.7.0",
     "ckantools>=0.3.0"
 ]
 
@@ -40,6 +41,12 @@ test = [
     "pytest>=4.6.5",
     "pytest-cov>=2.7.1",
     "coveralls"
+]
+doi = [
+    "ckanext-query-dois~=2.3.0"
+]
+attribution = [
+    "ckanext-attribution~=1.2.0"
 ]
 
 [project.urls]
@@ -64,6 +71,7 @@ exclude = ["tests", "docs"]
 
 [tool.setuptools.package-data]
 "ckanext.versioned_datastore.theme" = ["*", "**/*"]
+"ckanext.versioned_datastore.migration" = ["*", "**/*"]
 
 [tool.commitizen]
 name = "cz_nhm"

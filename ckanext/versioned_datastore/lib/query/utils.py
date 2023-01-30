@@ -69,6 +69,12 @@ def get_available_datastore_resources(context, only=None):
             # if the result of looking in the cache is None then there is no value for this package
             # in the cache and we need to do the work
             try:
+                try:
+                    # remove any cached package from the context so that we know we're
+                    # definitely getting the permissions for *this* package
+                    del context['package']
+                except KeyError:
+                    pass
                 toolkit.check_access('package_show', context, {'id': package_id})
                 package_access_cache[package_id] = True
                 # access allowed, add to the list

@@ -1,11 +1,11 @@
 from ckan.plugins import toolkit
 from flask import Blueprint, send_from_directory
 
-blueprint = Blueprint(name='downloads', import_name=__name__)
+blueprint = Blueprint(name='downloads', import_name=__name__, url_prefix='/downloads')
 
 
-@blueprint.route('/downloads/<zip_name>')
-def download(zip_name):
+@blueprint.route('/direct/<zip_name>')
+def direct(zip_name):
     """
     Serves up the requested zip from the download directory. This is only registered
     with flask when running in debug mode and therefore is only for testing in

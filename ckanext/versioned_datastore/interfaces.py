@@ -25,33 +25,34 @@ class IVersionedDatastore(interfaces.Interface):
         to IDatastore.datastore_search however instead of passing around a query dict,
         instead an elasticsearch-dsl Search object is passed.
 
-        Each extension which implements this interface will be called in the order CKAN loaded them
-        in, The search parameter will be the output of the previous extension's interface
-        implementation, thus creating a chain of extensions, each getting a go at altering the
-        search object if necessary. The base datastore_search function provides the initial search
-        object.
+        Each extension which implements this interface will be called in the order CKAN
+        loaded them in, The search parameter will be the output of the previous
+        extension's interface implementation, thus creating a chain of extensions, each
+        getting a go at altering the search object if necessary. The base
+        datastore_search function provides the initial search object.
 
-        Implementors of this function should return the search object. Don't forget that most
-        functions on the search object are chainable and create a copy of the search object - ensure
-        you're returning the modified object!
+        Implementors of this function should return the search object. Don't forget that
+        most functions on the search object are chainable and create a copy of the
+        search object - ensure you're returning the modified object!
 
-        Two data dicts are passed into this function, the original data dict as it was before any
-        ``datastore_modify_data_dict`` functions got to it, and the modified data_dict that was used
-        to create the search object by the core functionality. This allows someone to, for example,
-        remove a part of the data_dict in ``datastore_modify_data_dict`` to avoid it being added
-        into the search object by the core functionality. Then, by implementing this function,
-        they can add their custom search parts based on the details they removed by extracting them
-        from the original_data_dict.
+        Two data dicts are passed into this function, the original data dict as it was
+        before any ``datastore_modify_data_dict`` functions got to it, and the modified
+        data_dict that was used to create the search object by the core functionality.
+        This allows someone to, for example, remove a part of the data_dict in
+        ``datastore_modify_data_dict`` to avoid it being added into the search object by
+        the core functionality. Then, by implementing this function, they can add their
+        custom search parts based on the details they removed by extracting them from
+        the original_data_dict.
 
         :param context: the context
         :type context: dictionary
         :param original_data_dict: the parameters received from the user
         :type original_data_dict: dictionary
-        :param data_dict: the parameters received from the user after they have been modified by
-                          implementors of ``datastore_modify_data_dict``
+        :param data_dict: the parameters received from the user after they have been
+                          modified by implementors of ``datastore_modify_data_dict``
         :type data_dict: dictionary
-        :param search: the current search, as changed by the previous IVersionedDatastore extensions
-                       in the chain
+        :param search: the current search, as changed by the previous
+                       IVersionedDatastore extensions in the chain
         :type search: elasticsearch-dsl Search object
 
         :returns: the search object with your modifications
@@ -63,23 +64,23 @@ class IVersionedDatastore(interfaces.Interface):
         """
         Allows modifications to the result after the search.
 
-        Each extension which implements this interface will be called in the order CKAN loaded them
-        in, The result parameter will be the output of the previous extension's interface
-        implementation, thus creating a chain of extensions, each getting a go at altering the
-        result object if necessary.
+        Each extension which implements this interface will be called in the order CKAN
+        loaded them in, The result parameter will be the output of the previous
+        extension's interface implementation, thus creating a chain of extensions, each
+        getting a go at altering the result object if necessary.
 
-        Implementors of this function should return the result object so that the datastore_search
-        function can build the final return dict.
+        Implementors of this function should return the result object so that the
+        datastore_search function can build the final return dict.
 
         :param context: the context
         :type context: dictionary
         :param original_data_dict: the parameters received from the user
         :type original_data_dict: dictionary
-        :param data_dict: the parameters received from the user after they have been modified by
-                          implementors of ``datastore_modify_data_dict``
+        :param data_dict: the parameters received from the user after they have been
+                          modified by implementors of ``datastore_modify_data_dict``
         :type data_dict: dictionary
-        :param result: the current result, as changed by the previous IVersionedDatastore extensions
-                       in the chain
+        :param result: the current result, as changed by the previous
+                       IVersionedDatastore extensions in the chain
         :type result: elasticsearch result object
 
         :returns: the result object with your modifications
@@ -96,36 +97,37 @@ class IVersionedDatastore(interfaces.Interface):
         key. The id is the name of the field and the type is always string.
 
         :param resource_id: the resource id that was searched
-        :param mapping: the mapping for the elasticsearch index containing the resource's data. This
-                        is the raw mapping as a dict, retrieved straight from elasticsearch's
-                        mapping endpoint
-        :param fields: the field definitions that have so far been extracted from the mapping, by
-                       default this is all fields
+        :param mapping: the mapping for the elasticsearch index containing the
+                        resource's data. This is the raw mapping as a dict, retrieved
+                        straight from elasticsearch's mapping endpoint
+        :param fields: the field definitions that have so far been extracted from the
+                       mapping, by default this is all fields
         :return: the list of field definition dicts
         """
         return fields
 
     def datastore_modify_index_doc(self, resource_id, index_doc):
         '''
-        Action allowing the modification of a resource's data during indexing. The index_doc passed
-        is a dict in the form:
+        Action allowing the modification of a resource's data during indexing. The
+        index_doc passed is a dict in the form:
 
             {
                 "data": {},
                 "meta": {}
             }
 
-        which will be sent in this form to elasticsearch for indexing. The data key's value contains
-        the data for the record at a version. The meta key's value contains metadata for the record
-        so that we can search it correctly. Breakdown of the standard keys in the meta dict:
+        which will be sent in this form to elasticsearch for indexing. The data key's
+        value contains the data for the record at a version. The meta key's value
+        contains metadata for the record so that we can search it correctly. Breakdown
+        of the standard keys in the meta dict:
 
-            - versions: a dict containing the range of versions this document is valid for. This is
-                        represented using an elasticsearch range, with "gte" for the first valid
-                        version and "lt" for the last version. If the "lt" key is missing the data
-                        is current.
+            - versions: a dict containing the range of versions this document is valid
+                        for. This is represented using an elasticsearch range, with
+                        "gte" for the  first valid version and "lt" for the last
+                        version. If the "lt" key is missing the data is current.
             - version: the version of this record this data represents
-            - next_version: will be missing if this data is current but if present, this holds the
-                            value of the next version of this record
+            - next_version: will be missing if this data is current but if present, this
+                            holds the value of the next version of this record
 
         If needed, the record id will be located in the index_doc under the key '_id'.
 
@@ -140,7 +142,8 @@ class IVersionedDatastore(interfaces.Interface):
         Allows implementors to designate certain resources as read only. This is purely
         a datastore side concept and should be used to prevent actions such as:
 
-            - creating a new datastore for the resource (i.e. creating the index in elasticsearch)
+            - creating a new datastore for the resource (i.e. creating the index in
+              elasticsearch)
             - upserting data into the datastore for this resource
             - deleting the datastore for this resource
             - reindexing data in the datastore for this resource
@@ -158,7 +161,8 @@ class IVersionedDatastore(interfaces.Interface):
 
         :param request: the ResourceIndexRequest object that triggered the indexing task
         :param splitgill_stats: the statistics about the indexing task from splitgill
-        :param stats_id: the id of the statistics entry in the ImportStats database table
+        :param stats_id: the id of the statistics entry in the ImportStats database
+                         table
         """
         pass
 
@@ -170,20 +174,22 @@ class IVersionedDatastore(interfaces.Interface):
         following optional keys:
 
             - query, a dict query (defaults to {})
-            - query_version, the query schema version (defaults to the latest query schema version)
+            - query_version, the query schema version (defaults to the latest query
+                             schema version)
             - version, the version of the data to search at (defaults to None)
-            - resource_ids, a list of resource ids to search (defaults to all resource ids)
-            - resource_ids_and_versions, a dict of resource ids and specific versions to search at
-                                         (defaults to an empty dict)
+            - resource_ids, a list of resource ids to search (defaults to all resource
+                            ids)
+            - resource_ids_and_versions, a dict of resource ids and specific versions to
+                                         search at (defaults to an empty dict)
 
-        If a slug already exists in the database with the same reserved pretty slug and the same
-        query parameters then nothing happens.
+        If a slug already exists in the database with the same reserved pretty slug and
+        the same query parameters then nothing happens.
 
-        If a slug already exists in the database with the same reserved pretty slug but a different
-        set of query parameters then a DuplicateSlugException is raised.
+        If a slug already exists in the database with the same reserved pretty slug but
+        a different set of query parameters then a DuplicateSlugException is raised.
 
-        If a slug already exists in the database with the same query parameters but no reserved
-        pretty slug then the reserved pretty slug is added to the slug.
+        If a slug already exists in the database with the same query parameters but no
+        reserved pretty slug then the reserved pretty slug is added to the slug.
         """
         return {}
 
@@ -214,33 +220,69 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
         """
         Hook to allow registering custom query schemas.
 
-        :return: a list of tuples of the format (query schema version, schema object) where the
-                 query schema version is a string of format v#.#.# and the schema object is an
-                 instance of ckanext.versioned_datastore.lib.query.Schema
+        :return: a list of tuples of the format (query schema version, schema object)
+                 where the query schema version is a string of format v#.#.# and the
+                 schema object is an instance of
+                 ckanext.versioned_datastore.lib.query.Schema
         """
         return []
 
 
 class IVersionedDatastoreDownloads(interfaces.Interface):
-    def download_modify_email_templates(self, text_template: str, html_template: str):
+    def download_modify_notifier_start_templates(
+        self, text_template: str, html_template: str
+    ):
         """
         Hook allowing other extensions to modify the templates used when sending
-        download emails. The templates can be modified in place or completely replaced.
+        notifications that a download has started. The templates can be modified in
+        place or completely replaced.
 
-        :param text_template: the text email template string
-        :param html_template: the html email template string
-        :return: a 2-tuple containing the text template string and the html template string
+        :param text_template: the text template string
+        :param html_template: the html template string
+        :return: a 2-tuple containing the text template string and the html template
+                 string
         """
         return text_template, html_template
 
-    def download_modify_email_template_context(self, request, context):
+    def download_modify_notifier_end_templates(
+        self, text_template: str, html_template: str
+    ):
+        """
+        Hook allowing other extensions to modify the templates used when sending
+        notifications that a download has completed successfully. The templates can be
+        modified in place or completely replaced.
+
+        :param text_template: the text template string
+        :param html_template: the html template string
+        :return: a 2-tuple containing the text template string and the html template
+                 string
+        """
+        return text_template, html_template
+
+    def download_modify_notifier_error_templates(
+        self, text_template: str, html_template: str
+    ):
+        """
+        Hook allowing other extensions to modify the templates used when sending
+        notifications that a download has failed. The templates can be modified in place
+        or completely replaced.
+
+        :param text_template: the text template string
+        :param html_template: the html template string
+        :return: a 2-tuple containing the text template string and the html template
+                 string
+        """
+        return text_template, html_template
+
+    def download_modify_notifier_template_context(self, request, context):
         """
         Hook allowing other extensions to modify the templating context used to generate
         the download email (both plain text and HTML versions) before it is sent.
 
         The default context contains:
             - "download_url": the download zip's full URL
-            - "site_url": the CKAN site's full URL (this is taken straight from the config)
+            - "site_url": the CKAN site's full URL (this is taken straight from the
+                          config)
 
         :param request: the DownloadRequest object
         :param context: templating context dict
@@ -248,12 +290,83 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         """
         return context
 
-    def download_before_write(self, request):
+    def download_derivative_generators(self, registered_derivatives=None):
         """
-        Hook allowing other extensions to access and modify the request before the
-        search is run and the download file is created.
+        Extend or modify the list of derivative generators.
+
+        :param registered_derivatives: a dict of existing derivative generator classes,
+                                       returned from previously loaded plugins
+        :return: a dict of loaded derivative generator classes, keyed on the name used
+                 to specify them in download requests
+        """
+        return registered_derivatives or {}
+
+    def download_file_servers(self, registered_servers=None):
+        """
+        Extend or modify the list of file servers.
+
+        :param registered_servers: a dict of existing file server classes, returned from
+                                   previously loaded plugins
+        :return: a dict of loaded file server classes, keyed on the name used to specify
+                 them in download requests
+        """
+        return registered_servers or {}
+
+    def download_notifiers(self, registered_notifiers=None):
+        """
+        Extend or modify the list of download notifiers.
+
+        :param registered_notifiers: a dict of existing notifier classes, returned from
+                                     previously loaded plugins
+        :return: a dict of loaded notifier classes, keyed on the name used to specify
+                 them in download requests
+        """
+        return registered_notifiers or {}
+
+    def download_data_transformations(self, registered_transformations=None):
+        """
+        Extend or modify the list of data transformations.
+
+        :param registered_transformations: a dict of existing data transformations,
+                                           returned from previously loaded plugins
+        :return: a dict of loaded transformations, keyed on the name used to specify
+                 them in download requests
+        """
+        return registered_transformations or {}
+
+    def download_before_run(
+        self, query_args, derivative_args, server_args, notifier_args
+    ):
+        """
+        Hook allowing other extensions to modify args before any search is run or files
+        generated.
+
+        :param query_args: a QueryArgs object
+        :param derivative_args: a DerivativeArgs object
+        :param server_args: a ServerArgs object
+        :param notifier_args: a NotifierArgs object
+        :return: all four args objects (query_args, derivative_args, server_args,
+                 notifier_args)
+        """
+        return query_args, derivative_args, server_args, notifier_args
+
+    def download_modify_manifest(self, manifest, request):
+        """
+        Hook allowing other extensions to modify the manifest before the download file
+        is written. Modifications to the request object are not saved.
+
+        :param manifest: the manifest dict
+        :param request: the DownloadRequest object
+        :return: the manifest dict
+        """
+        return manifest
+
+    def download_after_run(self, request):
+        """
+        Hook notifying that a download has finished (whether failed or completed). Does
+        not allow modification; purely for notification purposes.
 
         :param request: the DownloadRequest object
-        :return: the request
+        :return: None
         """
-        return request
+        return

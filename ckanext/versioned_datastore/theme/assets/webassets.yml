@@ -10,6 +10,12 @@ search-css:
   contents:
     - less/search.less
 
+download-status-css:
+  output: ckanext-versioned-datastore/%(version)s_download_status.css
+  filters: less
+  contents:
+    - less/download-status.less
+
 search-js:
   output: ckanext-versioned-datastore/%(version)s_search.js
   filters: rjsmin
