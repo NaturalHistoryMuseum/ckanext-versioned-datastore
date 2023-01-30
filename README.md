@@ -205,7 +205,8 @@ This action runs through all resources (or handles a specific resource if a reso
 
 ## Interfaces
 
-One interface is made available through this plugin: `IVersionedDatastore`.
+### `IVersionedDatastore`
+This is the most general interface.
 
 Here is a brief overview of its functions:
 
@@ -218,6 +219,26 @@ Here is a brief overview of its functions:
   - `datastore_after_indexing` - allows implementors to hook onto the completion of an indexing task
 
 See the interface definition in this plugin for more details about these functions.
+
+### `IVersionedDatastoreQuery`
+This interface handles hooks and functions specifically relating to search queries.
+
+  - `get_query_schemas` - allows registering custom query schemas
+
+### `IVersionedDatastoreDownloads`
+This interface handles hooks and functions specifically relating to downloads.
+
+  - `download_modify_notifier_start_templates` - modify the templates used when sending notifications that a download has started
+  - `download_modify_notifier_end_templates` - modify the templates used when sending notifications that a download has ended
+  - `download_modify_notifier_error_templates` - modify the templates used when sending notifications that a download has failed
+  - `download_modify_notifier_template_context` - modify the context/variables used to populate the notification templates
+  - `download_derivative_generators` - extend or modify the list of derivative generators
+  - `download_file_servers` - extend or modify the list of file servers
+  - `download_notifiers` - extend or modify the list of notifiers
+  - `download_data_transformations` - extend or modify the list of data transformations
+  - `download_modify_manifest` - modify the manifest included in the download file
+  - `download_before_run` - modify args before any search is run or files generated
+  - `download_after_run` - hook notifying that a download has finished (whether failed or completed)
 
 <!--usage-end-->
 
