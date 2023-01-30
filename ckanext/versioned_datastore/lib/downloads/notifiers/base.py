@@ -1,7 +1,9 @@
 from abc import ABCMeta, abstractmethod
 from ckan.plugins import toolkit, PluginImplementations
-from ....interfaces import IVersionedDatastoreDownloads
 from jinja2 import Template
+
+from ....interfaces import IVersionedDatastoreDownloads
+from ....model.downloads import DownloadRequest
 
 
 class BaseNotifier(metaclass=ABCMeta):
@@ -40,8 +42,19 @@ class BaseNotifier(metaclass=ABCMeta):
     '''.strip()
 
     def __init__(self, request, **type_args):
-        self.request = request
+        self._request = request
         self.type_args = type_args
+
+    @property
+    def request(self):
+        # this refreshes the joins if necessary
+        if self._request is None:
+            return
+        try:
+            self._request.core_record
+        except:
+            self._request = DownloadRequest.get(self._request.id)
+        return self._request
 
     def template_context(self, file_url=None):
         context = {

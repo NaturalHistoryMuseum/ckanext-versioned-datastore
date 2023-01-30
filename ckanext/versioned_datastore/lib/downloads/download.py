@@ -109,6 +109,13 @@ class DownloadRunManager:
         self.request.update_status(DownloadRequest.state_initial)
 
         try:
+            # refresh the db objects because they were probably retrieved in a
+            # different session (the __init__ is run by the main ckan process,
+            # this is run by the download worker)
+            self.request = DownloadRequest.get(self.request.id)
+            self.core_record = CoreFileRecord.get(self.core_record.id)
+            self.derivative_record = DerivativeFileRecord.get(self.derivative_record.id)
+
             # generate core file if needed
             self.generate_core()
 
