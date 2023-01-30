@@ -15,6 +15,10 @@ _A CKAN extension providing a versioned datastore using MongoDB and Elasticsearc
 
 # Overview
 
+**NOTE: v4 reimplements the download system.**
+
+**If you use this plugin, you will need to check your [interface methods](https://ckanext-versioned-datastore.readthedocs.io/en/latest/usage/#iversioneddatastoredownloads) and any calls to `datastore_queue_download`(https://ckanext-versioned-datastore.readthedocs.io/en/latest/usage/downloads).**
+
 <!--overview-start-->
 This plugin provides a complete replacement for ckan's datastore plugin and therefore shouldn't be used in conjunction with it.
 Rather than storing data in PostgreSQL, resource data is stored in MongoDB and then made available to frontend APIs using Elasticsearch.
