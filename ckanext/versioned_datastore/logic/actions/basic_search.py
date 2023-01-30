@@ -92,7 +92,11 @@ def datastore_search(context, data_dict, original_data_dict):
         }
 
 
-@action(schema.datastore_autocomplete(), help.datastore_autocomplete, get=True)
+@action(
+    schema.datastore_autocomplete(),
+    help.datastore_autocomplete,
+    toolkit.side_effect_free,
+)
 def datastore_autocomplete(context, data_dict, original_data_dict):
     """
     Runs a search to find autocomplete values based on the provided prefix.
@@ -147,7 +151,9 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
     return return_dict
 
 
-@action(schema.datastore_search(), help.datastore_query_extent, get=True)
+@action(
+    schema.datastore_search(), help.datastore_query_extent, toolkit.side_effect_free
+)
 def datastore_query_extent(context, data_dict, original_data_dict):
     """
     Given the parameters for a datastore_query, finds the geographic extent of the
@@ -199,7 +205,9 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     return to_return
 
 
-@action(schema.datastore_search_raw(), help.datastore_search_raw, get=True)
+@action(
+    schema.datastore_search_raw(), help.datastore_search_raw, toolkit.side_effect_free
+)
 def datastore_search_raw(
     resource_id,
     context,

@@ -42,7 +42,9 @@ from ...lib.query.utils import (
 )
 
 
-@action(schema.datastore_multisearch(), help.datastore_multisearch, get=True)
+@action(
+    schema.datastore_multisearch(), help.datastore_multisearch, toolkit.side_effect_free
+)
 def datastore_multisearch(
     context,
     query=None,
@@ -252,7 +254,11 @@ def datastore_create_slug(
     }
 
 
-@action(schema.datastore_resolve_slug(), help.datastore_resolve_slug, get=True)
+@action(
+    schema.datastore_resolve_slug(),
+    help.datastore_resolve_slug,
+    toolkit.side_effect_free,
+)
 def datastore_resolve_slug(slug):
     """
     Resolves the given slug and returns the query parameters used to create it.
@@ -297,7 +303,9 @@ def datastore_resolve_slug(slug):
 
 
 @action(
-    schema.datastore_field_autocomplete(), help.datastore_field_autocomplete, get=True
+    schema.datastore_field_autocomplete(),
+    help.datastore_field_autocomplete,
+    toolkit.side_effect_free,
 )
 def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=False):
     """
@@ -343,7 +351,11 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
     }
 
 
-@action(schema.datastore_guess_fields(), help.datastore_guess_fields, get=True)
+@action(
+    schema.datastore_guess_fields(),
+    help.datastore_guess_fields,
+    toolkit.side_effect_free,
+)
 def datastore_guess_fields(
     context,
     query=None,
@@ -439,7 +451,9 @@ def datastore_guess_fields(
 
 
 @action(
-    schema.datastore_value_autocomplete(), help.datastore_value_autocomplete, get=True
+    schema.datastore_value_autocomplete(),
+    help.datastore_value_autocomplete,
+    toolkit.side_effect_free,
 )
 def datastore_value_autocomplete(
     context,
@@ -546,7 +560,9 @@ def datastore_value_autocomplete(
     return response
 
 
-@action(schema.datastore_hash_query(), help.datastore_hash_query, get=True)
+@action(
+    schema.datastore_hash_query(), help.datastore_hash_query, toolkit.side_effect_free
+)
 def datastore_hash_query(query=None, query_version=None):
     """
     Hashes the given query at the given query schema and returns the hex digest.
@@ -568,7 +584,9 @@ def datastore_hash_query(query=None, query_version=None):
     return hash_query(query, query_version)
 
 
-@action(schema.datastore_edit_slug(), help.datastore_edit_slug, get=True)
+@action(
+    schema.datastore_edit_slug(), help.datastore_edit_slug, toolkit.side_effect_free
+)
 def datastore_edit_slug(context, current_slug, new_reserved_slug):
     slug = resolve_slug(current_slug)
     if slug is None:

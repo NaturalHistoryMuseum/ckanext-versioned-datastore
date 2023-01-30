@@ -3,12 +3,8 @@ import re
 
 from ckan.plugins import toolkit
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
-from ckantools.validators import (
-    list_validator,
-    list_of_strings,
-    list_of_dicts_validator,
-    object_validator,
-)
+from ckantools.validators import list_validator, list_of_strings, object_validator
+from .arg_objects import QueryArgs, DerivativeArgs, ServerArgs, NotifierArgs
 
 # grab all the validator functions upfront
 boolean_validator = toolkit.get_validator('boolean_validator')
@@ -191,18 +187,13 @@ def datastore_count():
 
 def datastore_queue_download():
     return {
-        'email_address': [not_missing, not_empty, email_validator],
-        'query': [ignore_missing, json_validator],
-        'version': [ignore_missing, int_validator],
-        'resource_ids_and_versions': [ignore_missing, json_validator],
-        'query_version': [ignore_missing, str],
-        'resource_ids': [ignore_missing, list_of_strings()],
-        'separate_files': [ignore_missing, boolean_validator],
-        'format': [ignore_missing, str],
-        'ignore_empty_fields': [ignore_missing, boolean_validator],
-        'format_args': [ignore_missing, json_validator],
-        'transform': [ignore_missing, json_validator],
-        'slug_or_doi': [ignore_missing, str],
+        'query': [not_missing, object_validator(QueryArgs)],
+        'file': [
+            not_missing,
+            object_validator(DerivativeArgs),
+        ],  # called 'file' instead of derivative to make its purpose clearer to the end user
+        'server': [ignore_missing, object_validator(ServerArgs)],
+        'notifier': [ignore_missing, object_validator(NotifierArgs)],
     }
 
 

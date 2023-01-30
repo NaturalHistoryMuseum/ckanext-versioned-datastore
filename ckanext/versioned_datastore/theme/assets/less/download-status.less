@@ -1,0 +1,22 @@
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-gap: 0 1em;
+  font-size: 0.9em;
+  margin: 0.1em 0;
+
+  & dt {
+    &::after {
+      content: ':';
+    }
+  }
+}
+
+.download-links {
+  list-style: none;
+  padding-left: 0;
+
+  & > li {
+    margin-bottom: 5px;
+  }
+}

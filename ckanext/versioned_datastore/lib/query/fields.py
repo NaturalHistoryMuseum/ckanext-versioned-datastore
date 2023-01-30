@@ -232,7 +232,6 @@ def get_single_resource_fields(
     Retrieves the fields for a single given resource. The fields are returned in the
     same format as the select_fields function above.
 
-    :param search: an elasticsearch-dsl search object
     :param all_fields: a Fields object
     :param resource_id: the resource id to be searched in
     :param version: the version we're searching at

@@ -18,7 +18,9 @@ from ...lib.query.schema import get_latest_query_version
 
 
 @action(
-    schema.datastore_get_record_versions(), help.datastore_get_record_versions, get=True
+    schema.datastore_get_record_versions(),
+    help.datastore_get_record_versions,
+    toolkit.side_effect_free,
 )
 def datastore_get_record_versions(id, resource_id):
     """
@@ -33,7 +35,11 @@ def datastore_get_record_versions(id, resource_id):
     return common.SEARCH_HELPER.get_record_versions(index_name, int(id))
 
 
-@action(schema.datastore_search(), help.datastore_get_resource_versions, get=True)
+@action(
+    schema.datastore_search(),
+    help.datastore_get_resource_versions,
+    toolkit.side_effect_free,
+)
 def datastore_get_resource_versions(
     resource_id, context, data_dict, original_data_dict
 ):
@@ -65,7 +71,9 @@ def datastore_get_resource_versions(
 
 
 @action(
-    schema.datastore_get_rounded_version(), help.datastore_get_rounded_version, get=True
+    schema.datastore_get_rounded_version(),
+    help.datastore_get_rounded_version,
+    toolkit.side_effect_free,
 )
 def datastore_get_rounded_version(resource_id, version=None):
     """
@@ -84,7 +92,7 @@ def datastore_get_rounded_version(resource_id, version=None):
 @action(
     schema.datastore_is_datastore_resource(),
     help.datastore_is_datastore_resource,
-    get=True,
+    toolkit.side_effect_free,
 )
 def datastore_is_datastore_resource(resource_id):
     """

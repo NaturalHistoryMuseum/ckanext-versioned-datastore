@@ -1,0 +1,168 @@
+{% extends "page.html" %}
+
+{% block title %}
+{{ _('Download status') }}
+{% endblock %}
+
+{% block breadcrumb_content %}
+<li class="active">
+    <a class="active"
+       href="{{ h.url_for('datastore_status.download_status', download_id=download_request.id) }}">Download
+                                                                                                   status</a>
+</li>
+{% endblock %}
+
+{% block pre_primary %}
+{% asset 'ckanext-versioned-datastore/download-status-css' %}
+<article class="module">
+    <div class="module-content">
+        <h1 class="page-heading">Download status</h1>
+
+        {% if download_request %}
+        <section class="additional-info">
+            <h3>Status</h3>
+            <table class="table table-striped table-bordered table-condensed">
+                <tbody>
+                <tr>
+                    <th scope="row">Current state</th>
+                    <td>{{ status_friendly }} {% if status_friendly.lower() != download_request.state.lower() %}(<code>{{ download_request.state }}</code>){% endif %}</td>
+                </tr>
+                {% if download_request.state == 'failed' %}
+                <tr>
+                    <th scope="row">Error</th>
+                    <td>{{ download_request.message }}</td>
+                </tr>
+                {% elif download_request.state in ['gen_core', 'gen_derivative'] %}
+                <tr>
+                    <th scope="row">Processing</th>
+                    <td>{{ resources.get(download_request.message, {}).get('name', 'Unknown') }}</td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <th scope="row">Time since last update</th>
+                    <td>{{ since_last_update }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Created</th>
+                    <td>{{ download_request.created.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Last updated</th>
+                    <td>{{ download_request.modified.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Time elapsed</th>
+                    <td>{{ total_time }}</td>
+                </tr>
+                <tr>
+                    <th scope="row">Download ID</th>
+                    <td>{{ download_request.id }}</td>
+                </tr>
+                </tbody>
+            </table>
+            <h3>Request</h3>
+            <table class="table table-striped table-bordered table-condensed">
+                <tbody>
+                {% if download_request.core_record %}
+                <tr>
+                    <th scope="row">Query</th>
+                    <td>
+                        <code>
+                            {{ download_request.core_record.query }}
+                        </code>
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Query version</th>
+                    <td>
+                        {{ download_request.core_record.query_version }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% if download_request.derivative_record %}
+                <tr>
+                    <th scope="row">Format</th>
+                    <td>
+                        {{ download_request.derivative_record.format }}
+                    </td>
+                </tr>
+                {% if download_request.derivative_record.options.get('format_args') %}
+                <tr>
+                    <th scope="row">Format details</th>
+                    <td>
+                        <dl>
+                            {% for k, v in
+                            download_request.derivative_record.options.get('format_args',
+                            {}).items() %}
+                            <dt>{{ k }}</dt>
+                            <dd><code>{{ v }}</code></dd>
+                            {% endfor %}
+                        </dl>
+                    </td>
+                </tr>
+                {% endif %}
+                <tr>
+                    <th scope="row">Resources in separate files</th>
+                    <td>{{ download_request.derivative_record.options.get('separate_files', True)
+                        }}
+                    </td>
+                </tr>
+                <tr>
+                    <th scope="row">Ignore empty fields</th>
+                    <td>{{ download_request.derivative_record.options.get('ignore_empty_fields',
+                        True) }}
+                    </td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+            <h3>Results</h3>
+            <table class="table table-striped table-bordered table-condensed">
+                <tbody>
+                {% if doi %}
+                <tr>
+                    <th scope="row">Query DOI</th>
+                    <td><a href="{{ doi_url }}">{{ doi.doi }}</a></td>
+                </tr>
+                {% endif %}
+                {% if download_request.core_record and not download_request.state == 'failed' %}
+                <tr>
+                    <th scope="row">Records</th>
+                    <td>
+                        <dl>
+                            <dt>Total</dt>
+                            <dd>{{ download_request.core_record.total or _('processing') }}</dd>
+                            {% if download_request.core_record.resource_totals %}
+                            {% for res_id, res in resources.items() %}
+                            {% if download_request.core_record.resource_totals[res_id] > 0 %}
+                            <dt>{{ res['name'] }}</dt>
+                            <dd>{{ download_request.core_record.resource_totals[res_id] }}</dd>
+                            {% endif %}
+                            {% endfor %}
+                            {% endif %}
+                        </dl>
+                    </td>
+                </tr>
+                {% endif %}
+                {% if download_request.state == 'complete' %}
+                <tr>
+                    <th scope="row">Downloads</th>
+                    <td>
+                        <ul class="download-links">
+                            {% for server_name, url in urls.items() %}
+                            <li><a href="{{ url }}" class="btn btn-primary"><i class="fas fa-download"></i> {{ server_name }} </a></li>
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+
+        </section>
+        {% else %}
+        <p>Invalid download ID. Please check the URL and try again.</p>
+        {% endif %}
+    </div>
+</article>
+{% endblock %}

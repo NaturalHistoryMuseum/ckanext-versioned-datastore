@@ -627,45 +627,7 @@ The result of this action is a dictionary with the following keys:
 '''
 
 datastore_queue_download = '''
-Queues a task to generate a downloadable zip containing the data produced by the given query
-and then sends a link for the zip to the provided email address.
-
-All parameters are optional except the email address which is required.
-
-The resources that are searched for the download and the version they are searched at are both
-extracted from the resource_ids_and_versions in the first instance, and if no information in
-there is found then the resource_ids and version parameters are used as fall backs. Regardless
-of where the resource ids list comes from though, it is always checked against permissions to
-ensure the user has the right to access the given resources.
-
-
-Params:
-
-:param email_address: the email address to send the zip too (required)
-:type email_address: string
-:param query: the query to run to find the records to include in the zip
-:type query: dict
-:param query_version: the query version schema in use by the given query
-:type query_version: string
-:param version: the version to query the data at
-:type version: int, number of milliseconds (not seconds!) since UNIX epoch
-:param resource_ids_and_versions: a dict mapping the resource ids to include in the download to
-                                  the specific version of that resource's data that should be
-                                  searched
-:type resource_ids_and_versions: a dict of strings -> ints (number of milliseconds (not
-                                 seconds!) since UNIX epoch)
-:param resource_ids: the resource ids to search
-:type resource_ids: list of strings
-:param separate_files: whether to write the records into per-resource files or output them all
-                       in one file. Default: True
-:type separate_files: boolean
-:param format: the format to output each file in. Default: csv
-:type format: string
-:param ignore_empty_fields: whether to ignore fields with no values in the result set when
-                            writing records out. If set to True, fields found in the result set
-                            to not contain any values will not be included in the download zip.
-                            Default: True.
-:type ignore_empty_fields: bool
+Queues a task to generate a downloadable zip containing the data produced by the given query.
 
 **Results:**
 
