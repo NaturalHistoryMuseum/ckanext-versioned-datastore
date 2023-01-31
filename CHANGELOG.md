@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.0.2 (2023-01-31)
+
+### Docs
+
+- **readme**: direct link to logo in readme
+- **readme**: fix github actions badge
+
 ## v4.0.1 (2023-01-31)
 
 ### Fix
