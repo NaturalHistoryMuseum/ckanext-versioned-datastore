@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.3 (2023-01-31)
+
+### Docs
+
+- **readme**: change blob url to raw
+
 ## v4.0.2 (2023-01-31)
 
 ### Docs
