@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.0.1 (2023-01-31)
+
+### Fix
+
+- strip the extra stuff from the email template
+
 ## v4.0.0 (2023-01-30)
 
 ### Breaking Changes
