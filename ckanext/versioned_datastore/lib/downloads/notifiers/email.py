@@ -2,21 +2,10 @@ from ckan.lib import mailer
 
 from .base import BaseNotifier
 
-default_body = '''
-Hello,
-{0}
-Best Wishes,
-The Download Bot
-'''.strip()
-
 default_html_body = '''
 <html lang="en">
 <body>
-<p>Hello,</p>
 {0}
-<br />
-<p>Best Wishes,</p>
-<p>The Download Bot</p>
 </body>
 </html>
 '''.strip()
@@ -31,7 +20,7 @@ class EmailNotifier(BaseNotifier):
 
     def notify_start(self):
         content, content_html = self.start_text()
-        body = default_body.format(content)
+        body = content.strip()
         body_html = default_html_body.format(content_html)
 
         for address in self.email_addresses:
@@ -45,7 +34,7 @@ class EmailNotifier(BaseNotifier):
 
     def notify_end(self, file_url):
         content, content_html = self.end_text(file_url)
-        body = default_body.format(content)
+        body = content.strip()
         body_html = default_html_body.format(content_html)
 
         for address in self.email_addresses:
@@ -59,7 +48,7 @@ class EmailNotifier(BaseNotifier):
 
     def notify_error(self):
         content, content_html = self.error_text()
-        body = default_body.format(content)
+        body = content.strip()
         body_html = default_html_body.format(content_html)
 
         for address in self.email_addresses:
