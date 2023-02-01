@@ -67,9 +67,9 @@
                 <tr>
                     <th scope="row">Query</th>
                     <td>
-                        <code>
-                            {{ download_request.core_record.query }}
-                        </code>
+                        <pre class="query-box">
+                            {{- h.pretty_print_json(download_request.core_record.query) -}}
+                        </pre>
                     </td>
                 </tr>
                 <tr>
