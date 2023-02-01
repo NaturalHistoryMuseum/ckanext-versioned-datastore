@@ -17,6 +17,10 @@
 <article class="module">
     <div class="module-content">
         <h1 class="page-heading">Download status</h1>
+        <div class="status-subheading">
+            <button onclick="window.location.reload()" class="btn btn-primary">
+                <i class="fas fa-refresh"></i> Refresh status</button>
+        </div>
 
         {% if download_request %}
         <section class="additional-info">
@@ -25,7 +29,9 @@
                 <tbody>
                 <tr>
                     <th scope="row">Current state</th>
-                    <td>{{ status_friendly }} {% if status_friendly.lower() != download_request.state.lower() %}(<code>{{ download_request.state }}</code>){% endif %}</td>
+                    <td>
+                        {{ status_friendly }} {% if status_friendly.lower() != download_request.state.lower() %}(<code>{{ download_request.state }}</code>){% endif %}
+                    </td>
                 </tr>
                 {% if download_request.state == 'failed' %}
                 <tr>
