@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.1.0 (2023-02-06)
+
+### Feature
+
+- scroll long queries on download status page
+
+### Minor UI Changes
+
+- add refresh button to status page
+
 ## v4.0.3 (2023-01-31)
 
 ### Docs
