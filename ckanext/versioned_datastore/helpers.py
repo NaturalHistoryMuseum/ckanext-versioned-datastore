@@ -1,4 +1,5 @@
 from ckan.plugins import toolkit
+import json
 
 from .lib.importing import stats
 from .lib.common import ALL_FORMATS
@@ -107,3 +108,13 @@ def get_available_formats():
     :return: a list of formats
     """
     return ALL_FORMATS
+
+
+def pretty_print_json(json_string):
+    """
+    Does what you'd expect really.
+
+    :param json_string: a json string
+    :return: a string of pretty json
+    """
+    return json.dumps(json_string, sort_keys=True, indent=2)

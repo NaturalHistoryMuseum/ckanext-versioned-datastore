@@ -65,6 +65,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             'get_stat_activity_class': helpers.get_stat_activity_class,
             'get_stat_title': helpers.get_stat_title,
             'get_available_formats': helpers.get_available_formats,
+            'pretty_print_json': helpers.pretty_print_json,
         }
 
     # IResourceController
