@@ -20,9 +20,8 @@ py_files = sorted(Path(root).rglob('*.py'))
 for path in py_files:
     try:
         path.relative_to('ckanext/versioned_datastore/migration')
-        continue
     except ValueError:
-        pass
+        continue
 
     module_path = path.relative_to(root).with_suffix('')
     doc_path = path.relative_to(root).with_suffix('.md')
@@ -41,7 +40,7 @@ for path in py_files:
 
     nav[parts] = doc_path.as_posix()
 
-    with mkdocs_gen_files.open(full_doc_path, "w") as fd:
+    with mkdocs_gen_files.open(full_doc_path, 'w') as fd:
         ident = '.'.join(parts)
         fd.write(f'::: ckanext.{ident}')
 
