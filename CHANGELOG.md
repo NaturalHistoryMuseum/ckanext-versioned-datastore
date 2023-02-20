@@ -1,5 +1,19 @@
 # Changelog
 
+## v4.1.1 (2023-02-20)
+
+### Docs
+
+- fix api docs generation script
+
+### Style
+
+- reformat with prettier
+
+### Chores/Misc
+
+- small fixes to align with other extensions
+
 ## v4.1.0 (2023-02-06)
 
 ### Feature
