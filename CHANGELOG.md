@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.2.0 (2023-03-06)
+
+### Feature
+
+- add helpers for displaying recent versions and readable dates
+
 ## v4.1.1 (2023-02-20)
 
 ### Docs
