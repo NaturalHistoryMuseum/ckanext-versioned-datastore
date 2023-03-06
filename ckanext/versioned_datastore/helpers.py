@@ -1,8 +1,9 @@
-from ckan.plugins import toolkit
 import json
+from ckan.plugins import toolkit
+from datetime import date
 
-from .lib.importing import stats
 from .lib.common import ALL_FORMATS
+from .lib.importing import stats
 
 
 def is_duplicate_ingestion(stat):
@@ -118,3 +119,34 @@ def pretty_print_json(json_string):
     :return: a string of pretty json
     """
     return json.dumps(json_string, sort_keys=True, indent=2)
+
+
+def get_version_date(version):
+    """
+    Returns a date object from a version number.
+
+    :param version: a resource/record version number (i.e. a timestamp in ms)
+    :return: a date object
+    """
+    return date.fromtimestamp(int(version) / 1000)
+
+
+def latest_item_version(resource_id, record_id=None):
+    """
+    Returns the most recent version for the given resource or record.
+
+    :param resource_id: the id of the resource to search in
+    :param record_id: optional; a record id to search for instead
+    :return: if record id is provided, the latest record version, else the latest resource version
+    """
+    action = (
+        'datastore_get_record_versions'
+        if record_id
+        else 'datastore_get_resource_versions'
+    )
+    data_dict = {'resource_id': resource_id}
+    if record_id:
+        data_dict['id'] = record_id
+
+    versions = toolkit.get_action(action)({}, data_dict)
+    return versions[-1]
