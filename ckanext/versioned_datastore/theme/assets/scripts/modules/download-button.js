@@ -8,6 +8,8 @@ ckan.module('versioned_datastore_download-button', function ($) {
 
       // process options
       this.options.resources = this.options.resources.split(',');
+      this.options.query =
+        typeof this.options.query === 'object' ? this.options.query : {};
 
       // get the icon and its classes so we can turn it into a spinner while the snippet is loading
       this.icon = this.$('#vds-download-button-icon');
@@ -19,7 +21,8 @@ ckan.module('versioned_datastore_download-button', function ($) {
       };
 
       // get a slug for this search; it doesn't really matter if this fails, but it's nice
-      let slugData = {
+      this.searchQuery = {
+        query: this.options.query,
         resource_ids: this.options.resources,
       };
       this.slug = null;
@@ -27,7 +30,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
       this.sandbox.client.call(
         'POST',
         'datastore_create_slug',
-        slugData,
+        this.searchQuery,
         (response) => {
           if (response.success) {
             this.slug = response.result.slug;
@@ -106,11 +109,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
 
       popoverForm.on('submit', (e) => {
         e.preventDefault();
-        let formData = {
-          query: {
-            resource_ids: this.options.resources,
-          },
-        };
+        let formData = { query: { ...this.searchQuery } };
         popoverForm.serializeArray().forEach((i) => {
           let nameParts = i.name.split('.');
           nameParts.reduce((parentContainer, part, ix) => {
@@ -123,6 +122,8 @@ ckan.module('versioned_datastore_download-button', function ($) {
             return parentContainer[part];
           }, formData);
         });
+        console.log(this.searchQuery);
+        console.log(formData);
         this._toggleLoading(true);
         this.sandbox.client.call(
           'POST',
