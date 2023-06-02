@@ -1,0 +1,42 @@
+.vds-download-popup {
+  & p {
+    word-break: keep-all;
+  }
+
+  & .form-group {
+    margin-bottom: 20px;
+
+    &:not(:last-child) {
+      padding-bottom: 10px;
+      border-bottom: 1px solid #dddddd;
+    }
+  }
+
+  & .form-row,
+  & .privacy-warning {
+    padding: 5px;
+  }
+
+  & .full-width-input {
+    width: 100%;
+  }
+
+  & select {
+    height: 1em;
+  }
+
+  & input[type='text'] {
+    padding: 5px;
+    border: 1px solid #c3c3c3;
+    border-radius: 5px;
+  }
+
+  & .privacy-warning {
+    border: none;
+  }
+
+  // this should be in the main ckan css, but just in case
+  & .hidden {
+    display: none !important;
+  }
+}

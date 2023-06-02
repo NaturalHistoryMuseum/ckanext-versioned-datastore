@@ -28,3 +28,15 @@ slugerator:
   filters: less
   contents:
     - less/slugerator.less
+
+download-button-js:
+  output: ckanext-versioned-datastore/%(version)s_download-button.js
+  filters: rjsmin
+  contents:
+    - scripts/modules/download-button.js
+
+download-button-css:
+  output: ckanext-versioned-datastore/%(version)s_download-button.css
+  filters: less
+  contents:
+    - less/download-popup.less

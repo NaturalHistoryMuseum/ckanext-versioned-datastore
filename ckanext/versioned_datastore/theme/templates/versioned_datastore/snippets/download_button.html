@@ -1,0 +1,16 @@
+{#
+    Parameters:
+        resources: comma-separated list of resource IDs;
+        icon_class: class for the button icon (eg. fas fa-download etc.)
+        label: text for the button (eg. _('Download'))
+#}
+
+{% asset 'ckanext-versioned-datastore/download-button-js' %}
+{% asset 'ckanext-versioned-datastore/download-button-css' %}
+
+
+<button class="btn btn-primary vds-download-button"
+        data-module="versioned_datastore_download-button"
+        data-module-resources="{{ resources }}">
+    <i id="vds-download-button-icon" class="{{ icon_class }}"></i> {{ label }}
+</button>
