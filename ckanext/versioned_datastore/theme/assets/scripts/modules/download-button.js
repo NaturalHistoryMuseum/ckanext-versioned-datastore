@@ -3,43 +3,58 @@ ckan.module('versioned_datastore_download-button', function ($) {
     initialize: function () {
       // use the same 'this' object in all _on*() functions in this module
       $.proxyAll(this, /_on/);
-      // do the same for _toggleLoading
-      $.proxy(this._toggleLoading, /_toggle/);
+      // do the same for some helper functions that aren't named _on*()
+      $.proxy(this._toggleLoading, this);
+      $.proxy(this._setSearchUrl, this);
 
-      // process options
-      this.options.resources = this.options.resources.split(',');
-      this.options.query =
-        typeof this.options.query === 'object' ? this.options.query : {};
-
-      // get the icon and its classes so we can turn it into a spinner while the snippet is loading
+      // get the icon and its classes so we can turn it into a spinner while loading
       this.icon = this.$('#vds-download-button-icon');
       this.iconClass = this.icon[0].className;
 
-      // set up a template options object
+      // process options into searchOptions and templateOptions
       this.templateOptions = {
-        multiResource: this.options.resources.length > 1,
+        multiResource: true,
       };
+      this.options.slug_or_doi =
+        typeof this.options.slug_or_doi === 'string'
+          ? this.options.slug_or_doi
+          : null;
+      if (this.options.slug_or_doi) {
+        // ignore everything else
+        this.options.resources = null;
+        this.options.query = null;
 
-      // get a slug for this search; it doesn't really matter if this fails, but it's nice
-      this.searchQuery = {
-        query: this.options.query,
-        resource_ids: this.options.resources,
-      };
-      this.slug = null;
-      this._toggleLoading(true);
-      this.sandbox.client.call(
-        'POST',
-        'datastore_create_slug',
-        this.searchQuery,
-        (response) => {
-          if (response.success) {
-            this.slug = response.result.slug;
-          }
-          this.templateOptions['searchUrl'] =
-            this.sandbox.client.endpoint + '/search/' + (this.slug || '');
-          this._toggleLoading(false);
-        },
-      );
+        this.searchOptions = {
+          slug_or_doi: this.options.slug_or_doi,
+        };
+        this.templateOptions.slug = this.options.slug_or_doi;
+        this._setSearchUrl();
+      } else {
+        this.options.resources = this.options.resources.split(',');
+        this.options.query =
+          typeof this.options.query === 'object' ? this.options.query : {};
+
+        this.searchOptions = {
+          query: this.options.query,
+          resource_ids: this.options.resources,
+        };
+        this.templateOptions.multiResource = this.options.resources.length > 1;
+
+        // get a slug for this search; it doesn't really matter if this fails, but it's nice
+        this._toggleLoading(true);
+        this.sandbox.client.call(
+          'POST',
+          'datastore_create_slug',
+          this.searchOptions,
+          (response) => {
+            if (response.success) {
+              this.templateOptions.slug = response.result.slug;
+            }
+            this._setSearchUrl();
+            this._toggleLoading(false);
+          },
+        );
+      }
 
       // set up event handlers
       this.el.on('click', this._onClick);
@@ -109,7 +124,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
 
       popoverForm.on('submit', (e) => {
         e.preventDefault();
-        let formData = { query: { ...this.searchQuery } };
+        let formData = { query: { ...this.searchOptions } };
         popoverForm.serializeArray().forEach((i) => {
           let nameParts = i.name.split('.');
           nameParts.reduce((parentContainer, part, ix) => {
@@ -122,8 +137,6 @@ ckan.module('versioned_datastore_download-button', function ($) {
             return parentContainer[part];
           }, formData);
         });
-        console.log(this.searchQuery);
-        console.log(formData);
         this._toggleLoading(true);
         this.sandbox.client.call(
           'POST',
@@ -145,6 +158,11 @@ ckan.module('versioned_datastore_download-button', function ($) {
               this._flashError();
             }
             this._toggleLoading(false);
+          },
+          (error) => {
+            this._flashError();
+            this._toggleLoading(false);
+            console.log(error);
           },
         );
       });
@@ -170,6 +188,13 @@ ckan.module('versioned_datastore_download-button', function ($) {
 
     _removeErrors: function () {
       $('.flash-messages .vds-dl-error').remove();
+    },
+
+    _setSearchUrl: function () {
+      this.templateOptions['searchUrl'] =
+        this.sandbox.client.endpoint +
+        '/search/' +
+        (this.templateOptions.slug || '');
     },
   };
 });
