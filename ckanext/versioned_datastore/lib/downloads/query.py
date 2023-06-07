@@ -14,6 +14,8 @@ from .. import common
 from ..datastore_utils import prefix_resource
 from ...logic.actions.meta.arg_objects import QueryArgs
 import hashlib
+from ..basic_query.utils import convert_to_multisearch
+from jsonschema.exceptions import ValidationError
 
 
 class Query(object):
@@ -88,6 +90,10 @@ class Query(object):
             query = {}
         if query_version is None:
             query_version = get_latest_query_version()
+            try:
+                validate_query(query, query_version)
+            except ValidationError:
+                query = convert_to_multisearch(query)
 
         return cls(query, query_version, rounded_resource_ids_and_versions)
 

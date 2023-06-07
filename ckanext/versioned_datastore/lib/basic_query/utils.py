@@ -1,9 +1,9 @@
-from ckan.lib.search import SearchIndexError
-from splitgill.indexing.utils import DOC_TYPE
-from splitgill.search import create_version_query
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import MultiSearch, Search
+from splitgill.indexing.utils import DOC_TYPE
+from splitgill.search import create_version_query
 
+from ckan.lib.search import SearchIndexError
 from .. import common
 from ..datastore_utils import prefix_resource, prefix_field
 from ..importing.details import get_all_details
@@ -184,3 +184,37 @@ def get_fields(resource_id, version=None):
     field_cache[cache_key] = (mapping, fields)
 
     return mapping, fields
+
+
+def convert_to_multisearch(query):
+    multisearch_query = {}
+
+    if 'q' in query:
+        multisearch_query['search'] = query['q']
+
+    if 'filters' in query:
+        filter_list = []
+        for field, values in query['filters'].items():
+            if not isinstance(values, list):
+                values = [values]
+            if field == '__geo__':
+                for value in values:
+                    if value['type'] == 'Polygon':
+                        filter_list.append({'geo_custom_area': [value['coordinates']]})
+                    else:
+                        # I cannot find any examples of anything other than polygons, so
+                        # I'm not sure it was ever implemented for the old searches
+                        raise NotImplemented
+            else:
+                subgroup = []
+                for value in values:
+                    subgroup.append(
+                        {'string_equals': {'fields': [field], 'value': value}}
+                    )
+                if len(values) > 1:
+                    filter_list.append({'or': subgroup})
+                else:
+                    filter_list += subgroup
+        multisearch_query['filters'] = {'and': filter_list}
+
+    return multisearch_query
