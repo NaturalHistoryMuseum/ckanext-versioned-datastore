@@ -32,6 +32,10 @@ slugerator:
 download-button-js:
   output: ckanext-versioned-datastore/%(version)s_download-button.js
   filters: rjsmin
+  extra:
+    preload:
+      - vendor/jquery
+      - base/main
   contents:
     - scripts/modules/download-button.js
 
