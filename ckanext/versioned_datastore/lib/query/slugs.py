@@ -8,7 +8,7 @@ from sqlalchemy.exc import IntegrityError
 from .schema import get_latest_query_version, hash_query
 from .schema import validate_query
 from .slug_words import list_one, list_two, list_three
-from .utils import get_available_datastore_resources
+from .utils import get_available_datastore_resources, get_resources_and_versions
 from ...model.slugs import DatastoreSlug
 
 
@@ -95,12 +95,9 @@ def create_slug(
     # only store valid queries!
     validate_query(query, query_version)
 
-    if resource_ids:
-        resource_ids = list(get_available_datastore_resources(context, resource_ids))
-        if not resource_ids:
-            raise toolkit.ValidationError(
-                u"The requested resources aren't accessible to this user"
-            )
+    resource_ids, resource_ids_and_versions = get_resources_and_versions(
+        resource_ids, resource_ids_and_versions, version
+    )
 
     query_hash = generate_query_hash(
         query, query_version, version, resource_ids, resource_ids_and_versions
