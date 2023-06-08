@@ -169,6 +169,7 @@ def datastore_create_slug():
         'resource_ids': [ignore_missing, list_of_strings()],
         'resource_ids_and_versions': [ignore_missing, json_validator],
         'pretty_slug': [ignore_missing, boolean_validator],
+        'nav_slug': [ignore_missing, boolean_validator],
     }
 
 

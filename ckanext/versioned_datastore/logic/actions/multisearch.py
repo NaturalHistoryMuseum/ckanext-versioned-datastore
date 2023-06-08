@@ -32,7 +32,7 @@ from ...lib.query.schema import (
     translate_query,
     hash_query,
 )
-from ...lib.query.slugs import create_slug, resolve_slug
+from ...lib.query.slugs import create_slug, resolve_slug, create_nav_slug
 from ...lib.query.utils import (
     get_available_datastore_resources,
     determine_resources_to_search,
@@ -199,6 +199,7 @@ def datastore_create_slug(
     resource_ids=None,
     resource_ids_and_versions=None,
     pretty_slug=True,
+    nav_slug=False,
 ):
     """
     Creates a slug for the given multisearch parameters and returns it. This slug can be
@@ -224,6 +225,8 @@ def datastore_create_slug(
     :param pretty_slug: whether to produce a "pretty" slug or not. If True (the default) a selection
                         of 2 adjectives and an animal will be used to create the slug, otherwise if
                         False, a uuid will be used
+    :param nav_slug: if this is True, a temporary navigational slug will be produced
+                     instead of a standard slug
     :return: a dict containing the slug and whether it was created during this function call or not
     """
     if query is None:
@@ -232,15 +235,20 @@ def datastore_create_slug(
         query_version = get_latest_query_version()
 
     try:
-        is_new, slug = create_slug(
-            context,
-            query,
-            query_version,
-            version,
-            resource_ids,
-            resource_ids_and_versions,
-            pretty_slug=pretty_slug,
-        )
+        if nav_slug:
+            is_new, slug = create_nav_slug(
+                context, query, version, resource_ids, resource_ids_and_versions
+            )
+        else:
+            is_new, slug = create_slug(
+                context,
+                query,
+                query_version,
+                version,
+                resource_ids,
+                resource_ids_and_versions,
+                pretty_slug=pretty_slug,
+            )
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
@@ -250,7 +258,9 @@ def datastore_create_slug(
     return {
         'slug': slug.get_slug_string(),
         'is_new': is_new,
-        'is_reserved': slug.reserved_pretty_slug == slug.get_slug_string(),
+        'is_reserved': False
+        if nav_slug
+        else slug.reserved_pretty_slug == slug.get_slug_string(),
     }
 
 
