@@ -295,6 +295,9 @@ def datastore_resolve_slug(slug):
             )
         }
         result['created'] = resolved.created.isoformat()
+        if result.get('query_version') == 'v0':
+            result['query'] = convert_to_multisearch(result['query'])
+            result['query_version'] = get_latest_query_version()
         return result
 
     # then check if it's a query DOI
@@ -304,9 +307,15 @@ def datastore_resolve_slug(slug):
 
         resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
         if resolved:
+            if resolved.query_version == 'v0':
+                query = convert_to_multisearch(resolved.query)
+                query_version = get_latest_query_version()
+            else:
+                query = resolved.query
+                query_version = resolved.query_version
             return {
-                'query': resolved.query,
-                'query_version': resolved.query_version,
+                'query': query,
+                'query_version': query_version,
                 'version': resolved.requested_version,
                 'resource_ids': list(resolved.resources_and_versions.keys()),
                 'resource_ids_and_versions': resolved.resources_and_versions,
