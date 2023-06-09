@@ -2,15 +2,16 @@ from collections import defaultdict
 from datetime import datetime
 
 import jsonschema
-from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
-from splitgill.utils import to_timestamp
-from elasticsearch_dsl import MultiSearch, A
-
-from .meta import help, schema
 from ckantools.decorators import action
 from ckantools.timer import Timer
+from elasticsearch_dsl import MultiSearch, A
+from splitgill.utils import to_timestamp
+
+from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
+from .meta import help, schema
 from ...interfaces import IVersionedDatastore
 from ...lib import common
+from ...lib.basic_query.utils import convert_to_multisearch
 from ...lib.datastore_utils import (
     prefix_resource,
     unprefix_index,
@@ -231,6 +232,10 @@ def datastore_create_slug(
     """
     if query is None:
         query = {}
+    if query_version and query_version.lower().startswith('v0'):
+        # this is an old/basic query so we need to convert it first
+        query = convert_to_multisearch(query)
+        query_version = None
     if query_version is None:
         query_version = get_latest_query_version()
 

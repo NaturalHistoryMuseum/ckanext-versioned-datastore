@@ -1,21 +1,15 @@
-from datetime import datetime
+import hashlib
 
 from ckan.plugins import toolkit
-from splitgill.utils import to_timestamp
-
+from ..basic_query.utils import convert_to_multisearch
 from ..query.schema import (
     get_latest_query_version,
     hash_query,
     translate_query,
     validate_query,
 )
-from ..query.utils import get_available_datastore_resources, get_resources_and_versions
-from .. import common
-from ..datastore_utils import prefix_resource
+from ..query.utils import get_resources_and_versions
 from ...logic.actions.meta.arg_objects import QueryArgs
-import hashlib
-from ..basic_query.utils import convert_to_multisearch
-from jsonschema.exceptions import ValidationError
 
 
 class Query(object):
@@ -60,12 +54,12 @@ class Query(object):
         # setup the query
         if query is None:
             query = {}
+        if query_version and query_version.lower().startswith('v0'):
+            # this is an old/basic query so we need to convert it first
+            query = convert_to_multisearch(query)
+            query_version = None
         if query_version is None:
             query_version = get_latest_query_version()
-            try:
-                validate_query(query, query_version)
-            except ValidationError:
-                query = convert_to_multisearch(query)
 
         return cls(query, query_version, rounded_resource_ids_and_versions)
 
