@@ -7,6 +7,7 @@ from ckan.lib.search import SearchIndexError
 from .. import common
 from ..datastore_utils import prefix_resource, prefix_field
 from ..importing.details import get_all_details
+import json
 
 
 def run_search(search, indexes, version=None):
@@ -199,6 +200,8 @@ def convert_to_multisearch(query):
                 values = [values]
             if field == '__geo__':
                 for value in values:
+                    if isinstance(value, str):
+                        value = json.loads(value)
                     if value['type'] == 'Polygon':
                         filter_list.append({'geo_custom_area': [value['coordinates']]})
                     else:
