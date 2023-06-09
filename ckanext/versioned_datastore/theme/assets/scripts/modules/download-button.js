@@ -1,11 +1,9 @@
 ckan.module('versioned_datastore_download-button', function ($) {
   return {
     initialize: function () {
-      // use the same 'this' object in all _on*() functions in this module
+      // use the same 'this' object in all _on*() and _set*() functions in this module
       $.proxyAll(this, /_on/);
-      // do the same for some helper functions that aren't named _on*()
-      $.proxy(this._toggleLoading, this);
-      $.proxy(this._setSearchUrl, this);
+      $.proxyAll(this, /_set/);
 
       // get the icon and its classes so we can turn it into a spinner while loading
       this.icon = this.$('#vds-download-button-icon');
@@ -15,45 +13,42 @@ ckan.module('versioned_datastore_download-button', function ($) {
       this.templateOptions = {
         multiResource: true,
       };
-      this.options.slug_or_doi =
-        typeof this.options.slug_or_doi === 'string'
-          ? this.options.slug_or_doi
-          : null;
+      this.searchOptions = {};
+
       if (this.options.slug_or_doi) {
-        // ignore everything else
+        // if a slug or doi is set, ignore everything else
         this.options.resources = null;
         this.options.query = null;
 
-        this.searchOptions = {
-          slug_or_doi: this.options.slug_or_doi,
-        };
+        this.searchOptions.slug_or_doi = this.options.slug_or_doi;
         this.templateOptions.slug = this.options.slug_or_doi;
         this._setSearchUrl();
       } else {
-        this.options.resources = this.options.resources.split(',');
-        this.options.query =
-          typeof this.options.query === 'object' ? this.options.query : {};
-
-        this.searchOptions = {
-          query: this.options.query,
-          resource_ids: this.options.resources,
-        };
+        // resources defaults to an empty array
+        this.options.resources =
+          this.options.resources === undefined
+            ? []
+            : this.options.resources.split(',');
+        this.searchOptions.resource_ids = this.options.resources;
         this.templateOptions.multiResource = this.options.resources.length > 1;
 
-        // get a slug for this search; it doesn't really matter if this fails, but it's nice
-        this._toggleLoading(true);
-        this.sandbox.client.call(
-          'POST',
-          'datastore_create_slug',
-          this.searchOptions,
-          (response) => {
-            if (response.success) {
-              this.templateOptions.slug = response.result.slug;
-            }
-            this._setSearchUrl();
-            this._toggleLoading(false);
-          },
-        );
+        if (
+          typeof this.options.query === 'string' &&
+          this.options.query.toUpperCase() === 'FROM URL'
+        ) {
+          // make sure it's consistent for other functions
+          this.options.query = 'FROM URL';
+          this._setQuery();
+        } else if (
+          this.options.query === undefined ||
+          !(typeof this.options.query === 'object')
+        ) {
+          // defaults to an empty object
+          this.options.query = {};
+          this.searchOptions.query = this.options.query;
+        } else {
+          this.searchOptions.query = this.options.query;
+        }
       }
 
       // set up event handlers
@@ -76,7 +71,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
         trigger: 'manual', // it has to be manual so we can hide/cancel from inside it
       });
       this.el.popover('show');
-      this._toggleLoading(false);
+      this._setLoading(false);
     },
 
     _onReceiveSnippetError: function (error) {
@@ -85,7 +80,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
 
     _onClick: function (event) {
       if (!this._snippetReceived) {
-        this._toggleLoading(true);
+        this._setLoading(true);
         this.sandbox.client.getTemplate(
           'download_popup.html',
           this.templateOptions,
@@ -102,19 +97,19 @@ ckan.module('versioned_datastore_download-button', function ($) {
       // every time we show the popover it creates a new instance with a new id, so we
       // have to set up all the listeners again
 
-      let popoverId = this.el.attr('aria-describedby');
-      let popover = $(`#${popoverId}`);
-      let popoverForm = popover.find('form');
+      this.popoverId = this.el.attr('aria-describedby');
+      this.popover = $(`#${this.popoverId}`);
+      this.popoverForm = this.popover.find('form');
 
       // hide it when the cancel button is clicked
-      popoverForm.on('reset', () => {
+      this.popoverForm.on('reset', () => {
         this.el.popover('hide');
       });
 
       // hide/show the email group when user changes notif type
-      const notifierSelect = popoverForm.find('#vds-dl-notifier');
+      const notifierSelect = this.popoverForm.find('#vds-dl-notifier');
       notifierSelect.on('change', () => {
-        let emailGroup = popoverForm.find('#vds-dl-email-group');
+        let emailGroup = this.popoverForm.find('#vds-dl-email-group');
         if (notifierSelect.val() === 'email') {
           emailGroup.removeClass('hidden');
         } else {
@@ -122,53 +117,68 @@ ckan.module('versioned_datastore_download-button', function ($) {
         }
       });
 
-      popoverForm.on('submit', (e) => {
+      // prevent the form submitting until we're ready
+      const submitButton = this.popoverForm.find('#vds-dl-submit');
+      submitButton.attr('disabled', true);
+      this.popoverForm.on('submit', (e) => {
         e.preventDefault();
-        let formData = { query: { ...this.searchOptions } };
-        popoverForm.serializeArray().forEach((i) => {
-          let nameParts = i.name.split('.');
-          nameParts.reduce((parentContainer, part, ix) => {
-            if (!Object.keys(parentContainer).includes(part)) {
-              // this retains a reference to formData, so we're just setting nested
-              // properties on that
-              parentContainer[part] =
-                ix === nameParts.length - 1 ? i.value : {};
-            }
-            return parentContainer[part];
-          }, formData);
-        });
-        this._toggleLoading(true);
-        this.sandbox.client.call(
-          'POST',
-          'datastore_queue_download',
-          formData,
-          (response) => {
-            if (response.success) {
-              popoverForm.addClass('hidden');
-              popover
-                .find('#vds-dl-status-link')
-                .attr(
-                  'href',
-                  this.sandbox.client.endpoint +
-                    '/status/download/' +
-                    response.result.download_id,
-                );
-              popover.find('#vds-dl-post-submit').removeClass('hidden');
-            } else {
-              this._flashError();
-            }
-            this._toggleLoading(false);
-          },
-          (error) => {
-            this._flashError();
-            this._toggleLoading(false);
-            console.log(error);
-          },
-        );
+      });
+
+      // set the query and make sure the search page link is correct
+      this._setQuery().then(() => {
+        this.popover
+          .find('#vds-dl-search-link')
+          .attr('href', this.templateOptions.searchUrl);
+        this.popoverForm.on('submit', this._onSubmit);
+        submitButton.removeAttr('disabled');
       });
     },
 
-    _toggleLoading: function (isLoading) {
+    _onSubmit: function (event) {
+      event.preventDefault();
+      let formData = { query: { ...this.searchOptions } };
+      this.popoverForm.serializeArray().forEach((i) => {
+        let nameParts = i.name.split('.');
+        nameParts.reduce((parentContainer, part, ix) => {
+          if (!Object.keys(parentContainer).includes(part)) {
+            // this retains a reference to formData, so we're just setting nested
+            // properties on that
+            parentContainer[part] = ix === nameParts.length - 1 ? i.value : {};
+          }
+          return parentContainer[part];
+        }, formData);
+      });
+      this._setLoading(true);
+      this.sandbox.client.call(
+        'POST',
+        'datastore_queue_download',
+        formData,
+        (response) => {
+          if (response.success) {
+            this.popoverForm.addClass('hidden');
+            this.popover
+              .find('#vds-dl-status-link')
+              .attr(
+                'href',
+                this.sandbox.client.endpoint +
+                  '/status/download/' +
+                  response.result.download_id,
+              );
+            this.popover.find('#vds-dl-post-submit').removeClass('hidden');
+          } else {
+            this._flashError();
+          }
+          this._setLoading(false);
+        },
+        (error) => {
+          this._flashError();
+          this._setLoading(false);
+          console.error(error);
+        },
+      );
+    },
+
+    _setLoading: function (isLoading) {
       this.icon.removeClass();
       this.icon.addClass(isLoading ? 'fas fa-spinner fa-spin' : this.iconClass);
     },
@@ -195,6 +205,60 @@ ckan.module('versioned_datastore_download-button', function ($) {
         this.sandbox.client.endpoint +
         '/search/' +
         (this.templateOptions.slug || '');
+    },
+
+    _setQuery: function () {
+      if (this.options.query === 'FROM URL') {
+        let params = new URLSearchParams(window.location.search);
+        this.searchOptions.query = {};
+        if (params.has('q')) {
+          this.searchOptions.query['q'] = params.get('q');
+        }
+        if (params.has('filters')) {
+          let filters = {};
+          params
+            .get('filters')
+            .split('|')
+            .forEach((f) => {
+              let filterParts = f.split(':');
+              filters[filterParts[0]] = filterParts.slice(1).join(':');
+            });
+          this.searchOptions.query['filters'] = filters;
+        }
+        this.searchOptions.query_version = 'v0'; // show it needs converting
+        return this._setSlug();
+      } else {
+        return new Promise((resolve, reject) => {
+          resolve();
+        });
+      }
+    },
+
+    _setSlug: function () {
+      // get a slug for this search; it doesn't really matter if this fails, but it's nice
+      this._setLoading(true);
+      let slugOptions = {
+        ...this.searchOptions,
+        nav_slug: true,
+      };
+      return new Promise((resolve, reject) => {
+        this.sandbox.client.call(
+          'POST',
+          'datastore_create_slug',
+          slugOptions,
+          (response) => {
+            if (response.success) {
+              this.templateOptions.slug = response.result.slug;
+            }
+            this._setSearchUrl();
+            this._setLoading(false);
+            resolve();
+          },
+          () => {
+            this._setLoading(false);
+          },
+        );
+      });
     },
   };
 });
