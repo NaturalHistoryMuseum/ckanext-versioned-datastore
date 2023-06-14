@@ -1,12 +1,12 @@
 from copy import copy
+from datetime import datetime
+
+from elasticsearch_dsl import Search, MultiSearch
+from splitgill.search import create_version_query, create_index_specific_version_filter
+from splitgill.utils import to_timestamp
 
 from ckan import model
 from ckan.plugins import toolkit
-from datetime import datetime
-from splitgill.search import create_version_query, create_index_specific_version_filter
-from splitgill.utils import to_timestamp
-from elasticsearch_dsl import Search, MultiSearch
-
 from .. import common
 from ..datastore_utils import prefix_resource, get_last_after, trim_index_name
 
@@ -226,7 +226,10 @@ def find_searched_resources(search, resource_ids):
 
 
 def get_resources_and_versions(
-    resource_ids=None, resource_ids_and_versions=None, version=None
+    resource_ids=None,
+    resource_ids_and_versions=None,
+    version=None,
+    allow_non_datastore=False,
 ):
     """
     Get a list of resource ids and a dict of resource ids and versions from either, e.g.
@@ -235,6 +238,8 @@ def get_resources_and_versions(
     :param resource_ids: a list of resource ids
     :param resource_ids_and_versions: a dict of resource id: resource version
     :param version: a datestamp used as a default version for resources without a version
+    :param allow_non_datastore: allow non datastore resources to be included (will be
+                                returned with common.NON_DATASTORE_VERSION)
     :return: a tuple of resource_ids, resource_ids_and_versions
     """
 
@@ -244,12 +249,27 @@ def get_resources_and_versions(
         # use the resource_ids_and_versions dict first over the resource_ids and version params
         resource_ids = list(resource_ids_and_versions.keys())
 
-    # figure out which resources should be searched
-    resource_ids = list(get_available_datastore_resources({}, resource_ids))
-    if not resource_ids:
+    # first see what's available from the datastore
+    available_resource_ids = list(get_available_datastore_resources({}, resource_ids))
+    if (not available_resource_ids) and (not allow_non_datastore):
         raise toolkit.ValidationError(
             "The requested resources aren't accessible to this user"
         )
+
+    unavailable_resource_ids = [
+        rid for rid in resource_ids if rid not in available_resource_ids
+    ]
+    non_datastore_resources = []
+
+    if allow_non_datastore:
+        resource_show = toolkit.get_action('resource_show')
+        for resource_id in unavailable_resource_ids:
+            resource = resource_show({}, {'id': resource_id})
+            # if we get nothing back there's probably an access issue; if it's a
+            # datastore resource something went wrong earlier
+            if resource and not resource['datastore_active']:
+                available_resource_ids.append(resource_id)
+                non_datastore_resources.append(resource_id)
 
     rounded_resource_ids_and_versions = {}
     # see if a version was provided; we'll use this if a resource id we're searching doesn't
@@ -257,7 +277,12 @@ def get_resources_and_versions(
     # dict, or that parameter wasn't provided)
     if version is None:
         version = to_timestamp(datetime.now())
-    for resource_id in resource_ids:
+    for resource_id in available_resource_ids:
+        if resource_id in non_datastore_resources:
+            rounded_resource_ids_and_versions[
+                resource_id
+            ] = common.NON_DATASTORE_VERSION
+            continue
         # try to get the target version from the passed resource_ids_and_versions dict, but if
         # it's not in there, default to the version variable
         target_version = resource_ids_and_versions.get(resource_id, version)
@@ -270,4 +295,4 @@ def get_resources_and_versions(
             # resource ids without a rounded version are skipped
             rounded_resource_ids_and_versions[resource_id] = rounded_version
 
-    return resource_ids, rounded_resource_ids_and_versions
+    return available_resource_ids, rounded_resource_ids_and_versions

@@ -27,7 +27,7 @@ class Query(object):
         return self._search
 
     @classmethod
-    def from_query_args(cls, query_args: QueryArgs):
+    def from_query_args(cls, query_args: QueryArgs, allow_non_datastore=False):
         query = query_args.query
         query_version = query_args.query_version
         resource_ids = query_args.resource_ids
@@ -48,7 +48,9 @@ class Query(object):
                 pass
 
         resource_ids, rounded_resource_ids_and_versions = get_resources_and_versions(
-            resource_ids, resource_ids_and_versions
+            resource_ids,
+            resource_ids_and_versions,
+            allow_non_datastore=allow_non_datastore,
         )
 
         # setup the query

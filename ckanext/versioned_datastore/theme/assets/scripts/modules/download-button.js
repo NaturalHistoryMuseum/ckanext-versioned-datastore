@@ -19,6 +19,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
         // if a slug or doi is set, ignore everything else
         this.options.resources = null;
         this.options.query = null;
+        this.options.non_datastore = false;
 
         this.searchOptions.slug_or_doi = this.options.slug_or_doi;
         this.templateOptions.slug = this.options.slug_or_doi;
@@ -32,13 +33,21 @@ ckan.module('versioned_datastore_download-button', function ($) {
         this.searchOptions.resource_ids = this.options.resources;
         this.templateOptions.multiResource = this.options.resources.length > 1;
 
+        if (this.options.non_datastore) {
+          this.options.query = {};
+          this.templateOptions.datastore = false;
+        } else {
+          this.templateOptions.datastore = true;
+        }
+
+        // query can either be an object or 'FROM URL'
         if (
           typeof this.options.query === 'string' &&
           this.options.query.toUpperCase() === 'FROM URL'
         ) {
           // make sure it's consistent for other functions
           this.options.query = 'FROM URL';
-          this._setQuery();
+          this.searchOptions.query = {}; // it'll be set when the popup is shown
         } else if (
           this.options.query === undefined ||
           !(typeof this.options.query === 'object')
@@ -137,17 +146,32 @@ ckan.module('versioned_datastore_download-button', function ($) {
     _onSubmit: function (event) {
       event.preventDefault();
       let formData = { query: { ...this.searchOptions } };
-      this.popoverForm.serializeArray().forEach((i) => {
-        let nameParts = i.name.split('.');
-        nameParts.reduce((parentContainer, part, ix) => {
-          if (!Object.keys(parentContainer).includes(part)) {
-            // this retains a reference to formData, so we're just setting nested
-            // properties on that
-            parentContainer[part] = ix === nameParts.length - 1 ? i.value : {};
-          }
-          return parentContainer[part];
-        }, formData);
-      });
+      this.popoverForm
+        .serializeArray()
+        .filter((i) => {
+          let element = this.popoverForm.find(`[name="${i.name}"]`);
+          return element.is(':visible');
+        })
+        .forEach((i) => {
+          let nameParts = i.name.split('.');
+          nameParts.reduce((parentContainer, part, ix) => {
+            if (!Object.keys(parentContainer).includes(part)) {
+              // this retains a reference to formData, so we're just setting nested
+              // properties on that
+              parentContainer[part] =
+                ix === nameParts.length - 1 ? i.value : {};
+            }
+            return parentContainer[part];
+          }, formData);
+        });
+
+      if (this.options.non_datastore) {
+        formData.file = {
+          format: 'raw',
+          format_args: { allow_non_datastore: true },
+        };
+      }
+
       this._setLoading(true);
       this.sandbox.client.call(
         'POST',
@@ -211,21 +235,25 @@ ckan.module('versioned_datastore_download-button', function ($) {
       if (this.options.query === 'FROM URL') {
         let params = new URLSearchParams(window.location.search);
         this.searchOptions.query = {};
-        if (params.has('q')) {
-          this.searchOptions.query['q'] = params.get('q');
+        if (params.has('q') || params.has('filters')) {
+          if (params.has('q')) {
+            this.searchOptions.query['q'] = params.get('q');
+          }
+          if (params.has('filters')) {
+            let filters = {};
+            params
+              .get('filters')
+              .split('|')
+              .forEach((f) => {
+                let filterParts = f.split(':');
+                filters[filterParts[0]] = filterParts.slice(1).join(':');
+              });
+            this.searchOptions.query['filters'] = filters;
+          }
+          this.searchOptions.query_version = 'v0'; // show it needs converting
         }
-        if (params.has('filters')) {
-          let filters = {};
-          params
-            .get('filters')
-            .split('|')
-            .forEach((f) => {
-              let filterParts = f.split(':');
-              filters[filterParts[0]] = filterParts.slice(1).join(':');
-            });
-          this.searchOptions.query['filters'] = filters;
-        }
-        this.searchOptions.query_version = 'v0'; // show it needs converting
+        return this._setSlug();
+      } else if (!this.templateOptions.slug && !this.options.non_datastore) {
         return this._setSlug();
       } else {
         return new Promise((resolve, reject) => {
@@ -256,6 +284,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
           },
           () => {
             this._setLoading(false);
+            // we could reject here but it doesn't really matter if it fails
           },
         );
       });

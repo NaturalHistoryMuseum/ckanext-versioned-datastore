@@ -1,5 +1,6 @@
 <div class="vds-download-popup">
     <form>
+        {% if datastore == 'true' %}
         <p><small>More advanced download options can be found on the <a
             href="{{ searchUrl }}" target="_blank" id="vds-dl-search-link">search page</a>.</small>
         </p>
@@ -27,6 +28,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
 
         <div class="form-group">
             <div class="form-row">
