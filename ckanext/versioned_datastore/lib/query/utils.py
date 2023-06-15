@@ -257,7 +257,7 @@ def get_resources_and_versions(
         )
 
     unavailable_resource_ids = [
-        rid for rid in resource_ids if rid not in available_resource_ids
+        rid for rid in resource_ids or [] if rid not in available_resource_ids
     ]
     non_datastore_resources = []
 
