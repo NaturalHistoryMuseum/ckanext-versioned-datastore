@@ -53,7 +53,7 @@ def elasticsearch_client():
 def get_available_resources(resource_ids=None):
     resource_ids = resource_ids or ['test-resource-id']
     return patch(
-        'ckanext.versioned_datastore.lib.downloads.query.get_available_datastore_resources',
+        'ckanext.versioned_datastore.lib.query.utils.get_available_datastore_resources',
         return_value=resource_ids,
     )
 
