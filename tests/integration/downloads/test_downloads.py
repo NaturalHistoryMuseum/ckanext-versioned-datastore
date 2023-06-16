@@ -1,15 +1,15 @@
 import csv
 import json
 import os
+import pytest
 import shutil
 import tempfile
 import zipfile
-
-import pytest
-from ckan.plugins import toolkit
 from mock import patch, MagicMock
-
 from tests.helpers import patches, data as test_data
+
+from ckan.plugins import toolkit
+from ckan.tests import factories
 
 scenarios = [
     ('csv', {}),
@@ -313,6 +313,59 @@ class TestQueueDownload:
 
         shutil.rmtree(self.temp_dir)
 
+    @patches.enqueue_job()
+    def test_run_download_with_non_vds_resource(self, enqueue_job, with_vds_resource):
+        non_ds_resource = factories.Resource(url_type='upload')
+
+        def _shutil_mock(src, dest):
+            # there's nothing to copy from, so just write the new file
+            with open(dest, 'w') as f:
+                f.write('hello')
+
+        with patch('shutil.copy2', side_effect=_shutil_mock):
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {
+                        'query': {},
+                        'resource_ids': [non_ds_resource['id']],
+                    },
+                    'file': {
+                        'format': 'raw',
+                        'format_args': {'allow_non_datastore': True},
+                    },
+                    'notifier': {'type': 'none'},
+                },
+            )
+        enqueue_job.assert_called()
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_details['download_id'])
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            zf.extract('manifest.json', self.temp_dir)
+            assert len(archive_files) == 2
+            # it's easier to do it this way than to predict the url or split it or whatever
+            extless_files = [os.path.splitext(f)[0] for f in archive_files]
+            assert non_ds_resource['id'] in extless_files
+
+        with open(os.path.join(self.temp_dir, 'manifest.json')) as f:
+            manifest = json.load(f)
+            assert manifest['download_id'] == download_details['download_id']
+            assert manifest['file_format'] == 'raw'
+            assert sorted(manifest['files']) == sorted(archive_files)
+            assert not manifest['ignore_empty_fields']
+            assert manifest['separate_files']
+            assert manifest['total_records'] == 1
+
+        shutil.rmtree(self.temp_dir)
+
 
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
 @pytest.mark.ckan_config('ckanext.query_dois.prefix', 'xx.xxxx')
@@ -340,7 +393,6 @@ class TestDownloadWithQueryDois:
 
     @patches.enqueue_job()
     def test_run_download_with_query_dois(self, enqueue_job):
-
         # I cannot get the query_doi endpoints to load for the life of me so we're just
         # going to mock it before I lose my mind
         def _url_for_mock(endpoint, **kwargs):
