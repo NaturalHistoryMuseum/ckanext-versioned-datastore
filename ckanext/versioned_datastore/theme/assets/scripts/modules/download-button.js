@@ -62,6 +62,11 @@ ckan.module('versioned_datastore_download-button', function ($) {
       // set up event handlers
       this.el.on('click', this._onClick);
       this.el.on('shown.bs.popover', this._onShowPopover);
+      this.sandbox.subscribe('vds_dl_popover_shown', this._onEvent);
+    },
+
+    teardown: function () {
+      this.sandbox.unsubscribe('vds_dl_popover_shown', this._onEvent);
     },
 
     _snippetReceived: false,
@@ -102,6 +107,9 @@ ckan.module('versioned_datastore_download-button', function ($) {
     },
 
     _onShowPopover: function (event) {
+      // emit/publish event for other download buttons to listen to
+      this.sandbox.publish('vds_dl_popover_shown', this.el);
+
       // every time we show the popover it creates a new instance with a new id, so we
       // have to set up all the listeners again
 
@@ -210,6 +218,12 @@ ckan.module('versioned_datastore_download-button', function ($) {
           console.error(error);
         },
       );
+    },
+
+    _onEvent: function (button) {
+      if (button !== this.el) {
+        this.el.popover('hide');
+      }
     },
 
     _setLoading: function (isLoading) {
