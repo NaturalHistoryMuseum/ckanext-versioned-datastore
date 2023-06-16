@@ -260,10 +260,10 @@ ckan.module('versioned_datastore_download-button', function ($) {
         let params = new URLSearchParams(window.location.search);
         this.searchOptions.query = {};
         if (params.has('q') || params.has('filters')) {
-          if (params.has('q')) {
+          if (params.has('q') && params.get('q') !== '') {
             this.searchOptions.query['q'] = params.get('q');
           }
-          if (params.has('filters')) {
+          if (params.has('filters') && params.get('filters') !== '') {
             let filters = {};
             params
               .get('filters')
