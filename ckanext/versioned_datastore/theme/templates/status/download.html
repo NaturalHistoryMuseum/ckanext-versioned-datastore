@@ -137,7 +137,7 @@
                     <td>
                         <dl>
                             <dt>Total</dt>
-                            {% if download_request.core_record.total is not None %}
+                            {% if download_request.core_record.total is not none %}
                             <dd>{{ download_request.core_record.total }}</dd>
                             {% endif %}
                             {% if download_request.core_record.resource_totals %}
