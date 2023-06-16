@@ -1,13 +1,16 @@
+import copy
+import json
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import MultiSearch, Search
 from splitgill.indexing.utils import DOC_TYPE
 from splitgill.search import create_version_query
 
 from ckan.lib.search import SearchIndexError
+from ckan.plugins import PluginImplementations
 from .. import common
 from ..datastore_utils import prefix_resource, prefix_field
 from ..importing.details import get_all_details
-import json
+from ...interfaces import IVersionedDatastore
 
 
 def run_search(search, indexes, version=None):
@@ -188,7 +191,14 @@ def get_fields(resource_id, version=None):
 
 
 def convert_to_multisearch(query):
+    # save a copy of the original query
+    basic_query = copy.deepcopy(query)
     multisearch_query = {}
+
+    # allow other plugins to modify the query before processing, e.g. to remove any
+    # custom filters
+    for plugin in PluginImplementations(IVersionedDatastore):
+        query = plugin.datastore_before_convert_basic_query(query)
 
     if 'q' in query:
         multisearch_query['search'] = query['q']
@@ -210,14 +220,24 @@ def convert_to_multisearch(query):
                         raise NotImplemented
             else:
                 subgroup = []
+                subgroup_count = 0
                 for value in values:
-                    subgroup.append(
-                        {'string_equals': {'fields': [field], 'value': value}}
-                    )
-                if len(values) > 1:
+                    if field != '' and value != '':
+                        subgroup.append(
+                            {'string_equals': {'fields': [field], 'value': value}}
+                        )
+                        subgroup_count += 1
+                if subgroup_count > 1:
                     filter_list.append({'or': subgroup})
-                else:
+                elif subgroup_count == 1:
                     filter_list += subgroup
         multisearch_query['filters'] = {'and': filter_list}
+
+    # allow plugins to modify the output, with the additional context of the original
+    # basic query
+    for plugin in PluginImplementations(IVersionedDatastore):
+        multisearch_query = plugin.datastore_after_convert_basic_query(
+            basic_query, multisearch_query
+        )
 
     return multisearch_query
