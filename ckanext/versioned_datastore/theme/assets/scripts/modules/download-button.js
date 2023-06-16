@@ -12,6 +12,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
       // process options into searchOptions and templateOptions
       this.templateOptions = {
         multiResource: true,
+        datastore: true,
       };
       this.searchOptions = {};
 
@@ -36,8 +37,6 @@ ckan.module('versioned_datastore_download-button', function ($) {
         if (this.options.non_datastore) {
           this.options.query = {};
           this.templateOptions.datastore = false;
-        } else {
-          this.templateOptions.datastore = true;
         }
 
         // query can either be an object or 'FROM URL'
