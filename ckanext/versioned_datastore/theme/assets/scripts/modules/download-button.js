@@ -156,10 +156,21 @@ ckan.module('versioned_datastore_download-button', function ($) {
           let nameParts = i.name.split('.');
           nameParts.reduce((parentContainer, part, ix) => {
             if (!Object.keys(parentContainer).includes(part)) {
+              let val;
+              switch (i.value) {
+                case 'on':
+                  val = true;
+                  break;
+                case 'off':
+                  val = false;
+                  break;
+                default:
+                  val = i.value;
+                  break;
+              }
               // this retains a reference to formData, so we're just setting nested
               // properties on that
-              parentContainer[part] =
-                ix === nameParts.length - 1 ? i.value : {};
+              parentContainer[part] = ix === nameParts.length - 1 ? val : {};
             }
             return parentContainer[part];
           }, formData);
