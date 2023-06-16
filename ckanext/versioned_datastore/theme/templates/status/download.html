@@ -137,7 +137,9 @@
                     <td>
                         <dl>
                             <dt>Total</dt>
-                            <dd>{{ download_request.core_record.total or _('processing') }}</dd>
+                            {% if download_request.core_record.total is not None %}
+                            <dd>{{ download_request.core_record.total }}</dd>
+                            {% endif %}
                             {% if download_request.core_record.resource_totals %}
                             {% for res_id, res in resources.items() %}
                             {% if download_request.core_record.resource_totals[res_id] > 0 %}
