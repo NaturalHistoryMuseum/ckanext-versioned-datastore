@@ -469,6 +469,9 @@ class DownloadRunManager:
                 res = resource_show({}, {'id': resource_id})
                 if res.get('url_type') == 'upload':
                     upload = uploader.get_resource_uploader(res)
+                    if not upload.storage_path:
+                        # if ckan.storage_path is not set
+                        raise Exception('Non-datastore uploads are not configured.')
                     filepath = upload.get_path(res['id'])
                     original_filename = res.get('url', '').split('/')[-1]
                     fileext = (
