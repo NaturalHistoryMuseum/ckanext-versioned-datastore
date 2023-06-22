@@ -8,10 +8,11 @@ from uuid import uuid4
 
 from lxml import etree
 
-from ckan.plugins import toolkit, plugin_loaded
+from ckan.plugins import toolkit, plugin_loaded, PluginImplementations
 from . import urls, utils
 from .schema import Schema
 from ..base import BaseDerivativeGenerator
+from .....interfaces import IVersionedDatastoreDownloads
 
 
 class DwcDerivativeGenerator(BaseDerivativeGenerator):
@@ -441,6 +442,9 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                         agent['organizationName'] = c['agent']['name']
                     dataset_metadata['creator'].append(agent)
                     authors.append(c['agent']['id'])
+
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            dataset_metadata = plugin.download_modify_eml(dataset_metadata, self._query)
 
         nsmap = utils.NSMap(
             eml=urls.XMLUrls.eml,

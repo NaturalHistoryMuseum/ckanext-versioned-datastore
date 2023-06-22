@@ -383,6 +383,17 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         """
         return manifest
 
+    def download_modify_eml(self, eml_dict, query):
+        """
+        Hook allowing other extensions to modify the content of the EML before it's
+        transformed into XML and written to file.
+
+        :param eml_dict: the current eml content, as a dict
+        :param query: the query for this download
+        :return: the modified eml dict
+        """
+        return eml_dict
+
     def download_after_run(self, request):
         """
         Hook notifying that a download has finished (whether failed or completed). Does
