@@ -337,6 +337,17 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                 'keywordSet': [],
                 'intellectualRights': {'para': query_license},
                 'distribution': ({'online': {'url': site_url}}, {'scope': 'document'}),
+                'coverage': {
+                    'geographicCoverage': {
+                        'geographicDescription': 'Unbound',
+                        'boundingCoordinates': {
+                            'westBoundingCoordinates': -180,
+                            'eastBoundingCoordinates': 180,
+                            'northBoundingCoordinates': -90,
+                            'southBoundingCoordinates': 90,
+                        },
+                    }
+                },
                 'contact': [org],
             }
         )
