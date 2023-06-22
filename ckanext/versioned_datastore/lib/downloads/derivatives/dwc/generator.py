@@ -80,11 +80,8 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         )
 
         # set up file paths & divide fields between core/extensions
-        self.file_paths = {
-            'core': os.path.join(
-                self._build_dir, f'{self.schema.row_type_name.lower()}.csv'
-            )
-        }
+        self._core_file_name = f'{self.schema.row_type_name.lower()}.csv'
+        self.file_paths = {'core': os.path.join(self._build_dir, self._core_file_name)}
         root_field_names = set([f.split('.')[0] for f in self.all_fields])
         all_ext_field_names = [
             item for ext in self.schema.extensions for item in ext.location.fields
@@ -246,7 +243,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         )
         core_files = etree.SubElement(core, 'files')
         core_files_location = etree.SubElement(core_files, 'location')
-        core_files_location.text = self.file_paths['core']
+        core_files_location.text = self._core_file_name
         etree.SubElement(core, 'id', index='0')
         for i, c in enumerate(self.writers['core'].fieldnames):
             if c == '_id':
