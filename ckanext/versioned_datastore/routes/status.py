@@ -1,4 +1,5 @@
 from datetime import datetime as dt, timedelta
+from flask import Blueprint, jsonify
 
 from ckan.plugins import toolkit, plugin_loaded
 from ..lib.downloads.loaders import get_file_server
@@ -11,8 +12,7 @@ blueprint = Blueprint(
 )
 
 
-@blueprint.route('/download/<download_id>')
-def download_status(download_id):
+def get_download_details(download_id):
     dl = DownloadRequest.get(download_id)
 
     if dl is None:
@@ -90,16 +90,44 @@ def download_status(download_id):
         if query_doi:
             doi_url = get_landing_page_url(query_doi)
 
+    return {
+        'download_request': dl,
+        'resources': resources,
+        'status_friendly': status_friendly[dl.state],
+        'total_time': total_time_elapsed,
+        'since_last_update': since_last_updated,
+        'urls': urls,
+        'doi': query_doi,
+        'doi_url': doi_url,
+    }
+
+
+@blueprint.route('/download/<download_id>')
+def download_status(download_id):
+    details = get_download_details(download_id)
     return toolkit.render(
         'status/download.html',
-        extra_vars={
-            'download_request': dl,
-            'resources': resources,
-            'status_friendly': status_friendly[dl.state],
-            'total_time': total_time_elapsed,
-            'since_last_update': since_last_updated,
-            'urls': urls,
-            'doi': query_doi,
-            'doi_url': doi_url,
-        },
+        extra_vars=details,
     )
+
+
+@blueprint.route('/download/<download_id>/json')
+def download_status_json(download_id):
+    details = get_download_details(download_id)
+
+    download_request = details['download_request']
+    details['created'] = download_request.created
+    details['modified'] = download_request.modified
+    details['message'] = download_request.message
+    del details['download_request']  # not serialisable
+
+    doi = details.get('doi')
+    if doi:
+        details['query'] = doi.query
+        details['query_version'] = doi.query_version
+        details['doi'] = doi.doi
+
+    details['download_id'] = download_id
+    details['total_time'] = details['total_time'].seconds
+    details['since_last_update'] = details['since_last_update'].seconds
+    return jsonify(details)

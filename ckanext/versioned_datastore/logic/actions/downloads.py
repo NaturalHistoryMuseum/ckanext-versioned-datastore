@@ -42,4 +42,14 @@ def datastore_queue_download(
         'queued_at': job.enqueued_at.isoformat(),
         'job_id': job.id,
         'download_id': download_runner.request.id,
+        'status_json': toolkit.url_for(
+            'datastore_status.download_status_json',
+            download_id=download_runner.request.id,
+            qualified=True,
+        ),
+        'status_html': toolkit.url_for(
+            'datastore_status.download_status',
+            download_id=download_runner.request.id,
+            qualified=True,
+        ),
     }
