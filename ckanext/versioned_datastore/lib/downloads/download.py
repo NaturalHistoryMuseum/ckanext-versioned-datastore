@@ -83,7 +83,9 @@ class DownloadRunManager:
 
         # initialises a log entry in the database
         self.request = DownloadRequest(
-            core_id=self.core_record.id, derivative_id=self.derivative_record.id
+            core_id=self.core_record.id,
+            derivative_id=self.derivative_record.id,
+            server_args={f: getattr(server_args, f) for f in server_args.fields},
         )
         self.request.save()
 

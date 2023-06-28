@@ -62,6 +62,7 @@ datastore_downloads_requests_table = Table(
     Column('modified', DateTime, nullable=False, default=datetime.utcnow),
     Column('state', UnicodeText, nullable=False, default=state_initial),
     Column('message', UnicodeText, nullable=True),
+    Column('server_args', JSONB, nullable=True),
     Column(
         'derivative_id',
         UnicodeText,
@@ -203,6 +204,7 @@ class DownloadRequest(DomainObject):
     modified: datetime
     state: str
     message: str
+    server_args: dict
     derivative_id: str
     derivative_record: DerivativeFileRecord
     core_record: CoreFileRecord
