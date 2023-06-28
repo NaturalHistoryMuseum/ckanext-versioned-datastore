@@ -1,7 +1,8 @@
-from ckan.plugins import toolkit
-from ckanext.datastore.logic.schema import json_validator
 from ckantools.validators import list_of_strings
 from ckantools.validators.ivalidators import BaseArgs
+
+from ckan.plugins import toolkit
+from ckanext.datastore.logic.schema import json_validator
 
 # grab all the validator functions upfront
 boolean_validator = toolkit.get_validator('boolean_validator')
@@ -57,8 +58,13 @@ class DerivativeArgs(BaseArgs):
 class ServerArgs(BaseArgs):
     type: str
     type_args: dict
+    custom_filename: str
 
-    fields = {'type': [not_missing, str], 'type_args': [ignore_missing, json_validator]}
+    fields = {
+        'type': [not_missing, str],
+        'type_args': [ignore_missing, json_validator],
+        'custom_filename': [ignore_missing, str],
+    }
 
     defaults = {'type': 'direct', 'type_args': {}}
 

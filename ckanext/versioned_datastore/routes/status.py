@@ -1,9 +1,9 @@
 from datetime import datetime as dt, timedelta
 
 from ckan.plugins import toolkit, plugin_loaded
-from flask import Blueprint
-
-from ..lib.downloads.servers import servers
+from ..lib.downloads.loaders import get_file_server
+from ..lib.downloads.servers import DirectFileServer
+from ..logic.actions.meta.arg_objects import ServerArgs
 from ..model.downloads import DownloadRequest
 
 blueprint = Blueprint(
@@ -49,10 +49,25 @@ def download_status(download_id):
         seconds=round((time_now - dl.modified).total_seconds())
     )
 
+    urls = {}
     if dl.state == DownloadRequest.state_complete:
-        urls = {server.name: server().serve(dl) for server in servers}
-    else:
-        urls = {}
+        # include a vanilla direct link
+        urls['direct'] = DirectFileServer().serve(dl)
+        if dl.server_args is not None:
+            server_args = ServerArgs(**dl.server_args)
+            if server_args.custom_filename:
+                urls['custom'] = DirectFileServer(
+                    filename=server_args.custom_filename
+                ).serve(dl)
+
+            server = get_file_server(
+                server_args.type,
+                filename=server_args.custom_filename,
+                **server_args.type_args,
+            )
+            url = server.serve(dl)
+            if url != urls['direct'] and url != urls.get('custom'):
+                urls[server.name] = url
 
     query_doi = None
     doi_url = None

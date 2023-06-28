@@ -133,3 +133,10 @@ def datastore_count(context, data_dict):
 def datastore_edit_slug(context, data_dict):
     # only allows logged-in users
     return {'success': True}
+
+
+@auth()
+def datastore_custom_download_filename(context, data_dict):
+    # only allow access to admins (they usually skip this check)
+    user_is_sysadmin = context.get('auth_user_obj').sysadmin
+    return {'success': user_is_sysadmin}
