@@ -93,6 +93,7 @@ def get_download_details(download_id):
     return {
         'download_request': dl,
         'resources': resources,
+        'status': dl.state,
         'status_friendly': status_friendly[dl.state],
         'total_time': total_time_elapsed,
         'since_last_update': since_last_updated,
