@@ -100,6 +100,12 @@ def datastore_queue_download(context, data_dict):
 
 
 @auth(anon=True)
+def datastore_regenerate_download(context, data_dict):
+    # allow access to everyone
+    return {'success': True}
+
+
+@auth(anon=True)
 def datastore_guess_fields(context, data_dict):
     # allow access to everyone
     return {'success': True}

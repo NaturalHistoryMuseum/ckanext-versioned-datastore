@@ -198,6 +198,14 @@ def datastore_queue_download():
     }
 
 
+def datastore_regenerate_download():
+    return {
+        'download_id': [not_missing, str],
+        'server': [ignore_missing, object_validator(ServerArgs)],
+        'notifier': [ignore_missing, object_validator(NotifierArgs)],
+    }
+
+
 def datastore_guess_fields():
     return {
         'query': [ignore_missing, json_validator],
