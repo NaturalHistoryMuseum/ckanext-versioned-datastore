@@ -1,9 +1,12 @@
+import os
 from datetime import datetime as dt, timedelta
+
 from flask import Blueprint, jsonify
 
 from ckan.plugins import toolkit, plugin_loaded
 from ..lib.downloads.loaders import get_file_server
 from ..lib.downloads.servers import DirectFileServer
+from ..lib.query.slugs import create_nav_slug
 from ..logic.actions.meta.arg_objects import ServerArgs
 from ..model.downloads import DownloadRequest
 
@@ -49,8 +52,10 @@ def get_download_details(download_id):
         seconds=round((time_now - dl.modified).total_seconds())
     )
 
+    file_exists = os.path.exists(dl.derivative_record.filepath)
+
     urls = {}
-    if dl.state == DownloadRequest.state_complete:
+    if file_exists and dl.state == DownloadRequest.state_complete:
         # include a vanilla direct link
         urls['direct'] = DirectFileServer().serve(dl)
         if dl.server_args is not None:
@@ -90,8 +95,18 @@ def get_download_details(download_id):
         if query_doi:
             doi_url = get_landing_page_url(query_doi)
 
+    nav_slug = create_nav_slug(
+        {},
+        dl.core_record.query,
+        resource_ids_and_versions=dl.core_record.resource_ids_and_versions,
+    )[1]
+    search_url = toolkit.url_for(
+        'search.view', slug=nav_slug.get_slug_string(), qualified=True
+    )
+
     return {
         'download_request': dl,
+        'file_exists': file_exists,
         'resources': resources,
         'status': dl.state,
         'status_friendly': status_friendly[dl.state],
@@ -100,6 +115,7 @@ def get_download_details(download_id):
         'urls': urls,
         'doi': query_doi,
         'doi_url': doi_url,
+        'search_url': search_url,
     }
 
 

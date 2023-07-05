@@ -71,6 +71,10 @@
                 <tbody>
                 {% if download_request.core_record %}
                 <tr>
+                    <th scope="row">Search</th>
+                    <td><a href="{{ search_url }}" target="_blank">View</a></td>
+                </tr>
+                <tr>
                     <th scope="row">Query</th>
                     <td>
                         <pre class="query-box">
@@ -128,7 +132,7 @@
                 {% if doi %}
                 <tr>
                     <th scope="row">Query DOI</th>
-                    <td><a href="{{ doi_url }}">{{ doi.doi }}</a></td>
+                    <td><a href="{{ doi_url }}" target="_blank">{{ doi.doi }}</a></td>
                 </tr>
                 {% endif %}
                 {% if download_request.core_record and not download_request.state == 'failed' %}
@@ -156,11 +160,15 @@
                 <tr>
                     <th scope="row">Downloads</th>
                     <td>
+                        {% if file_exists %}
                         <ul class="download-links">
                             {% for server_name, url in urls.items() %}
                             <li><a href="{{ url }}" class="btn btn-primary"><i class="fas fa-download"></i> {{ server_name }} </a></li>
                             {% endfor %}
                         </ul>
+                        {% else %}
+                        {{_('File could not be found. Please request a new download from the search page, or contact us if you believe this is an error.')}}
+                        {% endif %}
                     </td>
                 </tr>
                 {% endif %}
