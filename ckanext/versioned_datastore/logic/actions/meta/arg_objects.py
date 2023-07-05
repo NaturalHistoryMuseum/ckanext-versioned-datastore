@@ -75,4 +75,4 @@ class NotifierArgs(BaseArgs):
 
     fields = {'type': [not_missing, str], 'type_args': [ignore_missing, json_validator]}
 
-    defaults = {'type': 'email', 'type_args': {}}
+    defaults = {'type': 'none', 'type_args': {}}
