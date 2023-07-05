@@ -196,8 +196,13 @@ class DownloadRunManager:
         derivative_record = None
 
         # search for derivative first
-        fn = f'*_{self.hash}.zip'
-        existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
+        fp = os.path.join(self.download_dir, f'{self.hash}.zip')
+        if os.path.exists(fp):
+            existing_file = fp
+        else:
+            # check old-style names with the request id in front as well
+            fn = f'*_{self.hash}.zip'
+            existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
         if existing_file is not None:
             # could return multiple options, sorted by most recent first
             possible_records = DerivativeFileRecord.get_by_filepath(existing_file)
@@ -368,7 +373,7 @@ class DownloadRunManager:
 
         if self.derivative_record.filepath is None:
             # if this _is_ defined, we don't need to generate the file
-            zip_name = f'{self.request.id}_{self.hash}.zip'
+            zip_name = f'{self.hash}.zip'
             zip_path = os.path.join(self.download_dir, zip_name)
 
             self.derivative_record.update(filepath=zip_path)
