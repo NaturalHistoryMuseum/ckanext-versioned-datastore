@@ -292,7 +292,7 @@ class XLSXReader(ResourceReader):
                     else:
                         raise Exception('_id not int')
                 # ignore empty cells
-                elif isinstance(cell, EmptyCell):
+                elif isinstance(cell, EmptyCell) or cell.value is None:
                     continue
                 else:
                     # convert everything else to unicode
