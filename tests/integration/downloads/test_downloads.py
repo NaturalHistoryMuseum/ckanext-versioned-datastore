@@ -10,6 +10,7 @@ from tests.helpers import patches, data as test_data
 
 from ckan.plugins import toolkit
 from ckan.tests import factories
+from ckanext.versioned_datastore.model.downloads import DownloadRequest
 
 scenarios = [
     ('csv', {}),
@@ -58,11 +59,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
@@ -94,11 +97,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -161,11 +166,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -211,11 +218,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -261,11 +270,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -295,11 +306,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -343,11 +356,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -419,10 +434,12 @@ class TestDownloadWithQueryDois:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         assert any(
             [
-                f.startswith(download_details['download_id'])
+                f.startswith(download_request.derivative_record.download_hash)
                 for f in os.listdir(download_dir)
             ]
         )
@@ -453,11 +470,13 @@ class TestDownloadInterfaces:
                 },
             )
 
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
@@ -482,11 +501,13 @@ class TestDownloadInterfaces:
                 },
             )
 
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         temp_dir = tempfile.mktemp()
