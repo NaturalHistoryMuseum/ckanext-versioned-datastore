@@ -419,7 +419,7 @@ class TestDownloadWithQueryDois:
             if endpoint == 'query_doi.landing_page':
                 return f'/{kwargs["data_centre"]}/{kwargs["identifier"]}'
             else:
-                return toolkit.url_for(endpoint, **kwargs)
+                return '/banana'
 
         with patch(
             'ckanext.query_dois.lib.doi.find_existing_doi',
