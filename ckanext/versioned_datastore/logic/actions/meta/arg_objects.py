@@ -61,7 +61,7 @@ class ServerArgs(BaseArgs):
     custom_filename: str
 
     fields = {
-        'type': [not_missing, str],
+        'type': [ignore_missing, str],
         'type_args': [ignore_missing, json_validator],
         'custom_filename': [ignore_missing, str],
     }
@@ -73,6 +73,9 @@ class NotifierArgs(BaseArgs):
     type: str
     type_args: dict
 
-    fields = {'type': [not_missing, str], 'type_args': [ignore_missing, json_validator]}
+    fields = {
+        'type': [ignore_missing, str],
+        'type_args': [ignore_missing, json_validator],
+    }
 
     defaults = {'type': 'none', 'type_args': {}}
