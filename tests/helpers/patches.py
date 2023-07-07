@@ -61,3 +61,7 @@ def get_available_resources(resource_ids=None):
 def query_schemas():
     test_schemas = {'v1.0.0': MagicMock(validate=MagicMock(return_value=True))}
     return patch('ckanext.versioned_datastore.lib.query.schema.schemas', test_schemas)
+
+
+def url_for():
+    return patch('ckan.plugins.toolkit.url_for', return_value='/banana')

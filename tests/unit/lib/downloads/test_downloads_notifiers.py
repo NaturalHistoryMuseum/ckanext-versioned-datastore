@@ -1,5 +1,6 @@
 import pytest
 from mock import MagicMock, patch
+from tests.helpers import patches
 
 from ckanext.versioned_datastore.lib.downloads.notifiers import (
     EmailNotifier,
@@ -19,7 +20,7 @@ class TestNotifierGetText:
     def test_notifier_start_text(self, notifier_type, notifier_args):
         notifier = notifier_type(MagicMock(), **notifier_args)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             start_text = notifier.start_text()
 
         assert isinstance(start_text, tuple)
@@ -30,7 +31,7 @@ class TestNotifierGetText:
     def test_notifier_end_text(self, notifier_type, notifier_args):
         notifier = notifier_type(MagicMock(), **notifier_args)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             end_text = notifier.end_text('/download-url-here')
 
         assert isinstance(end_text, tuple)
@@ -41,7 +42,7 @@ class TestNotifierGetText:
     def test_notifier_error_text(self, notifier_type, notifier_args):
         notifier = notifier_type(MagicMock(), **notifier_args)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             error_text = notifier.error_text()
 
         assert isinstance(error_text, tuple)
@@ -56,7 +57,7 @@ class TestEmailNotifier:
         test_email_address = 'test@email.address'
         notifier = EmailNotifier(MagicMock(), emails=[test_email_address])
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             start_text = notifier.start_text()
             notifier.notify_start()
 
@@ -73,7 +74,7 @@ class TestEmailNotifier:
         test_download_url = '/download-url-here'
         notifier = EmailNotifier(MagicMock(), emails=[test_email_address])
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             end_text = notifier.end_text(test_download_url)
             notifier.notify_end(test_download_url)
 
@@ -89,7 +90,7 @@ class TestEmailNotifier:
         test_email_address = 'test@email.address'
         notifier = EmailNotifier(MagicMock(), emails=[test_email_address])
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             error_text = notifier.error_text()
             notifier.notify_error()
 
@@ -105,7 +106,7 @@ class TestEmailNotifier:
         test_email_addresses = ['one@email.address', 'two@email.address']
         notifier = EmailNotifier(MagicMock(), emails=test_email_addresses)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             start_text = notifier.start_text()
             notifier.notify_start()
 
@@ -126,7 +127,7 @@ class TestWebhookNotifier:
         test_webhook_url = 'http://webhook-url'
         notifier = WebhookNotifier(MagicMock(), url=test_webhook_url)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             start_text = notifier.start_text()
             notifier.notify_start()
 
@@ -142,7 +143,7 @@ class TestWebhookNotifier:
         test_download_url = '/download-url-here'
         notifier = WebhookNotifier(MagicMock(), url=test_webhook_url)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             end_text = notifier.end_text(test_download_url)
             notifier.notify_end(test_download_url)
 
@@ -157,7 +158,7 @@ class TestWebhookNotifier:
         test_webhook_url = 'http://webhook-url'
         notifier = WebhookNotifier(MagicMock(), url=test_webhook_url)
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             error_text = notifier.error_text()
             notifier.notify_error()
 
@@ -178,7 +179,7 @@ class TestWebhookNotifier:
             post=True,
         )
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             start_text = notifier.start_text()
             notifier.notify_start()
 
@@ -197,7 +198,7 @@ class TestNullNotifier:
     def test_null_notifier_start(self, mock_logger):
         notifier = NullNotifier(MagicMock())
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             notifier.notify_start()
 
         assert mock_logger.debug.called
@@ -208,7 +209,7 @@ class TestNullNotifier:
         test_download_url = '/download-url-here'
         notifier = NullNotifier(MagicMock())
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             notifier.notify_end(test_download_url)
 
         assert mock_logger.debug.called
@@ -218,7 +219,7 @@ class TestNullNotifier:
     def test_null_notifier_error(self, mock_logger):
         notifier = NullNotifier(MagicMock())
 
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             notifier.notify_error()
 
         assert mock_logger.debug.called

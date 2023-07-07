@@ -44,18 +44,19 @@ class TestQueueDownload:
     def test_run_download_formats(
         self, enqueue_job, with_vds_resource, file_format, format_args, separate_files
     ):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {
-                    'format': file_format,
-                    'format_args': format_args,
-                    'separate_files': separate_files,
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {
+                        'format': file_format,
+                        'format_args': format_args,
+                        'separate_files': separate_files,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
@@ -83,14 +84,15 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_without_query(self, enqueue_job):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {'format': 'csv'},
-                'notifier': {'type': 'none'},
-            },
-        )
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
+                },
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
@@ -136,27 +138,28 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['colour'],
-                                        'value': 'green',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['colour'],
+                                            'value': 'green',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
                 },
-                'file': {'format': 'csv'},
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
@@ -181,31 +184,32 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_keep_empty(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['group'],
-                                        'value': 'b',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['group'],
+                                            'value': 'b',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {
+                        'format': 'csv',
+                        'ignore_empty_fields': False,
+                        'separate_files': False,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'file': {
-                    'format': 'csv',
-                    'ignore_empty_fields': False,
-                    'separate_files': False,
-                },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
@@ -230,31 +234,32 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_ignore_empty(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['group'],
-                                        'value': 'b',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['group'],
+                                            'value': 'b',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {
+                        'format': 'csv',
+                        'ignore_empty_fields': True,
+                        'separate_files': False,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'file': {
-                    'format': 'csv',
-                    'ignore_empty_fields': True,
-                    'separate_files': False,
-                },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
@@ -280,7 +285,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
     def test_run_download_with_transform(self, enqueue_job, transform):
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -322,7 +327,7 @@ class TestQueueDownload:
             with open(dest, 'w') as f:
                 f.write('hello')
 
-        with patch('shutil.copy2', side_effect=_shutil_mock):
+        with patch('shutil.copy2', side_effect=_shutil_mock), patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -438,7 +443,7 @@ class TestDownloadInterfaces:
         with patch(
             'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
             return_value=[mock_plugin],
-        ):
+        ), patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -467,7 +472,7 @@ class TestDownloadInterfaces:
         with patch(
             'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
             return_value=[mock_plugin],
-        ):
+        ), patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
