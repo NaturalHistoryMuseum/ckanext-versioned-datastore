@@ -52,7 +52,10 @@ def get_download_details(download_id):
         seconds=round((time_now - dl.modified).total_seconds())
     )
 
-    file_exists = os.path.exists(dl.derivative_record.filepath)
+    if dl.derivative_record.filepath:
+        file_exists = os.path.exists(dl.derivative_record.filepath)
+    else:
+        file_exists = False
 
     urls = {}
     if file_exists and dl.state == DownloadRequest.state_complete:
