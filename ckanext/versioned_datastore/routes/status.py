@@ -98,14 +98,19 @@ def get_download_details(download_id):
         if query_doi:
             doi_url = get_landing_page_url(query_doi)
 
-    nav_slug = create_nav_slug(
-        {},
-        dl.core_record.query,
-        resource_ids_and_versions=dl.core_record.resource_ids_and_versions,
-    )[1]
-    search_url = toolkit.url_for(
-        'search.view', slug=nav_slug.get_slug_string(), qualified=True
-    )
+    try:
+        nav_slug = create_nav_slug(
+            {},
+            dl.core_record.query,
+            resource_ids_and_versions=dl.core_record.resource_ids_and_versions,
+        )[1]
+        search_url = toolkit.url_for(
+            'search.view', slug=nav_slug.get_slug_string(), qualified=True
+        )
+    except toolkit.ValidationError:
+        # if the resource is a non-datastore resource, this will fail, so just don't
+        # return a search url
+        search_url = None
 
     return {
         'download_request': dl,

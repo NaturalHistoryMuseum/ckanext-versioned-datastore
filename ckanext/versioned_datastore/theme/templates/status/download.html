@@ -70,10 +70,12 @@
             <table class="table table-striped table-bordered table-condensed">
                 <tbody>
                 {% if download_request.core_record %}
+                {% if search_url %}
                 <tr>
                     <th scope="row">Search</th>
                     <td><a href="{{ search_url }}" target="_blank">View</a></td>
                 </tr>
+                {% endif %}
                 <tr>
                     <th scope="row">Query</th>
                     <td>
