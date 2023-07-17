@@ -1,5 +1,15 @@
 # Changelog
 
+## v4.2.2 (2023-07-17)
+
+### Fix
+
+- catch null values in xlsx files better
+
+### Docs
+
+- update logos
+
 ## v4.2.1 (2023-04-11)
 
 ### Build System(s)
