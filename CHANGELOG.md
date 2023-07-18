@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.0.1 (2023-07-18)
+
+### Fix
+
+- init nav slugs table in cli
+
 ## v5.0.0 (2023-07-18)
 
 ### Breaking Changes
