@@ -1,5 +1,70 @@
 # Changelog
 
+## v5.0.0 (2023-07-18)
+
+### Breaking Changes
+
+- remove request id from file names
+
+### Feature
+
+- add action to regenerate downloads
+- add search url and check for file on status page
+- add json endpoint for download status, add urls to queue action
+- allow admin users to specify a custom filename for downloads
+- add server_args to request model
+- add new interface method to modify eml
+- allow other plugins to modify converted queries
+- add a 'raw' download option that also allows non-datastore files
+- allow setting the download query from the url
+- convert to multisearch if query_version starts with 'v0'
+- add helper for creating nav slugs in templates
+- add navigational slugs
+- create util method for getting lists of resource ids and versions
+- convert old-style queries to new multisearch queries
+- add slug_or_doi option to button
+- allow adding a json search query to the download button
+- add download button snippet for single resources
+
+### Fix
+
+- don't return search url for non-datastore resources
+- assume file doesn't exist if filepath is None
+- ignore missing server and notifier types
+- change default notifier to none
+- add raw state to status response
+- get the correct debug variable
+- use filename instead of temporary filepath for core file
+- convert xml content to string
+- add geo coverage to eml generation
+- use jinja's none, not python's None
+- don't process zero-length filters
+- show 0 record totals
+- add pub/sub to the download button to close if another is opened
+- set datastore template option true by default
+- set values to true/false instead of on/off
+- add error message for missing storage path config
+- allow for non-existent resource id list
+- convert old queries when resolving slugs
+- load geo json if passed as a string
+- open search in new page
+- preload main js before download button js
+
+### Refactor
+
+- remove request id from file names
+
+### Tests
+
+- mock url_for in query dois test
+- patch url_for in direct call test
+- use download hash filename
+- patch url_for
+- add test for non-datastore resource downloads
+- add storage path to config
+- fix path to get_available_datastore_resources
+- add nav slugs table to test setup
+
 ## v4.2.2 (2023-07-17)
 
 ### Fix
