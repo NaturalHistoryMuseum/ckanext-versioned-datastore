@@ -22,7 +22,7 @@ class TestQueueDownload:
             'ckan.plugins.toolkit.enqueue_job'
         ) as enqueue_mock, patches.rounded_versions(), patches.get_available_resources(
             resource_ids
-        ):
+        ), patches.url_for():
             datastore_queue_download(
                 {},
                 QueryArgs(),

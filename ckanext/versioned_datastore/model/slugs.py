@@ -12,6 +12,7 @@ from sqlalchemy import (
     or_,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from ..lib.query.schema import get_latest_query_version
 
 # this table stores query slugs
 datastore_slugs_table = Table(
@@ -28,6 +29,17 @@ datastore_slugs_table = Table(
     Column('created', DateTime, nullable=False, default=datetime.utcnow),
     Column('reserved_pretty_slug', UnicodeText, nullable=True, index=True, unique=True),
     UniqueConstraint('id', 'pretty_slug', 'reserved_pretty_slug'),
+)
+
+# this table stores transient, temporary slugs
+navigational_slugs_table = Table(
+    'versioned_datastore_navigational_slugs',
+    meta.metadata,
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('query_hash', UnicodeText, nullable=False, index=True, unique=True),
+    Column('query', JSONB, nullable=False),
+    Column('resource_ids_and_versions', JSONB, nullable=False, default=dict),
+    Column('created', DateTime, nullable=False, default=datetime.utcnow),
 )
 
 
@@ -67,4 +79,41 @@ class DatastoreSlug(DomainObject):
         )
 
 
+class NavigationalSlug(DomainObject):
+    """
+    Object for a navigational slug.
+    """
+
+    prefix = 'nav-'
+    version = None
+
+    @property
+    def query_version(self):
+        return get_latest_query_version()
+
+    @property
+    def resource_ids(self):
+        return list(self.resource_ids_and_versions.keys())
+
+    def get_slug_string(self):
+        """
+        Returns the slug string to be used for this slug.
+
+        :return: the slug string
+        """
+        return NavigationalSlug.prefix + self.id
+
+    @staticmethod
+    def on_slug(slug_string):
+        """
+        Returns an or query that can be used to find the slug in the database with the
+        passed slug string.
+
+        :param slug_string: the slug string
+        :return: a filter
+        """
+        return NavigationalSlug.id == slug_string[len(NavigationalSlug.prefix) :]
+
+
 meta.mapper(DatastoreSlug, datastore_slugs_table)
+meta.mapper(NavigationalSlug, navigational_slugs_table)

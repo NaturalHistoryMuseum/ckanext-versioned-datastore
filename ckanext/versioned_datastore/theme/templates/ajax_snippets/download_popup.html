@@ -1,0 +1,86 @@
+<div class="vds-download-popup">
+    <form>
+        {% if datastore == 'true' %}
+        <p><small>More advanced download options can be found on the <a
+            href="{{ searchUrl }}" target="_blank" id="vds-dl-search-link">search page</a>.</small>
+        </p>
+        <div class="form-group">
+            <div class="form-row"><label for="vds-dl-format">File format</label>
+                <select id="vds-dl-format" class="full-width-input" name="file.format">
+                    <option value="csv">CSV/TSV</option>
+                    <option value="dwc">Darwin Core</option>
+                    <option value="xlsx">Excel (XLSX)</option>
+                    <option value="json">JSON</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                {% if multiResource == 'true' %}
+                <div>
+                    <label for="vds-dl-sep">One file per resource</label>
+                    <input id="vds-dl-sep" type="checkbox" name="file.separate_files">
+                </div>
+                {% endif %}
+                <div>
+                    <label for="vds-dl-empty">Skip empty columns</label>
+                    <input id="vds-dl-empty" type="checkbox"
+                           name="file.ignore_empty_fields">
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <div class="form-row">
+                <label for="vds-dl-notifier">Notifications</label>
+                <p><small>Should we notify you when your download is ready?</small></p>
+                <select id="vds-dl-notifier" class="full-width-input"
+                        name="notifier.type">
+                    <option value="email">
+                        Email me
+                    </option>
+                    <option value="none">
+                        I'll check the download status manually
+                    </option>
+                </select>
+            </div>
+            <div class="form-row" id="vds-dl-email-group">
+                <label for="vds-dl-email">Email address(es)</label>
+                <input id="vds-dl-email" type="text"
+                       placeholder="data@nhm.ac.uk"
+                       class="full-width-input" name="notifier.type_args.emails">
+                <p>
+                    <small>Multiple email addresses can be added as a comma-separated
+                           list.</small>
+                </p>
+            </div>
+        </div>
+
+        <div class="privacy-warning">
+            <p><i>Data Protection</i></p>
+            <p>
+                The Natural History Museum will use your personal data in accordance
+                with data protection legislation to process your requests. For more
+                information please read our <a href="/privacy">privacy notice</a>.
+            </p>
+        </div>
+
+        <div>
+            <button type="submit" class="btn btn-primary" id="vds-dl-submit">
+                <i class="fas fa-download"></i> {{ _('Submit') }}
+            </button>
+            <button type="reset" class="btn btn-warning" id="vds-dl-cancel">
+                <i class="fas fa-times"></i> {{ _('Cancel') }}
+            </button>
+        </div>
+    </form>
+
+    <div id="vds-dl-post-submit" class="hidden">
+        <p>Your download has been queued. You can follow its progress at the link
+           below:</p>
+        <a href="#" class="btn btn-primary" id="vds-dl-status-link" target="_blank"><i
+            class="fas fa-hourglass-half"></i>
+            Download status
+        </a>
+    </div>
+</div>

@@ -70,6 +70,12 @@
             <table class="table table-striped table-bordered table-condensed">
                 <tbody>
                 {% if download_request.core_record %}
+                {% if search_url %}
+                <tr>
+                    <th scope="row">Search</th>
+                    <td><a href="{{ search_url }}" target="_blank">View</a></td>
+                </tr>
+                {% endif %}
                 <tr>
                     <th scope="row">Query</th>
                     <td>
@@ -128,7 +134,7 @@
                 {% if doi %}
                 <tr>
                     <th scope="row">Query DOI</th>
-                    <td><a href="{{ doi_url }}">{{ doi.doi }}</a></td>
+                    <td><a href="{{ doi_url }}" target="_blank">{{ doi.doi }}</a></td>
                 </tr>
                 {% endif %}
                 {% if download_request.core_record and not download_request.state == 'failed' %}
@@ -137,7 +143,9 @@
                     <td>
                         <dl>
                             <dt>Total</dt>
-                            <dd>{{ download_request.core_record.total or _('processing') }}</dd>
+                            {% if download_request.core_record.total is not none %}
+                            <dd>{{ download_request.core_record.total }}</dd>
+                            {% endif %}
                             {% if download_request.core_record.resource_totals %}
                             {% for res_id, res in resources.items() %}
                             {% if download_request.core_record.resource_totals[res_id] > 0 %}
@@ -154,11 +162,15 @@
                 <tr>
                     <th scope="row">Downloads</th>
                     <td>
+                        {% if file_exists %}
                         <ul class="download-links">
                             {% for server_name, url in urls.items() %}
                             <li><a href="{{ url }}" class="btn btn-primary"><i class="fas fa-download"></i> {{ server_name }} </a></li>
                             {% endfor %}
                         </ul>
+                        {% else %}
+                        {{_('File could not be found. Please request a new download from the search page, or contact us if you believe this is an error.')}}
+                        {% endif %}
                     </td>
                 </tr>
                 {% endif %}

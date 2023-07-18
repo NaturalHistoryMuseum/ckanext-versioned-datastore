@@ -635,6 +635,17 @@ Queues a task to generate a downloadable zip containing the data produced by the
 :rtype: dict
 '''
 
+datastore_regenerate_download = '''
+Calls datastore_queue_download to regenerate a previous request. Note that notifier args
+are still required as these are not stored in the original request, and server args may
+be specified to override any stored ones.
+
+**Results:**
+
+:returns: details about the job that has been submitted to fulfill the upsert request.
+:rtype: dict
+'''
+
 datastore_guess_fields = '''
 This action allows you to retrieve a set of fields to display by default for a given search across
 potentially multiple resources. The returned list of groups of fields is ordered by the number of

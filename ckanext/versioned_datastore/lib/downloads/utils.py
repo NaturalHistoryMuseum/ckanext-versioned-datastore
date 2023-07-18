@@ -4,6 +4,7 @@ from fastavro import parse_schema
 from splitgill.search import create_version_query
 
 from .query import Query
+from .. import common
 from ..datastore_utils import (
     prefix_resource,
     prefix_field,
@@ -22,7 +23,11 @@ def get_schemas(query: Query, es_client: Elasticsearch):
     """
     resource_mapping = es_client.indices.get_mapping(
         index=','.join(
-            [prefix_resource(r) for r in query.resource_ids_and_versions.keys()]
+            [
+                prefix_resource(r)
+                for r, v in query.resource_ids_and_versions.items()
+                if v != common.NON_DATASTORE_VERSION
+            ]
         )
     )
 

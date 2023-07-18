@@ -36,7 +36,7 @@ def json_to_xml(tag, content):
         return nodes
     else:
         node = etree.Element(tag, **attrs)
-        node.text = content
+        node.text = str(content)
         return [node]
 
 

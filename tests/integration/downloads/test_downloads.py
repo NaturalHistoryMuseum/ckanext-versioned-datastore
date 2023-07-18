@@ -1,15 +1,16 @@
 import csv
 import json
 import os
+import pytest
 import shutil
 import tempfile
 import zipfile
-
-import pytest
-from ckan.plugins import toolkit
 from mock import patch, MagicMock
-
 from tests.helpers import patches, data as test_data
+
+from ckan.plugins import toolkit
+from ckan.tests import factories
+from ckanext.versioned_datastore.model.downloads import DownloadRequest
 
 scenarios = [
     ('csv', {}),
@@ -44,24 +45,27 @@ class TestQueueDownload:
     def test_run_download_formats(
         self, enqueue_job, with_vds_resource, file_format, format_args, separate_files
     ):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {
-                    'format': file_format,
-                    'format_args': format_args,
-                    'separate_files': separate_files,
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {
+                        'format': file_format,
+                        'format_args': format_args,
+                        'separate_files': separate_files,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
@@ -83,20 +87,23 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_without_query(self, enqueue_job):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {'query': {}},
-                'file': {'format': 'csv'},
-                'notifier': {'type': 'none'},
-            },
-        )
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {'query': {}},
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
+                },
+            )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -136,33 +143,36 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['colour'],
-                                        'value': 'green',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['colour'],
+                                            'value': 'green',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {'format': 'csv'},
+                    'notifier': {'type': 'none'},
                 },
-                'file': {'format': 'csv'},
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -181,37 +191,40 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_keep_empty(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['group'],
-                                        'value': 'b',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['group'],
+                                            'value': 'b',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {
+                        'format': 'csv',
+                        'ignore_empty_fields': False,
+                        'separate_files': False,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'file': {
-                    'format': 'csv',
-                    'ignore_empty_fields': False,
-                    'separate_files': False,
-                },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -230,37 +243,40 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_ignore_empty(self, enqueue_job, with_vds_resource):
-        download_details = toolkit.get_action('datastore_queue_download')(
-            {},
-            {
-                'query': {
+        with patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
                     'query': {
-                        'filters': {
-                            'and': [
-                                {
-                                    'string_equals': {
-                                        'fields': ['group'],
-                                        'value': 'b',
+                        'query': {
+                            'filters': {
+                                'and': [
+                                    {
+                                        'string_equals': {
+                                            'fields': ['group'],
+                                            'value': 'b',
+                                        }
                                     }
-                                }
-                            ]
-                        },
-                    }
+                                ]
+                            },
+                        }
+                    },
+                    'file': {
+                        'format': 'csv',
+                        'ignore_empty_fields': True,
+                        'separate_files': False,
+                    },
+                    'notifier': {'type': 'none'},
                 },
-                'file': {
-                    'format': 'csv',
-                    'ignore_empty_fields': True,
-                    'separate_files': False,
-                },
-                'notifier': {'type': 'none'},
-            },
-        )
+            )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -280,7 +296,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
     def test_run_download_with_transform(self, enqueue_job, transform):
-        with patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
+        with patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -290,11 +306,13 @@ class TestQueueDownload:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         self.temp_dir = tempfile.mktemp()
@@ -310,6 +328,61 @@ class TestQueueDownload:
             assert len(records) == len(test_data.records + test_data.records_addtl)
             for record in records:
                 assert record['urlSlug'].endswith('/banana')
+
+        shutil.rmtree(self.temp_dir)
+
+    @patches.enqueue_job()
+    def test_run_download_with_non_vds_resource(self, enqueue_job, with_vds_resource):
+        non_ds_resource = factories.Resource(url_type='upload')
+
+        def _shutil_mock(src, dest):
+            # there's nothing to copy from, so just write the new file
+            with open(dest, 'w') as f:
+                f.write('hello')
+
+        with patch('shutil.copy2', side_effect=_shutil_mock), patches.url_for():
+            download_details = toolkit.get_action('datastore_queue_download')(
+                {},
+                {
+                    'query': {
+                        'query': {},
+                        'resource_ids': [non_ds_resource['id']],
+                    },
+                    'file': {
+                        'format': 'raw',
+                        'format_args': {'allow_non_datastore': True},
+                    },
+                    'notifier': {'type': 'none'},
+                },
+            )
+        enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
+        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
+        matching_zips = [
+            f
+            for f in os.listdir(download_dir)
+            if f.startswith(download_request.derivative_record.download_hash)
+        ]
+        assert len(matching_zips) == 1
+        self.temp_dir = tempfile.mktemp()
+        with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
+            archive_files = zf.namelist()
+            assert 'manifest.json' in archive_files
+            zf.extract('manifest.json', self.temp_dir)
+            assert len(archive_files) == 2
+            # it's easier to do it this way than to predict the url or split it or whatever
+            extless_files = [os.path.splitext(f)[0] for f in archive_files]
+            assert non_ds_resource['id'] in extless_files
+
+        with open(os.path.join(self.temp_dir, 'manifest.json')) as f:
+            manifest = json.load(f)
+            assert manifest['download_id'] == download_details['download_id']
+            assert manifest['file_format'] == 'raw'
+            assert sorted(manifest['files']) == sorted(archive_files)
+            assert not manifest['ignore_empty_fields']
+            assert manifest['separate_files']
+            assert manifest['total_records'] == 1
 
         shutil.rmtree(self.temp_dir)
 
@@ -340,14 +413,13 @@ class TestDownloadWithQueryDois:
 
     @patches.enqueue_job()
     def test_run_download_with_query_dois(self, enqueue_job):
-
         # I cannot get the query_doi endpoints to load for the life of me so we're just
         # going to mock it before I lose my mind
         def _url_for_mock(endpoint, **kwargs):
             if endpoint == 'query_doi.landing_page':
                 return f'/{kwargs["data_centre"]}/{kwargs["identifier"]}'
             else:
-                return toolkit.url_for(endpoint, **kwargs)
+                return '/banana'
 
         with patch(
             'ckanext.query_dois.lib.doi.find_existing_doi',
@@ -362,10 +434,12 @@ class TestDownloadWithQueryDois:
                 },
             )
         enqueue_job.assert_called()
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         assert any(
             [
-                f.startswith(download_details['download_id'])
+                f.startswith(download_request.derivative_record.download_hash)
                 for f in os.listdir(download_dir)
             ]
         )
@@ -386,7 +460,7 @@ class TestDownloadInterfaces:
         with patch(
             'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
             return_value=[mock_plugin],
-        ):
+        ), patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -396,11 +470,13 @@ class TestDownloadInterfaces:
                 },
             )
 
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
@@ -415,7 +491,7 @@ class TestDownloadInterfaces:
         with patch(
             'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
             return_value=[mock_plugin],
-        ):
+        ), patches.url_for():
             download_details = toolkit.get_action('datastore_queue_download')(
                 {},
                 {
@@ -425,11 +501,13 @@ class TestDownloadInterfaces:
                 },
             )
 
+        download_request = DownloadRequest.get(download_details['download_id'])
+        assert download_request is not None
         download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
         matching_zips = [
             f
             for f in os.listdir(download_dir)
-            if f.startswith(download_details['download_id'])
+            if f.startswith(download_request.derivative_record.download_hash)
         ]
         assert len(matching_zips) == 1
         temp_dir = tempfile.mktemp()

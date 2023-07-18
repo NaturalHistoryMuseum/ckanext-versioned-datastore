@@ -26,6 +26,8 @@ CONFIG = None
 SEARCH_HELPER = None
 ES_CLIENT = None
 
+NON_DATASTORE_VERSION = -1
+
 
 def setup(ckan_config):
     """
