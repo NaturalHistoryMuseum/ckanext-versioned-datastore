@@ -1,19 +1,15 @@
-from datetime import datetime
+import hashlib
 
 from ckan.plugins import toolkit
-from splitgill.utils import to_timestamp
-
+from ..basic_query.utils import convert_to_multisearch
 from ..query.schema import (
     get_latest_query_version,
     hash_query,
     translate_query,
     validate_query,
 )
-from ..query.utils import get_available_datastore_resources
-from .. import common
-from ..datastore_utils import prefix_resource
+from ..query.utils import get_resources_and_versions
 from ...logic.actions.meta.arg_objects import QueryArgs
-import hashlib
 
 
 class Query(object):
@@ -31,7 +27,7 @@ class Query(object):
         return self._search
 
     @classmethod
-    def from_query_args(cls, query_args: QueryArgs):
+    def from_query_args(cls, query_args: QueryArgs, allow_non_datastore=False):
         query = query_args.query
         query_version = query_args.query_version
         resource_ids = query_args.resource_ids
@@ -51,41 +47,19 @@ class Query(object):
                 # if the slug doesn't resolve, continue as normal
                 pass
 
-        if resource_ids_and_versions is None:
-            resource_ids_and_versions = {}
-        else:
-            # use the resource_ids_and_versions dict first over the resource_ids and version params
-            resource_ids = list(resource_ids_and_versions.keys())
-
-        # figure out which resources should be searched
-        resource_ids = get_available_datastore_resources({}, resource_ids)
-        if not resource_ids:
-            raise toolkit.ValidationError(
-                "The requested resources aren't accessible to this user"
-            )
-
-        rounded_resource_ids_and_versions = {}
-        # see if a version was provided; we'll use this if a resource id we're searching doesn't
-        # have a directly assigned version (i.e. it was absent from the resource_ids_and_versions
-        # dict, or that parameter wasn't provided)
-        if version is None:
-            version = to_timestamp(datetime.now())
-        for resource_id in resource_ids:
-            # try to get the target version from the passed resource_ids_and_versions dict, but if
-            # it's not in there, default to the version variable
-            target_version = resource_ids_and_versions.get(resource_id, version)
-            index = prefix_resource(resource_id)
-            # round the version down to ensure we search the exact version requested
-            rounded_version = common.SEARCH_HELPER.get_rounded_versions(
-                [index], target_version
-            )[index]
-            if rounded_version is not None:
-                # resource ids without a rounded version are skipped
-                rounded_resource_ids_and_versions[resource_id] = rounded_version
+        resource_ids, rounded_resource_ids_and_versions = get_resources_and_versions(
+            resource_ids,
+            resource_ids_and_versions,
+            allow_non_datastore=allow_non_datastore,
+        )
 
         # setup the query
         if query is None:
             query = {}
+        if query_version and query_version.lower().startswith('v0'):
+            # this is an old/basic query so we need to convert it first
+            query = convert_to_multisearch(query)
+            query_version = None
         if query_version is None:
             query_version = get_latest_query_version()
 

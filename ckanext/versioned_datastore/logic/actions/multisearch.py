@@ -2,15 +2,16 @@ from collections import defaultdict
 from datetime import datetime
 
 import jsonschema
-from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
-from splitgill.utils import to_timestamp
-from elasticsearch_dsl import MultiSearch, A
-
-from .meta import help, schema
 from ckantools.decorators import action
 from ckantools.timer import Timer
+from elasticsearch_dsl import MultiSearch, A
+from splitgill.utils import to_timestamp
+
+from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
+from .meta import help, schema
 from ...interfaces import IVersionedDatastore
 from ...lib import common
+from ...lib.basic_query.utils import convert_to_multisearch
 from ...lib.datastore_utils import (
     prefix_resource,
     unprefix_index,
@@ -32,7 +33,7 @@ from ...lib.query.schema import (
     translate_query,
     hash_query,
 )
-from ...lib.query.slugs import create_slug, resolve_slug
+from ...lib.query.slugs import create_slug, resolve_slug, create_nav_slug
 from ...lib.query.utils import (
     get_available_datastore_resources,
     determine_resources_to_search,
@@ -199,6 +200,7 @@ def datastore_create_slug(
     resource_ids=None,
     resource_ids_and_versions=None,
     pretty_slug=True,
+    nav_slug=False,
 ):
     """
     Creates a slug for the given multisearch parameters and returns it. This slug can be
@@ -224,23 +226,34 @@ def datastore_create_slug(
     :param pretty_slug: whether to produce a "pretty" slug or not. If True (the default) a selection
                         of 2 adjectives and an animal will be used to create the slug, otherwise if
                         False, a uuid will be used
+    :param nav_slug: if this is True, a temporary navigational slug will be produced
+                     instead of a standard slug
     :return: a dict containing the slug and whether it was created during this function call or not
     """
     if query is None:
         query = {}
+    if query_version and query_version.lower().startswith('v0'):
+        # this is an old/basic query so we need to convert it first
+        query = convert_to_multisearch(query)
+        query_version = None
     if query_version is None:
         query_version = get_latest_query_version()
 
     try:
-        is_new, slug = create_slug(
-            context,
-            query,
-            query_version,
-            version,
-            resource_ids,
-            resource_ids_and_versions,
-            pretty_slug=pretty_slug,
-        )
+        if nav_slug:
+            is_new, slug = create_nav_slug(
+                context, query, version, resource_ids, resource_ids_and_versions
+            )
+        else:
+            is_new, slug = create_slug(
+                context,
+                query,
+                query_version,
+                version,
+                resource_ids,
+                resource_ids_and_versions,
+                pretty_slug=pretty_slug,
+            )
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
         raise toolkit.ValidationError(e.message)
 
@@ -250,7 +263,9 @@ def datastore_create_slug(
     return {
         'slug': slug.get_slug_string(),
         'is_new': is_new,
-        'is_reserved': slug.reserved_pretty_slug == slug.get_slug_string(),
+        'is_reserved': False
+        if nav_slug
+        else slug.reserved_pretty_slug == slug.get_slug_string(),
     }
 
 
@@ -280,6 +295,9 @@ def datastore_resolve_slug(slug):
             )
         }
         result['created'] = resolved.created.isoformat()
+        if result.get('query_version') == 'v0':
+            result['query'] = convert_to_multisearch(result['query'])
+            result['query_version'] = get_latest_query_version()
         return result
 
     # then check if it's a query DOI
@@ -289,9 +307,15 @@ def datastore_resolve_slug(slug):
 
         resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
         if resolved:
+            if resolved.query_version == 'v0':
+                query = convert_to_multisearch(resolved.query)
+                query_version = get_latest_query_version()
+            else:
+                query = resolved.query
+                query_version = resolved.query_version
             return {
-                'query': resolved.query,
-                'query_version': resolved.query_version,
+                'query': query,
+                'query_version': query_version,
                 'version': resolved.requested_version,
                 'resource_ids': list(resolved.resources_and_versions.keys()),
                 'resource_ids_and_versions': resolved.resources_and_versions,

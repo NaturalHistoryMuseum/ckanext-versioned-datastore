@@ -68,6 +68,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             'pretty_print_json': helpers.pretty_print_json,
             'get_version_date': helpers.get_version_date,
             'latest_item_version': helpers.latest_item_version,
+            'nav_slug': helpers.nav_slug,
         }
 
     # IResourceController

@@ -1,5 +1,7 @@
+import datetime
 import hashlib
 import random
+import logging
 
 from ckan import model
 from ckan.plugins import toolkit
@@ -8,8 +10,10 @@ from sqlalchemy.exc import IntegrityError
 from .schema import get_latest_query_version, hash_query
 from .schema import validate_query
 from .slug_words import list_one, list_two, list_three
-from .utils import get_available_datastore_resources
-from ...model.slugs import DatastoreSlug
+from .utils import get_available_datastore_resources, get_resources_and_versions
+from ...model.slugs import DatastoreSlug, NavigationalSlug
+
+log = logging.getLogger(__name__)
 
 
 def generate_query_hash(
@@ -95,12 +99,9 @@ def create_slug(
     # only store valid queries!
     validate_query(query, query_version)
 
-    if resource_ids:
-        resource_ids = list(get_available_datastore_resources(context, resource_ids))
-        if not resource_ids:
-            raise toolkit.ValidationError(
-                u"The requested resources aren't accessible to this user"
-            )
+    resource_ids, resource_ids_and_versions = get_resources_and_versions(
+        resource_ids, resource_ids_and_versions, version
+    )
 
     query_hash = generate_query_hash(
         query, query_version, version, resource_ids, resource_ids_and_versions
@@ -146,13 +147,66 @@ def create_slug(
     return True, new_slug
 
 
-def resolve_slug(slug):
+def create_nav_slug(
+    context, query, version=None, resource_ids=None, resource_ids_and_versions=None
+):
+    try:
+        # clear old slugs before we make new ones
+        clean_nav_slugs()
+    except Exception as e:
+        # if it fails, log it and move on
+        log.debug(f'Cleaning nav slugs failed: {e}')
+
+    query_version = get_latest_query_version()  # it should always be the latest version
+    validate_query(query, query_version)
+
+    resource_ids, resource_ids_and_versions = get_resources_and_versions(
+        resource_ids, resource_ids_and_versions, version
+    )
+
+    query_hash = generate_query_hash(
+        query, query_version, version, resource_ids, resource_ids_and_versions
+    )
+
+    existing_slug = (
+        model.Session.query(NavigationalSlug)
+        .filter(NavigationalSlug.query_hash == query_hash)
+        .first()
+    )
+
+    if existing_slug is not None:
+        return False, existing_slug
+
+    new_slug = NavigationalSlug(
+        query_hash=query_hash,
+        query=query,
+        resource_ids_and_versions=resource_ids_and_versions,
+    )
+    new_slug.save()
+
+    return True, new_slug
+
+
+def resolve_slug(slug, allow_nav=True):
     """
     Resolves the given slug and returns it if it's found, otherwise None is returned.
 
     :param slug: the slug
+    :param allow_nav: allow resolving to a navigational slug
     :return: a DatastoreSlug object or None if the slug couldn't be found
     """
+    if slug.startswith(NavigationalSlug.prefix) and allow_nav:
+        try:
+            # clean old slugs because we don't want old ones to continue resolving
+            clean_nav_slugs()
+        except Exception as e:
+            # if it fails, log it and move on
+            log.debug(f'Cleaning nav slugs failed: {e}')
+        return (
+            model.Session.query(NavigationalSlug)
+            .filter(NavigationalSlug.on_slug(slug))
+            .first()
+        )
     return (
         model.Session.query(DatastoreSlug).filter(DatastoreSlug.on_slug(slug)).first()
     )
@@ -209,7 +263,7 @@ def reserve_slug(
     if resource_ids_and_versions is not None:
         assert isinstance(resource_ids_and_versions, dict)
 
-    slug = resolve_slug(reserved_pretty_slug)
+    slug = resolve_slug(reserved_pretty_slug, False)
     if slug is not None:
         # a slug with this reserved pretty slug already exists
         return slug
@@ -253,3 +307,28 @@ def reserve_slug(
                     f'The query parameters are already associated with a '
                     f'different slug: {slug.get_slug_string()}'
                 )
+
+
+def clean_nav_slugs(before=None):
+    """
+    Delete old/expired navigational slugs.
+
+    :param before: a datetime object; slugs created before this time will be removed
+                   (defaults to 2 days ago)
+    :return: the number of deleted slugs
+    """
+    if before is None:
+        before = datetime.datetime.utcnow() - datetime.timedelta(days=2)
+
+    old_slugs = (
+        model.Session.query(NavigationalSlug)
+        .filter(NavigationalSlug.created < before)
+        .all()
+    )
+    slug_count = len(old_slugs)
+    for slug in old_slugs:
+        slug.delete()
+
+    model.Session.commit()
+
+    return slug_count

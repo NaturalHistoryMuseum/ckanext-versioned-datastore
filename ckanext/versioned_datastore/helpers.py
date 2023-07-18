@@ -4,6 +4,7 @@ from datetime import date
 
 from .lib.common import ALL_FORMATS
 from .lib.importing import stats
+from .lib.query.slugs import create_nav_slug
 
 
 def is_duplicate_ingestion(stat):
@@ -150,3 +151,15 @@ def latest_item_version(resource_id, record_id=None):
 
     versions = toolkit.get_action(action)({}, data_dict)
     return versions[-1]
+
+
+def nav_slug(
+    query=None, version=None, resource_ids=None, resource_ids_and_versions=None
+):
+    """
+    Just a helper proxy for create_nav_slug.
+    """
+    is_new, slug = create_nav_slug(
+        {}, query or {}, version, resource_ids, resource_ids_and_versions
+    )
+    return slug.get_slug_string()

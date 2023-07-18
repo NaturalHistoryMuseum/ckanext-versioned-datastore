@@ -1,0 +1,25 @@
+{#
+    Parameters:
+        resources: comma-separated list of resource IDs
+        query: search query to apply, or 'FROM URL' to extract from current url; defaults
+               to {} (no query, selects all records)
+        slug_or_doi: a slug or doi for a saved search (overrides other settings)
+        non_datastore: if this is a non-datastore resource (default false, i.e. it is a
+                       datastore resource)
+        icon_class: class for the button icon (eg. fas fa-download etc.)
+        label: text for the button (eg. _('Download'))
+#}
+
+{% asset 'ckanext-versioned-datastore/download-button-js' %}
+{% asset 'ckanext-versioned-datastore/download-button-css' %}
+
+
+<button class="btn btn-primary vds-download-button"
+        data-module="versioned_datastore_download-button"
+        {% if resources %}data-module-resources="{{ resources }}"{% endif %}
+        {% if query %}data-module-query="{{ query }}"{% endif %}
+        {% if slug_or_doi %}data-module-slug_or_doi="{{ slug_or_doi }}"{% endif %}
+        {% if non_datastore %}data-module-non_datastore{% endif %}
+>
+    <i id="vds-download-button-icon" class="{{ icon_class }}"></i> {{ label }}
+</button>

@@ -169,6 +169,7 @@ def datastore_create_slug():
         'resource_ids': [ignore_missing, list_of_strings()],
         'resource_ids_and_versions': [ignore_missing, json_validator],
         'pretty_slug': [ignore_missing, boolean_validator],
+        'nav_slug': [ignore_missing, boolean_validator],
     }
 
 
@@ -192,6 +193,14 @@ def datastore_queue_download():
             not_missing,
             object_validator(DerivativeArgs),
         ],  # called 'file' instead of derivative to make its purpose clearer to the end user
+        'server': [ignore_missing, object_validator(ServerArgs)],
+        'notifier': [ignore_missing, object_validator(NotifierArgs)],
+    }
+
+
+def datastore_regenerate_download():
+    return {
+        'download_id': [not_missing, str],
         'server': [ignore_missing, object_validator(ServerArgs)],
         'notifier': [ignore_missing, object_validator(NotifierArgs)],
     }

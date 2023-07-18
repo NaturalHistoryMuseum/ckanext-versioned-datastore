@@ -214,6 +214,28 @@ class IVersionedDatastore(interfaces.Interface):
         """
         return response
 
+    def datastore_before_convert_basic_query(self, basic_query):
+        """
+        Allows plugins to modify a basic query (probably taken from a URL), e.g. to
+        remove custom filters before processing.
+
+        :param basic_query: the query dict to be modified
+        :return: the modified query
+        """
+        return basic_query
+
+    def datastore_after_convert_basic_query(self, basic_query, multisearch_query):
+        """
+        Allows plugins to modify a converted query, e.g. to add back in any complex
+        custom filters.
+
+        :param basic_query: the original basic query, before it was modified by other
+                            plugins
+        :param multisearch_query: the converted multisearch version of the query
+        :return: the modified multisearch query
+        """
+        return multisearch_query
+
 
 class IVersionedDatastoreQuerySchema(interfaces.Interface):
     def get_query_schemas(self):
@@ -360,6 +382,17 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :return: the manifest dict
         """
         return manifest
+
+    def download_modify_eml(self, eml_dict, query):
+        """
+        Hook allowing other extensions to modify the content of the EML before it's
+        transformed into XML and written to file.
+
+        :param eml_dict: the current eml content, as a dict
+        :param query: the query for this download
+        :return: the modified eml dict
+        """
+        return eml_dict
 
     def download_after_run(self, request):
         """
