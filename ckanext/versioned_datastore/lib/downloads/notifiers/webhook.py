@@ -35,3 +35,10 @@ class WebhookNotifier(BaseNotifier):
         context = self.template_context()
         params = {self.url_param: context['status_page'], self.text_param: text}
         requests.request(request_method, self.url, params=params)
+
+    @classmethod
+    def validate_args(cls, type_args):
+        url = type_args.get('url')
+        if not url:
+            raise toolkit.Invalid('URL must be provided')
+        return True

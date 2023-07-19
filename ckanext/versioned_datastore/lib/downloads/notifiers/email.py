@@ -1,5 +1,7 @@
-from ckan.lib import mailer
+import re
 
+from ckan.lib import mailer
+from ckan.plugins import toolkit
 from .base import BaseNotifier
 
 default_html_body = '''
@@ -59,3 +61,15 @@ class EmailNotifier(BaseNotifier):
                 body=body,
                 body_html=body_html,
             )
+
+    @classmethod
+    def validate_args(cls, type_args):
+        emails = type_args.get('emails')
+        if not emails:
+            raise toolkit.Invalid('Email address must be provided.')
+        emails = emails if isinstance(emails, list) else [emails]
+        email_rgx = re.compile(r'(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)')
+        for e in emails:
+            if not email_rgx.fullmatch(e):
+                raise toolkit.Invalid('Email address appears to be invalid.')
+        return True
