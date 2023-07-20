@@ -5,6 +5,7 @@ from .meta import help, schema
 from .meta.arg_objects import ServerArgs, NotifierArgs, QueryArgs, DerivativeArgs
 from ...lib.downloads.download import DownloadRunManager
 from ...model.downloads import DownloadRequest
+from ...lib.downloads.notifiers import validate_notifier_args
 
 
 @action(schema.datastore_queue_download(), help.datastore_queue_download)
@@ -17,6 +18,8 @@ def datastore_queue_download(
 ):
     server = server or ServerArgs(**ServerArgs.defaults)
     notifier = notifier or NotifierArgs(**NotifierArgs.defaults)
+
+    validate_notifier_args(notifier.type, notifier.type_args)
 
     if server.custom_filename:
         # check if admin

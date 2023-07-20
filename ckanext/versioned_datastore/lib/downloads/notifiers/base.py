@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
-from ckan.plugins import toolkit, PluginImplementations
 from jinja2 import Template
 
+from ckan.plugins import toolkit, PluginImplementations
 from ....interfaces import IVersionedDatastoreDownloads
 from ....model.downloads import DownloadRequest
 
@@ -111,3 +111,7 @@ class BaseNotifier(metaclass=ABCMeta):
     @abstractmethod
     def notify_error(self):
         raise NotImplemented
+
+    @classmethod
+    def validate_args(cls, type_args):
+        return True
