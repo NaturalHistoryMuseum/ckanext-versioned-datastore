@@ -1,5 +1,14 @@
 # Changelog
 
+## v5.0.2 (2023-07-20)
+
+### Fix
+
+- remove the text saying multiple emails are allowed
+- make email required and add validation in popup
+- add validators for notifiers (email and webhook)
+- put notifier call inside try/except
+
 ## v5.0.1 (2023-07-18)
 
 ### Fix
