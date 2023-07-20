@@ -126,10 +126,13 @@ ckan.module('versioned_datastore_download-button', function ($) {
       const notifierSelect = this.popoverForm.find('#vds-dl-notifier');
       notifierSelect.on('change', () => {
         let emailGroup = this.popoverForm.find('#vds-dl-email-group');
+        let emailBox = this.popoverForm.find('#vds-dl-email');
         if (notifierSelect.val() === 'email') {
           emailGroup.removeClass('hidden');
+          emailBox.attr('required', true);
         } else {
           emailGroup.addClass('hidden');
+          emailBox.removeAttr('required');
         }
       });
 
