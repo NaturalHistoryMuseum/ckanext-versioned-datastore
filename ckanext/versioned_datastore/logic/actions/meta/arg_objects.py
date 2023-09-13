@@ -12,6 +12,7 @@ not_missing = toolkit.get_validator('not_missing')
 not_empty = toolkit.get_validator('not_empty')
 resource_id_exists = toolkit.get_validator('resource_id_exists')
 email_validator = toolkit.get_validator('email_validator')
+unicode_safe = toolkit.get_validator("unicode_safe")
 
 
 class QueryArgs(BaseArgs):
@@ -24,11 +25,11 @@ class QueryArgs(BaseArgs):
 
     fields = {
         'query': [ignore_missing, json_validator],
-        'query_version': [ignore_missing, str],
+        'query_version': [ignore_missing, unicode_safe],
         'version': [ignore_missing, int_validator],
         'resource_ids': [ignore_missing, list_of_strings()],
         'resource_ids_and_versions': [ignore_missing, json_validator],
-        'slug_or_doi': [ignore_missing, str],
+        'slug_or_doi': [ignore_missing, unicode_safe],
     }
 
 
@@ -40,7 +41,7 @@ class DerivativeArgs(BaseArgs):
     transform: dict
 
     fields = {
-        'format': [not_missing, str],
+        'format': [not_missing, unicode_safe],
         'format_args': [ignore_missing, json_validator],
         'separate_files': [ignore_missing, boolean_validator],
         'ignore_empty_fields': [ignore_missing, boolean_validator],
@@ -61,9 +62,9 @@ class ServerArgs(BaseArgs):
     custom_filename: str
 
     fields = {
-        'type': [ignore_missing, str],
+        'type': [ignore_missing, unicode_safe],
         'type_args': [ignore_missing, json_validator],
-        'custom_filename': [ignore_missing, str],
+        'custom_filename': [ignore_missing, unicode_safe],
     }
 
     defaults = {'type': 'direct', 'type_args': {}}
@@ -74,7 +75,7 @@ class NotifierArgs(BaseArgs):
     type_args: dict
 
     fields = {
-        'type': [ignore_missing, str],
+        'type': [ignore_missing, unicode_safe],
         'type_args': [ignore_missing, json_validator],
     }
 
