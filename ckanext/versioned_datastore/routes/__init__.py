@@ -9,5 +9,6 @@ from . import datastore, search, downloads, status
 
 blueprints = [datastore.blueprint, search.blueprint, status.blueprint]
 
-if toolkit.config.get('DEBUG', False):
+is_debug = toolkit.asbool(toolkit.config.get('debug', toolkit.config.get('DEBUG')))
+if is_debug:
     blueprints.append(downloads.blueprint)

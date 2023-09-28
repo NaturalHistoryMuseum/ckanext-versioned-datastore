@@ -29,12 +29,14 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         extension_names=None,
         extension_map=None,
         id_field='_id',
+        eml_title=None,
         **format_args,
     ):
         super(DwcDerivativeGenerator, self).__init__(
             output_dir, fields, query, resource_id, **format_args
         )
         self._id_field = id_field
+        self._eml_title = eml_title
         self._build_dir_name = uuid4().hex
         self._build_dir = os.path.join(self.output_dir, self._build_dir_name)
         os.mkdir(self._build_dir)
@@ -323,7 +325,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         dataset_metadata = OrderedDict(
             {
                 'alternateIdentifier': [self._query.hash],
-                'title': f'Query on {site_name}',
+                'title': self._eml_title or f'Query on {site_name}',
                 'creator': [org],
                 'metadataProvider': [org],
                 'pubDate': dt.now().strftime('%Y-%m-%d'),
