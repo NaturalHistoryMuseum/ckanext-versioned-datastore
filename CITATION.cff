@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+title: CKAN Versioned Datastore extension
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - name: Natural History Museum
+    city: London
+    country: GB
+    alias: NHM
+    email: data@nhm.ac.uk
+repository-code: 'https://github.com/NaturalHistoryMuseum/ckanext-versioned-datastore'
+abstract: A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch
+keywords:
+  - ckan
+  - ckanext
+  - versioned_datastore
+license: GPL-3.0-or-later
+version: 5.0.2
