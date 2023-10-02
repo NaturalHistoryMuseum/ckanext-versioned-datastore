@@ -1,5 +1,24 @@
 # Changelog
 
+## v5.1.0 (2023-10-02)
+
+### Feature
+
+- allow custom titles on dwc downloads of queries
+
+### Fix
+
+- try two different debug variable names and cast to bool
+
+### Chores/Misc
+
+- add regex for version line in citation file
+- add citation.cff to list of files with version
+- add contributing guidelines
+- add code of conduct
+- add citation file
+- update support.md links
+
 ## v5.0.2 (2023-07-20)
 
 ### Fix
