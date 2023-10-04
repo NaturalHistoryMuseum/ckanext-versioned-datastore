@@ -30,6 +30,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         extension_map=None,
         id_field='_id',
         eml_title=None,
+        eml_abstract=None,
         **format_args,
     ):
         super(DwcDerivativeGenerator, self).__init__(
@@ -37,6 +38,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         )
         self._id_field = id_field
         self._eml_title = eml_title
+        self._eml_abstract = eml_abstract
         self._build_dir_name = uuid4().hex
         self._build_dir = os.path.join(self.output_dir, self._build_dir_name)
         os.mkdir(self._build_dir)
@@ -290,8 +292,13 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         ]
         packages = [package_show({}, {'id': r['package_id']}) for r in resources]
 
-        # define some variables
-        org = {
+        # useful bools
+        single_resource = len(resources) == 0
+        single_package = len(packages) == 0
+        empty_query = self._query.query == {}
+
+        # define some site variables
+        site_org = {
             'organizationName': utils.get_setting(
                 'ckanext.versioned_datastore.dwc_org_name',
                 'ckanext.doi.publisher',
@@ -304,6 +311,8 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         }
         site_name = utils.get_setting('ckanext.doi.site_title', 'ckan.site_title')
         site_url = utils.get_setting('ckan.site_url', default='')
+
+        # get the license
         licenses = list(
             set(
                 [
@@ -321,21 +330,38 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             )
         )
 
+        # generate a string representing the records' location, e.g. a single resource
+        # name, a package name, or the whole site
+        if single_resource:
+            container_name = resources[0]['name']
+        elif single_package:
+            container_name = f'{len(resources)} resources in {packages[0]["title"]}'
+        else:
+            container_name = site_name
+
+        # generate title and abstract
+        query_title = self._eml_title or f'Query on {container_name}'
+        query_abstract = (
+            self._eml_abstract
+            or f'Query ID {self._query.hash} on {container_name} ({self.rows_written} records).'
+        )
+
         # set up the metadata dict in order (otherwise GBIF complains) with some defaults
         dataset_metadata = OrderedDict(
             {
                 'alternateIdentifier': [self._query.hash],
-                'title': self._eml_title or f'Query on {site_name}',
-                'creator': [org],
-                'metadataProvider': [org],
+                'title': query_title,
+                'creator': [site_org],
+                'metadataProvider': [site_org],
                 'pubDate': dt.now().strftime('%Y-%m-%d'),
                 'language': utils.get_setting('ckan.locale_default'),
-                'abstract': {
-                    'para': f'Query ID {self._query.hash} on {site_name} ({self.rows_written} records).'
-                },
+                'abstract': {'para': query_abstract},
                 'keywordSet': [],
                 'intellectualRights': {'para': query_license},
-                'distribution': ({'online': {'url': site_url}}, {'scope': 'document'}),
+                'distribution': (
+                    {'online': {'url': (site_url, {'function': 'information'})}},
+                    {'scope': 'document'},
+                ),
                 'coverage': {
                     'geographicCoverage': {
                         'geographicDescription': 'Unbound',
@@ -347,7 +373,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                         },
                     }
                 },
-                'contact': [org],
+                'contact': [site_org],
             }
         )
         additional_metadata = {
@@ -361,60 +387,71 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             }
         }
 
-        if self.resource_id:
-            # if it's just downloading one resource with no filters
-            resource = resources[0]
-            package = packages[0]
-            dataset_metadata['title'] = resource['name']
-            dataset_metadata['alternateIdentifier'] += [self.resource_id]
-            dataset_metadata['pubDate'] = package.get(
-                'metadata_modified', resource.get('created')
-            )
-            dataset_metadata['abstract'] = {'para': resource.get('description')}
+        if single_package and empty_query:
+            # all the resources are in a single package (even if not all resources in
+            # that package are included), so link to the package
             dataset_metadata['distribution'][0]['online']['url'] = (
-                site_url
-                + toolkit.url_for(
-                    'resource.read', id=package['id'], resource_id=resource['id']
-                ),
+                toolkit.url_for('package.read', id=packages[0]['id'], qualified=True),
                 {'function': 'information'},
             )
-            if 'doi' in package:
-                dataset_metadata['alternateIdentifier'].append('doi:' + package['doi'])
-                pkg_year = toolkit.h.package_get_year(package)
-                pkg_title = package['title']
-                pkg_doi = package['doi']
-                pkg_author = package['author']
-                site_title = toolkit.h.get_site_title()
+
+            # also link to the package via the doi
+            if 'doi' in packages[0]:
+                dataset_metadata['alternateIdentifier'].append(
+                    'doi:' + packages[0]['doi']
+                )
+                pkg_year = toolkit.h.package_get_year(packages[0])
+                pkg_title = packages[0]['title']
+                pkg_doi = packages[0]['doi']
+                pkg_author = packages[0]['author']
                 additional_metadata['metadata']['gbif']['citation'] = (
-                    f'{pkg_author} ({pkg_year}). Dataset: {pkg_title}. {site_title}',
+                    f'{pkg_author} ({pkg_year}). Dataset: {pkg_title}. {site_name}',
                     {'identifier': f'https://doi.org/{pkg_doi}'},
                 )
-        else:
-            if plugin_loaded('query_dois'):
-                from ckanext.query_dois.lib.doi import find_existing_doi
 
-                query_doi = find_existing_doi(
-                    self._query.resource_ids_and_versions,
-                    self._query.hash,
-                    self._query.query_version,
+            if single_resource and empty_query:
+                # if it's just downloading one resource with no filters, we can be even
+                # more specific with some of the metadata
+                resource = resources[0]
+                package = packages[0]
+                dataset_metadata['title'] = resource['name']
+                dataset_metadata['alternateIdentifier'] += [resource['id']]
+                dataset_metadata['pubDate'] = package.get(
+                    'metadata_modified', resource.get('created')
                 )
-                if query_doi:
-                    dataset_metadata['alternateIdentifier'] += ['doi:' + query_doi.doi]
-                    dataset_metadata['distribution'][0]['online']['url'] = (
-                        site_url
-                        + toolkit.url_for(
-                            'query_doi.landing_page',
-                            data_centre=utils.get_setting('ckanext.query_dois.prefix'),
-                            identifier=query_doi.doi,
-                        ),
-                        {'function': 'information'},
-                    )
-                    additional_metadata['metadata']['gbif']['citation'] = (
-                        toolkit.h.create_multisearch_citation_text(
-                            query_doi, html=False
-                        ),
-                        {'identifier': f'https://doi.org/{query_doi.doi}'},
-                    )
+                dataset_metadata['abstract']['para'] = resource.get('description')
+                dataset_metadata['distribution'][0]['online']['url'] = (
+                    toolkit.url_for(
+                        'resource.read',
+                        id=package['id'],
+                        resource_id=resource['id'],
+                        qualified=True,
+                    ),
+                    {'function': 'information'},
+                )
+        elif plugin_loaded('query_dois'):
+            from ckanext.query_dois.lib.doi import find_existing_doi
+
+            query_doi = find_existing_doi(
+                self._query.resource_ids_and_versions,
+                self._query.hash,
+                self._query.query_version,
+            )
+            if query_doi:
+                dataset_metadata['alternateIdentifier'] += ['doi:' + query_doi.doi]
+                dataset_metadata['distribution'][0]['online']['url'] = (
+                    toolkit.url_for(
+                        'query_doi.landing_page',
+                        data_centre=utils.get_setting('ckanext.query_dois.prefix'),
+                        identifier=query_doi.doi.split('/', 1)[-1],
+                        qualified=True,
+                    ),
+                    {'function': 'information'},
+                )
+                additional_metadata['metadata']['gbif']['citation'] = (
+                    toolkit.h.create_multisearch_citation_text(query_doi, html=False),
+                    {'identifier': f'https://doi.org/{query_doi.doi}'},
+                )
 
         if (
             self.schema.core_extension
