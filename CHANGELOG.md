@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.1.1 (2023-10-05)
+
+### Fix
+
+- refactor and fix eml generation
+
 ## v5.1.0 (2023-10-02)
 
 ### Feature
