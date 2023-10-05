@@ -102,6 +102,9 @@ class DownloadRunManager:
 
         self._temp = []
 
+        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            plugin.download_after_init(self.request)
+
     @property
     def derivative_hash(self):
         """
