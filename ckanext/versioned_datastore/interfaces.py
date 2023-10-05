@@ -362,6 +362,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         """
         Hook allowing other extensions to modify args before any search is run or files
         generated.
+        FIXME: this should be renamed to download_before_init or similar
 
         :param query_args: a QueryArgs object
         :param derivative_args: a DerivativeArgs object
@@ -371,6 +372,16 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
                  notifier_args)
         """
         return query_args, derivative_args, server_args, notifier_args
+
+    def download_after_init(self, query):
+        """
+        Hook notifying that the downloader and associated objects (e.g. the query) have
+        been initialised. Does not allow modification; purely for notification purposes.
+
+        :param query: the query for this download
+        :return: None
+        """
+        return
 
     def download_modify_manifest(self, manifest, request):
         """

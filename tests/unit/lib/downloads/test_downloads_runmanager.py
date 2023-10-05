@@ -77,3 +77,6 @@ class MockPlugin:
     ):
         derivative_args.format = 'dwc'
         return query_args, derivative_args, server_args, notifier_args
+
+    def download_after_init(self, request):
+        return
