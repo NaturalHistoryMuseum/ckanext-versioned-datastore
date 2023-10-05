@@ -293,8 +293,8 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         packages = [package_show({}, {'id': r['package_id']}) for r in resources]
 
         # useful bools
-        single_resource = len(resources) == 0
-        single_package = len(packages) == 0
+        single_resource = len(resources) == 1
+        single_package = len(packages) == 1
         empty_query = self._query.query == {}
 
         # define some site variables

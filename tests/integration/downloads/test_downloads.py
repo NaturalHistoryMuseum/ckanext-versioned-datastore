@@ -539,6 +539,9 @@ class ModifyArgsPlugin:
     def download_after_run(self, request):
         return
 
+    def download_after_init(self, request):
+        return
+
 
 class ModifyManifestPlugin:
     def download_before_run(self, *args):
@@ -549,4 +552,7 @@ class ModifyManifestPlugin:
         return manifest
 
     def download_after_run(self, request):
+        return
+
+    def download_after_init(self, request):
         return
