@@ -1,5 +1,19 @@
 # Changelog
 
+## v5.2.0 (2023-10-05)
+
+### Feature
+
+- add download_after_init hook
+
+### Fix
+
+- use the correct number when checking resource and package list len
+
+### Tests
+
+- add new hook to mock plugins
+
 ## v5.1.1 (2023-10-05)
 
 ### Fix
