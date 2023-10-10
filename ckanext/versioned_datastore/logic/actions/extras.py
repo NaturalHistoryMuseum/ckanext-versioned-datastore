@@ -2,8 +2,8 @@ from datetime import datetime
 
 from ckan.plugins import toolkit
 from splitgill.search import create_version_query
-from splitgill.utils import to_timestamp
-from elasticsearch_dsl import Search
+from splitgill.utils import to_timestamp, chunk_iterator
+from elasticsearch_dsl import Search, MultiSearch
 
 from .meta import help, schema
 from ckantools.decorators import action
@@ -60,13 +60,29 @@ def datastore_get_resource_versions(
     )
     index_name = prefix_resource(resource_id)
 
+    # this gives us every version in the index, plus the number of changes in that
+    # version (changes include new records and changed records)
     counts = common.SEARCH_HELPER.get_index_version_counts(index_name, search=search)
 
-    search = search.using(common.ES_CLIENT).index(index_name)[0:0]
-    for result in counts:
-        version = result['version']
-        count = search.filter(create_version_query(version)).count()
-        result['count'] = count
+    # each of the dicts in the counts list above contains the version and the number of
+    # changes, but not the number of records in that version, we want to add this to
+    # the dicts. To do this we will run msearches against elasticsearch so that we can
+    # batch up the searches and get better performance (there could be 1000s of
+    # versions to count after all). This variable simply defines how many searches to do
+    # in each msearch batch
+    multisearch_chunk_size = 10
+
+    for details_chunk in chunk_iterator(counts, multisearch_chunk_size):
+        multisearch = MultiSearch(using=common.ES_CLIENT, index=index_name)
+        for details in details_chunk:
+            multisearch = multisearch.add(
+                Search()[0:0].filter(create_version_query(details["version"]))
+            )
+        results = multisearch.execute()
+        # update the count details we got from splitgill with the actual record count
+        for detail, result in zip(details_chunk, results):
+            detail["count"] = result.hits.total
+
     return counts
 
 
