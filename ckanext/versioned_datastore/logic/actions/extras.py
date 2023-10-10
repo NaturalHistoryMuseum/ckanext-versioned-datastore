@@ -46,14 +46,14 @@ def datastore_get_resource_versions(
     """
     Retrieves all the versions of the given resource when under the given search. Note
     that the schema used for this action is the same as the datastore_search schema. The
-    return is a dict including the version timestamp, the number of records modified in
-    the version and the total records at the version.
+    return is a list of dicts each of which includes the version timestamp, the number
+    of records modified in the version and the total records at the version.
 
     :param resource_id: the id of the resource to examine
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return:
+    :return: a list of dicts
     """
     original_data_dict, data_dict, version, search = create_search(
         context, data_dict, original_data_dict
