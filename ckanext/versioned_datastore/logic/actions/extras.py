@@ -60,14 +60,14 @@ def datastore_get_resource_versions(
     )
     index_name = prefix_resource(resource_id)
 
-    data = common.SEARCH_HELPER.get_index_version_counts(index_name, search=search)
+    counts = common.SEARCH_HELPER.get_index_version_counts(index_name, search=search)
 
     search = search.using(common.ES_CLIENT).index(index_name)[0:0]
-    for result in data:
+    for result in counts:
         version = result['version']
         count = search.filter(create_version_query(version)).count()
         result['count'] = count
-    return data
+    return counts
 
 
 @action(
