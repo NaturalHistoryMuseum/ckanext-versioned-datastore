@@ -70,7 +70,7 @@ def datastore_get_resource_versions(
     # batch up the searches and get better performance (there could be 1000s of
     # versions to count after all). This variable simply defines how many searches to do
     # in each msearch batch
-    multisearch_chunk_size = 10
+    multisearch_chunk_size = 100
 
     for details_chunk in chunk_iterator(counts, multisearch_chunk_size):
         multisearch = MultiSearch(using=common.ES_CLIENT, index=index_name)
