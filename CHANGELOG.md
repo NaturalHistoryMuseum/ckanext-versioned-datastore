@@ -1,5 +1,23 @@
 # Changelog
 
+## v5.2.1 (2023-10-16)
+
+### Fix
+
+- use msearches to increase datastore_get_resource_versions performance
+
+### Refactor
+
+- rename a variable to something better
+
+### Performance
+
+- increase msearch batch size from 10 to 100
+
+### Docs
+
+- update docs to correctly detail return type
+
 ## v5.2.0 (2023-10-05)
 
 ### Feature
