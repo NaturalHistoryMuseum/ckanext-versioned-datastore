@@ -359,7 +359,7 @@ class DownloadRunManager:
 
         self.core_record.update(
             resource_totals=resource_totals,
-            total=sum(resource_totals.values()),
+            total=sum(filter(None, resource_totals.values())),
             field_counts=field_counts,
         )
 
