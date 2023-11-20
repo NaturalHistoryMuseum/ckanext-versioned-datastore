@@ -507,7 +507,7 @@ def datastore_value_autocomplete(
     :param version: the version to search at
     :param resource_ids: the resource ids to search in
     :param resource_ids_and_versions: a dict of resource ids -> versions to search at
-    :param size: the number of values to return
+    :param size: the number of values to return (max 500)
     :param after: the after value to use (provides pagination)
     :return: a list of values that match the given prefix
     """
@@ -516,8 +516,8 @@ def datastore_value_autocomplete(
         query = {}
     if query_version is None:
         query_version = get_latest_query_version()
-    # limit the size so that it is between 1 and 20
-    size = max(1, min(size, 20))
+    # limit the size so that it is between 1 and 500
+    size = max(1, min(size, 500))
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
