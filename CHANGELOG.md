@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.2.3 (2023-11-20)
+
+### Fix
+
+- ignore _id fields in extension rows
+
 ## v5.2.2 (2023-11-20)
 
 ### Fix
