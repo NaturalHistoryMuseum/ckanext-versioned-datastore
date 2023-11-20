@@ -1,5 +1,15 @@
 # Changelog
 
+## v5.2.2 (2023-11-20)
+
+### Fix
+
+- filter out Nones from sum resource count calculation
+
+### Refactor
+
+- set autocomplete result limit to 500
+
 ## v5.2.1 (2023-10-16)
 
 ### Fix
