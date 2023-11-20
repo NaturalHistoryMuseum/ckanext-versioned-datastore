@@ -197,7 +197,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                 def _extract_ext(subdict):
                     props = {'_id': record_id}
                     for ek, ev in subdict.items():
-                        if ek in ext_props:
+                        if ek in ext_props and ek != '_id':
                             props[ek] = ev
                     return props
 
