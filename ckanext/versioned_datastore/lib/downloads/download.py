@@ -270,7 +270,7 @@ class DownloadRunManager:
             and v != common.NON_DATASTORE_VERSION
         }
 
-        resource_totals = {k: None for k in self.core_record.resource_ids_and_versions}
+        resource_totals = {k: 0 for k in self.core_record.resource_ids_and_versions}
         field_counts = {k: None for k in self.core_record.resource_ids_and_versions}
 
         # get info for resources that weren't just generated first, so we know if they
