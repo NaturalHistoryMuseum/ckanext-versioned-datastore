@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.2.4 (2023-11-23)
+
+### Fix
+
+- set default resource totals to 0
+
 ## v5.2.3 (2023-11-20)
 
 ### Fix
