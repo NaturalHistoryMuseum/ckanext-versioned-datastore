@@ -1,4 +1,3 @@
-from elasticsearch import Elasticsearch
 from elasticsearch_dsl import Search, A
 from fastavro import parse_schema
 from splitgill.search import create_version_query
@@ -11,24 +10,24 @@ from ..datastore_utils import (
     iter_data_fields,
     unprefix_index,
 )
+from ..query.fields import get_mappings
 
 
-def get_schemas(query: Query, es_client: Elasticsearch):
+def get_schemas(query: Query):
     """
     Creates an avro schema from the elasticsearch index metadata.
 
     :param query: the Query object for this request
-    :param es_client: a connected elasticsearch client
     :return: a parsed avro schema
     """
-    resource_mapping = es_client.indices.get_mapping(
-        index=','.join(
-            [
-                prefix_resource(r)
-                for r, v in query.resource_ids_and_versions.items()
-                if v != common.NON_DATASTORE_VERSION
-            ]
-        )
+    # get the mappings for the resources which would have a mapping (i.e. exclude
+    # non-datastore resources)
+    resource_mapping = get_mappings(
+        [
+            resource_id
+            for resource_id, version in query.resource_ids_and_versions.items()
+            if version != common.NON_DATASTORE_VERSION
+        ]
     )
 
     basic_avro_types = [
