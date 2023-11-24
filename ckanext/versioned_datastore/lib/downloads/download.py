@@ -310,7 +310,7 @@ class DownloadRunManager:
                 timeout=30,
             )
 
-            schemas = get_schemas(self.query, es_client)
+            schemas = get_schemas(self.query)
 
             for resource_id, version in resources_to_generate.items():
                 self.request.update_status(DownloadRequest.state_core_gen, resource_id)
