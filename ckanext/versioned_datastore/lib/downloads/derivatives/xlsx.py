@@ -29,8 +29,12 @@ class XlsxDerivativeGenerator(BaseDerivativeGenerator):
         super(XlsxDerivativeGenerator, self).setup()
 
     def finalise(self):
-        self.workbook.save(self.file_paths['main'])
-        self.workbook.close()
+        try:
+            self.workbook.save(self.file_paths['main'])
+        finally:
+            # if something goes wrong when trying to save the workbook, make sure to
+            # close the workbook before raising the error
+            self.workbook.close()
         super(XlsxDerivativeGenerator, self).finalise()
 
     def _write(self, record):
