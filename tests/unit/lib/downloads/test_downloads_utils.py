@@ -37,7 +37,7 @@ class TestGetSchema:
 
         # this is a _very_ stripped down version of the return value from
         # indices.get_mapping()
-        indices_mock = MagicMock(
+        get_mapping_mock = MagicMock(
             return_value={
                 index_name: {
                     'mappings': {
@@ -71,10 +71,12 @@ class TestGetSchema:
                 }
             }
         )
-        parsed_schemas = utils.get_schemas(
-            q, MagicMock(**{'indices.get_mapping': indices_mock})
-        )
-        parsed_schema = parsed_schemas[resource_dict['id']]
+        with patch(
+            "ckanext.versioned_datastore.lib.downloads.utils.get_mappings",
+            get_mapping_mock,
+        ):
+            parsed_schemas = utils.get_schemas(q)
+        parsed_schema = parsed_schemas[resource_dict["id"]]
         assert isinstance(parsed_schema, dict)
         assert parsed_schema['type'] == 'record'
         assert parsed_schema['name'] == 'ResourceRecord'
