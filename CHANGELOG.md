@@ -1,5 +1,12 @@
 # Changelog
 
+## v5.2.5 (2023-11-27)
+
+### Fix
+
+- ensure the workbook is closed if something goes wrong during the write call
+- request index mappings in batches to avoid elasticsearch URL length error
+
 ## v5.2.4 (2023-11-23)
 
 ### Fix
