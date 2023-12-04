@@ -775,3 +775,41 @@ Returns:
 
 :rtype: bool
 '''
+
+datastore_multisearch_counts = """
+Count the number of records that match the query in each of the provided resources and
+return the counts for each resource in a dict.
+
+The query and resource IDs are parsed in the same way as the datastore_multisearch
+action.
+
+Params:
+
+:param query: the search JSON
+:type query: dict
+:param version: version to search at, if not provided the current version of the data is
+               searched
+:type version: int, number of milliseconds (not seconds!) since UNIX epoch
+:param resource_ids_and_versions: a dict of resource ids and the versions to search them
+                                  at. If this is present it's values are prioritised
+                                  over the version and resource_ids parameters.
+:type resource_ids_and_versions: dict of strings -> ints (number of milliseconds (not
+                                 seconds!) since UNIX epoch)
+:param query_version: the query language version (for example v1.0.0)
+:type query_version: string
+:param resource_ids: a list of resource ids to search. If no resources ids are specified
+                     (either because the parameter is missing or because an empty list
+                     is passed) then all resources in the datastore that the user can
+                     access are searched. Any resources that the user cannot access or
+                     that aren't datastore resources are skipped. If this means that no
+                     resources are available from the provided list then a
+                     ValidationError is raised.
+:type resource_ids: a list of strings
+
+**Results:**
+
+The result of this action is a dictionary where the keys are the resource IDs and the
+values are the number of records in that resource which matched the query.
+
+:rtype: dict with str keys and int values
+"""

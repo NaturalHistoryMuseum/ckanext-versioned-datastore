@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
+from typing import Dict
 
 import jsonschema
 from ckantools.decorators import action
@@ -622,3 +623,99 @@ def datastore_edit_slug(context, current_slug, new_reserved_slug):
     slug.reserved_pretty_slug = new_reserved_slug.lower()
     slug.commit()
     return slug.as_dict()
+
+
+@action(
+    schema.datastore_multisearch_counts(),
+    help.datastore_multisearch_counts,
+    toolkit.side_effect_free,
+)
+def datastore_multisearch_counts(
+    context,
+    query=None,
+    query_version=None,
+    version=None,
+    resource_ids=None,
+    resource_ids_and_versions=None,
+) -> Dict[str, int]:
+    """
+    Efficiently counts the number of records in each of the given resources matching the
+    given query. A dict of resource IDs -> count is returned. If no records in a
+    resource match the query then it will appear in the dict with a count value of 0.
+
+    :param context: the context dict from the action call
+    :param query: the query dict. If None (default) then an empty query is used
+    :param query_version: the version of the query schema the query is using. If None
+                          (default) then the latest query schema version is used
+    :param version: the version to search the data at. If None (default) the current
+                    time is used
+    :param resource_ids: the list of resource to search. If None (default) then all the
+                         resources the user has access to are queried. If a list of
+                         resources are passed then any resources not accessible to the
+                         user will be removed before querying
+    :param resource_ids_and_versions: a dict of resources and versions to search each of
+                                      them at. This allows precise searching of each
+                                      resource at a specific parameter. If None
+                                      (default) then the resource_ids parameter is used
+                                      together with the version parameter. If this
+                                      parameter is provided though, it takes priority
+                                      over the resource_ids and version parameters.
+    :return: a dict of resource IDs -> count
+    """
+    # provide some more complex defaults for some parameters if necessary
+    if query is None:
+        query = {}
+    if query_version is None:
+        query_version = get_latest_query_version()
+
+    try:
+        # validate and translate the query into an elasticsearch-dsl Search object
+        validate_query(query, query_version)
+        search = translate_query(query, query_version)
+    except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
+        raise toolkit.ValidationError(e.message)
+
+    # figure out which resources we're searching
+    resource_ids, skipped_resource_ids = determine_resources_to_search(
+        context, resource_ids, resource_ids_and_versions
+    )
+    if not resource_ids:
+        raise toolkit.ValidationError(
+            "The requested resources aren't accessible to this user"
+        )
+
+    # add the version filter necessary given the parameters and the resources we're
+    # searching
+    version_filter = determine_version_filter(
+        version, resource_ids, resource_ids_and_versions
+    )
+    search = search.filter(version_filter)
+
+    # add the resource indexes we're searching on
+    search = search.index(
+        [prefix_resource(resource_id) for resource_id in resource_ids]
+    )
+    # no results please, we aren't going to use them
+    search = search.extra(size=0)
+    # use an aggregation to get the hit count of each resource, set the size to the
+    # number of resources we're querying to ensure we get all counts in one go and don't
+    # have to paginate with a composite agg
+    search.aggs.bucket("counts", "terms", field="_index", size=len(resource_ids))
+
+    # create a multisearch for this one query - this ensures there aren't any issues
+    # with the length of the URL as the index list is passed as a part of the body
+    multisearch = MultiSearch(using=common.ES_CLIENT).add(search)
+
+    # run the search and get the only result from the search results list
+    result = next(iter(multisearch.execute()))
+
+    # build the response JSON
+    counts = {
+        trim_index_name(bucket["key"]): bucket["doc_count"]
+        for bucket in result.aggs.to_dict()["counts"]["buckets"]
+    }
+    # add resources that didn't have any hits into the counts dict too
+    counts.update(
+        {resource_id: 0 for resource_id in resource_ids if resource_id not in counts}
+    )
+    return counts

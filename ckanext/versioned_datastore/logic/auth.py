@@ -146,3 +146,9 @@ def datastore_custom_download_filename(context, data_dict):
     # only allow access to admins (they usually skip this check)
     user_is_sysadmin = context.get('auth_user_obj').sysadmin
     return {'success': user_is_sysadmin}
+
+
+@auth(anon=True)
+def datastore_multisearch_counts(context, data_dict):
+    # allow access to everyone
+    return {"success": True}

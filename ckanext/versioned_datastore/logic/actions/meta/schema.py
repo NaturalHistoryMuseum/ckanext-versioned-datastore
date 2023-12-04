@@ -234,3 +234,13 @@ def datastore_edit_slug():
         'current_slug': [str, not_missing, not_empty],
         'new_reserved_slug': [str, not_missing, not_empty, url_safe],
     }
+
+
+def datastore_multisearch_counts():
+    return {
+        'query': [ignore_missing, json_validator],
+        'version': [ignore_missing, int_validator],
+        'query_version': [ignore_missing, str],
+        'resource_ids': [ignore_missing, list_of_strings()],
+        'resource_ids_and_versions': [ignore_missing, json_validator],
+    }
