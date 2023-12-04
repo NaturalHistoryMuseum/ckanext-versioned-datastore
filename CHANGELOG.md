@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.3.0 (2023-12-04)
+
+### Feature
+
+- add datastore_multisearch_counts action
+
 ## v5.2.5 (2023-11-27)
 
 ### Fix
