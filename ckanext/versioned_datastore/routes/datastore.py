@@ -40,7 +40,7 @@ def resource_data(package_name, resource_id):
         toolkit.get_action('datastore_reindex')({}, {'resource_id': resource_id})
         toolkit.h.flash_success(
             toolkit._(
-                'Reindexing submitted, this may take a few minutes. Yo'
+                'Reindexing submitted, this may take a few minutes. You '
                 'can monitor progress below'
             )
         )
