@@ -1,5 +1,15 @@
 # Changelog
 
+## v5.3.1 (2023-12-11)
+
+### Fix
+
+- fix a typo and add a space
+
+### Chores/Misc
+
+- add build section to read the docs config
+
 ## v5.3.0 (2023-12-04)
 
 ### Feature
