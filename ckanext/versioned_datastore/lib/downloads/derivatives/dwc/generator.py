@@ -205,6 +205,9 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                     ext_extracted = [_extract_ext(x) for x in v]
                 elif isinstance(v, dict):
                     ext_extracted = [_extract_ext(v)]
+                elif v is None:
+                    # skip if empty
+                    ext_extracted = []
                 else:
                     ext_extracted = [_extract_ext({k: v})]
                 ext[extension_map[k]] = ext_extracted
