@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.4.0 (2024-01-15)
+
+### Feature
+
+- **downloads**: skip empty extension rows
+
 ## v5.3.1 (2023-12-11)
 
 ### Fix
