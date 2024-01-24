@@ -20,8 +20,6 @@ services:
 
   solr:
     image: ckan/ckan-solr:2.9
-    logging:
-      driver: none
 
   db:
     build:
@@ -33,22 +31,14 @@ services:
       - DATASTORE_READONLY_PASSWORD=password
       - POSTGRES_PASSWORD=password
       - PGDATA=/var/lib/postgresql/data/db
-    logging:
-      driver: none
 
   redis:
     image: redis:latest
-    logging:
-      driver: none
 
   elasticsearch:
     image: elasticsearch:6.8.13
     environment:
       discovery.type: single-node
-    logging:
-      driver: none
 
   mongodb:
     image: mongo:4.2
-    logging:
-      driver: none
