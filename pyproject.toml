@@ -19,12 +19,13 @@ classifiers = [
     "Programming Language :: Python :: 3.8"
 ]
 dependencies = [
+    # TODO: switch to pypi once stable
+    "splitgill@git+https://github.com/NaturalHistoryMuseum/splitgill@josh/vNext",
     "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
-    "splitgill==2.0.0",
-    "elasticsearch-dsl>=6.0.0,<7.0.0",
-    "elasticsearch>=6.0.0,<7.0.0",
+    "elasticsearch>=8.10.1",
+    "elasticsearch-dsl>=8.9.0",
     "jsonschema==3.0.0",
     "openpyxl==2.5.8",
     "pandas==1.4.1",
