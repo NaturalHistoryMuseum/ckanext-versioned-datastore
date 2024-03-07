@@ -126,7 +126,7 @@ def datastore_multisearch(
     # of the modified date, id of the record and the index it's in so that we get a unique sort
     search = search.sort(
         # not all indexes have a modified field so we need to provide the unmapped_type option
-        {'data.modified': {'order': 'desc', 'unmapped_type': 'date'}},
+        {'meta.version': 'desc'},
         {'data._id': 'desc'},
         {'_index': 'desc'},
     )
