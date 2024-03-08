@@ -41,6 +41,7 @@ from ...lib.query.utils import (
     determine_version_filter,
     calculate_after,
     find_searched_resources,
+    convert_small_or_groups,
 )
 
 
@@ -95,6 +96,9 @@ def datastore_multisearch(
     size = max(0, min(size, 1000))
 
     timer = Timer()
+
+    # try to correct some small errors
+    query = convert_small_or_groups(query)
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object

@@ -296,3 +296,31 @@ def get_resources_and_versions(
             rounded_resource_ids_and_versions[resource_id] = rounded_version
 
     return available_resource_ids, rounded_resource_ids_and_versions
+
+
+def convert_small_or_groups(query):
+    """
+    Convert OR groups containing only 1 item to AND groups.
+
+    :param query: a multisearch query dict
+    :return: the query with a converted filter dict, if applicable
+    """
+    if 'filters' not in query:
+        return query
+
+    def _convert(*filters):
+        items = []
+        for term_or_group in filters:
+            k, v = list(term_or_group.items())[0]
+            if k not in ['and', 'or', 'not']:
+                items.append(term_or_group)
+            elif k != 'or' or len(v) != 1:
+                # don't convert empty groups because those throw an error for all types
+                items.append({k: _convert(*v)})
+            else:
+                items.append({'and': _convert(*v)})
+        return items
+
+    query['filters'] = _convert(query['filters'])[0]
+
+    return query
