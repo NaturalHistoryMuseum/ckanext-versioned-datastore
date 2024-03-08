@@ -42,6 +42,7 @@ from ...lib.query.utils import (
     calculate_after,
     find_searched_resources,
     convert_small_or_groups,
+    remove_empty_groups,
 )
 
 
@@ -99,6 +100,7 @@ def datastore_multisearch(
 
     # try to correct some small errors
     query = convert_small_or_groups(query)
+    query = remove_empty_groups(query)
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object

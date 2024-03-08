@@ -324,3 +324,32 @@ def convert_small_or_groups(query):
     query['filters'] = _convert(query['filters'])[0]
 
     return query
+
+
+def remove_empty_groups(query):
+    """
+    Remove empty groups from filter list.
+
+    :param query: a multisearch query dict
+    :return: the query with a processed filter dict, if applicable
+    """
+    if 'filters' not in query:
+        return query
+
+    def _convert(*filters):
+        items = []
+        for term_or_group in filters:
+            k, v = list(term_or_group.items())[0]
+            if k not in ['and', 'or', 'not']:
+                items.append(term_or_group)
+            elif len(v) > 0:
+                items.append({k: _convert(*v)})
+        return items
+
+    processed_filters = _convert(query['filters'])
+    if len(processed_filters) == 0:
+        del query['filters']
+    else:
+        query['filters'] = processed_filters[0]
+
+    return query
