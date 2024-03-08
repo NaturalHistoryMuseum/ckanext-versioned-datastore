@@ -33,6 +33,7 @@ from ...lib.query.schema import (
     validate_query,
     translate_query,
     hash_query,
+    normalise_query,
 )
 from ...lib.query.slugs import create_slug, resolve_slug, create_nav_slug
 from ...lib.query.utils import (
@@ -41,8 +42,6 @@ from ...lib.query.utils import (
     determine_version_filter,
     calculate_after,
     find_searched_resources,
-    convert_small_or_groups,
-    remove_empty_groups,
 )
 
 
@@ -98,9 +97,7 @@ def datastore_multisearch(
 
     timer = Timer()
 
-    # try to correct some small errors
-    query = convert_small_or_groups(query)
-    query = remove_empty_groups(query)
+    query = normalise_query(query, query_version)
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
@@ -430,6 +427,8 @@ def datastore_guess_fields(
         set(g.lower() for g in ignore_groups) if ignore_groups is not None else set()
     )
 
+    query = normalise_query(query, query_version)
+
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
         validate_query(query, query_version)
@@ -526,6 +525,8 @@ def datastore_value_autocomplete(
     # limit the size so that it is between 1 and 500
     size = max(1, min(size, 500))
 
+    query = normalise_query(query, query_version)
+
     try:
         # validate and translate the query into an elasticsearch-dsl Search object
         validate_query(query, query_version)
@@ -607,6 +608,8 @@ def datastore_hash_query(query=None, query_version=None):
     if query_version is None:
         query_version = get_latest_query_version()
 
+    query = normalise_query(query, query_version)
+
     try:
         validate_query(query, query_version)
     except (jsonschema.ValidationError, InvalidQuerySchemaVersionError) as e:
@@ -673,6 +676,8 @@ def datastore_multisearch_counts(
         query = {}
     if query_version is None:
         query_version = get_latest_query_version()
+
+    query = normalise_query(query, query_version)
 
     try:
         # validate and translate the query into an elasticsearch-dsl Search object

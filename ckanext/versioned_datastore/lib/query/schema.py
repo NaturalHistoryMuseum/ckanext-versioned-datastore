@@ -98,6 +98,20 @@ def hash_query(query, version):
         return schemas[version].hash(query)
 
 
+def normalise_query(query, version):
+    """
+    Corrects some (small) common query errors, e.g. removing empty groups.
+
+    :param query: the query dict
+    :param version: the query version
+    :return: the corrected/normalised query
+    """
+    if version not in schemas:
+        raise InvalidQuerySchemaVersionError(version)
+    else:
+        return schemas[version].normalise(query)
+
+
 def load_core_schema(version):
     """
     Given a query schema version, loads the schema from the schema_base_path directory.
@@ -155,3 +169,12 @@ class Schema(object):
         :return: a string hex digest
         """
         pass
+
+    def normalise(self, query):
+        """
+        Corrects some (small) common query errors, e.g. removing empty groups.
+
+        :param query: the query dict
+        :return: the corrected/normalised query dict
+        """
+        return query
