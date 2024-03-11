@@ -1,4 +1,21 @@
-# Changelog
+## v5.5.0 (2024-03-11)
+
+### Feature
+
+- remove empty groups from multisearch query when running search
+- convert single-item OR groups to AND when running search
+
+### Fix
+
+- sort on version rather than date modified
+
+### Refactor
+
+- move normalisation methods into schema.normalise step
+
+### Tests
+
+- add tests for query normalisation utils
 
 ## v5.4.0 (2024-01-15)
 
@@ -312,7 +329,6 @@
 - add type hints to datastore_queue_download
 - move fixture into conftest.py
 - move tests into new folder structure
-- move test schemas into data folder
 
 ### Docs
 
@@ -397,9 +413,6 @@
 - remove incorrect tag
 - rename some tests
 - merge in new changes from dev
-- merge dev again to try and resolve conflicts
-- merge/reformat again
-- merge package metadata updates from dev
 
 ## v3.8.0 (2022-12-14)
 
@@ -415,6 +428,10 @@
 
 ## v3.7.2 (2022-12-12)
 
+### Refactor
+
+- move test schemas into data folder
+
 ### Docs
 
 - **readme**: add instruction to install lessc globally
@@ -427,6 +444,10 @@
 
 - remove local less installation
 - add package data
+
+### Chores/Misc
+
+- merge dev again to try and resolve conflicts
 
 ## v3.7.1 (2022-12-01)
 
@@ -467,6 +488,11 @@
 - standardise package files
 
 ## v3.6.2.1 (2022-10-13)
+
+### Chores/Misc
+
+- merge/reformat again
+- merge package metadata updates from dev
 
 ## v3.6.2 (2022-10-03)
 
