@@ -9,6 +9,7 @@ from elasticsearch_dsl.query import Bool, Q
 
 from .schema import Schema, load_core_schema, schema_base_path
 from ..datastore_utils import prefix_field
+from .utils import convert_small_or_groups, remove_empty_groups
 
 
 class v1_0_0Schema(Schema):
@@ -63,6 +64,17 @@ class v1_0_0Schema(Schema):
         search = self.add_search(query, search)
         search = self.add_filters(query, search)
         return search
+
+    def normalise(self, query):
+        """
+        Corrects some (small) common query errors, e.g. removing empty groups.
+
+        :param query: the query dict
+        :return: the corrected/normalised query dict
+        """
+        query = convert_small_or_groups(query)
+        query = remove_empty_groups(query)
+        return query
 
     def add_search(self, query, search):
         """
