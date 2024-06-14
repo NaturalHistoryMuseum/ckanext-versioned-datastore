@@ -1,6 +1,7 @@
 from ckan import model
 from ckan.plugins import toolkit, PluginImplementations
 from splitgill.indexing.utils import DOC_TYPE
+import time
 
 from . import common
 from ..interfaces import IVersionedDatastore
@@ -285,3 +286,37 @@ def is_ingestible(resource):
         )
         or (resource_format is not None and resource_format.lower() == 'zip')
     )
+
+
+def get_queue_length(queue_name):
+    """
+    This is a *very* hacky way to get the length of a queue, including anything already
+    processing.
+
+    :param queue_name: the name of the queue to check, e.g. 'download'
+    :return: length of queue as int
+    """
+    # because only pending jobs are counted, not active/running, if you add to the queue
+    # and job_list can't see it, the queue was empty; if it can, something else is
+    # already running.
+    def _temp_job():
+        time.sleep(1)
+
+    job = toolkit.enqueue_job(
+        _temp_job,
+        queue=queue_name,
+        title=f'{queue_name} queue status test',
+        rq_kwargs={'ttl': '1s'},
+    )
+
+    queued_jobs = toolkit.get_action('job_list')(
+        {'ignore_auth': True}, {'queues': [queue_name]}
+    )
+
+    job.delete()
+
+    return len(queued_jobs)
+
+
+def get_es_health():
+    return {'ping': common.ES_CLIENT.ping(), 'info': common.ES_CLIENT.info()}
