@@ -215,7 +215,7 @@ class VersionedSearchPlugin(SingletonPlugin):
 
         es_health = get_es_health()
         server_status_text = (
-            toolkit._('connected') if es_health['ping'] else toolkit._('disconnected')
+            toolkit._('available') if es_health['ping'] else toolkit._('unavailable')
         )
 
         status_reports.append(
