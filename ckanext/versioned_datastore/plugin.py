@@ -21,12 +21,21 @@ from .lib.datastore_utils import (
     ReadOnlyResourceException,
     InvalidVersionException,
     update_resources_privacy,
+    get_queue_length,
+    get_es_health,
 )
 from .lib.query.schema import register_schema
 from .lib.query.v1_0_0 import v1_0_0Schema
 from .logic import auth
 from .logic.actions import basic_search, crud, downloads, extras, multisearch
 from ckantools.loaders import create_actions, create_auth
+
+try:
+    from ckanext.status.interfaces import IStatus
+
+    status_available = True
+except ImportError:
+    status_available = False
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +51,8 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
     implements(interfaces.IClick)
+    if status_available:
+        implements(IStatus)
 
     # IActions
     def get_actions(self):
@@ -167,3 +178,55 @@ class VersionedSearchPlugin(SingletonPlugin):
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):
         return [(v1_0_0Schema.version, v1_0_0Schema())]
+
+    # IStatus
+    def modify_status_reports(self, status_reports):
+        queued_downloads = get_queue_length('download')
+
+        status_reports.append(
+            {
+                'label': toolkit._('Downloads'),
+                'value': queued_downloads,
+                'group': toolkit._('Queues'),
+                'help': toolkit._(
+                    'Number of downloads either currently processing or waiting in the queue'
+                ),
+                'state': 'good'
+                if queued_downloads == 0
+                else ('ok' if queued_downloads < 3 else 'bad'),
+            }
+        )
+
+        queued_imports = get_queue_length('importing')
+
+        status_reports.append(
+            {
+                'label': toolkit._('Imports'),
+                'value': queued_imports,
+                'group': toolkit._('Queues'),
+                'help': toolkit._(
+                    'Number of import jobs either currently processing or waiting in the queue'
+                ),
+                'state': 'good'
+                if queued_imports == 0
+                else ('ok' if queued_imports < 3 else 'bad'),
+            }
+        )
+
+        es_health = get_es_health()
+        server_status_text = (
+            toolkit._('available') if es_health['ping'] else toolkit._('unavailable')
+        )
+
+        status_reports.append(
+            {
+                'label': toolkit._('Search'),
+                'value': server_status_text,
+                'help': toolkit._(
+                    'Multisearch functionality is provided by an Elasticsearch cluster'
+                ),
+                'state': 'good' if es_health['ping'] else 'bad',
+            }
+        )
+
+        return status_reports
