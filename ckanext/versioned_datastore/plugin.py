@@ -188,12 +188,10 @@ class VersionedSearchPlugin(SingletonPlugin):
                 'label': toolkit._('Downloads'),
                 'value': queued_downloads,
                 'group': toolkit._('Queues'),
-                'help': toolkit._(
-                    'Number of downloads either currently processing or waiting in the queue'
-                ),
+                'help': toolkit._('Number of downloads waiting in the queue'),
                 'state': 'good'
-                if queued_downloads == 0
-                else ('ok' if queued_downloads < 3 else 'bad'),
+                if queued_downloads < 2
+                else ('ok' if queued_downloads < 4 else 'bad'),
             }
         )
 
@@ -204,12 +202,10 @@ class VersionedSearchPlugin(SingletonPlugin):
                 'label': toolkit._('Imports'),
                 'value': queued_imports,
                 'group': toolkit._('Queues'),
-                'help': toolkit._(
-                    'Number of import jobs either currently processing or waiting in the queue'
-                ),
+                'help': toolkit._('Number of import jobs waiting in the queue'),
                 'state': 'good'
-                if queued_imports == 0
-                else ('ok' if queued_imports < 3 else 'bad'),
+                if queued_imports < 2
+                else ('ok' if queued_imports < 4 else 'bad'),
             }
         )
 
