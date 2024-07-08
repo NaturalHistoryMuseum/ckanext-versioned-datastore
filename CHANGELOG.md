@@ -1,3 +1,10 @@
+## v5.6.1 (2024-07-08)
+
+### Fix
+
+- increase status tolerance for queue length
+- remove hacky queue length estimate
+
 ## v5.6.0 (2024-07-08)
 
 ### Feature
