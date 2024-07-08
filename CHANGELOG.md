@@ -1,3 +1,13 @@
+## v5.6.0 (2024-07-08)
+
+### Feature
+
+- add (optional) integration with ckanext-status
+
+### Fix
+
+- use (un)available instead of (dis)connected
+
 ## v5.5.0 (2024-03-11)
 
 ### Feature
