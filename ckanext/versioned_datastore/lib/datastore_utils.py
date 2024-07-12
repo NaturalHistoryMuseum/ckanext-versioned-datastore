@@ -1,7 +1,7 @@
 from ckan import model
 from ckan.plugins import toolkit, PluginImplementations
 from splitgill.indexing.utils import DOC_TYPE
-import time
+from cachetools import cached, TTLCache
 
 from . import common
 from ..interfaces import IVersionedDatastore
@@ -288,6 +288,7 @@ def is_ingestible(resource):
     )
 
 
+@cached(cache=TTLCache(maxsize=10, ttl=30))
 def get_queue_length(queue_name):
     """
     This will only get the pending jobs in a queue, not any jobs that are currently
@@ -304,5 +305,6 @@ def get_queue_length(queue_name):
     return len(queued_jobs)
 
 
+@cached(cache=TTLCache(maxsize=10, ttl=30))
 def get_es_health():
     return {'ping': common.ES_CLIENT.ping(), 'info': common.ES_CLIENT.info()}
