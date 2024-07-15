@@ -1,3 +1,11 @@
+## v5.6.2 (2024-07-15)
+
+### Fix
+
+- increase ttl to 300s
+- add cachetools to dependencies
+- cache status report functions for 300s
+
 ## v5.6.1 (2024-07-08)
 
 ### Fix
