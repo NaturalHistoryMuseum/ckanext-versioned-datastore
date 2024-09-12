@@ -1,34 +1,46 @@
 import logging
 from contextlib import suppress
-from datetime import datetime
+from typing import Optional, List
 
-from ckan import model
-from ckan.model import DomainObjectOperation
+from ckantools.loaders import create_actions, create_auth
+from elasticsearch import Elasticsearch
+from pymongo import MongoClient
+from splitgill.manager import SplitgillClient
+
 from ckan.plugins import (
     toolkit,
     interfaces,
     SingletonPlugin,
     implements,
-    PluginImplementations,
 )
-from splitgill.utils import to_timestamp
-
-from . import routes, helpers, cli
-from .interfaces import IVersionedDatastoreQuerySchema, IVersionedDatastore
-from .lib.common import setup
-from .lib.datastore_utils import (
+from ckanext.versioned_datastore import routes, helpers, cli
+from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
+from ckanext.versioned_datastore.lib.query.schema import register_schema
+from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
+from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
+from ckanext.versioned_datastore.lib.utils import (
     is_datastore_resource,
     ReadOnlyResourceException,
-    InvalidVersionException,
-    update_resources_privacy,
+    ivds_implementations,
+    iqs_implementations,
 )
-from .lib.query.schema import register_schema
-from .lib.query.v1_0_0 import v1_0_0Schema
-from .logic import auth
-from .logic.actions import basic_search, crud, downloads, extras, multisearch
-from ckantools.loaders import create_actions, create_auth
+from ckanext.versioned_datastore.logic import (
+    basic,
+    data,
+    download,
+    multi,
+    options,
+    # rename to avoid variable name clashing
+    resource as resource_logic,
+    schema,
+    slug,
+    version,
+)
 
 log = logging.getLogger(__name__)
+
+# stop elasticsearch from showing warning logs
+logging.getLogger("elasticsearch").setLevel(logging.ERROR)
 
 
 class VersionedSearchPlugin(SingletonPlugin):
@@ -36,133 +48,156 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IAuthFunctions)
     implements(interfaces.ITemplateHelpers, inherit=True)
     implements(interfaces.IResourceController, inherit=True)
-    implements(interfaces.IDomainObjectModification, inherit=True)
     implements(interfaces.IConfigurer)
     implements(interfaces.IConfigurable)
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
     implements(interfaces.IClick)
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # all these are set up during the configure method
+        self.mongo_client: Optional[MongoClient] = None
+        self.elasticsearch_client: Optional[Elasticsearch] = None
+        self.sg_client: Optional[SplitgillClient] = None
+
+    # IConfigurable
+    def configure(self, ckan_config):
+        # do the setup for Splitgill first, create Mongo client, Elasticsearch client,
+        # and then the Splitgill client
+        self.mongo_client = MongoClient(
+            host=ckan_config.get("ckanext.versioned_datastore.mongo_host"),
+            port=int(ckan_config.get("ckanext.versioned_datastore.mongo_port")),
+        )
+        es_hosts = ckan_config.get(
+            "ckanext.versioned_datastore.elasticsearch_hosts"
+        ).split(",")
+        es_port = ckan_config.get("ckanext.versioned_datastore.elasticsearch_port")
+        self.elasticsearch_client = Elasticsearch(
+            hosts=[f"http://{host}:{es_port}/" for host in es_hosts],
+            # todo: check these params
+            sniff_on_start=True,
+            sniff_on_node_failure=True,
+            sniff_timeout=30,
+            http_compress=False,
+            request_timeout=60,
+        )
+        mongo_db_name = ckan_config.get("ckanext.versioned_datastore.mongo_database")
+        self.sg_client = SplitgillClient(
+            self.mongo_client, self.elasticsearch_client, mongo_db_name
+        )
+
+        # register all custom query schemas
+        for plugin in iqs_implementations():
+            for query_version, query_schema in plugin.get_query_schemas():
+                register_schema(query_version, query_schema)
+
+        # reserve any requested slugs
+        from .lib.query.slugs.slugs import reserve_slug
+
+        for plugin in ivds_implementations():
+            slugs = plugin.vds_reserve_slugs()
+            for reserved_pretty_slug, query_parameters in slugs.items():
+                query = SchemaQuery(**query_parameters)
+                with suppress(Exception):
+                    reserve_slug(reserved_pretty_slug, query)
+
+    def is_sg_configured(self) -> bool:
+        """
+        Returns whether Splitgill is configured and ready for use. This checks if the
+        Mongo client, Elasticsearch client, and Splitgill client have all been created
+        and stored against this plugin instance.
+
+        :return: True if it's ready, False if not
+        """
+        return (
+            self.mongo_client is not None
+            and self.elasticsearch_client is not None
+            and self.sg_client is not None
+        )
+
     # IActions
     def get_actions(self):
-        return create_actions(basic_search, crud, downloads, extras, multisearch)
+        return create_actions(
+            basic.action,
+            data.action,
+            download.action,
+            multi.action,
+            options.action,
+            resource_logic.action,
+            schema.action,
+            slug.action,
+            version.action,
+        )
+
+    # IAuthFunctions
+    def get_auth_functions(self):
+        return create_auth(
+            basic.auth,
+            data.auth,
+            download.auth,
+            multi.auth,
+            options.auth,
+            resource_logic.auth,
+            schema.auth,
+            slug.auth,
+            version.auth,
+        )
 
     # IClick
     def get_commands(self):
         return cli.get_commands()
 
-    # IAuthFunctions
-    def get_auth_functions(self):
-        return create_auth(auth)
-
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'is_datastore_resource': is_datastore_resource,
-            'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
-            'get_human_duration': helpers.get_human_duration,
-            'get_stat_icon': helpers.get_stat_icon,
-            'get_stat_activity_class': helpers.get_stat_activity_class,
-            'get_stat_title': helpers.get_stat_title,
-            'get_available_formats': helpers.get_available_formats,
-            'pretty_print_json': helpers.pretty_print_json,
-            'get_version_date': helpers.get_version_date,
-            'latest_item_version': helpers.latest_item_version,
-            'nav_slug': helpers.nav_slug,
+            "is_datastore_resource": is_datastore_resource,
+            "is_duplicate_ingestion": helpers.is_duplicate_ingestion,
+            "get_human_duration": helpers.get_human_duration,
+            "get_stat_icon": helpers.get_stat_icon,
+            "get_stat_activity_class": helpers.get_stat_activity_class,
+            "get_stat_title": helpers.get_stat_title,
+            "get_available_formats": helpers.get_available_formats,
+            "pretty_print_json": helpers.pretty_print_json,
+            "get_version_date": helpers.get_version_date,
+            "latest_item_version": helpers.latest_item_version,
+            "nav_slug": helpers.nav_slug,
         }
 
     # IResourceController
     def before_show(self, resource_dict):
-        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
+        # ensure datastore_active is set where it should be
+        resource_dict["datastore_active"] = is_datastore_resource(resource_dict["id"])
         return resource_dict
 
-    # IDomainObjectModification
-    def notify(self, entity, operation):
-        """
-        Respond to changes to model objects. We use this hook to ensure any new data is
-        imported into the versioned datastore and to make sure the privacy settings on
-        the data are up to date. We're only interested in:
+    # IResourceController
+    def after_update(self, context: dict, resource: dict):
+        # use replace to overwrite the existing data (this is what users would expect)
+        data_dict = {"resource_id": resource["id"], "replace": True}
+        with suppress(ReadOnlyResourceException):
+            toolkit.get_action("vds_data_add")(context, data_dict)
 
-            - resource deletions
-            - new resources
-            - resources that have had changes to their URL
-            - packages that have changed
+    # IResourceController
+    def after_create(self, context: dict, resource: dict):
+        # use replace to overwrite the existing data (this is what users would expect)
+        data_dict = {"resource_id": resource["id"], "replace": True}
+        with suppress(ReadOnlyResourceException):
+            toolkit.get_action("vds_data_add")(context, data_dict)
 
-        :param entity: the entity that has changed
-        :param operation: the operation undertaken on the object. This will be one of the options
-                          from the DomainObjectOperation enum.
-        """
-        if (
-            isinstance(entity, model.Package)
-            and operation == DomainObjectOperation.changed
-        ):
-            # if a package is the target entity and it's been changed ensure the privacy is applied
-            # correctly to its resource indexes
-            update_resources_privacy(entity)
-        elif isinstance(entity, model.Resource):
-            context = {'model': model, 'ignore_auth': True}
-            data_dict = {'resource_id': entity.id}
-
-            if operation == DomainObjectOperation.deleted:
-                toolkit.get_action('datastore_delete')(context, data_dict)
-            else:
-                do_upsert = False
-
-                if operation == DomainObjectOperation.new:
-                    # datastore_create returns True when the resource looks like it's ingestible
-                    do_upsert = toolkit.get_action('datastore_create')(
-                        context, data_dict
-                    )
-                elif operation == DomainObjectOperation.changed:
-                    # always try the upsert if the resource has changed
-                    do_upsert = True
-
-                if do_upsert:
-                    # in theory, last_modified should change when the resource file/url is changed
-                    # and metadata_modified should change when any other attributes are changed. To
-                    # cover off the possibility that this gets mixed up, we'll pick the max of them
-                    modified = list(
-                        filter(None, (entity.last_modified, entity.metadata_modified))
-                    )
-                    last_modified = max(modified) if modified else datetime.now()
-                    data_dict['version'] = to_timestamp(last_modified)
-                    # use replace to overwrite the existing data (this is what users would expect)
-                    data_dict['replace'] = True
-                    # these exceptions are fine to swallow
-                    with suppress(ReadOnlyResourceException, InvalidVersionException):
-                        toolkit.get_action('datastore_upsert')(context, data_dict)
+    def before_delete(self, context: dict, resource: dict, resources: List[dict]):
+        toolkit.get_action("vds_data_delete")(context, {"resource_id": resource["id"]})
 
     # IConfigurer
     def update_config(self, config):
         # add public folder containing schemas
-        toolkit.add_public_directory(config, 'theme/public')
+        toolkit.add_public_directory(config, "theme/public")
         # add templates
-        toolkit.add_template_directory(config, 'theme/templates')
-        toolkit.add_resource('theme/assets', 'ckanext-versioned-datastore')
+        toolkit.add_template_directory(config, "theme/templates")
+        toolkit.add_resource("theme/assets", "ckanext-versioned-datastore")
 
     # IBlueprint
     def get_blueprint(self):
         return routes.blueprints
-
-    # IConfigurable
-    def configure(self, ckan_config):
-        setup(ckan_config)
-
-        # register all custom query schemas
-        for plugin in PluginImplementations(IVersionedDatastoreQuerySchema):
-            for version, schema in plugin.get_query_schemas():
-                register_schema(version, schema)
-
-        # reserve any requested slugs
-        from .lib.query.slugs import reserve_slug
-
-        for plugin in PluginImplementations(IVersionedDatastore):
-            for (
-                reserved_pretty_slug,
-                query_parameters,
-            ) in plugin.datastore_reserve_slugs().items():
-                with suppress(Exception):
-                    reserve_slug(reserved_pretty_slug, **query_parameters)
 
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):

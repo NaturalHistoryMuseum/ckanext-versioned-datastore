@@ -1,21 +1,20 @@
-import io
+import abc
 import json
 from collections import OrderedDict
+from typing import List
 
-import abc
 import itertools
-import os
-import six
-from jsonschema.validators import validator_for, RefResolver
+from elasticsearch_dsl.query import Query as DSLQuery
 from importlib_resources import files
+from jsonschema.validators import validator_for, RefResolver
 
 schemas = OrderedDict()
-schema_base_path = files('ckanext.versioned_datastore.theme').joinpath(
-    'public/querySchemas'
+schema_base_path = (
+    files("ckanext.versioned_datastore.theme") / "public" / "querySchemas"
 )
 
 
-def register_schema(version, schema):
+def register_schema(version: str, schema: dict):
     """
     Registers a new schema with the given version into the central schemas dict. The
     schema parameter should be a subclass of the Schema class but generally must at
@@ -31,12 +30,12 @@ def register_schema(version, schema):
     schemas = OrderedDict(
         sorted(
             itertools.chain([(version, schema)], schemas.items()),
-            key=lambda vs: [int(u) for u in vs[0][1:].split('.')],
+            key=lambda vs: [int(u) for u in vs[0][1:].split(".")],
         )
     )
 
 
-def get_latest_query_version():
+def get_latest_query_version() -> str:
     """
     Gets the latest query version from the registered schemas dict.
 
@@ -47,10 +46,10 @@ def get_latest_query_version():
 
 class InvalidQuerySchemaVersionError(Exception):
     def __init__(self, version):
-        super(Exception, self).__init__(f'Invalid query version: {version}')
+        super(Exception, self).__init__(f"Invalid query version: {version}")
 
 
-def validate_query(query, version):
+def validate_query(query: dict, version: str) -> bool:
     """
     Validate the given query dict against the query schema for the given version. If the
     version doesn't match any registered schemas then an InvalidQuerySchemaVersionError
@@ -58,15 +57,16 @@ def validate_query(query, version):
 
     :param query: the query dict
     :param version: the query schema version to validate against
-    :return: True if the validation succeeded, otherwise jsonschema exceptions will be raised
+    :return: True if the validation succeeded, otherwise jsonschema exceptions will be
+             raised
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
-    schemas[version].validate(query)
+    get_schema(version).validate(query)
     return True
 
 
-def translate_query(query, version, search=None):
+def translate_query(query: dict, version: str) -> DSLQuery:
     """
     Translates the given query dict into an elasticsearch-dsl object using the Schema
     object associated with the given version. If the version doesn't match any
@@ -74,17 +74,15 @@ def translate_query(query, version, search=None):
 
     :param query: the whole query dict
     :param version: the query schema version to translate using
-    :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
-                   a fresh object. By default a new search object is created.
-    :return: an instantiated elasticsearch-dsl object
+    :return: an instantiated Elasticsearch DSL Query object
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
     else:
-        return schemas[version].translate(query, search=search)
+        return get_schema(version).translate(query)
 
 
-def hash_query(query, version):
+def hash_query(query: dict, version: str) -> str:
     """
     Hashes the given query at the given version and returns the unique digest.
 
@@ -95,29 +93,36 @@ def hash_query(query, version):
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
     else:
-        return schemas[version].hash(query)
+        return get_schema(version).hash(query)
 
 
-def load_core_schema(version):
+def get_schema(version: str) -> "Schema":
+    return schemas[version]
+
+
+def get_schema_versions() -> List[str]:
+    return list(schemas.keys())
+
+
+def load_core_schema(version: str):
     """
     Given a query schema version, loads the schema from the schema_base_path directory.
 
     :param version: the version to load
-    :return: the loaded schema (as a dict) and a jsonschmea validator object for the schema
+    :return: the loaded schema (as a dict) and a jsonschmea validator object for the
+             schema
     """
-    schema_file = schema_base_path.joinpath(version).joinpath(f'{version}.json')
-    with io.open(schema_file, 'r', encoding='utf-8') as f:
-        schema = json.load(f)
-        validator_cls = validator_for(schema)
-        validator_cls.check_schema(schema)
-        # create a resolver which can resolve refs relative to the schema
-        resolver = RefResolver(base_uri=f'file://{schema_file}', referrer=schema)
-        validator = validator_cls(schema, resolver=resolver)
-        return schema, validator
+    schema_file = schema_base_path / version / f"{version}.json"
+    schema = json.loads(schema_file.read_text("utf-8"))
+    validator_cls = validator_for(schema)
+    validator_cls.check_schema(schema)
+    # create a resolver which can resolve refs relative to the schema
+    resolver = RefResolver(base_uri=f"file://{schema_file}", referrer=schema)
+    validator = validator_cls(schema, resolver=resolver)
+    return schema, validator
 
 
-@six.add_metaclass(abc.ABCMeta)
-class Schema(object):
+class Schema(abc.ABC):
     """
     Abstract base class for a query schema.
 
@@ -125,7 +130,7 @@ class Schema(object):
     """
 
     @abc.abstractmethod
-    def validate(self, query):
+    def validate(self, query: dict):
         """
         Validate the given query against this schema. Failures are marked raising
         jsonschema exceptions.
@@ -135,19 +140,17 @@ class Schema(object):
         pass
 
     @abc.abstractmethod
-    def translate(self, query, search=None):
+    def translate(self, query: dict) -> DSLQuery:
         """
-        Translates the query into an elasticsearch-dsl search object.
+        Translates the query into an Elasticsearch DSL object.
 
         :param query: the whole query dict
-        :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
-                       a fresh object. By default a new search object is created.
-        :return: an instantiated elasticsearch-dsl object
+        :return: an instantiated Elasticsearch DSL object
         """
         pass
 
     @abc.abstractmethod
-    def hash(self, query):
+    def hash(self, query: dict) -> str:
         """
         Hashes the query and returns the hex digest.
 

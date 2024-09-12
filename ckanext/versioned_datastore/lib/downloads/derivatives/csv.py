@@ -1,12 +1,14 @@
 import csv
 
-from .base import BaseDerivativeGenerator
-from ..utils import flatten_dict
+from ckanext.versioned_datastore.lib.downloads.derivatives.base import (
+    BaseDerivativeGenerator,
+)
+from ckanext.versioned_datastore.lib.downloads.utils import flatten_dict
 
 
 class CsvDerivativeGenerator(BaseDerivativeGenerator):
-    name = 'csv'
-    extension = 'csv'
+    name = "csv"
+    extension = "csv"
 
     def __init__(
         self,
@@ -14,13 +16,13 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
         fields,
         query,
         resource_id=None,
-        delimiter='comma',
-        **format_args
+        delimiter="comma",
+        **format_args,
     ):
         super(CsvDerivativeGenerator, self).__init__(
-            output_dir, fields, query, resource_id, delimiter='comma', **format_args
+            output_dir, fields, query, resource_id, delimiter="comma", **format_args
         )
-        self.delimiter = {'comma': ',', 'tab': '\t'}[delimiter]
+        self.delimiter = {"comma": ",", "tab": "\t"}[delimiter]
         self.writer = None
 
     def initialise(self):
@@ -29,7 +31,7 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
 
     def setup(self):
         self.writer = csv.DictWriter(
-            self.main_file, self.fields['main'], delimiter=self.delimiter
+            self.main_file, self.fields["main"], delimiter=self.delimiter
         )
         super(CsvDerivativeGenerator, self).setup()
 
@@ -41,10 +43,10 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
         row = flatten_dict(record)
         filtered_row = {}
         for field, value in row.items():
-            if value is None and field not in self.fields['main']:
+            if value is None and field not in self.fields["main"]:
                 continue
-            elif field not in self.fields['main']:
-                raise ValueError('Unexpected field.')
+            elif field not in self.fields["main"]:
+                raise ValueError(f"Unexpected field ({field})")
             else:
                 filtered_row[field] = value
         if self.resource_id:

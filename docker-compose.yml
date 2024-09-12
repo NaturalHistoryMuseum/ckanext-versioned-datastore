@@ -44,11 +44,11 @@ services:
       node.name: vds-test-one
       network.bind_host: 0.0.0.0
       network.host: 0.0.0.0
-      cluster.routing.allocation.disk.threshold_enabled: false
+      cluster.routing.allocation.disk.threshold_enabled: "false"
       # this ensures we can connect over http
-      xpack.security.enabled: false
+      xpack.security.enabled: "false"
       # this allows our tests to delete indexes using a wildcard
-      action.destructive_requires_name: false
+      action.destructive_requires_name: "false"
 
   mongodb:
     image: mongo:6.0.8

@@ -7,8 +7,8 @@ from ckan.plugins import toolkit
 
 parser = etree.XMLParser(recover=True)
 
-standard_fields = ['datasetID', 'basisOfRecord', 'dynamicProperties']
-valid_types = ['StillImage', 'MovingImage', 'Sound', 'PhysicalObject', 'Event', 'Text']
+standard_fields = ["datasetID", "basisOfRecord", "dynamicProperties"]
+valid_types = ["StillImage", "MovingImage", "Sound", "PhysicalObject", "Event", "Text"]
 
 
 def load_schema(url, base_url=None):
@@ -51,4 +51,4 @@ def get_setting(*config_names, default=None):
 
 class NSMap(dict):
     def ns(self, key, tag):
-        return f'{{{self[key]}}}{tag}'
+        return f"{{{self[key]}}}{tag}"
