@@ -4,9 +4,11 @@ import tempfile
 from pathlib import Path
 from typing import Optional, List, Union
 
+from cachetools import cached, TTLCache
 from rq.job import Job
 
 from ckan.plugins import toolkit
+from ckanext.versioned_datastore.lib.utils import es_client
 
 
 class Task(abc.ABC):
@@ -79,3 +81,24 @@ class Task(abc.ABC):
             title=self.title,
             rq_kwargs=rq_kwargs,
         )
+
+
+@cached(cache=TTLCache(maxsize=10, ttl=300))
+def get_queue_length(queue_name):
+    """
+    This will only get the pending jobs in a queue, not any jobs that are currently
+    processing.
+
+    :param queue_name: the name of the queue to check, e.g. 'download'
+    :return: length of queue as int
+    """
+    queued_jobs = toolkit.get_action('job_list')(
+        {'ignore_auth': True}, {'queues': [queue_name]}
+    )
+    return len(queued_jobs)
+
+
+@cached(cache=TTLCache(maxsize=10, ttl=300))
+def get_es_health():
+    client = es_client()
+    return {'ping': client.ping(), 'info': client.info()}

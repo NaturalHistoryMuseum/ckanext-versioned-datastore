@@ -18,6 +18,7 @@ from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchem
 from ckanext.versioned_datastore.lib.query.schema import register_schema
 from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
+from ckanext.versioned_datastore.lib.tasks import get_queue_length, get_es_health
 from ckanext.versioned_datastore.lib.utils import (
     is_datastore_resource,
     ReadOnlyResourceException,
@@ -37,6 +38,13 @@ from ckanext.versioned_datastore.logic import (
     version,
 )
 
+try:
+    from ckanext.status.interfaces import IStatus
+
+    status_available = True
+except ImportError:
+    status_available = False
+
 log = logging.getLogger(__name__)
 
 # stop elasticsearch from showing warning logs
@@ -53,6 +61,8 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
     implements(interfaces.IClick)
+    if status_available:
+        implements(IStatus)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -202,3 +212,51 @@ class VersionedSearchPlugin(SingletonPlugin):
     # IVersionedDatastoreQuerySchema
     def get_query_schemas(self):
         return [(v1_0_0Schema.version, v1_0_0Schema())]
+
+    # IStatus
+    def modify_status_reports(self, status_reports):
+        queued_downloads = get_queue_length('download')
+
+        status_reports.append(
+            {
+                'label': toolkit._('Downloads'),
+                'value': queued_downloads,
+                'group': toolkit._('Queues'),
+                'help': toolkit._('Number of downloads waiting in the queue'),
+                'state': 'good'
+                if queued_downloads < 2
+                else ('ok' if queued_downloads < 4 else 'bad'),
+            }
+        )
+
+        queued_imports = get_queue_length('importing')
+
+        status_reports.append(
+            {
+                'label': toolkit._('Imports'),
+                'value': queued_imports,
+                'group': toolkit._('Queues'),
+                'help': toolkit._('Number of import jobs waiting in the queue'),
+                'state': 'good'
+                if queued_imports < 2
+                else ('ok' if queued_imports < 4 else 'bad'),
+            }
+        )
+
+        es_health = get_es_health()
+        server_status_text = (
+            toolkit._('available') if es_health['ping'] else toolkit._('unavailable')
+        )
+
+        status_reports.append(
+            {
+                'label': toolkit._('Search'),
+                'value': server_status_text,
+                'help': toolkit._(
+                    'Multisearch functionality is provided by an Elasticsearch cluster'
+                ),
+                'state': 'good' if es_health['ping'] else 'bad',
+            }
+        )
+
+        return status_reports

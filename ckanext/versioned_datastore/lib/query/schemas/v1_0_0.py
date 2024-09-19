@@ -3,7 +3,7 @@ import io
 import json
 import string
 from collections import defaultdict
-from typing import Optional, List
+from typing import Optional
 
 from elasticsearch_dsl.query import Bool, Q, Query, EMPTY_QUERY
 from splitgill.search import (
@@ -21,6 +21,8 @@ from ckanext.versioned_datastore.lib.query.schema import (
     load_core_schema,
     schema_base_path,
 )
+from ckanext.versioned_datastore.lib.query.utils import convert_small_or_groups, \
+    remove_empty_groups
 
 
 class v1_0_0Schema(Schema):
@@ -62,6 +64,17 @@ class v1_0_0Schema(Schema):
         :return: the hex digest of the hash of the query
         """
         return self.hasher.hash_query(query)
+
+    def normalise(self, query):
+        """
+        Corrects some (small) common query errors, e.g. removing empty groups.
+
+        :param query: the query dict
+        :return: the corrected/normalised query dict
+        """
+        query = convert_small_or_groups(query)
+        query = remove_empty_groups(query)
+        return query
 
     def translate(self, query: dict) -> Query:
         """

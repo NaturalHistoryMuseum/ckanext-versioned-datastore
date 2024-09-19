@@ -1,6 +1,6 @@
 [project]
 name = "ckanext-versioned-datastore"
-version = "5.4.0"
+version = "5.6.3"
 description = "A CKAN extension providing a versioned datastore using MongoDB and Elasticsearch"
 readme = "README.md"
 requires-python = ">=3.6"
@@ -34,6 +34,7 @@ dependencies = [
     "xlrd==1.1.0",
     "fastavro==1.7.0",
     "ckantools>=0.3.0",
+    "cachetools>=4.2.4",
 ]
 
 [project.optional-dependencies]
@@ -76,7 +77,7 @@ exclude = ["tests", "docs"]
 
 [tool.commitizen]
 name = "cz_nhm"
-version = "5.4.0"
+version = "5.6.3"
 tag_format = "v$version"
 update_changelog_on_bump = true
 changelog_incremental = true

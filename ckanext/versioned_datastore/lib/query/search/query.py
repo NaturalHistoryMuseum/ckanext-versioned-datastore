@@ -12,7 +12,7 @@ from ckanext.versioned_datastore.lib.query.schema import (
     hash_query,
     validate_query,
     translate_query,
-    get_latest_query_version,
+    get_latest_query_version, normalise_query,
 )
 
 
@@ -89,10 +89,13 @@ class SchemaQuery(Query):
         :param query_version: the query version to use (defaults to latest if not given)
         """
         super().__init__("schema", resource_ids, version)
-        self.query = query if query else {}
         self.query_version = (
             query_version if query_version else get_latest_query_version()
         )
+        if query:
+            self.query = normalise_query(query, self.query_version)
+        else:
+            self.query = {}
 
     @property
     def hash(self) -> str:
