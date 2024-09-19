@@ -217,7 +217,8 @@ class BasicQuery(Query):
     @staticmethod
     def create_point_filter(distance, coordinates):
         """
-        Adds a point filter query to the search object and returns a new search object.
+        Creates an Elasticsearch Query object filtering for records within the radius of
+        the given point coordinates.
 
         :param distance: the radius of the circle centred on the specified location
                          within which records must lie to be matched. This can be
@@ -225,7 +226,7 @@ class BasicQuery(Query):
                          (see their doc, but essentially values like 10km etc).
         :param coordinates: the point to centre the radius on, specified as a lon/lat
                             pair in a list (i.e. [40.2, -20]).
-        :return: a search object
+        :return: a Query object
         """
         options = {
             "distance": distance,
@@ -239,10 +240,10 @@ class BasicQuery(Query):
     @staticmethod
     def create_multipolygon_filter(coordinates):
         """
-        Adds a multipolygon filter query to the search object and returns a new search
-        object. Only the first group in each polygon grouping will be used as
-        elasticsearch doesn't support this type of query yet (this kind of query is used
-        for vacating space inside a polygon, like a donut for example).
+        Creates a Query object for the given multipolygon filters. Only the first group
+        in each polygon grouping will be used as elasticsearch doesn't support this type
+        of query yet (this kind of query is used for vacating space inside a polygon,
+        like a donut for example).
 
         If more than one group is included then they are included as an or with a
         minimum must match of 1.
@@ -250,7 +251,7 @@ class BasicQuery(Query):
         :param coordinates: a list of a list of a list of a list of at least 3 lon/lat
                             pairs (i.e. [[[[-16, 44], [-13.1, 34.8], [15.99, 35],
                             [5, 49]]]])
-        :return: a search object
+        :return: a Query object
         """
         should = []
         for group in coordinates:
@@ -283,17 +284,16 @@ class BasicQuery(Query):
     @staticmethod
     def create_polygon_filter(coordinates):
         """
-        Adds a polygon filter query to the search object and returns a new search
-        object. Only the first group in each polygon grouping will be used as
-        elasticsearch doesn't support this type of query yet (this kind of query is used
-        for vacating space inside a polygon, like a donut for example.
+        Creates a polygon Query object. Only the first group in each polygon grouping
+        will be used as elasticsearch doesn't support this type of query yet (this kind
+        of query is used for vacating space inside a polygon, like a donut for example.
 
         If more than one group is included then they are included as an or with a
         minimum must match of 1.
 
         :param coordinates: a list of a list of a list of at least 3 lon/lat pairs (i.e.
                             [[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]])
-        :return: a search object
+        :return: a Query object
         """
         # just wrap in another list and pass to the multipolygon handler
         return BasicQuery.create_multipolygon_filter([coordinates])
@@ -301,8 +301,7 @@ class BasicQuery(Query):
     @staticmethod
     def create_geo_filter(geo_filter):
         """
-        Updates the given search DSL object with the geo filter specified in the
-        geo_filter dict.
+        Creates a Query object for the geo filter specified in the geo_filter dict.
 
         :param geo_filter: a dict describing a geographic filter. This should be a
                            GeoJSON geometry and should therefore include a type key and
@@ -310,7 +309,7 @@ class BasicQuery(Query):
                            MultiPolygon or Polygon. In the case of a Point, a distance
                            key is also required which specifies the radius of the point
                            in a form elasticsearch understands (for example, 10km).
-        :return: a search DSL object
+        :return: a Query object
         """
         # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
         query_type_map = {
