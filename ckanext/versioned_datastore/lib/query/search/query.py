@@ -12,7 +12,8 @@ from ckanext.versioned_datastore.lib.query.schema import (
     hash_query,
     validate_query,
     translate_query,
-    get_latest_query_version, normalise_query,
+    get_latest_query_version,
+    normalise_query,
 )
 
 
@@ -265,13 +266,19 @@ class BasicQuery(Query):
                         "type": "Polygon",
                         # format the polygon point data appropriately
                         "coordinates": [
-                            [float(point[1]), float(point[0])] for point in points
+                            [[float(point[0]), float(point[1])] for point in points]
                         ],
                     }
                 },
             }
             should.append(Q("geo_shape", **options))
-        return Bool(should=should, minimum_should_match=1)
+
+        if len(should) == 1:
+            # no point in producing an or query if we don't need to
+            return should[0]
+        else:
+            # otherwise, create an or over the series of polygons
+            return Bool(should=should, minimum_should_match=1)
 
     @staticmethod
     def create_polygon_filter(coordinates):
