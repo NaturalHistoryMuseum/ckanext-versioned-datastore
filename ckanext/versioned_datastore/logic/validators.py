@@ -66,7 +66,7 @@ def check_resource_id(resource_id: str, context: Optional[dict]) -> bool:
 
 def is_queryable_resource_id(value: str, context: Optional[dict]):
     if not check_resource_id(value, context):
-        raise toolkit.Invalid("Resource is not a datastore resource")
+        raise toolkit.Invalid(f"Resource {value} is not a datastore resource")
     return value
 
 
