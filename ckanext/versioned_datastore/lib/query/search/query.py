@@ -5,7 +5,7 @@ from typing import List, Optional, Union
 
 from elasticsearch_dsl import Q
 from elasticsearch_dsl.query import EMPTY_QUERY, Query as DSLQuery, Bool
-from splitgill.search import match_query, term_query, ALL_SHAPES
+from splitgill.search import match_query, term_query, ALL_POINTS
 
 from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.query.schema import (
@@ -230,7 +230,7 @@ class BasicQuery(Query):
         """
         options = {
             "distance": distance,
-            ALL_SHAPES: {
+            ALL_POINTS: {
                 "lat": float(coordinates[1]),
                 "lon": float(coordinates[0]),
             },
@@ -262,7 +262,7 @@ class BasicQuery(Query):
                 )
 
             options = {
-                ALL_SHAPES: {
+                ALL_POINTS: {
                     "shape": {
                         "type": "Polygon",
                         # format the polygon point data appropriately
