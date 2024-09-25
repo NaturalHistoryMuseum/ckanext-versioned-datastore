@@ -1,5 +1,5 @@
 import bisect
-from typing import Optional
+from typing import Optional, List
 
 from ckantools.decorators import action
 from elasticsearch_dsl import Q
@@ -18,7 +18,7 @@ def vds_version_schema():
 
 
 @action(schema.vds_version_record(), helptext.vds_version_record, get=True)
-def vds_version_record(resource_id: str, record_id: str):
+def vds_version_record(resource_id: str, record_id: str) -> List[int]:
     query = DirectQuery(
         [resource_id],
         None,
@@ -30,17 +30,9 @@ def vds_version_record(resource_id: str, record_id: str):
 
 
 @action(schema.vds_version_resource(), helptext.vds_version_resource, get=True)
-def vds_version_resource(resource_id: str):
+def vds_version_resource(resource_id: str) -> List[int]:
     database = get_database(resource_id)
-    versions = {}
-
-    for version in database.get_versions():
-        versions[version] = {
-            "total": database.search(version).count(),
-            # todo: changes and field_count
-        }
-
-    return versions
+    return sorted(database.get_versions())
 
 
 @action(schema.vds_version_round(), helptext.vds_version_round, get=True)
