@@ -1,6 +1,6 @@
-from ckan.model import meta, DomainObject
+from ckan.model import DomainObject, meta
 from ckan.model.types import JsonDictType
-from sqlalchemy import Column, DateTime, Float, Boolean, Table, BigInteger, UnicodeText
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Float, Table, UnicodeText
 
 # this table stores general statistics about the ingest and index events that occur on resources. It
 # is also used to figure out what versions have been ingested and to a certain extent indexed and

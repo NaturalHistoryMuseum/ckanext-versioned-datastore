@@ -1,16 +1,18 @@
 import csv
 import json
 import os
-import pytest
 import shutil
 import tempfile
 import zipfile
-from mock import patch, MagicMock
-from tests.helpers import patches, data as test_data
 
+import pytest
 from ckan.plugins import toolkit
 from ckan.tests import factories
+from mock import MagicMock, patch
+
 from ckanext.versioned_datastore.model.downloads import DownloadRequest
+from tests.helpers import data as test_data
+from tests.helpers import patches
 
 scenarios = [
     ('csv', {}),
@@ -398,7 +400,7 @@ class TestQueueDownload:
 class TestDownloadWithQueryDois:
     @classmethod
     def setup_class(cls):
-        from ckanext.query_dois.model import query_doi_table, query_doi_stat_table
+        from ckanext.query_dois.model import query_doi_stat_table, query_doi_table
 
         cls.tables = [query_doi_table, query_doi_stat_table]
 

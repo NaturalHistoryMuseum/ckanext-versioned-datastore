@@ -1,11 +1,11 @@
 import click
-
 from ckan.plugins import toolkit
+
 from .model.details import datastore_resource_details_table
 from .model.downloads import (
-    datastore_downloads_requests_table,
-    datastore_downloads_derivative_files_table,
     datastore_downloads_core_files_table,
+    datastore_downloads_derivative_files_table,
+    datastore_downloads_requests_table,
 )
 from .model.slugs import datastore_slugs_table, navigational_slugs_table
 from .model.stats import import_stats_table

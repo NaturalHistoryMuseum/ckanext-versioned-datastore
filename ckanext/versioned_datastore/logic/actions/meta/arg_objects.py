@@ -1,7 +1,7 @@
+from ckan.plugins import toolkit
 from ckantools.validators import list_of_strings
 from ckantools.validators.ivalidators import BaseArgs
 
-from ckan.plugins import toolkit
 from ckanext.datastore.logic.schema import json_validator
 
 # grab all the validator functions upfront

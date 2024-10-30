@@ -1,11 +1,11 @@
+from ckan.plugins import toolkit
 from ckantools.decorators import action
 
-from ckan.plugins import toolkit
-from .meta import help, schema
-from .meta.arg_objects import ServerArgs, NotifierArgs, QueryArgs, DerivativeArgs
 from ...lib.downloads.download import DownloadRunManager
-from ...model.downloads import DownloadRequest
 from ...lib.downloads.notifiers import validate_notifier_args
+from ...model.downloads import DownloadRequest
+from .meta import help, schema
+from .meta.arg_objects import DerivativeArgs, NotifierArgs, QueryArgs, ServerArgs
 
 
 @action(schema.datastore_queue_download(), help.datastore_queue_download)

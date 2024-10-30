@@ -1,5 +1,5 @@
 import pytest
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 from splitgill.indexing.utils import DOC_TYPE
 
 from ckanext.versioned_datastore.lib.basic_query.utils import format_facets, get_fields
@@ -53,18 +53,18 @@ class TestBasicQueryUtils(object):
     @pytest.mark.usefixtures('with_versioned_datastore_tables', 'with_plugins')
     def test_get_fields(self):
         mock_mapping = {
-            u"beans-index": {
-                u"mappings": {
+            'beans-index': {
+                'mappings': {
                     DOC_TYPE: {
-                        u"properties": {
-                            u"data": {
-                                u"properties": {
-                                    u"_id": {'type': 'long'},
-                                    u"field1": {
-                                        u"type": u"keyword",
+                        'properties': {
+                            'data': {
+                                'properties': {
+                                    '_id': {'type': 'long'},
+                                    'field1': {
+                                        'type': 'keyword',
                                     },
-                                    u"field2": {
-                                        u"type": u"date",
+                                    'field2': {
+                                        'type': 'date',
                                     },
                                 }
                             }

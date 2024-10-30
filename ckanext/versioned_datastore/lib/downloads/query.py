@@ -1,6 +1,8 @@
 import hashlib
 
 from ckan.plugins import toolkit
+
+from ...logic.actions.meta.arg_objects import QueryArgs
 from ..basic_query.utils import convert_to_multisearch
 from ..query.schema import (
     get_latest_query_version,
@@ -9,7 +11,6 @@ from ..query.schema import (
     validate_query,
 )
 from ..query.utils import get_resources_and_versions
-from ...logic.actions.meta.arg_objects import QueryArgs
 
 
 class Query(object):

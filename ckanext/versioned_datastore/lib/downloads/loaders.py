@@ -1,8 +1,8 @@
 from ckan.plugins import PluginImplementations, toolkit
+
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreDownloads
 
-from . import derivatives, servers, notifiers, transforms
-from functools import partial
+from . import derivatives, notifiers, servers, transforms
 
 
 def get_derivative_generator(derivative_name, *args, **kwargs):

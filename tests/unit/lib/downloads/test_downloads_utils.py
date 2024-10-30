@@ -3,7 +3,7 @@ from ckan.plugins import toolkit
 from ckan.tests import factories
 from mock import MagicMock, patch
 
-from ckanext.versioned_datastore.lib.downloads import utils, query
+from ckanext.versioned_datastore.lib.downloads import query, utils
 from tests.helpers import patches
 
 
@@ -72,11 +72,11 @@ class TestGetSchema:
             }
         )
         with patch(
-            "ckanext.versioned_datastore.lib.downloads.utils.get_mappings",
+            'ckanext.versioned_datastore.lib.downloads.utils.get_mappings',
             get_mapping_mock,
         ):
             parsed_schemas = utils.get_schemas(q)
-        parsed_schema = parsed_schemas[resource_dict["id"]]
+        parsed_schema = parsed_schemas[resource_dict['id']]
         assert isinstance(parsed_schema, dict)
         assert parsed_schema['type'] == 'record'
         assert parsed_schema['name'] == 'ResourceRecord'

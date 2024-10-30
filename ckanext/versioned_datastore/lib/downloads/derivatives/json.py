@@ -1,7 +1,6 @@
-import csv
+import json
 
 from .base import BaseDerivativeGenerator
-import json
 
 
 class JsonDerivativeGenerator(BaseDerivativeGenerator):

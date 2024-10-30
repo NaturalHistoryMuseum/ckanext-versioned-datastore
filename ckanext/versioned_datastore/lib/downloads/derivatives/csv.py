@@ -1,7 +1,7 @@
 import csv
 
-from .base import BaseDerivativeGenerator
 from ..utils import flatten_dict
+from .base import BaseDerivativeGenerator
 
 
 class CsvDerivativeGenerator(BaseDerivativeGenerator):
@@ -15,7 +15,7 @@ class CsvDerivativeGenerator(BaseDerivativeGenerator):
         query,
         resource_id=None,
         delimiter='comma',
-        **format_args
+        **format_args,
     ):
         super(CsvDerivativeGenerator, self).__init__(
             output_dir, fields, query, resource_id, delimiter='comma', **format_args

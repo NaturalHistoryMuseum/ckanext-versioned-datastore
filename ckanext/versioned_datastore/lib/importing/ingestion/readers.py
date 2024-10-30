@@ -1,16 +1,16 @@
 import abc
-
 import codecs
 import csv
 import numbers
+
 import openpyxl
 import xlrd
 from cchardet import UniversalDetector
 from openpyxl.cell.read_only import EmptyCell
 
+from ... import common
 from .exceptions import InvalidId
 from .utils import ensure_reset
-from ... import common
 
 
 def get_reader(resource_format):
@@ -40,10 +40,10 @@ class ResourceReader(abc.ABC):
     """
 
     def __init__(self, compressible):
-        '''
+        """
         :param compressible: whether the reader can cope with a gzipped file pointer being passed to
                              the get_fields and get_rows functions.
-        '''
+        """
         self.compressible = compressible
 
     @abc.abstractmethod
@@ -95,15 +95,15 @@ class ResourceReader(abc.ABC):
 
 
 class SVReader(ResourceReader):
-    '''
+    """
     A *SV reader - handles CSVs and TSVs.
-    '''
+    """
 
     def __init__(self, dialect):
-        '''
+        """
         :param dialect: the dialect of the source, this is passed straight to the csv reader
                         constructor function
-        '''
+        """
         super(SVReader, self).__init__(True)
         self.dialect = dialect
         self.encoding = None
@@ -323,9 +323,9 @@ class APIReader(ResourceReader):
     """
 
     def __init__(self, data):
-        '''
+        """
         :param data: the data as a list of dicts
-        '''
+        """
         super(APIReader, self).__init__(False)
         self.data = data
 

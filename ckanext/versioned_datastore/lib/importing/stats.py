@@ -1,7 +1,7 @@
+from datetime import datetime
 from traceback import format_exception_only
 
 from ckan import model
-from datetime import datetime
 from sqlalchemy import desc
 
 from ...model.stats import ImportStats
@@ -20,8 +20,8 @@ def start_operation(resource_id, import_type, version, start=None):
     :param resource_id: the id of the resource being worked on
     :param import_type: the type of import operation being undertaken
     :param version: the version of the data
-    :param start: the datetime when this operation was started (optional, if None current time will
-                  be used)
+    :param start: the datetime when this operation was started (optional, if None
+        current time will be used)
     :return: the database id of the saved ImportStats object
     """
     if start is None:
@@ -116,9 +116,9 @@ def monitor_indexing(stats_id, indexer, update_frequency=1000):
 
     :param stats_id: the database id of the object to update
     :param indexer: the Indexer object to monitor
-    :param update_frequency: the frequency with which to update the ImportStats. Setting this too
-                             low will cause the database written to a lot which could cause
-                             performance issues.
+    :param update_frequency: the frequency with which to update the ImportStats. Setting
+        this too low will cause the database written to a lot which could cause
+        performance issues.
     """
 
     @indexer.index_signal.connect_via(indexer)

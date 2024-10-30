@@ -1,20 +1,19 @@
 from datetime import datetime
 
+from ckan.model import DomainObject, Session, meta
+from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
-    UnicodeText,
+    Column,
     DateTime,
     ForeignKey,
+    Table,
+    UnicodeText,
     desc,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.exc import InvalidRequestError
-
-from ckan.model import meta, DomainObject, Session
-from ckan.model.types import make_uuid
+from sqlalchemy.orm import backref, relationship
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
 state_initial = 'initiated'

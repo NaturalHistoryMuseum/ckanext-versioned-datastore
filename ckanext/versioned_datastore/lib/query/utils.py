@@ -1,14 +1,14 @@
 from copy import copy
 from datetime import datetime
 
-from elasticsearch_dsl import Search, MultiSearch
-from splitgill.search import create_version_query, create_index_specific_version_filter
-from splitgill.utils import to_timestamp
-
 from ckan import model
 from ckan.plugins import toolkit
+from elasticsearch_dsl import MultiSearch, Search
+from splitgill.search import create_index_specific_version_filter, create_version_query
+from splitgill.utils import to_timestamp
+
 from .. import common
-from ..datastore_utils import prefix_resource, get_last_after, trim_index_name
+from ..datastore_utils import get_last_after, prefix_resource, trim_index_name
 
 
 def get_available_datastore_resources(context, only=None):
@@ -20,8 +20,8 @@ def get_available_datastore_resources(context, only=None):
     an empty list) then all resource ids available to the user are returned.
 
     :param context: the dict ckan context to request auth against
-    :param only: optional list of resource ids to filter the returned list by. Defaults to None
-                 which indicates all available resources should be returned
+    :param only: optional list of resource ids to filter the returned list by. Defaults
+        to None which indicates all available resources should be returned
     :return: a set of resource ids
     """
     # retrieve all resource ids and associated package ids direct from the database for speed
@@ -98,12 +98,13 @@ def determine_resources_to_search(
     through either the resource_ids or resource_ids_and_versions parameters then only
     these resource ids will be returned, if indeed they are accessible to the user.
 
-    :param context: the context dict allowing us to determine the user and do auth on the resources
+    :param context: the context dict allowing us to determine the user and do auth on
+        the resources
     :param resource_ids: a list of resources to search
     :param resource_ids_and_versions: a dict of resources and versions to search at
-    :return: 2-tuple containing a list of resource ids to search and a list of resource ids that
-             have been skipped because the user doesn't have access to them or they aren't datastore
-             resources
+    :return: 2-tuple containing a list of resource ids to search and a list of resource
+        ids that have been skipped because the user doesn't have access to them or they
+        aren't datastore resources
     """
     # validate the resource_ids passed in. If the resource_ids_and_versions parameter is in use then
     # it is taken as the resource_ids source and resource_ids is ignored
@@ -132,8 +133,8 @@ def determine_version_filter(
 
     :param version: the version to filter on across all resources
     :param resource_ids: the resource to search
-    :param resource_ids_and_versions: a dict of resource ids -> versions providing resource specific
-                                      versions for search
+    :param resource_ids_and_versions: a dict of resource ids -> versions providing
+        resource specific versions for search
     :return: an elasticsearch-dsl object
     """
     if not resource_ids_and_versions:
@@ -237,9 +238,10 @@ def get_resources_and_versions(
 
     :param resource_ids: a list of resource ids
     :param resource_ids_and_versions: a dict of resource id: resource version
-    :param version: a datestamp used as a default version for resources without a version
+    :param version: a datestamp used as a default version for resources without a
+        version
     :param allow_non_datastore: allow non datastore resources to be included (will be
-                                returned with common.NON_DATASTORE_VERSION)
+        returned with common.NON_DATASTORE_VERSION)
     :return: a tuple of resource_ids, resource_ids_and_versions
     """
 
@@ -279,9 +281,9 @@ def get_resources_and_versions(
         version = to_timestamp(datetime.now())
     for resource_id in available_resource_ids:
         if resource_id in non_datastore_resources:
-            rounded_resource_ids_and_versions[
-                resource_id
-            ] = common.NON_DATASTORE_VERSION
+            rounded_resource_ids_and_versions[resource_id] = (
+                common.NON_DATASTORE_VERSION
+            )
             continue
         # try to get the target version from the passed resource_ids_and_versions dict, but if
         # it's not in there, default to the version variable

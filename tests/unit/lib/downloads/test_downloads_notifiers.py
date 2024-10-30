@@ -1,12 +1,12 @@
 import pytest
 from mock import MagicMock, patch
-from tests.helpers import patches
 
 from ckanext.versioned_datastore.lib.downloads.notifiers import (
     EmailNotifier,
     NullNotifier,
     WebhookNotifier,
 )
+from tests.helpers import patches
 
 notifiers = [
     (EmailNotifier, {'emails': ['data@nhm.ac.uk']}),

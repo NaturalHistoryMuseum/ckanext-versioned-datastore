@@ -6,13 +6,13 @@ from collections import OrderedDict
 from datetime import datetime as dt
 from uuid import uuid4
 
+from ckan.plugins import PluginImplementations, plugin_loaded, toolkit
 from lxml import etree
 
-from ckan.plugins import toolkit, plugin_loaded, PluginImplementations
+from .....interfaces import IVersionedDatastoreDownloads
+from ..base import BaseDerivativeGenerator
 from . import urls, utils
 from .schema import Schema
-from ..base import BaseDerivativeGenerator
-from .....interfaces import IVersionedDatastoreDownloads
 
 
 class DwcDerivativeGenerator(BaseDerivativeGenerator):
@@ -174,7 +174,8 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         fields from core fields and filters out any fields that don't match the schema.
 
         :param record: the row of data
-        :return: core row (dict), extension rows keyed on extension name (dict of lists of dicts)
+        :return: core row (dict), extension rows keyed on extension name (dict of lists
+            of dicts)
         """
         core = {}
         ext = {}
@@ -280,9 +281,9 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         """
         Create the xml text content of the resource metadata file.
 
-        Tries to use some sensible
-        defaults and get information from other relevant plugins where available, but there's still
-        the potential for errors or silly data.
+        Tries to use some sensible defaults and get information from other relevant
+        plugins where available, but there's still the potential for errors or silly
+        data.
         :return: xml string
         """
         # load some useful actions so we don't have to fetch them repeatedly

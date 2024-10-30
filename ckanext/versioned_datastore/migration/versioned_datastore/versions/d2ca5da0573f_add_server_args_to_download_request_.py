@@ -5,10 +5,10 @@ Revision ID: d2ca5da0573f
 Revises: 526b12c69d55
 Create Date: 2023-06-28 13:28:33.607360
 """
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB
 
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects.postgresql import JSONB
 
 # revision identifiers, used by Alembic.
 revision = 'd2ca5da0573f'

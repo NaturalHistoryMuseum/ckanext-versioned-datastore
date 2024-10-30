@@ -1,20 +1,20 @@
 from datetime import datetime
 
 from ckan.plugins import toolkit
-from splitgill.search import create_version_query
-from splitgill.utils import to_timestamp, chunk_iterator
-from elasticsearch_dsl import Search, MultiSearch
-
-from .meta import help, schema
 from ckantools.decorators import action
+from elasticsearch_dsl import MultiSearch, Search
+from splitgill.search import create_version_query
+from splitgill.utils import chunk_iterator, to_timestamp
+
 from ...lib import common
 from ...lib.basic_query.search import create_search
 from ...lib.datastore_utils import (
-    prefix_resource,
-    is_datastore_resource,
     get_public_alias_name,
+    is_datastore_resource,
+    prefix_resource,
 )
 from ...lib.query.schema import get_latest_query_version
+from .meta import help, schema
 
 
 @action(
@@ -76,12 +76,12 @@ def datastore_get_resource_versions(
         multisearch = MultiSearch(using=common.ES_CLIENT, index=index_name)
         for details in details_chunk:
             multisearch = multisearch.add(
-                Search()[0:0].filter(create_version_query(details["version"]))
+                Search()[0:0].filter(create_version_query(details['version']))
             )
         results = multisearch.execute()
         # update the count details we got from splitgill with the actual record count
         for detail, result in zip(details_chunk, results):
-            detail["count"] = result.hits.total
+            detail['count'] = result.hits.total
 
     return counts
 
@@ -97,8 +97,8 @@ def datastore_get_rounded_version(resource_id, version=None):
     rounding down.
 
     :param resource_id: the id of the resource
-    :param version: the version timestamp. If None (the default) the latest version of the resource
-                    is returned
+    :param version: the version timestamp. If None (the default) the latest version of
+        the resource is returned
     :return: the rounded version timestamp
     """
     index_name = prefix_resource(resource_id)

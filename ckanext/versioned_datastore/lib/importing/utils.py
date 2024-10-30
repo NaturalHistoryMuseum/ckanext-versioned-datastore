@@ -7,8 +7,8 @@ def check_version_is_valid(resource_id, version):
     the ingest version not the indexed version as this is the source of truth about the
     versions of the resource we know about.
 
-    The version must be greater than the latest ingested version or there must not be any ingested
-    versions available.
+    The version must be greater than the latest ingested version or there must not be
+    any ingested versions available.
 
     :param resource_id: the resource's id
     :param version: the version to check

@@ -1,11 +1,11 @@
+from mock import MagicMock, patch
 from splitgill.indexing.utils import DOC_TYPE
-from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS, DATASTORE_ONLY_RESOURCE
 from ckanext.versioned_datastore.lib.datastore_utils import (
+    is_datastore_only_resource,
     is_datastore_resource,
     is_ingestible,
-    is_datastore_only_resource,
     iter_data_fields,
 )
 

@@ -1,16 +1,16 @@
-from elasticsearch_dsl import Search, A
+from elasticsearch_dsl import A, Search
 from fastavro import parse_schema
 from splitgill.search import create_version_query
 
-from .query import Query
 from .. import common
 from ..datastore_utils import (
-    prefix_resource,
-    prefix_field,
     iter_data_fields,
+    prefix_field,
+    prefix_resource,
     unprefix_index,
 )
 from ..query.fields import get_mappings
+from .query import Query
 
 
 def get_schemas(query: Query):
@@ -104,9 +104,9 @@ def get_fields(field_counts, ignore_empty_fields, resource_id=None):
 
     :param field_counts: the dict of resource ids -> fields -> counts
     :param ignore_empty_fields: whether fields with no values should be included in the
-                                resulting list or not
+        resulting list or not
     :param resource_id: the resource id to get the fields for. The default is None which
-                        means that the fields from all resources will be returned
+        means that the fields from all resources will be returned
     :return: a list of fields in case-insensitive ascending order
     """
     # TODO: retrieve the sort order for resources from the database and use

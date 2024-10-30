@@ -5,11 +5,11 @@ from ckan.plugins import PluginImplementations
 from splitgill.indexing.feeders import SimpleIndexFeeder
 from splitgill.indexing.indexers import Indexer
 from splitgill.indexing.indexes import Index
-from splitgill.indexing.utils import get_versions_and_data, DOC_TYPE
+from splitgill.indexing.utils import DOC_TYPE, get_versions_and_data
 
-from . import stats
-from .. import common
 from ...interfaces import IVersionedDatastore
+from .. import common
+from . import stats
 
 log = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class DatastoreIndex(Index):
     def __init__(
         self, config, name, version, latitude_field=None, longitude_field=None
     ):
-        '''
+        """
         :param config: the splitgill config object
         :param name: the resource id, this will be used as the index name
         :param version: the version being indexed up to
         :param latitude_field: optional - the name of a field containing latitudinal data
         :param longitude_field: optional - the name of a field containing longitudinal data
-        '''
+        """
         super(DatastoreIndex, self).__init__(config, name, version)
         self.latitude_field = latitude_field
         self.longitude_field = longitude_field
@@ -131,11 +131,11 @@ class ResourceIndexRequest(object):
     """
 
     def __init__(self, resource, lower_version, upper_version):
-        '''
+        """
         :param resource: the dict for the resource we're going to index
         :param lower_version: the lower version to index (exclusive)
         :param upper_version: the upper version to index (inclusive)
-        '''
+        """
         self.resource = resource
         self.lower_version = lower_version
         self.upper_version = upper_version

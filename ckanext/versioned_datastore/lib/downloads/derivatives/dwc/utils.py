@@ -1,9 +1,8 @@
 from io import BytesIO
 
 import requests
-from lxml import etree
-
 from ckan.plugins import toolkit
+from lxml import etree
 
 parser = etree.XMLParser(recover=True)
 

@@ -1,17 +1,15 @@
 import datetime
 import hashlib
-import random
 import logging
+import random
 
 from ckan import model
-from ckan.plugins import toolkit
 from sqlalchemy.exc import IntegrityError
 
-from .schema import get_latest_query_version, hash_query
-from .schema import validate_query
-from .slug_words import list_one, list_two, list_three
-from .utils import get_available_datastore_resources, get_resources_and_versions
 from ...model.slugs import DatastoreSlug, NavigationalSlug
+from .schema import get_latest_query_version, hash_query, validate_query
+from .slug_words import list_one, list_three, list_two
+from .utils import get_resources_and_versions
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +26,8 @@ def generate_query_hash(
     :param query_version: the query version
     :param version: the data version
     :param resource_ids: the ids of the resources under search
-    :param resource_ids_and_versions: the resource ids and specific versions to search at for them
+    :param resource_ids_and_versions: the resource ids and specific versions to search
+        at for them
     :return: a unique id for the query, which is a hash of the query and parameters
     """
     hash_value = hashlib.sha1()
@@ -79,9 +78,9 @@ def create_slug(
 
     Only valid queries get a slug, otherwise we raise a ValidationError.
 
-    Only valid resource ids included in the list will be stored, any invalid ones will be excluded.
-    If a list of resource ids is provided and none of the requested resource ids are valid, then a
-    ValidationError is raised.
+    Only valid resource ids included in the list will be stored, any invalid ones will
+    be excluded. If a list of resource ids is provided and none of the requested
+    resource ids are valid, then a ValidationError is raised.
 
     :param context: the context dict so that we can check the validity of any resources
     :param query: the query dict
@@ -89,12 +88,12 @@ def create_slug(
     :param version: the version to search at
     :param resource_ids: the resources to search (a list)
     :param resource_ids_and_versions: the resources and versions to search at (a dict)
-    :param pretty_slug: whether to generate a pretty slug or just use the uuid id of the slug, by
-                        default this is True
+    :param pretty_slug: whether to generate a pretty slug or just use the uuid id of the
+        slug, by default this is True
     :param attempts: how many times to try creating a pretty slug, default: 5
-    :return: a 2-tuple containing a boolean indicating whether the slug object returned was newly
-             created and the DatastoreSlug object itself. If we couldn't create a slug object for
-             some reason then (False, None) is returned.
+    :return: a 2-tuple containing a boolean indicating whether the slug object returned
+        was newly created and the DatastoreSlug object itself. If we couldn't create a
+        slug object for some reason then (False, None) is returned.
     """
     # only store valid queries!
     validate_query(query, query_version)
@@ -229,24 +228,25 @@ def reserve_slug(
     probably only be called during this extension's initialisation via the
     datastore_reserve_slugs interface function.
 
-    If a slug already exists in the database with the same reserved pretty slug and the same
-    query parameters then nothing happens.
+    If a slug already exists in the database with the same reserved pretty slug and the
+    same query parameters then nothing happens.
 
-    If a slug already exists in the database with the same reserved pretty slug but a different
-    set of query parameters then a DuplicateSlugException is raised.
+    If a slug already exists in the database with the same reserved pretty slug but a
+    different set of query parameters then a DuplicateSlugException is raised.
 
-    If a slug already exists in the database with the same query parameters but no reserved
-    pretty slug then the reserved pretty slug is added to the slug.
+    If a slug already exists in the database with the same query parameters but no
+    reserved pretty slug then the reserved pretty slug is added to the slug.
 
     :param reserved_pretty_slug: the slug string to reserve
     :param query: the query dict
     :param query_version: the query schema version
     :param version: the version of the data
     :param resource_ids: the resource ids to search
-    :param resource_ids_and_versions: the resources ids and specific versions for each to search
-    :return: a DatastoreSlug object that has either been found (if it already existed), created (if
-             no slug existed) or updated (if a slug existed for the query parameters, but no
-             reserved query string was associated with it).
+    :param resource_ids_and_versions: the resources ids and specific versions for each
+        to search
+    :return: a DatastoreSlug object that has either been found (if it already existed),
+        created (if no slug existed) or updated (if a slug existed for the query
+        parameters, but no reserved query string was associated with it).
     """
     # default some parameters and then assert they are all the right types. We do this because if
     # there are problems they're going to be reported back to the developer not the user
@@ -314,7 +314,7 @@ def clean_nav_slugs(before=None):
     Delete old/expired navigational slugs.
 
     :param before: a datetime object; slugs created before this time will be removed
-                   (defaults to 2 days ago)
+        (defaults to 2 days ago)
     :return: the number of deleted slugs
     """
     if before is None:

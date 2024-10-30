@@ -1,9 +1,10 @@
 import os
-from datetime import datetime as dt, timedelta
+from datetime import datetime as dt
+from datetime import timedelta
 
+from ckan.plugins import plugin_loaded, toolkit
 from flask import Blueprint, jsonify
 
-from ckan.plugins import toolkit, plugin_loaded
 from ..lib.downloads.loaders import get_file_server
 from ..lib.downloads.servers import DirectFileServer
 from ..lib.query.slugs import create_nav_slug
@@ -80,8 +81,8 @@ def get_download_details(download_id):
     query_doi = None
     doi_url = None
     if plugin_loaded('query_dois'):
-        from ckanext.query_dois.lib.doi import find_existing_doi
         from ckanext.query_dois.helpers import get_landing_page_url
+        from ckanext.query_dois.lib.doi import find_existing_doi
 
         # query-dois only saves resources that return records
         non_zero_resources = {

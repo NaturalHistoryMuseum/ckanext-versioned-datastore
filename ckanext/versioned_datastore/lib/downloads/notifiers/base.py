@@ -1,7 +1,8 @@
 from abc import ABCMeta, abstractmethod
+
+from ckan.plugins import PluginImplementations, toolkit
 from jinja2 import Template
 
-from ckan.plugins import toolkit, PluginImplementations
 from ....interfaces import IVersionedDatastoreDownloads
 from ....model.downloads import DownloadRequest
 
@@ -9,37 +10,37 @@ from ....model.downloads import DownloadRequest
 class BaseNotifier(metaclass=ABCMeta):
     name = 'base'
 
-    default_start_text = '''
+    default_start_text = """
     Your download on {{ site_name }} has started processing.
     The status of your download can be viewed here: {{ status_page }}
-    '''.strip()
+    """.strip()
 
-    default_start_html = '''
+    default_start_html = """
     <p>Your download on <a href="{{ site_url }}">{{ site_name }}</a> has started processing.</p>
     <p>The status of your download can be viewed <a href="{{ status_page }}">here</a>.</p>
-    '''.strip()
+    """.strip()
 
-    default_end_text = '''
+    default_end_text = """
     The link to the resource data you requested on {{ site_url }} is available at {{ download_url }}.
-    '''.strip()
+    """.strip()
 
-    default_end_html = '''
+    default_end_html = """
     <p>The link to the resource data you requested on <a href="{{ site_url }}">{{ site_name }}</a>
     is available <a href="{{ download_url }}">here</a>.</p>
-    '''.strip()
+    """.strip()
 
-    default_error_text = '''
+    default_error_text = """
     Your download on {{ site_name }} has encountered an error and has stopped processing.
     More details can be viewed at: {{ status_page }}.
     Please try again later and contact us at {{ contact_email }} if the problem persists.
-    '''.strip()
+    """.strip()
 
-    default_error_html = '''
+    default_error_html = """
     <p>Your download on <a href="{{ site_url }}">{{ site_name }}</a> has encountered an error and
     has stopped processing.</p>
     <p>More details can be viewed <a href="{{ status_page }}">here</a>.</p>
     <p>Please try again later and contact us at <a href="mailto:{{ contact_email }}">{{ contact_email }}</a> if the problem persists.</p>
-    '''.strip()
+    """.strip()
 
     def __init__(self, request, **type_args):
         self._request = request

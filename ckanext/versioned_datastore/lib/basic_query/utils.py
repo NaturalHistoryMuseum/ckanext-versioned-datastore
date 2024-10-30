@@ -1,16 +1,17 @@
 import copy
 import json
+
+from ckan.lib.search import SearchIndexError
+from ckan.plugins import PluginImplementations
 from elasticsearch import NotFoundError
 from elasticsearch_dsl import MultiSearch, Search
 from splitgill.indexing.utils import DOC_TYPE
 from splitgill.search import create_version_query
 
-from ckan.lib.search import SearchIndexError
-from ckan.plugins import PluginImplementations
-from .. import common
-from ..datastore_utils import prefix_resource, prefix_field
-from ..importing.details import get_all_details
 from ...interfaces import IVersionedDatastore
+from .. import common
+from ..datastore_utils import prefix_field, prefix_resource
+from ..importing.details import get_all_details
 
 
 def run_search(search, indexes, version=None):
@@ -18,11 +19,12 @@ def run_search(search, indexes, version=None):
     Convenience function to runs a search on the given indexes using the client
     available in this module.
 
-    If the index(es) required for the search are missing then a CKAN SearchIndexError exception is
-    raised.
+    If the index(es) required for the search are missing then a CKAN SearchIndexError
+    exception is raised.
 
     :param search: the elasticsearch-dsl search object
-    :param indexes: either a list of index names to search in or a single index name as a string
+    :param indexes: either a list of index names to search in or a single index name as
+        a string
     :param version: version to filter the search results to, optional
     :return: the result of running the query
     """
@@ -37,7 +39,7 @@ def run_search(search, indexes, version=None):
 
 
 def format_facets(aggs):
-    '''
+    """
     Formats the facet aggregation result into the format we require. Specifically we expand the
     buckets out into a dict that looks like this:
 
@@ -61,7 +63,7 @@ def format_facets(aggs):
 
     :param aggs: the aggregation dict returned from splitgill/elasticsearch
     :return: the facet information as a dict
-    '''
+    """
     facets = {}
     for facet, details in aggs.items():
         facets[facet] = {

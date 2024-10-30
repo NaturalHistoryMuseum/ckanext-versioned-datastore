@@ -1,18 +1,18 @@
 import pytest
 from ckan.model import Session
-from mock import patch, MagicMock
+from mock import patch
 
 from ckanext.versioned_datastore.lib.downloads.download import DownloadRunManager
 from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
-    QueryArgs,
     DerivativeArgs,
-    ServerArgs,
     NotifierArgs,
+    QueryArgs,
+    ServerArgs,
 )
 from ckanext.versioned_datastore.model.downloads import (
-    DownloadRequest,
     CoreFileRecord,
     DerivativeFileRecord,
+    DownloadRequest,
 )
 from tests.helpers import patches
 

@@ -1,12 +1,12 @@
 import logging
 
 from splitgill.ingestion.converters import RecordToMongoConverter
-from splitgill.ingestion.feeders import IngestionFeeder, BaseRecord
+from splitgill.ingestion.feeders import BaseRecord, IngestionFeeder
 from splitgill.ingestion.ingesters import Ingester
 from splitgill.mongo import get_mongo
 
-from .. import stats
 from ... import common
+from .. import stats
 
 log = logging.getLogger(__name__)
 
@@ -17,11 +17,11 @@ class DeletionRecord(BaseRecord):
     """
 
     def __init__(self, version, resource_id, record_id):
-        '''
+        """
         :param version: the version of this operation
         :param resource_id: the resource id of the resource we're deleting from
         :param record_id: the record to be deleted
-        '''
+        """
         super(DeletionRecord, self).__init__(version)
         self.resource_id = resource_id
         self.record_id = record_id
@@ -62,10 +62,10 @@ class DeletionFeeder(IngestionFeeder):
     """
 
     def __init__(self, version, resource_id):
-        '''
+        """
         :param version: the version of data to be fed
         :param resource_id: the resource id for which the data applies
-        '''
+        """
         super(DeletionFeeder, self).__init__(version)
         self.resource_id = resource_id
 
@@ -133,12 +133,12 @@ class ReplaceDeletionFeeder(IngestionFeeder):
     """
 
     def __init__(self, version, resource_id, tracker, original_source):
-        '''
+        """
         :param version: the version of data to be fed
         :param resource_id: the resource id for which the data applies
         :param tracker: the InclusionTracker object
         :param original_source: the name of the original resource data source
-        '''
+        """
         super(ReplaceDeletionFeeder, self).__init__(version)
         self.resource_id = resource_id
         self.tracker = tracker

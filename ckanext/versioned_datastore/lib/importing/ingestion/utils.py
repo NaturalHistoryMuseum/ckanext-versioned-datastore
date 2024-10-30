@@ -2,7 +2,7 @@ import gzip
 import hashlib
 import sqlite3
 import tempfile
-from contextlib import contextmanager, closing
+from contextlib import closing, contextmanager
 
 import requests
 
@@ -32,13 +32,13 @@ def download_to_temp_file(url, headers=None, compress=True, chunk_size=1024):
     temporary file is then yielded to the caller for use. Once the context collapses the
     temporary file is removed.
 
-    If the compress parameter is passed as True (the default) the data will be downloaded and
-    written to a file using GZIP and a GzipFile pointer will be returned.
+    If the compress parameter is passed as True (the default) the data will be
+    downloaded and written to a file using GZIP and a GzipFile pointer will be returned.
 
     :param url: the url to stream the data from
     :param headers: a dict of headers to pass with the request
-    :param compress: whether to compress the downloaded data when storing it, if so a GzipFile
-                     pointer will be returned (default: True)
+    :param compress: whether to compress the downloaded data when storing it, if so a
+        GzipFile pointer will be returned (default: True)
     :param chunk_size: the number of bytes to read at a time from the url stream
     """
     headers = headers if headers else {}
@@ -92,9 +92,9 @@ class InclusionTracker(object):
     """
 
     def __init__(self, ingester):
-        '''
+        """
         :param ingester: the ingester object - we'll use the update signal to track the ids
-        '''
+        """
         self.ingester = ingester
         self.temporary_file = None
         self.tracker_db = None

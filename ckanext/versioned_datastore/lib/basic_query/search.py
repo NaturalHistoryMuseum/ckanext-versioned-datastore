@@ -3,9 +3,9 @@ import operator
 from ckan.plugins import PluginImplementations
 from elasticsearch_dsl import Search
 
-from .geo import add_geo_search
-from ..datastore_utils import prefix_field
 from ...interfaces import IVersionedDatastore
+from ..datastore_utils import prefix_field
+from .geo import add_geo_search
 
 
 def _find_version(data_dict):
@@ -17,8 +17,8 @@ def _find_version(data_dict):
     recline.js framework used by the NHM on CKAN 2.3 where no additional parameters can
     be passed other than q, filters etc.
 
-    :param data_dict: the data dict, this might be modified if the __version__ key is used (it will
-                      be removed if present)
+    :param data_dict: the data dict, this might be modified if the __version__ key is
+        used (it will be removed if present)
     :return: the version found as an integer, or None if no version was found
     """
     version = data_dict.get('version', None)
@@ -49,9 +49,9 @@ def create_search(context, data_dict, original_data_dict):
 
     :param context: the context dict
     :param data_dict: the data dict of parameters
-    :return: a 3-tuple containing: the original data_dict that was passed into this function, the
-                                   data_dict after modification by other plugins and finally the
-                                   elasticsearch-dsl Search object
+    :return: a 3-tuple containing: the original data_dict that was passed into this
+        function, the data_dict after modification by other plugins and finally the
+        elasticsearch-dsl Search object
     """
     # allow other extensions implementing our interface to modify the data_dict
     for plugin in PluginImplementations(IVersionedDatastore):
@@ -82,7 +82,7 @@ def build_search_object(
     facets=None,
     facet_limits=None,
     sort=None,
-    **kwargs
+    **kwargs,
 ):
     """
     Given the parameters, creates a new elasticsearch-dsl Search object and returns it.

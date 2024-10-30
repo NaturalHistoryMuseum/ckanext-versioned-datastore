@@ -1,4 +1,3 @@
-from ckan.plugins import toolkit
 from ckantools.decorators import auth
 
 
@@ -151,4 +150,4 @@ def datastore_custom_download_filename(context, data_dict):
 @auth(anon=True)
 def datastore_multisearch_counts(context, data_dict):
     # allow access to everyone
-    return {"success": True}
+    return {'success': True}

@@ -1,22 +1,23 @@
-from ckan.plugins import toolkit
 from datetime import datetime
+
+from ckan.plugins import toolkit
+from ckantools.decorators import action
 from splitgill.utils import to_timestamp
 
-from .meta import help, schema
-from ckantools.decorators import action
 from ...lib import common
 from ...lib.datastore_utils import (
-    is_resource_read_only,
-    is_ingestible,
-    update_privacy,
-    ReadOnlyResourceException,
     InvalidVersionException,
+    ReadOnlyResourceException,
     is_datastore_resource,
+    is_ingestible,
+    is_resource_read_only,
+    update_privacy,
 )
 from ...lib.importing import stats
 from ...lib.importing.indexing import DatastoreIndex
-from ...lib.importing.queuing import queue_index, queue_import, queue_deletion
+from ...lib.importing.queuing import queue_deletion, queue_import, queue_index
 from ...lib.importing.utils import check_version_is_valid
+from .meta import help, schema
 
 
 @action(schema.datastore_create(), help.datastore_create)
@@ -59,8 +60,8 @@ def datastore_upsert(resource_id, replace, context, original_data_dict, version=
     :param replace: whether to replace the data already in the resource or append to it
     :param context: the context dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :param version: the version of the new data, can be None (default) but if not must be newer
-                    than the latest version of the resource
+    :param version: the version of the new data, can be None (default) but if not must
+        be newer than the latest version of the resource
     :return: information about the background job that is handling the ingestion
     """
     # this comes through as junk if it's not removed before validating. This happens because the
@@ -132,7 +133,8 @@ def datastore_reindex(resource_id, context):
 
     :param resource_id: the resource id to reindex
     :param context: the context dict from the action call
-    :return: a dict containing info about the background job that is doing the reindexing
+    :return: a dict containing info about the background job that is doing the
+        reindexing
     """
     if is_resource_read_only(resource_id):
         raise toolkit.ValidationError('This resource has been marked as read only')
@@ -159,9 +161,10 @@ def datastore_ensure_privacy(context, resource_id=None):
     setting.
 
     :param context: the context dict from the action call
-    :param resource_id: the id of the resource update. Can be None (the default) which means all
-                        resources are updated
-    :return: a dict containing the total number of resources checked and the total modified
+    :param resource_id: the id of the resource update. Can be None (the default) which
+        means all resources are updated
+    :return: a dict containing the total number of resources checked and the total
+        modified
     """
     modified = 0
     total = 0

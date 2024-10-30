@@ -1,12 +1,12 @@
 from ckan.plugins import toolkit
 
 from .importing import (
-    import_resource_data,
-    ResourceImportRequest,
     ResourceDeletionRequest,
+    ResourceImportRequest,
     delete_resource_data,
+    import_resource_data,
 )
-from .indexing import index_resource, ResourceIndexRequest
+from .indexing import ResourceIndexRequest, index_resource
 
 
 def queue(task, request):
@@ -35,9 +35,11 @@ def queue_import(resource, version, replace, records=None, api_key=None):
     :param resource: the resource we're going to import (this must be the resource dict)
     :param version: the version of the resource to import
     :param replace: whether to replace the existing data or not
-    :param records: a list of dicts to import, or None if the data is coming from URL or file
-    :param api_key: the api key of the user who initiated the import, this is required if the
-                    package the resource is in is private and the data in the resource was uploaded
+    :param records: a list of dicts to import, or None if the data is coming from URL or
+        file
+    :param api_key: the api key of the user who initiated the import, this is required
+        if the package the resource is in is private and the data in the resource was
+        uploaded
     :return: the queued job
     """
     resource_import_request = ResourceImportRequest(

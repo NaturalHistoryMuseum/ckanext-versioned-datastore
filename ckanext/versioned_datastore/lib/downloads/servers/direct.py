@@ -1,6 +1,8 @@
-from .base import BaseFileServer
-from ckan.plugins import toolkit
 import os
+
+from ckan.plugins import toolkit
+
+from .base import BaseFileServer
 
 
 class DirectFileServer(BaseFileServer):

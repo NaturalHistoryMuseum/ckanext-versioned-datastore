@@ -1,7 +1,7 @@
 from openpyxl import Workbook, load_workbook
 
-from .base import BaseDerivativeGenerator
 from ..utils import flatten_dict
+from .base import BaseDerivativeGenerator
 
 
 class XlsxDerivativeGenerator(BaseDerivativeGenerator):

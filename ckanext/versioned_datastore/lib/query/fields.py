@@ -1,19 +1,19 @@
 import itertools
+import re
 from collections import Counter, defaultdict
 
-import re
 from elasticsearch_dsl import MultiSearch, Q
 from elasticsearch_dsl.query import Bool
 
-from .utils import chunk_iterator
 from .. import common
 from ..datastore_utils import (
-    prefix_resource,
     iter_data_fields,
-    unprefix_index,
     prefix_field,
+    prefix_resource,
+    unprefix_index,
 )
 from ..importing.details import get_all_details
+from .utils import chunk_iterator
 
 
 def get_mappings(resource_ids, chunk_size=5):
@@ -40,9 +40,9 @@ class Fields(object):
     """
 
     def __init__(self, skip_ids=True):
-        '''
+        """
         :param skip_ids: whether to skip the _id columns or not (at any nesting level)
-        '''
+        """
         self.skip_ids = skip_ids
 
         # this counts the number of resources a group appears in
@@ -57,11 +57,11 @@ class Fields(object):
         """
         Adds the given field path from the given resource id into the object's stores.
 
-        :param field_path: a tuple representing a field's path, for root level fields this should be
-                           a tuple with a single element like ('genus', ) whereas for nested fields
-                           2 or more elements will be present, like ('associatedMedia', 'category').
-                           The field path is joined using a '.' to create a full path for each
-                           field.
+        :param field_path: a tuple representing a field's path, for root level fields
+            this should be a tuple with a single element like ('genus', ) whereas for
+            nested fields 2 or more elements will be present, like ('associatedMedia',
+            'category'). The field path is joined using a '.' to create a full path for
+            each field.
         :param resource_id: the resource id the field belongs to
         """
         if self.skip_ids and field_path[-1] == '_id':
@@ -96,9 +96,10 @@ class Fields(object):
         Generator which yields the groups with the highest resource representation from
         highest to lowest.
 
-        :return: a generator which yields a 3-tuple on each iteration. The 3-tuple contains the
-                 group name, the resource count and a dict of containing all the field names in the
-                 group and the resources they appear in (field name -> list of resource ids)
+        :return: a generator which yields a 3-tuple on each iteration. The 3-tuple
+            contains the group name, the resource count and a dict of containing all the
+            field names in the group and the resources they appear in (field name ->
+            list of resource ids)
         """
         # return a sorted list in reverse count order, secondarily sorted by group name ascending
         # h/t https://stackoverflow.com/a/23033745. We sort by alphabetical secondarily to ensure
@@ -128,8 +129,11 @@ class Fields(object):
                 )
 
             # yield the group tuple and an elasticsearch-dsl object for the group's fields
-            yield (group_name, resource_count, variants), search.index(indexes).filter(
-                Bool(should=shoulds, minimum_should_match=1)
+            yield (
+                (group_name, resource_count, variants),
+                search.index(indexes).filter(
+                    Bool(should=shoulds, minimum_should_match=1)
+                ),
             )
 
     def is_forced(self, group):

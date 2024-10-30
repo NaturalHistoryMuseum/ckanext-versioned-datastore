@@ -3,12 +3,12 @@ from traceback import format_exception_only
 from mock import MagicMock, patch
 
 from ckanext.versioned_datastore.helpers import (
-    is_duplicate_ingestion,
-    get_human_duration,
-    get_stat_icon,
-    get_stat_activity_class,
-    get_stat_title,
     get_available_formats,
+    get_human_duration,
+    get_stat_activity_class,
+    get_stat_icon,
+    get_stat_title,
+    is_duplicate_ingestion,
 )
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS
 from ckanext.versioned_datastore.lib.importing.ingestion.exceptions import (
@@ -16,10 +16,10 @@ from ckanext.versioned_datastore.lib.importing.ingestion.exceptions import (
     UnsupportedDataSource,
 )
 from ckanext.versioned_datastore.lib.importing.stats import (
-    INGEST,
-    INDEX,
-    PREP,
     ALL_TYPES,
+    INDEX,
+    INGEST,
+    PREP,
 )
 
 

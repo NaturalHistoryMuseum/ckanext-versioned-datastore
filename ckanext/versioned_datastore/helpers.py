@@ -1,6 +1,7 @@
 import json
-from ckan.plugins import toolkit
 from datetime import date
+
+from ckan.plugins import toolkit
 
 from .lib.common import ALL_FORMATS
 from .lib.importing import stats
@@ -138,7 +139,8 @@ def latest_item_version(resource_id, record_id=None):
 
     :param resource_id: the id of the resource to search in
     :param record_id: optional; a record id to search for instead
-    :return: if record id is provided, the latest record version, else the latest resource version
+    :return: if record id is provided, the latest record version, else the latest
+        resource version
     """
     action = (
         'datastore_get_record_versions'

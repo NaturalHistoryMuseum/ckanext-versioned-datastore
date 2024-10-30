@@ -1,6 +1,6 @@
 import requests
-
 from ckan.plugins import toolkit
+
 from .base import BaseNotifier
 
 

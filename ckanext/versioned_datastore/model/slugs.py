@@ -1,17 +1,18 @@
 from datetime import datetime
 
-from ckan.model import meta, DomainObject
+from ckan.model import DomainObject, meta
 from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
+    Column,
+    DateTime,
+    Table,
     UnicodeText,
     UniqueConstraint,
-    DateTime,
     or_,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+
 from ..lib.query.schema import get_latest_query_version
 
 # this table stores query slugs

@@ -8,7 +8,7 @@ from flask import Blueprint
 from sqlalchemy import func
 
 from ..lib.query import slugs
-from ..lib.query.slug_words import list_one, list_two, list_three
+from ..lib.query.slug_words import list_one, list_three, list_two
 from ..model.slugs import DatastoreSlug
 
 blueprint = Blueprint(name='search', import_name=__name__)

@@ -35,12 +35,12 @@ class DatastoreRecord(BaseRecord):
     """
 
     def __init__(self, version, record_id, data, resource_id):
-        '''
+        """
         :param version: the version of this record
         :param record_id: the record's id
         :param data: a dict containing the fields and values for the record
         :param resource_id: the resource id this record belongs to
-        '''
+        """
         super(DatastoreRecord, self).__init__(version)
         self.record_id = record_id
         self.data = data

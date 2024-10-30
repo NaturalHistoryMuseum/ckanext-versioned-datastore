@@ -11,8 +11,9 @@ from splitgill.indexing.utils import get_elasticsearch_client
 from splitgill.mongo import get_mongo
 
 from ckanext.versioned_datastore.lib import common
-from ckanext.versioned_datastore.model import stats, slugs, details, downloads
-from tests.helpers import utils, data as test_data
+from ckanext.versioned_datastore.model import details, downloads, slugs, stats
+from tests.helpers import data as test_data
+from tests.helpers import utils
 
 
 @pytest.fixture(scope='class')

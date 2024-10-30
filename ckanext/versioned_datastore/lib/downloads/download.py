@@ -1,22 +1,27 @@
-import os.path
-from collections import defaultdict
-
-import fastavro
 import hashlib
 import json
 import os
+import os.path
 import shutil
 import tempfile
 import zipfile
+from collections import defaultdict
 from datetime import datetime as dt
-from elasticsearch_dsl import Search
 from functools import partial
 from glob import iglob
+
+import fastavro
+from ckan.lib import uploader
+from ckan.plugins import PluginImplementations, toolkit
+from elasticsearch_dsl import Search
 from splitgill.indexing.utils import get_elasticsearch_client
 from splitgill.search import create_version_query
 
-from ckan.lib import uploader
-from ckan.plugins import toolkit, PluginImplementations
+from ...interfaces import IVersionedDatastoreDownloads
+from ...logic.actions.meta.arg_objects import DerivativeArgs
+from ...model.downloads import CoreFileRecord, DerivativeFileRecord, DownloadRequest
+from .. import common
+from ..datastore_utils import prefix_resource
 from .loaders import (
     get_derivative_generator,
     get_file_server,
@@ -24,13 +29,7 @@ from .loaders import (
     get_transformation,
 )
 from .query import Query
-from .utils import get_schemas, calculate_field_counts, filter_data_fields, get_fields
-from .. import common
-from ..datastore_utils import prefix_resource
-from ...interfaces import IVersionedDatastoreDownloads
-from ...logic.actions.meta.arg_objects import DerivativeArgs
-from ...model.downloads import CoreFileRecord, DownloadRequest
-from ...model.downloads import DerivativeFileRecord
+from .utils import calculate_field_counts, filter_data_fields, get_fields, get_schemas
 
 
 class DownloadRunManager:
@@ -254,8 +253,8 @@ class DownloadRunManager:
         """
         Generates and loads core files.
 
-        This method will add new resources to existing core records
-        with identical filters, reducing data duplication.
+        This method will add new resources to existing core records with identical
+        filters, reducing data duplication.
         :return: the core record
         """
         if not os.path.exists(self.core_folder_path):

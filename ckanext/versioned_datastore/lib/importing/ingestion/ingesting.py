@@ -1,31 +1,31 @@
+import codecs
 import contextlib
 import gzip
-import logging
-import shutil
-import tempfile
-import zipfile
-
-import codecs
 import itertools
+import logging
 import math
 import os
-import simplejson
+import shutil
+import tempfile
 import unicodedata
+import zipfile
 from contextlib import suppress
 from datetime import datetime
+
+import simplejson
 from splitgill.ingestion.converters import RecordToMongoConverter
 from splitgill.ingestion.feeders import IngestionFeeder
 from splitgill.ingestion.ingesters import Ingester
 from splitgill.mongo import get_mongo
 
-from . import exceptions
-from .deletion import ReplaceDeletionFeeder
-from .readers import get_reader, APIReader
-from .records import DatastoreRecord
-from .utils import download_to_temp_file, compute_hash, InclusionTracker
+from ....model.stats import ImportStats
 from .. import stats
 from ..details import create_details, get_last_file_hash
-from ....model.stats import ImportStats
+from . import exceptions
+from .deletion import ReplaceDeletionFeeder
+from .readers import APIReader, get_reader
+from .records import DatastoreRecord
+from .utils import InclusionTracker, compute_hash, download_to_temp_file
 
 log = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ def ingest_resource(version, config, resource, data, replace, api_key):
     :param resource: the resource dict
     :param data: the data to ingest (can be None if not using the API)
     :param replace: boolean indicating whether to replace the existing data or not
-    :param api_key: the API key if the resource's CKAN URL is to be used as the source and the
-                    resource is private
+    :param api_key: the API key if the resource's CKAN URL is to be used as the source
+        and the resource is private
     :return: True if the ingest was successful, False if not
     """
     # cache the resource id as we use it a few times
@@ -229,14 +229,15 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
     resource source and a ResourceReader instance for reading the data from the file
     pointer.
 
-    If the data parameter is passed (should be a list of dicts) then no file pointer is yielded
-    (None is yielded instead). A ResourceReader instance is yielded as normal.
+    If the data parameter is passed (should be a list of dicts) then no file pointer is
+    yielded (None is yielded instead). A ResourceReader instance is yielded as normal.
 
     :param resource: the resource dict
     :param data: optional data, if provided must be a list of dicts
-    :param api_key: the API key of a user who can read the data, if indeed the data needs an API
-                    key to get it. This is needed when the URL is the CKAN resource download URL
-                    of a private resource. Can be None to indicate no API key is required
+    :param api_key: the API key of a user who can read the data, if indeed the data
+        needs an API key to get it. This is needed when the URL is the CKAN resource
+        download URL of a private resource. Can be None to indicate no API key is
+        required
     :return: yields a file pointer and a ResourceReader instance
     """
     handled = False
@@ -309,12 +310,12 @@ class DatastoreFeeder(IngestionFeeder):
     """
 
     def __init__(self, config, resource_id, version, data_file_name):
-        '''
+        """
         :param config: the splitgill config object
         :param resource_id: the resource id
         :param version: the version of the data we're ingesting
         :param data_file_name: the name of the intermediate data file to read the data from
-        '''
+        """
         super(DatastoreFeeder, self).__init__(version)
         self.config = config
         self.resource_id = resource_id
@@ -327,7 +328,8 @@ class DatastoreFeeder(IngestionFeeder):
         This generator yields dicts and therefore handles reading and deserialising the
         rows so that you don't have to.
 
-        :param skip_header_row: whether to skip the header row or yield it as if it was a normal row
+        :param skip_header_row: whether to skip the header row or yield it as if it was
+            a normal row
         :return: a generator of dicts
         """
         with gzip.open(self.data_file_name, 'rb') as gzip_file:
@@ -343,8 +345,8 @@ class DatastoreFeeder(IngestionFeeder):
         """
         Figure out what the current max id is in this resource's collection.
 
-        :return: the highest id in the collection currently (it'll be an int), or 0 if there
-                aren't any documents in the collection
+        :return: the highest id in the collection currently (it'll be an int), or 0 if
+            there aren't any documents in the collection
         """
         with get_mongo(self.config, collection=self.resource_id) as mongo:
             # sort by id descending to get the highest

@@ -7,15 +7,15 @@ class IngestionException(Exception):
 
 
 class UnsupportedDataSource(IngestionException):
-    '''
+    """
     Should be raised when the data source we are attempting to ingest isn't one we can ingest - i.e.
     the format isn't one we support.
-    '''
+    """
 
     def __init__(self, res_format):
-        '''
+        """
         :param res_format: the resource format
-        '''
+        """
         super(UnsupportedDataSource, self).__init__(
             f'Could not find ingest reader for {res_format if res_format else "n/a"}'
         )
@@ -29,11 +29,11 @@ class InvalidId(IngestionException):
     """
 
     def __init__(self, row_number, row, cause=None):
-        '''
+        """
         :param row_number: the row number (1-indexed, excluding the header)
         :param row: the row (this should be a dict
         :param cause: optional cause exception, for example a ValueError thrown by int(row['_id')
-        '''
+        """
         message = f'Row {row_number} had an invalid integer id: "{row["_id"]}"'
         if cause is not None:
             message = f'{message} [{cause.__class__.__name__}: {str(cause)}]'
@@ -51,9 +51,9 @@ class DuplicateDataSource(IngestionException):
     """
 
     def __init__(self, file_hash):
-        '''
+        """
         :param file_hash: the file hash that clashed
-        '''
+        """
         super(DuplicateDataSource, self).__init__(
             f'This file has been ingested before, ignoring [hash: {file_hash}]'
         )
@@ -64,9 +64,9 @@ class InvalidCharacterException(IngestionException):
     """
     Thrown when there is an invalid unicode character found in the resource data.
 
-    This is detected
-    by checking if the unicode version of the row contains any category C characters (control
-    characters basically, see here: http://www.unicode.org/reports/tr44/#General_Category_Values).
+    This is detected by checking if the unicode version of the row contains any category
+    C characters (control characters basically, see here:
+    http://www.unicode.org/reports/tr44/#General_Category_Values).
     This is treated as an error to avoid putting crap unicode into the jsonl.gz intermediate file
     and then erroring when attempting to deserialise the json.
     Typically this error is produced when the user has uploaded a file in a really weird character
@@ -74,10 +74,10 @@ class InvalidCharacterException(IngestionException):
     """
 
     def __init__(self, row_number, row):
-        '''
+        """
         :param row_number: the row number (1-indexed, excluding the header)
         :param row: the row (this should be a dict
-        '''
+        """
         message = f'Row {row_number} (excluding header) contained an invalid character'
         super(InvalidCharacterException, self).__init__(message)
         self.row_number = row_number

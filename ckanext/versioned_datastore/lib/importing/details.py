@@ -51,8 +51,10 @@ def get_all_details(resource_id, up_to_version=None):
     beyond it are ignored and not returned in the resulting OrderedDict.
 
     :param resource_id: the resource id
-    :param up_to_version: the maximum version to include in the resulting OrderedDict (inclusive)
-    :return: None or an OrderedDict of version: DatastoreResourceDetails objects in ascending order
+    :param up_to_version: the maximum version to include in the resulting OrderedDict
+        (inclusive)
+    :return: None or an OrderedDict of version: DatastoreResourceDetails objects in
+        ascending order
     """
     query = (
         model.Session.query(DatastoreResourceDetails)

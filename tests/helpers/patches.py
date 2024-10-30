@@ -1,6 +1,6 @@
 from collections import defaultdict, namedtuple
 
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 from tests.helpers.utils import sync_enqueue_job
 

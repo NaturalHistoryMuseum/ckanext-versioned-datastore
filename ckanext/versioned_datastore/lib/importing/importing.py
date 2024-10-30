@@ -1,12 +1,12 @@
 import logging
 from datetime import datetime
 
+from .. import common
+from ..datastore_utils import get_latest_version
 from .indexing import ResourceIndexRequest, index_resource
 from .ingestion import deletion
 from .ingestion.ingesting import ingest_resource
 from .utils import check_version_is_valid
-from .. import common
-from ..datastore_utils import get_latest_version
 
 log = logging.getLogger(__name__)
 
@@ -22,12 +22,12 @@ class ResourceImportRequest(object):
     """
 
     def __init__(self, resource, version, replace, records=None, api_key=None):
-        '''
+        """
         :param resource: the resource we're going to import (this must be the resource dict)
         :param version: the version of the resource to import
         :param replace: whether to replace the existing data or not
         :param records: a list of dicts to import, or None if the data is coming from URL or file
-        '''
+        """
         self.resource = resource
         self.version = version
         self.replace = replace
@@ -55,10 +55,11 @@ def import_resource_data(request):
     elasticsearch. If the data argument is None (note, not falsey or an empty list,
     actually None) then the resource's url field is used as the source of the data.
 
-    This function is blocking so it should be called through the background task queue to avoid
-    blocking up a CKAN thread.
+    This function is blocking so it should be called through the background task queue
+    to avoid blocking up a CKAN thread.
 
-    :param request: the ResourceImportRequest object describing the resource import we need to do
+    :param request: the ResourceImportRequest object describing the resource import we
+        need to do
     """
     # first, double check that the version is valid
     if not check_version_is_valid(request.resource_id, request.version):
@@ -111,10 +112,10 @@ class ResourceDeletionRequest:
     """
 
     def __init__(self, resource, version):
-        '''
+        """
         :param resource: the resource we're going to delete (this must be the resource dict)
         :param version: the version of the resource to delete
-        '''
+        """
         self.resource = resource
         self.version = version
         self.resource_id = resource['id']
@@ -131,11 +132,11 @@ def delete_resource_data(request):
     Deletes all the resource's data. This involves ingesting a new version where all
     fields in each record are missing and then indexing this new version.
 
-    This function is blocking so it should be called through the background task queue to avoid
-    blocking up a CKAN thread.
+    This function is blocking so it should be called through the background task queue
+    to avoid blocking up a CKAN thread.
 
-    :param request: the ResourceDeletionRequest object describing the resource deletion we need to
-                    do
+    :param request: the ResourceDeletionRequest object describing the resource deletion
+        we need to do
     """
     # first, double check that the version is valid
     if not check_version_is_valid(request.resource_id, request.version):

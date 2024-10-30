@@ -7,8 +7,8 @@ from collections import defaultdict
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.query import Bool, Q
 
-from .schema import Schema, load_core_schema, schema_base_path
 from ..datastore_utils import prefix_field
+from .schema import Schema, load_core_schema, schema_base_path
 from .utils import convert_small_or_groups, remove_empty_groups
 
 
@@ -56,8 +56,8 @@ class v1_0_0Schema(Schema):
         Translates the query into an elasticsearch-dsl search object.
 
         :param query: the whole query dict
-        :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
-                       a fresh object. By default a new search object is created.
+        :param search: an instantiated elasticsearch-dsl object to be built on instead
+            of creating a fresh object. By default a new search object is created.
         :return: an instantiated elasticsearch-dsl object
         """
         search = Search() if search is None else search
@@ -129,7 +129,8 @@ class v1_0_0Schema(Schema):
         here seeing as we can and it makes smaller elasticsearch queries.
 
         :param group: the group to build the and from
-        :return: the first member from the group if there's only one member in the group, or a Bool
+        :return: the first member from the group if there's only one member in the
+            group, or a Bool
         """
         members = [self.create_group_or_term(member) for member in group]
         return members[0] if len(members) == 1 else Bool(filter=members)
@@ -144,7 +145,8 @@ class v1_0_0Schema(Schema):
         here seeing as we can and it makes smaller elasticsearch queries.
 
         :param group: the group to build the or from
-        :return: the first member from the group if there's only one member in the group, or a Bool
+        :return: the first member from the group if there's only one member in the
+            group, or a Bool
         """
         return self.build_or([self.create_group_or_term(member) for member in group])
 
@@ -294,14 +296,15 @@ class v1_0_0Schema(Schema):
         elasticsearch geo_polygon queries, if necessary combined using ands, ors and
         nots to provide MultiPolygon hole support.
 
-        In v1.0.0, Natural Earth Data datasets are used to provide the lists of names and
-        corresponding geojson areas. The 1:50million scale is used in an attempt to provide a good
-        level of detail without destroying Elasticsearch with enormous numbers of points. See the
-        `theme/public/querySchemas/geojson/` directory for source data and readme, and also the
-        load_geojson function in this class.
+        In v1.0.0, Natural Earth Data datasets are used to provide the lists of names
+        and corresponding geojson areas. The 1:50million scale is used in an attempt to
+        provide a good level of detail without destroying Elasticsearch with enormous
+        numbers of points. See the `theme/public/querySchemas/geojson/` directory for
+        source data and readme, and also the load_geojson function in this class.
 
         :param options: the options for the geo_named_area query
-        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool Query)
+        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
+            Query)
         """
         category, name = next(iter(options.items()))
         return self.build_multipolygon_query(self.geojson[category][name])
@@ -315,7 +318,8 @@ class v1_0_0Schema(Schema):
         holes defined in the Polygon).
 
         :param coordinates: a MultiPolygon coordinates list
-        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool Query)
+        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
+            Query)
         """
         return self.build_multipolygon_query(coordinates)
 
@@ -363,8 +367,8 @@ class v1_0_0Schema(Schema):
         parameter should match the format required by GeoJSON and therefore be a series
         of nested lists, see the GeoJSON docs for details.
 
-        :param coordinates: the coordinate list, which is basically a list of Polygons. See the
-                            GeoJSON doc for the exact format and meaning
+        :param coordinates: the coordinate list, which is basically a list of Polygons.
+            See the GeoJSON doc for the exact format and meaning
         :return: an elasticsearch-dsl object representing the MultiPolygon
         """
         queries = []
@@ -395,13 +399,15 @@ class v1_0_0Schema(Schema):
         The geojson file is assumed to be a list of features containing only Polygon or
         MultiPolygon types.
 
-        The name_keys parameter should be a sequence of keys to use to retrieve a name for the
-        feature from the properties dict. The first key found in the properties dict with a value is
-        used and therefore the keys listed should be in priority order. The extracted name is passed
-        to string.capwords to produce a sensible and consistent set of names.
+        The name_keys parameter should be a sequence of keys to use to retrieve a name
+        for the feature from the properties dict. The first key found in the properties
+        dict with a value is used and therefore the keys listed should be in priority
+        order. The extracted name is passed to string.capwords to produce a sensible and
+        consistent set of names.
 
         :param filename: the name geojson file to load from the given path
-        :param name_keys: a priority ordered sequence of keys to use for feature name retrieval
+        :param name_keys: a priority ordered sequence of keys to use for feature name
+            retrieval
         :return: a dict of names -> MultiPolygons
         """
         path = schema_base_path.joinpath(v1_0_0Schema.version).joinpath('geojson')
@@ -455,10 +461,10 @@ class v1_0_0Hasher:
         """
         query_hash = hashlib.sha1()
         if 'search' in query:
-            query_hash.update(f'search:{query["search"]}'.encode(u'utf-8'))
+            query_hash.update(f'search:{query["search"]}'.encode('utf-8'))
         if 'filters' in query:
             data = f'filters:{self.create_group_or_term(query["filters"])}'.encode(
-                u'utf-8'
+                'utf-8'
             )
             query_hash.update(data)
         return query_hash.hexdigest()

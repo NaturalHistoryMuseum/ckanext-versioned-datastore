@@ -1,10 +1,10 @@
+from cachetools import TTLCache, cached
 from ckan import model
-from ckan.plugins import toolkit, PluginImplementations
+from ckan.plugins import PluginImplementations, toolkit
 from splitgill.indexing.utils import DOC_TYPE
-from cachetools import cached, TTLCache
 
-from . import common
 from ..interfaces import IVersionedDatastore
+from . import common
 
 
 def get_latest_version(resource_id):
@@ -71,7 +71,7 @@ def get_public_alias_name(resource_id):
     datastore data. This is just "pub" (retrieved from get_public_alias_prefix above)
     prepended to the normal prefixed index name, for example:
 
-        pubnhm-05ff2255-c38a-40c9-b657-4ccb55ab2feb
+    pubnhm-05ff2255-c38a-40c9-b657-4ccb55ab2feb
 
     :param resource_id: the resource's id
     :return: the name of the alias
@@ -107,10 +107,11 @@ def update_privacy(resource_id, is_private=None):
     already set correctly on the resource's index in Elasticsearch this does nothing.
 
     :param resource_id: the resource's id
-    :param is_private: whether the package the resource is in is private or not. This is an optional
-                       parameter, if it is left out we look up the resource's package in the
-                       database and find out the private setting that way.
-    :return: True if modifications were required to update the resource data's privacy, False if not
+    :param is_private: whether the package the resource is in is private or not. This is
+        an optional parameter, if it is left out we look up the resource's package in
+        the database and find out the private setting that way.
+    :return: True if modifications were required to update the resource data's privacy,
+        False if not
     """
     if is_private is None:
         resource = model.Resource.get(resource_id)
@@ -128,7 +129,8 @@ def make_private(resource_id):
     all, or the alias already doesn't exist, nothing happens.
 
     :param resource_id: the resource's id
-    :return: True if modifications were required to make the resource's data private, False if not
+    :return: True if modifications were required to make the resource's data private,
+        False if not
     """
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
@@ -146,7 +148,8 @@ def make_public(resource_id):
     the alias already exists, nothing happens.
 
     :param resource_id: the resource's id
-    :return: True if modifications were required to make the resource's data public, False if not
+    :return: True if modifications were required to make the resource's data public,
+        False if not
     """
     index_name = prefix_resource(resource_id)
     public_index_name = get_public_alias_name(resource_id)
@@ -190,8 +193,9 @@ def iter_data_fields(mapping):
     a field at the top level is just ('field', ): {} but a nested one would be ('field',
     'sub'): {}).
 
-    :param mapping: the mapping dict returned from elasticsearch, this should be the first value in
-                    the dict after the index name, i.e. the result of get_mapping(index)[index]
+    :param mapping: the mapping dict returned from elasticsearch, this should be the
+        first value in the dict after the index name, i.e. the result of
+        get_mapping(index)[index]
     :return: an iterator which yields fields and their configs
     """
 

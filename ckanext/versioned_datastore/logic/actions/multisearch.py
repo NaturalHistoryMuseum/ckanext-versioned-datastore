@@ -3,46 +3,46 @@ from datetime import datetime
 from typing import Dict
 
 import jsonschema
+from ckan.plugins import PluginImplementations, plugin_loaded, toolkit
 from ckantools.decorators import action
 from ckantools.timer import Timer
-from elasticsearch_dsl import MultiSearch, A
+from elasticsearch_dsl import A, MultiSearch
 from splitgill.utils import to_timestamp
 
-from ckan.plugins import toolkit, PluginImplementations, plugin_loaded
-from .meta import help, schema
 from ...interfaces import IVersionedDatastore
 from ...lib import common
 from ...lib.basic_query.utils import convert_to_multisearch
 from ...lib.datastore_utils import (
-    prefix_resource,
-    unprefix_index,
     iter_data_fields,
-    trim_index_name,
     prefix_field,
+    prefix_resource,
+    trim_index_name,
+    unprefix_index,
 )
 from ...lib.query.fields import (
     get_all_fields,
-    select_fields,
-    get_single_resource_fields,
     get_mappings,
+    get_single_resource_fields,
+    select_fields,
 )
 from ...lib.query.query_log import log_query
 from ...lib.query.schema import (
-    get_latest_query_version,
     InvalidQuerySchemaVersionError,
-    validate_query,
-    translate_query,
+    get_latest_query_version,
     hash_query,
     normalise_query,
+    translate_query,
+    validate_query,
 )
-from ...lib.query.slugs import create_slug, resolve_slug, create_nav_slug
+from ...lib.query.slugs import create_nav_slug, create_slug, resolve_slug
 from ...lib.query.utils import (
-    get_available_datastore_resources,
+    calculate_after,
     determine_resources_to_search,
     determine_version_filter,
-    calculate_after,
     find_searched_resources,
+    get_available_datastore_resources,
 )
+from .meta import help, schema
 
 
 @action(
@@ -67,24 +67,24 @@ def datastore_multisearch(
 
     :param context: the context dict from the action call
     :param query: the query dict. If None (default) then an empty query is used
-    :param query_version: the version of the query schema the query is using. If None (default) then
-                          the latest query schema version is used
-    :param version: the version to search the data at. If None (default) the current time is used
-    :param resource_ids: the list of resource to search. If None (default) then all the resources
-                         the user has access to are queried. If a list of resources are passed then
-                         any resources not accessible to the user will be removed before querying
-    :param resource_ids_and_versions: a dict of resources and versions to search each of them at.
-                                      This allows precise searching of each resource at a specific
-                                      parameter. If None (default) then the resource_ids parameter
-                                      is used together with the version parameter. If this parameter
-                                      is provided though, it takes priority over the resource_ids
-                                      and version parameters.
-    :param size: the number of records to return. Defaults to 100 if not provided and must be
-                 between 0 and 1000.
-    :param after: pagination after value that has come from a previous result. If None (default)
-                  this parameter is ignored.
-    :param top_resources: whether to include information about the resources with the most results
-                          in them (defaults to False) in the result
+    :param query_version: the version of the query schema the query is using. If None
+        (default) then the latest query schema version is used
+    :param version: the version to search the data at. If None (default) the current
+        time is used
+    :param resource_ids: the list of resource to search. If None (default) then all the
+        resources the user has access to are queried. If a list of resources are passed
+        then any resources not accessible to the user will be removed before querying
+    :param resource_ids_and_versions: a dict of resources and versions to search each of
+        them at. This allows precise searching of each resource at a specific parameter.
+        If None (default) then the resource_ids parameter is used together with the
+        version parameter. If this parameter is provided though, it takes priority over
+        the resource_ids and version parameters.
+    :param size: the number of records to return. Defaults to 100 if not provided and
+        must be between 0 and 1000.
+    :param after: pagination after value that has come from a previous result. If None
+        (default) this parameter is ignored.
+    :param top_resources: whether to include information about the resources with the
+        most results in them (defaults to False) in the result
     :param timings: whether to include timing information in the result dict
     :return: a dict of results including the records and total
     """
@@ -215,24 +215,25 @@ def datastore_create_slug(
 
     :param context: the context dict from the action call
     :param query: the query dict. If None (default) then an empty query is used
-    :param query_version: the version of the query schema the query is using. If None (default) then
-                          the latest query schema version is used
-    :param version: the version to search the data at. If None (default) the current time is used
-    :param resource_ids: the list of resource to search. If None (default) then all the resources
-                         the user has access to are queried. If a list of resources are passed then
-                         any resources not accessible to the user will be removed before querying
-    :param resource_ids_and_versions: a dict of resources and versions to search each of them at.
-                                      This allows precise searching of each resource at a specific
-                                      parameter. If None (default) then the resource_ids parameter
-                                      is used together with the version parameter. If this parameter
-                                      is provided though, it takes priority over the resource_ids
-                                      and version parameters.
-    :param pretty_slug: whether to produce a "pretty" slug or not. If True (the default) a selection
-                        of 2 adjectives and an animal will be used to create the slug, otherwise if
-                        False, a uuid will be used
+    :param query_version: the version of the query schema the query is using. If None
+        (default) then the latest query schema version is used
+    :param version: the version to search the data at. If None (default) the current
+        time is used
+    :param resource_ids: the list of resource to search. If None (default) then all the
+        resources the user has access to are queried. If a list of resources are passed
+        then any resources not accessible to the user will be removed before querying
+    :param resource_ids_and_versions: a dict of resources and versions to search each of
+        them at. This allows precise searching of each resource at a specific parameter.
+        If None (default) then the resource_ids parameter is used together with the
+        version parameter. If this parameter is provided though, it takes priority over
+        the resource_ids and version parameters.
+    :param pretty_slug: whether to produce a "pretty" slug or not. If True (the default)
+        a selection of 2 adjectives and an animal will be used to create the slug,
+        otherwise if False, a uuid will be used
     :param nav_slug: if this is True, a temporary navigational slug will be produced
-                     instead of a standard slug
-    :return: a dict containing the slug and whether it was created during this function call or not
+        instead of a standard slug
+    :return: a dict containing the slug and whether it was created during this function
+        call or not
     """
     if query is None:
         query = {}
@@ -306,8 +307,9 @@ def datastore_resolve_slug(slug):
 
     # then check if it's a query DOI
     if plugin_loaded('query_dois'):
-        from ckanext.query_dois.model import QueryDOI
         from ckan import model
+
+        from ckanext.query_dois.model import QueryDOI
 
         resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
         if resolved:
@@ -342,10 +344,10 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
 
     :param context: the context dict from the action call
     :param text: the text to search with (default is an empty string)
-    :param resource_ids: a list of resources to find fields from, if None (the default) all resource
-                         fields are searched
-    :param lowercase: whether to do a lowercase check or not, essentially whether to be case
-                      insensitive. Default: True, be case insensitive.
+    :param resource_ids: a list of resources to find fields from, if None (the default)
+        all resource fields are searched
+    :param lowercase: whether to do a lowercase check or not, essentially whether to be
+        case insensitive. Default: True, be case insensitive.
     :return: the fields and the resources they came from as a dict
     """
     # figure out which resources should be searched
@@ -397,16 +399,18 @@ def datastore_guess_fields(
     """
     Guesses the fields that are most relevant to show with the given query.
 
-    If only one resource is included in the search then the requested number of fields from the
-    resource at the required version are returned in ingest order if the details are available.
+    If only one resource is included in the search then the requested number of fields
+    from the resource at the required version are returned in ingest order if the
+    details are available.
 
-    If multiple resources are queried, the most common fields across the resource under search are
-    returned. The fields are grouped together in an attempt to match the same field name in
-    different cases across different resources. The most common {size} groups are returned.
+    If multiple resources are queried, the most common fields across the resource under
+    search are returned. The fields are grouped together in an attempt to match the same
+    field name in different cases across different resources. The most common {size}
+    groups are returned.
 
-    The groups returned are ordered firstly by the number of resources they appear in in descending
-    order, then if there are ties, the number of records the group finds is used and this again is
-    ordered in a descending fashion.
+    The groups returned are ordered firstly by the number of resources they appear in in
+    descending order, then if there are ties, the number of records the group finds is
+    used and this again is ordered in a descending fashion.
 
     :param context: the context dict from the action call
     :param query: the query
@@ -506,8 +510,8 @@ def datastore_value_autocomplete(
 
     :param context: the context dict from the action call
     :param field: the field to get the values from
-    :param prefix: the prefix value to search with (this can be missing/blank to just return the
-                   first values)
+    :param prefix: the prefix value to search with (this can be missing/blank to just
+        return the first values)
     :param query: the query
     :param query_version: the query schema version
     :param version: the version to search at
@@ -655,20 +659,17 @@ def datastore_multisearch_counts(
     :param context: the context dict from the action call
     :param query: the query dict. If None (default) then an empty query is used
     :param query_version: the version of the query schema the query is using. If None
-                          (default) then the latest query schema version is used
+        (default) then the latest query schema version is used
     :param version: the version to search the data at. If None (default) the current
-                    time is used
+        time is used
     :param resource_ids: the list of resource to search. If None (default) then all the
-                         resources the user has access to are queried. If a list of
-                         resources are passed then any resources not accessible to the
-                         user will be removed before querying
+        resources the user has access to are queried. If a list of resources are passed
+        then any resources not accessible to the user will be removed before querying
     :param resource_ids_and_versions: a dict of resources and versions to search each of
-                                      them at. This allows precise searching of each
-                                      resource at a specific parameter. If None
-                                      (default) then the resource_ids parameter is used
-                                      together with the version parameter. If this
-                                      parameter is provided though, it takes priority
-                                      over the resource_ids and version parameters.
+        them at. This allows precise searching of each resource at a specific parameter.
+        If None (default) then the resource_ids parameter is used together with the
+        version parameter. If this parameter is provided though, it takes priority over
+        the resource_ids and version parameters.
     :return: a dict of resource IDs -> count
     """
     # provide some more complex defaults for some parameters if necessary
@@ -711,7 +712,7 @@ def datastore_multisearch_counts(
     # use an aggregation to get the hit count of each resource, set the size to the
     # number of resources we're querying to ensure we get all counts in one go and don't
     # have to paginate with a composite agg
-    search.aggs.bucket("counts", "terms", field="_index", size=len(resource_ids))
+    search.aggs.bucket('counts', 'terms', field='_index', size=len(resource_ids))
 
     # create a multisearch for this one query - this ensures there aren't any issues
     # with the length of the URL as the index list is passed as a part of the body
@@ -722,8 +723,8 @@ def datastore_multisearch_counts(
 
     # build the response JSON
     counts = {
-        trim_index_name(bucket["key"]): bucket["doc_count"]
-        for bucket in result.aggs.to_dict()["counts"]["buckets"]
+        trim_index_name(bucket['key']): bucket['doc_count']
+        for bucket in result.aggs.to_dict()['counts']['buckets']
     }
     # add resources that didn't have any hits into the counts dict too
     counts.update(

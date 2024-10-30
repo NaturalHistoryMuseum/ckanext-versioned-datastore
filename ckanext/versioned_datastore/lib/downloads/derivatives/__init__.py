@@ -1,7 +1,7 @@
 from .csv import CsvDerivativeGenerator
+from .dwc import DwcDerivativeGenerator
 from .json import JsonDerivativeGenerator
 from .xlsx import XlsxDerivativeGenerator
-from .dwc import DwcDerivativeGenerator
 
 derivatives = [
     CsvDerivativeGenerator,

@@ -1,20 +1,19 @@
 from datetime import datetime
 
-from ckan.plugins import toolkit, PluginImplementations
+from ckan.plugins import PluginImplementations, toolkit
+from ckantools.decorators import action
+from elasticsearch import RequestError
+from elasticsearch_dsl import A, Search
 from splitgill.indexing.utils import DOC_TYPE
 from splitgill.search import create_version_query
 from splitgill.utils import to_timestamp
-from elasticsearch import RequestError
-from elasticsearch_dsl import A, Search
 
-from .meta import help, schema
-from ckantools.decorators import action
 from ...interfaces import IVersionedDatastore
 from ...lib.basic_query.search import create_search
-from ...lib.basic_query.utils import run_search, get_fields, format_facets
-from ...lib.datastore_utils import prefix_field, prefix_resource, get_last_after
+from ...lib.basic_query.utils import format_facets, get_fields, run_search
+from ...lib.datastore_utils import get_last_after, prefix_field, prefix_resource
 from ...lib.query.query_log import log_query
-
+from .meta import help, schema
 
 # these are the keys we're interested in logging from the data dict
 _query_log_keys = ('q', 'filters')
@@ -104,7 +103,8 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a dict containing a list of results and an after value for the next page of results
+    :return: a dict containing a list of results and an after value for the next page of
+        results
     """
     # extract the fields specifically needed for setting up the autocomplete query
     field = data_dict.pop('field')
@@ -162,8 +162,8 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a dict containing the total number of matches for the query, the total number of
-             matches with geo data and the bounds of the query
+    :return: a dict containing the total number of matches for the query, the total
+        number of matches with geo data and the bounds of the query
     """
     # ensure the search doesn't respond with any hits cause we don't need them and override two
     # unused params
@@ -227,8 +227,8 @@ def datastore_search_raw(
     :param original_data_dict: the data_dict before it was validated
     :param search: the elasticsearch query to run
     :param version: the version of the data to query against
-    :param raw_result: whether to return the result as a raw elasticsearch result, or format it in
-                       the same way as a normal datastore_search call would
+    :param raw_result: whether to return the result as a raw elasticsearch result, or
+        format it in the same way as a normal datastore_search call would
     :param include_version: whether to include the version in the search or not
     :return: a dict containing the results of the search
     """

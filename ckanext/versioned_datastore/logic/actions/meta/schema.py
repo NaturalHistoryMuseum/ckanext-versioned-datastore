@@ -1,10 +1,11 @@
-import json
 import re
 
 from ckan.plugins import toolkit
+from ckantools.validators import list_of_strings, list_validator, object_validator
+
 from ckanext.datastore.logic.schema import json_validator, unicode_or_json_validator
-from ckantools.validators import list_validator, list_of_strings, object_validator
-from .arg_objects import QueryArgs, DerivativeArgs, ServerArgs, NotifierArgs
+
+from .arg_objects import DerivativeArgs, NotifierArgs, QueryArgs, ServerArgs
 
 # grab all the validator functions upfront
 boolean_validator = toolkit.get_validator('boolean_validator')

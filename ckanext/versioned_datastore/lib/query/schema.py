@@ -1,13 +1,12 @@
+import abc
 import io
+import itertools
 import json
 from collections import OrderedDict
 
-import abc
-import itertools
-import os
 import six
-from jsonschema.validators import validator_for, RefResolver
 from importlib_resources import files
+from jsonschema.validators import RefResolver, validator_for
 
 schemas = OrderedDict()
 schema_base_path = files('ckanext.versioned_datastore.theme').joinpath(
@@ -58,7 +57,8 @@ def validate_query(query, version):
 
     :param query: the query dict
     :param version: the query schema version to validate against
-    :return: True if the validation succeeded, otherwise jsonschema exceptions will be raised
+    :return: True if the validation succeeded, otherwise jsonschema exceptions will be
+        raised
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -74,8 +74,8 @@ def translate_query(query, version, search=None):
 
     :param query: the whole query dict
     :param version: the query schema version to translate using
-    :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
-                   a fresh object. By default a new search object is created.
+    :param search: an instantiated elasticsearch-dsl object to be built on instead of
+        creating a fresh object. By default a new search object is created.
     :return: an instantiated elasticsearch-dsl object
     """
     if version not in schemas:
@@ -117,7 +117,8 @@ def load_core_schema(version):
     Given a query schema version, loads the schema from the schema_base_path directory.
 
     :param version: the version to load
-    :return: the loaded schema (as a dict) and a jsonschmea validator object for the schema
+    :return: the loaded schema (as a dict) and a jsonschmea validator object for the
+        schema
     """
     schema_file = schema_base_path.joinpath(version).joinpath(f'{version}.json')
     with io.open(schema_file, 'r', encoding='utf-8') as f:
@@ -154,8 +155,8 @@ class Schema(object):
         Translates the query into an elasticsearch-dsl search object.
 
         :param query: the whole query dict
-        :param search: an instantiated elasticsearch-dsl object to be built on instead of creating
-                       a fresh object. By default a new search object is created.
+        :param search: an instantiated elasticsearch-dsl object to be built on instead
+            of creating a fresh object. By default a new search object is created.
         :return: an instantiated elasticsearch-dsl object
         """
         pass

@@ -2,15 +2,16 @@ import json
 
 import pytest
 from ckan.plugins import toolkit
-from ckanext.versioned_datastore.lib.basic_query.geo import (
-    add_point_filter,
-    FIELD,
-    add_multipolygon_filter,
-    add_polygon_filter,
-    add_geo_search,
-)
-from elasticsearch_dsl.query import GeoPolygon, Bool
+from elasticsearch_dsl.query import Bool, GeoPolygon
 from mock import MagicMock, call, patch
+
+from ckanext.versioned_datastore.lib.basic_query.geo import (
+    FIELD,
+    add_geo_search,
+    add_multipolygon_filter,
+    add_point_filter,
+    add_polygon_filter,
+)
 
 
 class TestAddPointFilter(object):
@@ -31,7 +32,7 @@ class TestAddPointFilter(object):
                     'lat': coordinates[1],
                     'lon': coordinates[0],
                 },
-            }
+            },
         )
 
     def test_float_conversion(self):
@@ -51,7 +52,7 @@ class TestAddPointFilter(object):
                     'lat': float(coordinates[1]),
                     'lon': float(coordinates[0]),
                 },
-            }
+            },
         )
 
 

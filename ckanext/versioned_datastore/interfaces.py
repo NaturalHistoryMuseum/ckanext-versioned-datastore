@@ -98,16 +98,16 @@ class IVersionedDatastore(interfaces.Interface):
 
         :param resource_id: the resource id that was searched
         :param mapping: the mapping for the elasticsearch index containing the
-                        resource's data. This is the raw mapping as a dict, retrieved
-                        straight from elasticsearch's mapping endpoint
+            resource's data. This is the raw mapping as a dict, retrieved straight from
+            elasticsearch's mapping endpoint
         :param fields: the field definitions that have so far been extracted from the
-                       mapping, by default this is all fields
+            mapping, by default this is all fields
         :return: the list of field definition dicts
         """
         return fields
 
     def datastore_modify_index_doc(self, resource_id, index_doc):
-        '''
+        """
         Action allowing the modification of a resource's data during indexing. The
         index_doc passed is a dict in the form:
 
@@ -134,7 +134,7 @@ class IVersionedDatastore(interfaces.Interface):
         :param resource_id: the id of the resource being indexed
         :param index_doc: a dict that will be sent to elasticsearch
         :return: the dict for elasticsearch to index
-        '''
+        """
         return index_doc
 
     def datastore_is_read_only_resource(self, resource_id):
@@ -162,7 +162,7 @@ class IVersionedDatastore(interfaces.Interface):
         :param request: the ResourceIndexRequest object that triggered the indexing task
         :param splitgill_stats: the statistics about the indexing task from splitgill
         :param stats_id: the id of the statistics entry in the ImportStats database
-                         table
+            table
         """
         pass
 
@@ -230,7 +230,7 @@ class IVersionedDatastore(interfaces.Interface):
         custom filters.
 
         :param basic_query: the original basic query, before it was modified by other
-                            plugins
+            plugins
         :param multisearch_query: the converted multisearch version of the query
         :return: the modified multisearch query
         """
@@ -243,9 +243,8 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
         Hook to allow registering custom query schemas.
 
         :return: a list of tuples of the format (query schema version, schema object)
-                 where the query schema version is a string of format v#.#.# and the
-                 schema object is an instance of
-                 ckanext.versioned_datastore.lib.query.Schema
+            where the query schema version is a string of format v#.#.# and the schema
+            object is an instance of ckanext.versioned_datastore.lib.query.Schema
         """
         return []
 
@@ -262,7 +261,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template
-                 string
+            string
         """
         return text_template, html_template
 
@@ -277,7 +276,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template
-                 string
+            string
         """
         return text_template, html_template
 
@@ -292,7 +291,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :param text_template: the text template string
         :param html_template: the html template string
         :return: a 2-tuple containing the text template string and the html template
-                 string
+            string
         """
         return text_template, html_template
 
@@ -317,9 +316,9 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         Extend or modify the list of derivative generators.
 
         :param registered_derivatives: a dict of existing derivative generator classes,
-                                       returned from previously loaded plugins
+            returned from previously loaded plugins
         :return: a dict of loaded derivative generator classes, keyed on the name used
-                 to specify them in download requests
+            to specify them in download requests
         """
         return registered_derivatives or {}
 
@@ -328,9 +327,9 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         Extend or modify the list of file servers.
 
         :param registered_servers: a dict of existing file server classes, returned from
-                                   previously loaded plugins
+            previously loaded plugins
         :return: a dict of loaded file server classes, keyed on the name used to specify
-                 them in download requests
+            them in download requests
         """
         return registered_servers or {}
 
@@ -339,9 +338,9 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         Extend or modify the list of download notifiers.
 
         :param registered_notifiers: a dict of existing notifier classes, returned from
-                                     previously loaded plugins
+            previously loaded plugins
         :return: a dict of loaded notifier classes, keyed on the name used to specify
-                 them in download requests
+            them in download requests
         """
         return registered_notifiers or {}
 
@@ -350,9 +349,9 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         Extend or modify the list of data transformations.
 
         :param registered_transformations: a dict of existing data transformations,
-                                           returned from previously loaded plugins
+            returned from previously loaded plugins
         :return: a dict of loaded transformations, keyed on the name used to specify
-                 them in download requests
+            them in download requests
         """
         return registered_transformations or {}
 

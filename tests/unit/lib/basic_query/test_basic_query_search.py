@@ -6,8 +6,8 @@ from mock import MagicMock, patch
 
 from ckanext.versioned_datastore.lib.basic_query.search import (
     _find_version,
-    create_search,
     build_search_object,
+    create_search,
 )
 from ckanext.versioned_datastore.lib.datastore_utils import prefix_field
 

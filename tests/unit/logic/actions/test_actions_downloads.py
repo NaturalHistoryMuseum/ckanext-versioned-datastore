@@ -3,9 +3,9 @@ from mock import patch
 
 from ckanext.versioned_datastore.logic.actions.downloads import datastore_queue_download
 from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
-    QueryArgs,
     DerivativeArgs,
     NotifierArgs,
+    QueryArgs,
 )
 from tests.helpers import patches
 
