@@ -9,7 +9,7 @@ def rounded_versions():
     """
     Patches get_rounded_versions to return the target version regardless of input.
 
-    :return:
+    :returns:
     """
 
     def rounded_versions_mock(indices, target_version):

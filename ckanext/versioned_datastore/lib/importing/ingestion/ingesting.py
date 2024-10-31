@@ -41,7 +41,7 @@ def ingest_resource(version, config, resource, data, replace, api_key):
     :param replace: boolean indicating whether to replace the existing data or not
     :param api_key: the API key if the resource's CKAN URL is to be used as the source
         and the resource is private
-    :return: True if the ingest was successful, False if not
+    :returns: True if the ingest was successful, False if not
     """
     # cache the resource id as we use it a few times
     resource_id = resource['id']
@@ -139,7 +139,7 @@ def prepare_resource(
     :param update_every: the frequency with which to update the ImportStats (every x rows written to
                          the intermediate file format). Setting this too low will cause the database
                          to be written to a lot which could cause performance issues
-    :return: the name of the intermediate file and the metadata dict
+    :returns: the name of the intermediate file and the metadata dict
     """
     name = os.path.join(tempfile.gettempdir(), f'{resource["id"]}_{version}.jsonl.gz')
 
@@ -238,7 +238,7 @@ def get_fp_and_reader_for_resource_data(resource, data=None, api_key=None):
         needs an API key to get it. This is needed when the URL is the CKAN resource
         download URL of a private resource. Can be None to indicate no API key is
         required
-    :return: yields a file pointer and a ResourceReader instance
+    :returns: yields a file pointer and a ResourceReader instance
     """
     handled = False
     if data is None:
@@ -330,7 +330,7 @@ class DatastoreFeeder(IngestionFeeder):
 
         :param skip_header_row: whether to skip the header row or yield it as if it was
             a normal row
-        :return: a generator of dicts
+        :returns: a generator of dicts
         """
         with gzip.open(self.data_file_name, 'rb') as gzip_file:
             # the data file is always in utf-8 format
@@ -345,7 +345,7 @@ class DatastoreFeeder(IngestionFeeder):
         """
         Figure out what the current max id is in this resource's collection.
 
-        :return: the highest id in the collection currently (it'll be an int), or 0 if
+        :returns: the highest id in the collection currently (it'll be an int), or 0 if
             there aren't any documents in the collection
         """
         with get_mongo(self.config, collection=self.resource_id) as mongo:
@@ -364,7 +364,7 @@ class DatastoreFeeder(IngestionFeeder):
         the header dict in self._header for repeated use and thus avoids reading the
         file every time.
 
-        :return: the header dict
+        :returns: the header dict
         """
         if self._header is None:
             # load the header by just iterating over the first row in the data file
@@ -376,7 +376,7 @@ class DatastoreFeeder(IngestionFeeder):
         """
         Returns the source of the ingestion. This comes from the data file.
 
-        :return: the source name
+        :returns: the source name
         """
         return self.header['source']
 
@@ -401,7 +401,7 @@ class DatastoreFeeder(IngestionFeeder):
         would be assigned _id = 3, but this would then be used by the next row which specifically
         says "I'm row 3" and thus clashing ids!
 
-        :return: a generator of DatastoreRecords
+        :returns: a generator of DatastoreRecords
         """
         # calculate the highest id we know about
         highest_id = max(self.get_existing_max_id(), self.header.get('max_id', 0))

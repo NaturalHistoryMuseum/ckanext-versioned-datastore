@@ -28,7 +28,7 @@ def datastore_search(context, data_dict, original_data_dict):
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a dict including the search results amongst other things
+    :returns: a dict including the search results amongst other things
     """
     original_data_dict, data_dict, version, search = create_search(
         context, data_dict, original_data_dict
@@ -103,7 +103,7 @@ def datastore_autocomplete(context, data_dict, original_data_dict):
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a dict containing a list of results and an after value for the next page of
+    :returns: a dict containing a list of results and an after value for the next page of
         results
     """
     # extract the fields specifically needed for setting up the autocomplete query
@@ -162,7 +162,7 @@ def datastore_query_extent(context, data_dict, original_data_dict):
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a dict containing the total number of matches for the query, the total
+    :returns: a dict containing the total number of matches for the query, the total
         number of matches with geo data and the bounds of the query
     """
     # ensure the search doesn't respond with any hits cause we don't need them and override two
@@ -230,7 +230,7 @@ def datastore_search_raw(
     :param raw_result: whether to return the result as a raw elasticsearch result, or
         format it in the same way as a normal datastore_search call would
     :param include_version: whether to include the version in the search or not
-    :return: a dict containing the results of the search
+    :returns: a dict containing the results of the search
     """
     if search is None:
         search = {}

@@ -18,7 +18,7 @@ def add_point_filter(search, distance, coordinates):
         10km etc).
     :param coordinates: the point to centre the radius on, specified as a lon/lat pair
         in a list (i.e. [40.2, -20]).
-    :return: a search object
+    :returns: a search object
     """
     options = {
         'distance': distance,
@@ -43,7 +43,7 @@ def add_multipolygon_filter(search, coordinates):
     :param search: the current elasticsearch DSL object
     :param coordinates: a list of a list of a list of a list of at least 3 lon/lat pairs (i.e.
                         [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]])
-    :return: a search object
+    :returns: a search object
     """
     filters = []
     for group in coordinates:
@@ -79,7 +79,7 @@ def add_polygon_filter(search, coordinates):
     :param search: the current elasticsearch DSL object
     :param coordinates: a list of a list of a list of at least 3 lon/lat pairs (i.e. [[[-16, 44],
                         [-13.1, 34.8], [15.99, 35], [5, 49]]])
-    :return: a search object
+    :returns: a search object
     """
     # just wrap in another list and pass to the multipolygon handler
     return add_multipolygon_filter(search, [coordinates])
@@ -96,7 +96,7 @@ def add_geo_search(search, geo_filter):
                        one of: Point, MultiPolygon or Polygon. In the case of a Point, a distance
                        key is also required which specifies the radius of the point in a form
                        elasticsearch understands (for example, 10km).
-    :return: a search DSL object
+    :returns: a search DSL object
     """
     # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
     query_type_map = {

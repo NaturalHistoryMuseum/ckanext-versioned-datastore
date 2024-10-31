@@ -29,7 +29,7 @@ def datastore_get_record_versions(id, resource_id):
 
     :param id: the id of the record
     :param resource_id: the id of the resource the record is in
-    :return: a list of versions in ascending order
+    :returns: a list of versions in ascending order
     """
     index_name = prefix_resource(resource_id)
     return common.SEARCH_HELPER.get_record_versions(index_name, int(id))
@@ -53,7 +53,7 @@ def datastore_get_resource_versions(
     :param context: the context dict from the action call
     :param data_dict: the data_dict from the action call
     :param original_data_dict: the data_dict before it was validated
-    :return: a list of dicts
+    :returns: a list of dicts
     """
     original_data_dict, data_dict, version, search = create_search(
         context, data_dict, original_data_dict
@@ -99,7 +99,7 @@ def datastore_get_rounded_version(resource_id, version=None):
     :param resource_id: the id of the resource
     :param version: the version timestamp. If None (the default) the latest version of
         the resource is returned
-    :return: the rounded version timestamp
+    :returns: the rounded version timestamp
     """
     index_name = prefix_resource(resource_id)
     return common.SEARCH_HELPER.get_rounded_versions([index_name], version)[index_name]
@@ -115,7 +115,7 @@ def datastore_is_datastore_resource(resource_id):
     Checks whether the given resource id is in the datastore or not.
 
     :param resource_id: the resource to check
-    :return: True if it is, False if not
+    :returns: True if it is, False if not
     """
     return is_datastore_resource(resource_id)
 
@@ -125,7 +125,7 @@ def datastore_get_latest_query_schema_version():
     """
     Simply returns the latest available query schema version.
 
-    :return: the query schema version
+    :returns: the query schema version
     """
     return get_latest_query_version()
 

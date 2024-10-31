@@ -108,7 +108,7 @@ class DatastoreIndex(Index):
         should be built off of the default splitgill one unless you super know what
         you're doing.
 
-        :return: a dict
+        :returns: a dict
         """
         body = super(DatastoreIndex, self).get_index_create_body()
         body.setdefault('mappings', {}).setdefault(DOC_TYPE, {}).setdefault(
@@ -156,7 +156,7 @@ def index_resource(request):
     Indexes a resource's data from MongoDB into Elasticsearch.
 
     :param request: the request
-    :return: True if the index took place successfully, False if not
+    :returns: True if the index took place successfully, False if not
     """
     resource_id = request.resource['id']
 

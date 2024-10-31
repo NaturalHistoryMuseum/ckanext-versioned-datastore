@@ -55,7 +55,7 @@ class DatastoreSlug(DomainObject):
         None value from the following attributes in this order: reserved_pretty_slug,
         pretty_slug or id.
 
-        :return: the slug string
+        :returns: the slug string
         """
         if self.reserved_pretty_slug is not None:
             return self.reserved_pretty_slug
@@ -71,7 +71,7 @@ class DatastoreSlug(DomainObject):
         passed slug string.
 
         :param slug_string: the slug string
-        :return: an or filter
+        :returns: an or filter
         """
         return or_(
             DatastoreSlug.id == slug_string,
@@ -100,7 +100,7 @@ class NavigationalSlug(DomainObject):
         """
         Returns the slug string to be used for this slug.
 
-        :return: the slug string
+        :returns: the slug string
         """
         return NavigationalSlug.prefix + self.id
 
@@ -111,7 +111,7 @@ class NavigationalSlug(DomainObject):
         passed slug string.
 
         :param slug_string: the slug string
-        :return: a filter
+        :returns: a filter
         """
         return NavigationalSlug.id == slug_string[len(NavigationalSlug.prefix) :]
 

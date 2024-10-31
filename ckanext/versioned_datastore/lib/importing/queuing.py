@@ -16,7 +16,7 @@ def queue(task, request):
 
     :param task: the function to queue
     :param request: the queue request object
-    :return: the queued job
+    :returns: the queued job
     """
     # pass a timeout of 1 hour (3600 seconds)
     return toolkit.enqueue_job(
@@ -40,7 +40,7 @@ def queue_import(resource, version, replace, records=None, api_key=None):
     :param api_key: the api key of the user who initiated the import, this is required
         if the package the resource is in is private and the data in the resource was
         uploaded
-    :return: the queued job
+    :returns: the queued job
     """
     resource_import_request = ResourceImportRequest(
         resource, version, replace, records, api_key
@@ -56,7 +56,7 @@ def queue_index(resource, lower_version, upper_version):
     :param resource: the resource we're going to index (this must be the resource dict)
     :param lower_version: the lower version to index (exclusive)
     :param upper_version: the upper version to index (inclusive)
-    :return: the queued job
+    :returns: the queued job
     """
     resource_index_request = ResourceIndexRequest(
         resource, lower_version, upper_version
@@ -72,7 +72,7 @@ def queue_deletion(resource, version):
 
     :param resource: the resource we're going to delete (this must be the resource dict)
     :param version: the version to delete the data in
-    :return: the queued job
+    :returns: the queued job
     """
     deletion_request = ResourceDeletionRequest(resource, version)
     return queue(delete_resource_data, deletion_request)

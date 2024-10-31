@@ -28,7 +28,7 @@ def datastore_create(resource_id, context):
 
     :param resource_id: the resource's id
     :param context: the context dict from the action call
-    :return: True if the index was created or already existed, False if not
+    :returns: True if the index was created or already existed, False if not
     """
     if is_resource_read_only(resource_id):
         return False
@@ -62,7 +62,7 @@ def datastore_upsert(resource_id, replace, context, original_data_dict, version=
     :param original_data_dict: the data_dict before it was validated
     :param version: the version of the new data, can be None (default) but if not must
         be newer than the latest version of the resource
-    :return: information about the background job that is handling the ingestion
+    :returns: information about the background job that is handling the ingestion
     """
     # this comes through as junk if it's not removed before validating. This happens because the
     # data dict is flattened during validation, but why this happens is unclear.
@@ -106,7 +106,7 @@ def datastore_delete(resource_id, context, version=None):
     :param resource_id: the id of the resource to delete
     :param context: the context dict from the action call
     :param version: the to mark the deletion at
-    :return: a dict containing info about the background job that is doing the delete
+    :returns: a dict containing info about the background job that is doing the delete
     """
     # if the requested deletion version is missing, default to now
     if version is None:
@@ -133,7 +133,7 @@ def datastore_reindex(resource_id, context):
 
     :param resource_id: the resource id to reindex
     :param context: the context dict from the action call
-    :return: a dict containing info about the background job that is doing the
+    :returns: a dict containing info about the background job that is doing the
         reindexing
     """
     if is_resource_read_only(resource_id):
@@ -163,7 +163,7 @@ def datastore_ensure_privacy(context, resource_id=None):
     :param context: the context dict from the action call
     :param resource_id: the id of the resource update. Can be None (the default) which
         means all resources are updated
-    :return: a dict containing the total number of resources checked and the total
+    :returns: a dict containing the total number of resources checked and the total
         modified
     """
     modified = 0

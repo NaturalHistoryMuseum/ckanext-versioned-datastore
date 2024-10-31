@@ -12,7 +12,7 @@ def get_latest_version(resource_id):
     Retrieves the latest version of the given resource from the status index.
 
     :param resource_id: the resource's id
-    :return: the version or None if the resource isn't indexed
+    :returns: the version or None if the resource isn't indexed
     """
     index_name = prefix_resource(resource_id)
     return common.SEARCH_HELPER.get_latest_index_versions([index_name]).get(
@@ -26,7 +26,7 @@ def prefix_resource(resource_id):
     the resource data in elasticsearch.
 
     :param resource_id: the resource id
-    :return: the resource's index name
+    :returns: the resource's index name
     """
     return f'{common.CONFIG.elasticsearch_index_prefix}{resource_id}'
 
@@ -37,7 +37,7 @@ def unprefix_index(index_name):
     id.
 
     :param index_name: the index name
-    :return: the resource's id
+    :returns: the resource's id
     """
     return index_name[len(common.CONFIG.elasticsearch_index_prefix) :]
 
@@ -51,7 +51,7 @@ def prefix_field(field):
     being passed on to splitgill.
 
     :param field: the field name
-    :return: data.<field>
+    :returns: data.<field>
     """
     return f'data.{field}'
 
@@ -60,7 +60,7 @@ def get_public_alias_prefix():
     """
     Returns the prefix to use for the public aliases.
 
-    :return: the public prefix
+    :returns: the public prefix
     """
     return 'pub'
 
@@ -74,7 +74,7 @@ def get_public_alias_name(resource_id):
     pubnhm-05ff2255-c38a-40c9-b657-4ccb55ab2feb
 
     :param resource_id: the resource's id
-    :return: the name of the alias
+    :returns: the name of the alias
     """
     return f'{get_public_alias_prefix()}{prefix_resource(resource_id)}'
 
@@ -84,7 +84,7 @@ def trim_index_name(index_name):
     Given an index's name, remove the prefix returning the original resource id.
 
     :param index_name: the name of the index
-    :return: the resource id
+    :returns: the resource id
     """
     return index_name[len(common.CONFIG.elasticsearch_index_prefix) :]
 
@@ -110,7 +110,7 @@ def update_privacy(resource_id, is_private=None):
     :param is_private: whether the package the resource is in is private or not. This is
         an optional parameter, if it is left out we look up the resource's package in
         the database and find out the private setting that way.
-    :return: True if modifications were required to update the resource data's privacy,
+    :returns: True if modifications were required to update the resource data's privacy,
         False if not
     """
     if is_private is None:
@@ -129,7 +129,7 @@ def make_private(resource_id):
     all, or the alias already doesn't exist, nothing happens.
 
     :param resource_id: the resource's id
-    :return: True if modifications were required to make the resource's data private,
+    :returns: True if modifications were required to make the resource's data private,
         False if not
     """
     index_name = prefix_resource(resource_id)
@@ -148,7 +148,7 @@ def make_public(resource_id):
     the alias already exists, nothing happens.
 
     :param resource_id: the resource's id
-    :return: True if modifications were required to make the resource's data public,
+    :returns: True if modifications were required to make the resource's data public,
         False if not
     """
     index_name = prefix_resource(resource_id)
@@ -168,7 +168,7 @@ def is_resource_read_only(resource_id):
     Loops through the plugin implementations checking if any of them want the given
     resource id to be read only.
 
-    :return: True if the resource should be treated as read only, False if not
+    :returns: True if the resource should be treated as read only, False if not
     """
     implementations = PluginImplementations(IVersionedDatastore)
     return any(
@@ -196,7 +196,7 @@ def iter_data_fields(mapping):
     :param mapping: the mapping dict returned from elasticsearch, this should be the
         first value in the dict after the index name, i.e. the result of
         get_mapping(index)[index]
-    :return: an iterator which yields fields and their configs
+    :returns: an iterator which yields fields and their configs
     """
 
     def iter_properties(props, path=None):
@@ -222,7 +222,7 @@ def get_last_after(hits):
     Retrieves the "sort" value from the last record in passed the list of hits.
 
     :param hits: a list of hits from an elasticsearch response
-    :return: a list or None
+    :returns: a list or None
     """
     if hits and 'sort' in hits[-1].meta:
         return list(hits[-1].meta['sort'])
@@ -237,7 +237,7 @@ def is_datastore_resource(resource_id):
     not it isn't.
 
     :param resource_id: the resource id
-    :return: True if the resource is a datastore resource, False if not
+    :returns: True if the resource is a datastore resource, False if not
     """
     index_name = prefix_resource(resource_id)
     # check that the index for this resource exists and there is a reference to it in the status
@@ -257,7 +257,7 @@ def is_datastore_only_resource(resource_url):
     front of these URLs when saving the resource, sometimes.
 
     :param resource_url: the URL of the resource
-    :return: True if the resource is a datastore only resource, False if not
+    :returns: True if the resource is a datastore only resource, False if not
     """
     return (
         resource_url == common.DATASTORE_ONLY_RESOURCE
@@ -276,7 +276,7 @@ def is_ingestible(resource):
     constraint but it's worth covering off anyway.
 
     :param resource: the resource dict
-    :return: True if it is, False if not
+    :returns: True if it is, False if not
     """
     if resource.get('url', None) is None:
         return False
@@ -299,7 +299,7 @@ def get_queue_length(queue_name):
     processing.
 
     :param queue_name: the name of the queue to check, e.g. 'download'
-    :return: length of queue as int
+    :returns: length of queue as int
     """
 
     queued_jobs = toolkit.get_action('job_list')(

@@ -26,7 +26,7 @@ def run_search(search, indexes, version=None):
     :param indexes: either a list of index names to search in or a single index name as
         a string
     :param version: version to filter the search results to, optional
-    :return: the result of running the query
+    :returns: the result of running the query
     """
     try:
         if version is not None:
@@ -62,7 +62,7 @@ def format_facets(aggs):
     etc.
 
     :param aggs: the aggregation dict returned from splitgill/elasticsearch
-    :return: the facet information as a dict
+    :returns: the facet information as a dict
     """
     facets = {}
     for facet, details in aggs.items():
@@ -111,7 +111,7 @@ def get_fields(resource_id, version=None):
 
     :param resource_id: the resource's id
     :param version: the version of the data we're querying (default: None, which means latest)
-    :return: a list of dicts containing the field data
+    :returns: a list of dicts containing the field data
     """
     # figure out the index name from the resource id
     index = prefix_resource(resource_id)

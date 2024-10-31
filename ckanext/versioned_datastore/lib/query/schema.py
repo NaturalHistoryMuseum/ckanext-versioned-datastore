@@ -39,7 +39,7 @@ def get_latest_query_version():
     """
     Gets the latest query version from the registered schemas dict.
 
-    :return: the latest query version
+    :returns: the latest query version
     """
     return next(iter(schemas.keys()))
 
@@ -57,7 +57,7 @@ def validate_query(query, version):
 
     :param query: the query dict
     :param version: the query schema version to validate against
-    :return: True if the validation succeeded, otherwise jsonschema exceptions will be
+    :returns: True if the validation succeeded, otherwise jsonschema exceptions will be
         raised
     """
     if version not in schemas:
@@ -76,7 +76,7 @@ def translate_query(query, version, search=None):
     :param version: the query schema version to translate using
     :param search: an instantiated elasticsearch-dsl object to be built on instead of
         creating a fresh object. By default a new search object is created.
-    :return: an instantiated elasticsearch-dsl object
+    :returns: an instantiated elasticsearch-dsl object
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -90,7 +90,7 @@ def hash_query(query, version):
 
     :param query: the query dict
     :param version: the query version
-    :return: the hash
+    :returns: the hash
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -104,7 +104,7 @@ def normalise_query(query, version):
 
     :param query: the query dict
     :param version: the query version
-    :return: the corrected/normalised query
+    :returns: the corrected/normalised query
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -117,7 +117,7 @@ def load_core_schema(version):
     Given a query schema version, loads the schema from the schema_base_path directory.
 
     :param version: the version to load
-    :return: the loaded schema (as a dict) and a jsonschmea validator object for the
+    :returns: the loaded schema (as a dict) and a jsonschmea validator object for the
         schema
     """
     schema_file = schema_base_path.joinpath(version).joinpath(f'{version}.json')
@@ -157,7 +157,7 @@ class Schema(object):
         :param query: the whole query dict
         :param search: an instantiated elasticsearch-dsl object to be built on instead
             of creating a fresh object. By default a new search object is created.
-        :return: an instantiated elasticsearch-dsl object
+        :returns: an instantiated elasticsearch-dsl object
         """
         pass
 
@@ -167,7 +167,7 @@ class Schema(object):
         Hashes the query and returns the hex digest.
 
         :param query: the whole query dict
-        :return: a string hex digest
+        :returns: a string hex digest
         """
         pass
 
@@ -176,6 +176,6 @@ class Schema(object):
         Corrects some (small) common query errors, e.g. removing empty groups.
 
         :param query: the query dict
-        :return: the corrected/normalised query dict
+        :returns: the corrected/normalised query dict
         """
         return query

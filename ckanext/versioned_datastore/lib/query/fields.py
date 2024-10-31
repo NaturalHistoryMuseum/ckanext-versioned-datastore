@@ -22,7 +22,7 @@ def get_mappings(resource_ids, chunk_size=5):
 
     :param resource_ids: a list of resource ids
     :param chunk_size: the number of mappings to get at a time
-    :return: a dict of mappings
+    :returns: a dict of mappings
     """
     mappings = {}
     for chunk in chunk_iterator(map(prefix_resource, resource_ids), chunk_size):
@@ -96,7 +96,7 @@ class Fields(object):
         Generator which yields the groups with the highest resource representation from
         highest to lowest.
 
-        :return: a generator which yields a 3-tuple on each iteration. The 3-tuple
+        :returns: a generator which yields a 3-tuple on each iteration. The 3-tuple
             contains the group name, the resource count and a dict of containing all the
             field names in the group and the resources they appear in (field name ->
             list of resource ids)
@@ -146,7 +146,7 @@ def get_all_fields(resource_ids):
     returned contains the fields from all versions of the resources.
 
     :param resource_ids: the resource ids to get the fields from
-    :return: a Fields object
+    :returns: a Fields object
     """
     index_names = [prefix_resource(resource_id) for resource_id in resource_ids]
     mappings = get_mappings(resource_ids)
@@ -177,7 +177,7 @@ def select_fields(all_fields, search, number_of_groups):
     :param all_fields: a Fields object
     :param search: an elasticsearch-dsl search object
     :param number_of_groups: the number of groups to select from the Fields object and return
-    :return: a list of groups, each group is a dict containing:
+    :returns: a list of groups, each group is a dict containing:
                 - "group" - the group name
                 - "count" - the number of resources its fields appear in
                 - "records" - the number of records the group's fields appear in
@@ -241,7 +241,7 @@ def get_single_resource_fields(
     :param version: the version we're searching at
     :param search: an elasticsearch-dsl search object
     :param number_of_groups: the maximum number of groups to return
-    :return: a list of groups, each group is a dict containing:
+    :returns: a list of groups, each group is a dict containing:
             - "group" - the group name
             - "count" - the number of resources its fields appear in (will always be 1)
             - "records" - the number of records the group's fields appear in

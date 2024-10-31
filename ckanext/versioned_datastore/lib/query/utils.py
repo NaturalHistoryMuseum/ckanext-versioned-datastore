@@ -22,7 +22,7 @@ def get_available_datastore_resources(context, only=None):
     :param context: the dict ckan context to request auth against
     :param only: optional list of resource ids to filter the returned list by. Defaults
         to None which indicates all available resources should be returned
-    :return: a set of resource ids
+    :returns: a set of resource ids
     """
     # retrieve all resource ids and associated package ids direct from the database for speed
     query = (
@@ -102,7 +102,7 @@ def determine_resources_to_search(
         the resources
     :param resource_ids: a list of resources to search
     :param resource_ids_and_versions: a dict of resources and versions to search at
-    :return: 2-tuple containing a list of resource ids to search and a list of resource
+    :returns: 2-tuple containing a list of resource ids to search and a list of resource
         ids that have been skipped because the user doesn't have access to them or they
         aren't datastore resources
     """
@@ -135,7 +135,7 @@ def determine_version_filter(
     :param resource_ids: the resource to search
     :param resource_ids_and_versions: a dict of resource ids -> versions providing
         resource specific versions for search
-    :return: an elasticsearch-dsl object
+    :returns: an elasticsearch-dsl object
     """
     if not resource_ids_and_versions:
         # default the version to now if necessary
@@ -169,7 +169,7 @@ def calculate_after(result, size):
 
     :param result: the elasticsearch result object
     :param size: the number of results
-    :return: a 2-tuple containing the list of hits and the next after value
+    :returns: a 2-tuple containing the list of hits and the next after value
     """
     if len(result.hits) > size:
         # there are more results, trim off the last hit as it wasn't requested
@@ -190,7 +190,7 @@ def chunk_iterator(iterable, chunk_size):
 
     :param iterable: the iterable to chunk up
     :param chunk_size: the maximum size of each yielded chunk
-    :return: a generator of list chunks
+    :returns: a generator of list chunks
     """
     chunk = []
     for element in iterable:
@@ -209,7 +209,7 @@ def find_searched_resources(search, resource_ids):
 
     :param search: an elasticsearch-dsl object
     :param resource_ids: a list of resource ids
-    :return: a list of resource ids
+    :returns: a list of resource ids
     """
     # we have to make a copy as aggs don't return a clone :(
     search_copy = copy(search)
@@ -242,7 +242,7 @@ def get_resources_and_versions(
         version
     :param allow_non_datastore: allow non datastore resources to be included (will be
         returned with common.NON_DATASTORE_VERSION)
-    :return: a tuple of resource_ids, resource_ids_and_versions
+    :returns: a tuple of resource_ids, resource_ids_and_versions
     """
 
     if resource_ids_and_versions is None:
@@ -305,7 +305,7 @@ def convert_small_or_groups(query):
     Convert OR groups containing only 1 item to AND groups.
 
     :param query: a multisearch query dict
-    :return: the query with a converted filter dict, if applicable
+    :returns: the query with a converted filter dict, if applicable
     """
     if 'filters' not in query:
         return query
@@ -333,7 +333,7 @@ def remove_empty_groups(query):
     Remove empty groups from filter list.
 
     :param query: a multisearch query dict
-    :return: the query with a processed filter dict, if applicable
+    :returns: the query with a processed filter dict, if applicable
     """
     if 'filters' not in query:
         return query

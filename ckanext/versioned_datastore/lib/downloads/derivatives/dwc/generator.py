@@ -174,7 +174,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         fields from core fields and filters out any fields that don't match the schema.
 
         :param record: the row of data
-        :return: core row (dict), extension rows keyed on extension name (dict of lists
+        :returns: core row (dict), extension rows keyed on extension name (dict of lists
             of dicts)
         """
         core = {}
@@ -225,7 +225,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         """
         Create the xml text content of the metafile.
 
-        :return: xml string
+        :returns: xml string
         """
         nsmap = utils.NSMap(xsi=urls.XMLUrls.xsi, xs=urls.XMLUrls.xs)
         root = etree.Element(
@@ -284,7 +284,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         Tries to use some sensible defaults and get information from other relevant
         plugins where available, but there's still the potential for errors or silly
         data.
-        :return: xml string
+        :returns: xml string
         """
         # load some useful actions so we don't have to fetch them repeatedly
         resource_show = toolkit.get_action('resource_show')

@@ -31,7 +31,7 @@ class DeletionRecord(BaseRecord):
         Converts the data into the form to be stored in mongo under the "data" field. As
         this is a deletion record the return is an empty dict to signify the deletion.
 
-        :return: an empty dict
+        :returns: an empty dict
         """
         # to signal a deletion we're using an empty dict
         return {}
@@ -41,7 +41,7 @@ class DeletionRecord(BaseRecord):
         """
         Returns the id of the record to delete.
 
-        :return: the record id
+        :returns: the record id
         """
         return self.record_id
 
@@ -51,7 +51,7 @@ class DeletionRecord(BaseRecord):
         Returns the name of the collection in mongo that this record exists in (if
         indeed it does).
 
-        :return: the resource id which is used as the collection name too
+        :returns: the resource id which is used as the collection name too
         """
         return self.resource_id
 
@@ -75,7 +75,7 @@ class DeletionFeeder(IngestionFeeder):
         This is used for stats/logging and as it the name of the source of that data, in
         this case we just return "deletion" always because deletions are a special case.
 
-        :return: "deletion", always
+        :returns: "deletion", always
         """
         return 'deletion'
 
@@ -83,7 +83,7 @@ class DeletionFeeder(IngestionFeeder):
         """
         Generator function which yields DeletionRecord objects.
 
-        :return: yields DeletionRecords
+        :returns: yields DeletionRecords
         """
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # loop through records in mongo
@@ -102,7 +102,7 @@ def delete_resource_data(resource_id, version, start):
     :param resource_id: the resource id
     :param version: the version to put this ingest in as
     :param start: the start time of the deletion
-    :return: True if the deletion was successful, False if not
+    :returns: True if the deletion was successful, False if not
     """
     log.info(f'Starting deletion for {resource_id}')
 
@@ -156,7 +156,7 @@ class ReplaceDeletionFeeder(IngestionFeeder):
         record objects which represent a record that was not included in a new version
         of a resource's data for deletion.
 
-        :return: yields DeletionRecords
+        :returns: yields DeletionRecords
         """
         with get_mongo(common.CONFIG, collection=self.resource_id) as mongo:
             # this finds all the records that haven't been updated in the given version

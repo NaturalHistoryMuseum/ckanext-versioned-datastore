@@ -14,7 +14,7 @@ def create_details(resource_id, version, columns, file_hash=None):
     :param version: the version being ingested
     :param columns: the columns present in the ingested resource
     :param file_hash: the computed file hash of the uploaded data
-    :return: the id of the created row
+    :returns: the id of the created row
     """
     columns_str = json.dumps(columns)
     details = DatastoreResourceDetails(
@@ -34,7 +34,7 @@ def get_details(resource_id, version):
 
     :param resource_id: the resource id
     :param version: the version to get the details at
-    :return: None or a DatastoreResourceDetails object
+    :returns: None or a DatastoreResourceDetails object
     """
     return (
         model.Session.query(DatastoreResourceDetails)
@@ -53,7 +53,7 @@ def get_all_details(resource_id, up_to_version=None):
     :param resource_id: the resource id
     :param up_to_version: the maximum version to include in the resulting OrderedDict
         (inclusive)
-    :return: None or an OrderedDict of version: DatastoreResourceDetails objects in
+    :returns: None or an OrderedDict of version: DatastoreResourceDetails objects in
         ascending order
     """
     query = (
@@ -79,7 +79,7 @@ def get_last_file_hash(resource_id):
     details rows available, then this function returns None.
 
     :param resource_id: the resource id
-    :return: None or the most recent file hash
+    :returns: None or the most recent file hash
     """
     last_details = (
         model.Session.query(DatastoreResourceDetails)

@@ -86,7 +86,7 @@ def datastore_multisearch(
     :param top_resources: whether to include information about the resources with the
         most results in them (defaults to False) in the result
     :param timings: whether to include timing information in the result dict
-    :return: a dict of results including the records and total
+    :returns: a dict of results including the records and total
     """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
@@ -232,7 +232,7 @@ def datastore_create_slug(
         otherwise if False, a uuid will be used
     :param nav_slug: if this is True, a temporary navigational slug will be produced
         instead of a standard slug
-    :return: a dict containing the slug and whether it was created during this function
+    :returns: a dict containing the slug and whether it was created during this function
         call or not
     """
     if query is None:
@@ -284,7 +284,7 @@ def datastore_resolve_slug(slug):
     Resolves the given slug and returns the query parameters used to create it.
 
     :param slug: the slug
-    :return: the query parameters and the creation time in a dict
+    :returns: the query parameters and the creation time in a dict
     """
     # try resolving the slug first
     resolved = resolve_slug(slug)
@@ -348,7 +348,7 @@ def datastore_field_autocomplete(context, text='', resource_ids=None, lowercase=
         all resource fields are searched
     :param lowercase: whether to do a lowercase check or not, essentially whether to be
         case insensitive. Default: True, be case insensitive.
-    :return: the fields and the resources they came from as a dict
+    :returns: the fields and the resources they came from as a dict
     """
     # figure out which resources should be searched
     resource_ids = get_available_datastore_resources(context, resource_ids)
@@ -420,7 +420,7 @@ def datastore_guess_fields(
     :param resource_ids_and_versions: a dict of resource ids -> versions to search at
     :param size: the number of groups to return
     :param ignore_groups: a list of groups to ignore from the results (default: None)
-    :return: a list of groups
+    :returns: a list of groups
     """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
@@ -519,7 +519,7 @@ def datastore_value_autocomplete(
     :param resource_ids_and_versions: a dict of resource ids -> versions to search at
     :param size: the number of values to return (max 500)
     :param after: the after value to use (provides pagination)
-    :return: a list of values that match the given prefix
+    :returns: a list of values that match the given prefix
     """
     # provide some more complex defaults for some parameters if necessary
     if query is None:
@@ -605,7 +605,7 @@ def datastore_hash_query(query=None, query_version=None):
 
     :param query: the query dict
     :param query_version: the query version
-    :return: the hex digest of the query
+    :returns: the hex digest of the query
     """
     if query is None:
         query = {}
@@ -670,7 +670,7 @@ def datastore_multisearch_counts(
         If None (default) then the resource_ids parameter is used together with the
         version parameter. If this parameter is provided though, it takes priority over
         the resource_ids and version parameters.
-    :return: a dict of resource IDs -> count
+    :returns: a dict of resource IDs -> count
     """
     # provide some more complex defaults for some parameters if necessary
     if query is None:

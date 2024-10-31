@@ -102,7 +102,7 @@ class IVersionedDatastore(interfaces.Interface):
             elasticsearch's mapping endpoint
         :param fields: the field definitions that have so far been extracted from the
             mapping, by default this is all fields
-        :return: the list of field definition dicts
+        :returns: the list of field definition dicts
         """
         return fields
 
@@ -133,7 +133,7 @@ class IVersionedDatastore(interfaces.Interface):
 
         :param resource_id: the id of the resource being indexed
         :param index_doc: a dict that will be sent to elasticsearch
-        :return: the dict for elasticsearch to index
+        :returns: the dict for elasticsearch to index
         """
         return index_doc
 
@@ -149,7 +149,7 @@ class IVersionedDatastore(interfaces.Interface):
             - reindexing data in the datastore for this resource
 
         :param resource_id: the resource id to check
-        :return: True if the resource should be treated as read only, False if not
+        :returns: True if the resource should be treated as read only, False if not
         """
         return False
 
@@ -200,7 +200,7 @@ class IVersionedDatastore(interfaces.Interface):
 
         :param resource_ids: a list of resource ids
         :param fields: a Fields object
-        :return: the Fields object
+        :returns: the Fields object
         """
         return fields
 
@@ -210,7 +210,7 @@ class IVersionedDatastore(interfaces.Interface):
         datastore_multisearch action before it is returned.
 
         :param response: the dict to be returned to the caller
-        :return: the response dict
+        :returns: the response dict
         """
         return response
 
@@ -220,7 +220,7 @@ class IVersionedDatastore(interfaces.Interface):
         remove custom filters before processing.
 
         :param basic_query: the query dict to be modified
-        :return: the modified query
+        :returns: the modified query
         """
         return basic_query
 
@@ -232,7 +232,7 @@ class IVersionedDatastore(interfaces.Interface):
         :param basic_query: the original basic query, before it was modified by other
             plugins
         :param multisearch_query: the converted multisearch version of the query
-        :return: the modified multisearch query
+        :returns: the modified multisearch query
         """
         return multisearch_query
 
@@ -242,7 +242,7 @@ class IVersionedDatastoreQuerySchema(interfaces.Interface):
         """
         Hook to allow registering custom query schemas.
 
-        :return: a list of tuples of the format (query schema version, schema object)
+        :returns: a list of tuples of the format (query schema version, schema object)
             where the query schema version is a string of format v#.#.# and the schema
             object is an instance of ckanext.versioned_datastore.lib.query.Schema
         """
@@ -260,7 +260,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
+        :returns: a 2-tuple containing the text template string and the html template
             string
         """
         return text_template, html_template
@@ -275,7 +275,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
+        :returns: a 2-tuple containing the text template string and the html template
             string
         """
         return text_template, html_template
@@ -290,7 +290,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
+        :returns: a 2-tuple containing the text template string and the html template
             string
         """
         return text_template, html_template
@@ -307,7 +307,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param request: the DownloadRequest object
         :param context: templating context dict
-        :return: context templating dict
+        :returns: context templating dict
         """
         return context
 
@@ -317,7 +317,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param registered_derivatives: a dict of existing derivative generator classes,
             returned from previously loaded plugins
-        :return: a dict of loaded derivative generator classes, keyed on the name used
+        :returns: a dict of loaded derivative generator classes, keyed on the name used
             to specify them in download requests
         """
         return registered_derivatives or {}
@@ -328,7 +328,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param registered_servers: a dict of existing file server classes, returned from
             previously loaded plugins
-        :return: a dict of loaded file server classes, keyed on the name used to specify
+        :returns: a dict of loaded file server classes, keyed on the name used to specify
             them in download requests
         """
         return registered_servers or {}
@@ -339,7 +339,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param registered_notifiers: a dict of existing notifier classes, returned from
             previously loaded plugins
-        :return: a dict of loaded notifier classes, keyed on the name used to specify
+        :returns: a dict of loaded notifier classes, keyed on the name used to specify
             them in download requests
         """
         return registered_notifiers or {}
@@ -350,7 +350,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param registered_transformations: a dict of existing data transformations,
             returned from previously loaded plugins
-        :return: a dict of loaded transformations, keyed on the name used to specify
+        :returns: a dict of loaded transformations, keyed on the name used to specify
             them in download requests
         """
         return registered_transformations or {}
@@ -367,7 +367,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         :param derivative_args: a DerivativeArgs object
         :param server_args: a ServerArgs object
         :param notifier_args: a NotifierArgs object
-        :return: all four args objects (query_args, derivative_args, server_args,
+        :returns: all four args objects (query_args, derivative_args, server_args,
                  notifier_args)
         """
         return query_args, derivative_args, server_args, notifier_args
@@ -378,7 +378,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         been initialised. Does not allow modification; purely for notification purposes.
 
         :param query: the query for this download
-        :return: None
+        :returns: None
         """
         return
 
@@ -389,7 +389,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param manifest: the manifest dict
         :param request: the DownloadRequest object
-        :return: the manifest dict
+        :returns: the manifest dict
         """
         return manifest
 
@@ -400,7 +400,7 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
 
         :param eml_dict: the current eml content, as a dict
         :param query: the query for this download
-        :return: the modified eml dict
+        :returns: the modified eml dict
         """
         return eml_dict
 
@@ -410,6 +410,6 @@ class IVersionedDatastoreDownloads(interfaces.Interface):
         not allow modification; purely for notification purposes.
 
         :param request: the DownloadRequest object
-        :return: None
+        :returns: None
         """
         return

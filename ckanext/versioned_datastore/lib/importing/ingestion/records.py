@@ -13,7 +13,7 @@ def _convert(data):
 
     This function is recursive.
 
-    :return: a dict ready for storage in mongo
+    :returns: a dict ready for storage in mongo
     """
     converted = {}
     for field, value in data.items():
@@ -56,7 +56,7 @@ class DatastoreRecord(BaseRecord):
             - ignoring fields with no name (we use a falsey check on the field name) to ensure we
               don't create fields that are the empty string
 
-        :return: a dict ready for storage in mongo
+        :returns: a dict ready for storage in mongo
         """
         return _convert(self.data)
 
@@ -65,7 +65,7 @@ class DatastoreRecord(BaseRecord):
         """
         Returns the id of the record.
 
-        :return: the id
+        :returns: the id
         """
         return self.record_id
 
@@ -75,6 +75,6 @@ class DatastoreRecord(BaseRecord):
         Returns the name of the collection in mongo which should store this record's
         data.
 
-        :return: the name of the target mongo collection
+        :returns: the name of the target mongo collection
         """
         return self.resource_id

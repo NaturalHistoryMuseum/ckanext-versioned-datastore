@@ -19,7 +19,7 @@ def get_reader(resource_format):
     cannot be matched, None is returned.
 
     :param resource_format: the format
-    :return: a ResourceReader instance or None
+    :returns: a ResourceReader instance or None
     """
     resource_format = resource_format.lower()
     if resource_format in common.CSV_FORMATS:
@@ -53,7 +53,7 @@ class ResourceReader(abc.ABC):
         resource.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a list of field names
+        :returns: a list of field names
         """
         pass
 
@@ -63,7 +63,7 @@ class ResourceReader(abc.ABC):
         Returns a generator which yields rows as dicts.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         pass
 
@@ -83,7 +83,7 @@ class ResourceReader(abc.ABC):
         _id field and if one is found its value is converted to an int.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         for row_number, row in enumerate(self._get_rows(resource_data_fp)):
             if '_id' in row:
@@ -116,7 +116,7 @@ class SVReader(ResourceReader):
         after this occurs.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a DictReader object
+        :returns: a DictReader object
         """
         if self.encoding is None:
             with ensure_reset(resource_data_fp):
@@ -147,7 +147,7 @@ class SVReader(ResourceReader):
         reset to the start after this occurs.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
@@ -161,7 +161,7 @@ class SVReader(ResourceReader):
         pointer.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a list of field names
+        :returns: a list of field names
         """
         with ensure_reset(resource_data_fp):
             reader = self._get_dict_reader(resource_data_fp)
@@ -192,7 +192,7 @@ class XLSReader(ResourceReader):
         of cells.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of cell lists
+        :returns: a generator of cell lists
         """
         with ensure_reset(resource_data_fp):
             # open the xls file up
@@ -207,7 +207,7 @@ class XLSReader(ResourceReader):
         Returns a generator of row dicts from the source.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         rows = self._iter_rows(resource_data_fp)
         # assume the first row is the header
@@ -241,7 +241,7 @@ class XLSReader(ResourceReader):
         header row.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a list of field names
+        :returns: a list of field names
         """
         # assume the first row is the header
         return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
@@ -262,7 +262,7 @@ class XLSXReader(ResourceReader):
         of cells.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of cell lists
+        :returns: a generator of cell lists
         """
         with ensure_reset(resource_data_fp):
             workbook = openpyxl.load_workbook(resource_data_fp, read_only=True)
@@ -274,7 +274,7 @@ class XLSXReader(ResourceReader):
         Returns a generator of row dicts from the source.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         # get a generator for the rows in the first worksheet
         rows = self._iter_rows(resource_data_fp)
@@ -309,7 +309,7 @@ class XLSXReader(ResourceReader):
         header row.
 
         :param resource_data_fp: the file pointer to the source
-        :return: a list of field names
+        :returns: a list of field names
         """
         # assume the first row is the header
         return [str(cell.value) for cell in next(self._iter_rows(resource_data_fp))]
@@ -334,7 +334,7 @@ class APIReader(ResourceReader):
         Returns a generator of row dicts from the sent data, this just returns an
         iterator for the data list.
 
-        :return: a generator of row dicts
+        :returns: a generator of row dicts
         """
         return iter(self.data)
 
@@ -343,7 +343,7 @@ class APIReader(ResourceReader):
         Returns a list of field names. We can't really guarantee order here because
         python2 doesn't guarantee dict key ordering :(
 
-        :return: a list of field names
+        :returns: a list of field names
         """
         fields = []
         for row in self.data:

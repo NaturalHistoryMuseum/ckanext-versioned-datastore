@@ -19,7 +19,7 @@ def _find_version(data_dict):
 
     :param data_dict: the data dict, this might be modified if the __version__ key is
         used (it will be removed if present)
-    :return: the version found as an integer, or None if no version was found
+    :returns: the version found as an integer, or None if no version was found
     """
     version = data_dict.get('version', None)
 
@@ -49,7 +49,7 @@ def create_search(context, data_dict, original_data_dict):
 
     :param context: the context dict
     :param data_dict: the data dict of parameters
-    :return: a 3-tuple containing: the original data_dict that was passed into this
+    :returns: a 3-tuple containing: the original data_dict that was passed into this
         function, the data_dict after modification by other plugins and finally the
         elasticsearch-dsl Search object
     """
@@ -125,7 +125,7 @@ def build_search_object(
                  correct result list responses when using the after parameter for pagination.
     :param kwargs: as a convenience we allow a kwargs parameter which we ignore, this is useful to
                    as it allows the arguments to be passed by just unpacking the data_dict
-    :return: an elasticsearch-dsl Search object
+    :returns: an elasticsearch-dsl Search object
     """
     search = Search()
     # add a free text query across all fields if there is one. This searches against meta.all which

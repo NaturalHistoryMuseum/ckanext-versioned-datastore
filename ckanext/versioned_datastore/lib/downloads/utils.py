@@ -18,7 +18,7 @@ def get_schemas(query: Query):
     Creates an avro schema from the elasticsearch index metadata.
 
     :param query: the Query object for this request
-    :return: a parsed avro schema
+    :returns: a parsed avro schema
     """
     # get the mappings for the resources which would have a mapping (i.e. exclude
     # non-datastore resources)
@@ -107,7 +107,7 @@ def get_fields(field_counts, ignore_empty_fields, resource_id=None):
         resulting list or not
     :param resource_id: the resource id to get the fields for. The default is None which
         means that the fields from all resources will be returned
-    :return: a list of fields in case-insensitive ascending order
+    :returns: a list of fields in case-insensitive ascending order
     """
     # TODO: retrieve the sort order for resources from the database and use
     field_names = set()
@@ -136,7 +136,7 @@ def calculate_field_counts(query, es_client, resource_id, resource_version):
     :param es_client: the elasticsearch client to use
     :param resource_id:
     :param resource_version:
-    :return: a dict of resource ids -> fields -> counts
+    :returns: a dict of resource ids -> fields -> counts
     """
     field_counts = {}
     index_name = prefix_resource(resource_id)
@@ -187,7 +187,7 @@ def filter_data_fields(data, field_counts, prefix=None):
                          separated for nested fields
     :param prefix: the prefix under which the fields in the passed data dict exist -
                    this is used to produce the field names for nested fields
-    :return: a new dict containing only the fields from the original data dict that had
+    :returns: a new dict containing only the fields from the original data dict that had
              a value other than 0 in the fields_count dict
     """
     filtered_data = {}
@@ -251,7 +251,7 @@ def flatten_dict(data, path=None, separator=' | '):
     :param separator: the string to use when concatenating lists of values, whether
                       common ones from a list of dicts, or indeed just a normal list of
                       values
-    :return: the flattened dict
+    :returns: the flattened dict
     """
     flat = {}
     for key, value in data.items():

@@ -13,7 +13,7 @@ def compute_hash(fp):
     pointer is reset after use.
 
     :param fp: a file pointer like object
-    :return: the sha1 hexdigest
+    :returns: the sha1 hexdigest
     """
     hasher = hashlib.sha1()
     with ensure_reset(fp):
@@ -124,7 +124,7 @@ class InclusionTracker(object):
         as the data was the same.
 
         :param record_id: the record id
-        :return: True if the record id was included but not updated and False if not
+        :returns: True if the record id was included but not updated and False if not
         """
         with self.tracker_db:
             cursor = self.tracker_db.cursor()
