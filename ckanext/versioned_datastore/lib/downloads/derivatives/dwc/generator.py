@@ -394,7 +394,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             # all the resources are in a single package (even if not all resources in
             # that package are included), so link to the package
             dataset_metadata["distribution"][0]["online"]["url"] = (
-                toolkit.url_for("package.read", id=packages[0]["id"], qualified=True),
+                toolkit.url_for("dataset.read", id=packages[0]["id"], qualified=True),
                 {"function": "information"},
             )
 
