@@ -35,7 +35,6 @@ def vds_multi_autocomplete_value() -> dict:
     return {
         "field": [not_empty, str],
         "prefix": [ignore_missing, str],
-        "case_sensitive": [ignore_missing, boolean_validator],
         "after": [ignore_missing, str],
         "size": [ignore_missing, int_validator],
         **multi_params,

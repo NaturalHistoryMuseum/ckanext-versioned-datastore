@@ -78,7 +78,6 @@ def vds_multi_autocomplete_value(
     data_dict: dict,
     field: str,
     prefix: Optional[str] = None,
-    case_sensitive: bool = False,
 ):
     # extract the limit but default to a size of 20 if it's not present
     size = data_dict.pop("size", 20)
@@ -89,7 +88,7 @@ def vds_multi_autocomplete_value(
     request.set_no_results()
 
     # create the full path to the parsed field type we're going to filter and agg over
-    field_path = keyword(field, case_sensitive=case_sensitive)
+    field_path = keyword(field)
 
     if prefix:
         request.extra_filter &= Q("prefix", **{field_path: prefix})

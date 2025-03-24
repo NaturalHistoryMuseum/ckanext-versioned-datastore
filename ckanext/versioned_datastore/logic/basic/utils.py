@@ -1,7 +1,7 @@
 from operator import itemgetter
 from typing import List, Optional
 
-from splitgill.search import keyword_ci
+from splitgill.search import keyword
 
 from ckanext.versioned_datastore.lib.importing.details import get_details_at
 from ckanext.versioned_datastore.lib.query.search.query import BasicQuery
@@ -74,7 +74,7 @@ def make_request(data_dict: dict) -> SearchRequest:
             request.add_agg(
                 facet,
                 "terms",
-                field=keyword_ci(facet),
+                field=keyword(facet),
                 size=facet_limits.get(facet, 10),
             )
     return request

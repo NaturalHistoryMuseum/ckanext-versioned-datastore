@@ -8,7 +8,7 @@ from typing import Optional
 from elasticsearch_dsl.query import Bool, Q, Query, EMPTY_QUERY
 from splitgill.search import (
     text,
-    keyword_ci,
+    keyword,
     number,
     ALL_POINTS,
     ALL_TEXT,
@@ -21,8 +21,10 @@ from ckanext.versioned_datastore.lib.query.schema import (
     load_core_schema,
     schema_base_path,
 )
-from ckanext.versioned_datastore.lib.query.utils import convert_small_or_groups, \
-    remove_empty_groups
+from ckanext.versioned_datastore.lib.query.utils import (
+    convert_small_or_groups,
+    remove_empty_groups,
+)
 
 
 class v1_0_0Schema(Schema):
@@ -181,7 +183,7 @@ class v1_0_0Schema(Schema):
         """
         return self.build_or(
             [
-                Q("term", **{keyword_ci(field): options["value"]})
+                Q("term", **{keyword(field): options["value"]})
                 for field in options["fields"]
             ]
         )

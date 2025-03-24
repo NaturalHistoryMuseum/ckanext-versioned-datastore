@@ -2,7 +2,7 @@ from typing import Optional
 
 from ckantools.decorators import action
 from elasticsearch_dsl import A, Q
-from splitgill.search import keyword_ci, ALL_POINTS
+from splitgill.search import keyword, ALL_POINTS
 
 from ckan.plugins import toolkit
 from ckanext.versioned_datastore.logic.basic import helptext
@@ -98,10 +98,10 @@ def vds_basic_autocomplete(data_dict: dict, field: str, term: str):
     request = make_request(data_dict)
     request.set_no_results()
     # add the autocomplete part of the query
-    request.extra_filter &= Q("prefix", **{keyword_ci(field): term})
+    request.extra_filter &= Q("prefix", **{keyword(field): term})
 
     # add the aggregation which gets the field values
-    agg_options = dict(field=keyword_ci(field), order="asc")
+    agg_options = dict(field=keyword(field), order="asc")
     if after is not None:
         agg_options["after"] = {field: after}
     request.add_agg(
