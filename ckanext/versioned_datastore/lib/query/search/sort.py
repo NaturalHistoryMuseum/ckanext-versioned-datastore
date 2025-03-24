@@ -12,7 +12,7 @@ class InvalidSortException(Exception):
 class Sort:
     field: str
     ascending: bool = True
-    type: ParsedType = ParsedType.KEYWORD_CASE_INSENSITIVE
+    type: ParsedType = ParsedType.KEYWORD
 
     @property
     def is_sort_on_id(self) -> bool:
@@ -32,8 +32,7 @@ class Sort:
             ParsedType.NUMBER: "double",
             ParsedType.DATE: "date",
             ParsedType.BOOLEAN: "boolean",
-            ParsedType.KEYWORD_CASE_INSENSITIVE: "keyword",
-            ParsedType.KEYWORD_CASE_SENSITIVE: "keyword",
+            ParsedType.KEYWORD: "keyword",
         }
 
         options = {
@@ -60,13 +59,9 @@ class Sort:
         return Sort(field, not order == "desc", parsed_type)
 
     @classmethod
-    def desc(
-        cls, field: str, parsed_type: ParsedType = ParsedType.KEYWORD_CASE_INSENSITIVE
-    ) -> "Sort":
+    def desc(cls, field: str, parsed_type: ParsedType = ParsedType.KEYWORD) -> "Sort":
         return Sort(field, False, parsed_type)
 
     @classmethod
-    def asc(
-        cls, field: str, parsed_type: ParsedType = ParsedType.KEYWORD_CASE_INSENSITIVE
-    ) -> "Sort":
+    def asc(cls, field: str, parsed_type: ParsedType = ParsedType.KEYWORD) -> "Sort":
         return Sort(field, True, parsed_type)
