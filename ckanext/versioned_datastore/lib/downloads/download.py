@@ -11,6 +11,7 @@ from functools import partial
 from glob import iglob
 
 import fastavro
+from splitgill.search import rebuild_data
 
 from ckan.lib import uploader
 from ckan.plugins import toolkit, PluginImplementations
@@ -359,7 +360,7 @@ class DownloadRunManager:
 
                 chunk = []
                 for hit in search.scan():
-                    data = hit.data.to_dict()
+                    data = rebuild_data(hit.data.to_dict())
                     resource_totals[resource_id] += 1
                     chunk.append(data)
                     if len(chunk) == chunk_size:
