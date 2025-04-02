@@ -163,8 +163,8 @@ def unprefix_index_name(sg_index_name: str) -> str:
     :param sg_index_name: the Splitgill index name
     :return: the resource's ID
     """
-    # all indexes have data- at the start and -latest or -arc-00# on the end
-    regexes = [re.compile(r"data-(.*)-latest"), re.compile(r"data-(.*)-arc-[0-9]{3}")]
+    # all indexes have data- at the start and -latest or -arc-# on the end
+    regexes = [re.compile(r"data-(.*)-latest"), re.compile(r"data-(.*)-arc-[0-9]+")]
     for regex in regexes:
         match = regex.match(sg_index_name)
         if match:

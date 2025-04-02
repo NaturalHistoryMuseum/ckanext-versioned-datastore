@@ -20,7 +20,7 @@ classifiers = [
 ]
 dependencies = [
     # TODO: switch to pypi once stable
-    "splitgill@git+https://github.com/NaturalHistoryMuseum/splitgill@10e402844e96aa9f525c6edc9a52748dde70bf12",
+    "splitgill@git+https://github.com/NaturalHistoryMuseum/splitgill@f2f9f2749f191bb45e52db435045d9be3a7cd6fb",
     "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",

@@ -6,7 +6,7 @@ from elasticsearch_dsl.aggs import A
 from elasticsearch_dsl.query import Bool
 from elasticsearch_dsl.response import Response
 from splitgill.indexing.fields import DocumentField
-from splitgill.search import create_version_query
+from splitgill.search import version_query, rebuild_data
 
 from ckanext.versioned_datastore.lib.query.search.query import Query
 from ckanext.versioned_datastore.lib.query.search.sort import Sort
@@ -119,7 +119,7 @@ class SearchRequest:
 
         # add the version filter, if needed
         if not self.force_no_version and self.query.version is not None:
-            search = search.filter(create_version_query(self.query.version))
+            search = search.filter(version_query(self.query.version))
 
         # add any extra filters if there are any
         if self.extra_filter.to_dict()["bool"]:
@@ -212,9 +212,12 @@ class ResultRecord:
     @property
     def data(self) -> dict:
         """
+        Rebuilds the record data from the hit in the raw Elasticsearch response using
+        Splitgill's rebuild_data function and returns the data as a dict.
+
         :return: the record data
         """
-        return self.hit[DocumentField.DATA].to_dict()
+        return rebuild_data(self.hit[DocumentField.DATA].to_dict())
 
     @property
     def index(self) -> str:
