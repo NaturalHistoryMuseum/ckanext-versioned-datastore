@@ -36,7 +36,7 @@ services:
     image: redis:latest
 
   elasticsearch:
-    image: elasticsearch:8.10.2
+    image: elasticsearch:8.17.4
     environment:
       ES_JAVA_OPTS: -Xms2g -Xmx2g
       discovery.type: single-node
@@ -51,4 +51,4 @@ services:
       action.destructive_requires_name: "false"
 
   mongodb:
-    image: mongo:6.0.8
+    image: mongo:6.0.21
