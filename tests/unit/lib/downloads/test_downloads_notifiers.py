@@ -1,12 +1,12 @@
 import pytest
 from mock import MagicMock, patch
-from tests.helpers import patches
 
 from ckanext.versioned_datastore.lib.downloads.notifiers import (
     EmailNotifier,
     NullNotifier,
     WebhookNotifier,
 )
+from tests.helpers import patches
 
 notifiers = [
     (EmailNotifier, {'emails': ['data@nhm.ac.uk']}),
@@ -262,7 +262,7 @@ class TestNotifierTemplateOverrides:
         notifier = NullNotifier(MagicMock())
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.notifiers.base.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
             return_value=[mock_plugin],
         ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             start_text = notifier.start_text()
@@ -278,7 +278,7 @@ class TestNotifierTemplateOverrides:
         notifier = NullNotifier(MagicMock())
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.notifiers.base.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
             return_value=[mock_plugin],
         ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             start_text = notifier.start_text()
@@ -293,7 +293,7 @@ class TestNotifierTemplateOverrides:
         notifier = NullNotifier(MagicMock())
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.notifiers.base.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
             return_value=[mock_plugin],
         ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             end_text = notifier.end_text('/download-url-here')
@@ -308,7 +308,7 @@ class TestNotifierTemplateOverrides:
         notifier = NullNotifier(MagicMock())
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.notifiers.base.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
             return_value=[mock_plugin],
         ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             error_text = notifier.error_text()

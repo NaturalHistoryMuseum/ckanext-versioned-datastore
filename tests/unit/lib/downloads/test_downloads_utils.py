@@ -1,87 +1,88 @@
-import pytest
-from ckan.plugins import toolkit
-from ckan.tests import factories
-from mock import MagicMock, patch
+from operator import itemgetter
 
-from ckanext.versioned_datastore.lib.downloads import utils, query
-from tests.helpers import patches
+import pytest
+from splitgill.model import Record
+
+from ckanext.versioned_datastore.lib.downloads import utils
+from ckanext.versioned_datastore.lib.downloads.utils import get_schema
+from ckanext.versioned_datastore.lib.importing.options import (
+    create_default_options_builder,
+)
+from ckanext.versioned_datastore.lib.utils import get_database
 
 
 class TestGetSchema:
-    @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
-    @pytest.mark.usefixtures('with_plugins', 'clean_db')
+    @pytest.mark.usefixtures('with_vds')
     def test_get_schema(self):
-        resource_dict = factories.Resource()
-        with patches.query_schemas():
-            q = query.Query(
-                query={
-                    'filters': {
-                        'and': [
+        resource_id = 'test-resource-id'
+        database = get_database(resource_id)
+        database.update_options(create_default_options_builder().build(), commit=False)
+        database.ingest(
+            [
+                Record.new(
+                    {
+                        'name': 'Paru',
+                        'size': 5,
+                        'dob': '2021-01-12',
+                        'good': True,
+                        'toys': ['Feather stick', 'Monsieur Canard', 'Catnip Carrot'],
+                        'food': [
                             {
-                                'string_equals': {
-                                    'fields': ['collectionCode'],
-                                    'value': 'bot',
-                                }
-                            }
-                        ]
+                                'name': 'Chicken',
+                                'weight': 40,
+                            },
+                            {
+                                'name': 'Kibble',
+                                'weight': 36,
+                            },
+                        ],
                     }
-                },
-                query_version='v1.0.0',
-                resource_ids_and_versions={resource_dict['id']: 1},
-            )
-
-        index_name = (
-            toolkit.config.get('ckanext.versioned_datastore.elasticsearch_index_prefix')
-            + resource_dict['id']
+                )
+            ],
+            commit=True,
         )
+        database.sync()
 
-        # this is a _very_ stripped down version of the return value from
-        # indices.get_mapping()
-        get_mapping_mock = MagicMock(
-            return_value={
-                index_name: {
-                    'mappings': {
-                        '_doc': {
-                            'properties': {
-                                'data': {
-                                    'properties': {
-                                        '_id': {'type': 'long'},
-                                        'name': {
-                                            'type': 'keyword',
-                                            'fields': {
-                                                'full': {'type': 'text'},
-                                                'number': {
-                                                    'type': 'double',
-                                                    'ignore_malformed': True,
-                                                },
-                                            },
-                                            'copy_to': ['meta.all'],
-                                            'ignore_above': 256,
-                                            'normalizer': 'lowercase_normalizer',
-                                        },
-                                        'modified': {
-                                            'type': 'date',
-                                            'format': 'epoch_millis',
-                                        },
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        )
-        with patch(
-            "ckanext.versioned_datastore.lib.downloads.utils.get_mappings",
-            get_mapping_mock,
-        ):
-            parsed_schemas = utils.get_schemas(q)
-        parsed_schema = parsed_schemas[resource_dict["id"]]
-        assert isinstance(parsed_schema, dict)
-        assert parsed_schema['type'] == 'record'
-        assert parsed_schema['name'] == 'ResourceRecord'
-        assert len(parsed_schema['fields']) == 3
-        assert isinstance(parsed_schema['fields'][0]['type'], list)
+        schema = get_schema(resource_id)
+
+        assert isinstance(schema, dict)
+        assert schema['type'] == 'record'
+        assert schema['name'] == 'Record'
+        assert len(schema['fields']) == 7
+
+        assert sorted(schema['fields'], key=itemgetter('name')) == [
+            {'name': '_id', 'type': ['string', 'null']},
+            {'name': 'dob', 'type': ['string', 'null']},
+            {
+                'name': 'food',
+                'type': [
+                    {
+                        'items': [
+                            [
+                                {
+                                    'fields': [
+                                        {'name': 'name', 'type': ['string', 'null']},
+                                        {'name': 'weight', 'type': ['long', 'null']},
+                                    ],
+                                    'name': 'food.Record',
+                                    'type': 'record',
+                                },
+                                'null',
+                            ]
+                        ],
+                        'type': 'array',
+                    },
+                    'null',
+                ],
+            },
+            {'name': 'good', 'type': ['boolean', 'null']},
+            {'name': 'name', 'type': ['string', 'null']},
+            {'name': 'size', 'type': ['long', 'null']},
+            {
+                'name': 'toys',
+                'type': [{'items': [['string', 'null']], 'type': 'array'}, 'null'],
+            },
+        ]
 
 
 class TestFilterDataFields:

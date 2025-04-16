@@ -1,24 +1,24 @@
+from unittest.mock import patch
+
 import pytest
 from ckan.model import Session
-from mock import patch, MagicMock
 
 from ckanext.versioned_datastore.lib.downloads.download import DownloadRunManager
-from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
-    QueryArgs,
+from ckanext.versioned_datastore.logic.download.arg_objects import (
     DerivativeArgs,
-    ServerArgs,
     NotifierArgs,
+    QueryArgs,
+    ServerArgs,
 )
 from ckanext.versioned_datastore.model.downloads import (
-    DownloadRequest,
     CoreFileRecord,
     DerivativeFileRecord,
+    DownloadRequest,
 )
 from tests.helpers import patches
 
 
-@pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
-@pytest.mark.usefixtures('with_plugins', 'with_versioned_datastore_tables')
+@pytest.mark.usefixtures('with_vds')
 class TestDownloadRunManager:
     def test_create_run_manager(self):
         query_args = QueryArgs(query={}, query_version='v1.0.0')
@@ -53,7 +53,7 @@ class TestDownloadRunManager:
 
         assert run_manager.notifier.name == 'none'
 
-    def test_download_before_run(self):
+    def test_download_before_init(self):
         mock_plugin = MockPlugin()
         query_args = QueryArgs(query={}, query_version='v1.0.0')
         derivative_args = DerivativeArgs(format='csv')
@@ -61,7 +61,7 @@ class TestDownloadRunManager:
         notifier_args = NotifierArgs(type='none')
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.download.idownload_implementations',
             return_value=[mock_plugin],
         ), patches.get_available_resources(), patches.rounded_versions():
             run_manager = DownloadRunManager(
@@ -72,7 +72,7 @@ class TestDownloadRunManager:
 
 
 class MockPlugin:
-    def download_before_run(
+    def download_before_init(
         self, query_args, derivative_args, server_args, notifier_args
     ):
         derivative_args.format = 'dwc'

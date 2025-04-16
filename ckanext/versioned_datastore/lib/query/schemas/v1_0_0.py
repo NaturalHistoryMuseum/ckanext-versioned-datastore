@@ -5,15 +5,15 @@ import string
 from collections import defaultdict
 from typing import Optional
 
-from elasticsearch_dsl.query import Bool, Q, Query, EMPTY_QUERY
+from elasticsearch_dsl.query import EMPTY_QUERY, Bool, Q, Query
 from splitgill.search import (
-    text,
-    keyword,
-    number,
     ALL_POINTS,
     ALL_TEXT,
     exists_query,
+    keyword,
     match_query,
+    number,
+    text,
 )
 
 from ckanext.versioned_datastore.lib.query.schema import (
@@ -32,20 +32,20 @@ class v1_0_0Schema(Schema):
     Schema class for the v1.0.0 query schema.
     """
 
-    version = "v1.0.0"
+    version = 'v1.0.0'
 
     def __init__(self):
         self.schema, self.validator = load_core_schema(v1_0_0Schema.version)
         self.geojson = {
-            "country": self.load_geojson(
-                "50m-admin-0-countries-v4.1.0.geojson", ("NAME_EN", "NAME")
+            'country': self.load_geojson(
+                '50m-admin-0-countries-v4.1.0.geojson', ('NAME_EN', 'NAME')
             ),
             # if we use name_en we end up with one atlantic ocean whereas if we use name
             # we get 2 - the "North Atlantic Ocean" and the "South Atlantic Ocean". I
             # think this is preferable.
-            "marine": self.load_geojson("50m-marine-regions-v4.1.0.geojson", ("name",)),
-            "geography": self.load_geojson(
-                "50m-geography-regions-v4.1.0.geojson", ("name_en", "name")
+            'marine': self.load_geojson('50m-marine-regions-v4.1.0.geojson', ('name',)),
+            'geography': self.load_geojson(
+                '50m-geography-regions-v4.1.0.geojson', ('name_en', 'name')
             ),
         }
         self.hasher = v1_0_0Hasher()
@@ -85,24 +85,28 @@ class v1_0_0Schema(Schema):
         :param query: the whole query dict
         :return: an instantiated elasticsearch-dsl object
         """
-        if "search" in query:
-            search = match_query(query["search"], operator="and")
+        if 'search' in query:
+            search = match_query(query['search'], operator='and')
         else:
             search = None
 
         filters = self.get_filters(query)
 
-        if search is None and filters is None:
-            return EMPTY_QUERY
-        elif search is not None and filters is not None:
-            filters &= search
-            return filters
-        elif search is None:
-            return filters
-        elif filters is None:
-            return search
+        if search is None:
+            if filters is None:
+                return EMPTY_QUERY
+            else:
+                return filters
+        else:
+            if filters is None:
+                return search
+            else:
+                if isinstance(filters, Bool):
+                    return filters & search
+                else:
+                    return Bool(filter=[filters], must=[search])
 
-    def get_filters(self, query: dict) -> Optional[Bool]:
+    def get_filters(self, query: dict) -> Optional[Query]:
         """
         Creates a boolean query from the query into the search object and then returns
         it. If no filters are defined in the query then None is returned.
@@ -110,10 +114,8 @@ class v1_0_0Schema(Schema):
         :param query: the whole query dict
         :return: a Bool object or None
         """
-        if "filters" in query:
-            bool_query = Bool()
-            bool_query &= self.create_group_or_term(query["filters"])
-            return bool_query
+        if 'filters' in query:
+            return self.create_group_or_term(query['filters'])
         return None
 
     def create_group_or_term(self, group_or_term):
@@ -127,7 +129,7 @@ class v1_0_0Schema(Schema):
         # only one property is allowed so we can safely just extract the only name and
         # options
         group_or_term_type, group_or_term_options = next(iter(group_or_term.items()))
-        return getattr(self, f"create_{group_or_term_type}")(group_or_term_options)
+        return getattr(self, f'create_{group_or_term_type}')(group_or_term_options)
 
     def create_and(self, group):
         """
@@ -140,7 +142,7 @@ class v1_0_0Schema(Schema):
 
         :param group: the group to build the and from
         :return: the first member from the group if there's only one member in the
-                 group, or a Bool
+            group, or a Bool
         """
         members = [self.create_group_or_term(member) for member in group]
         return members[0] if len(members) == 1 else Bool(filter=members)
@@ -156,7 +158,7 @@ class v1_0_0Schema(Schema):
 
         :param group: the group to build the or from
         :return: the first member from the group if there's only one member in the
-                 group, or a Bool
+            group, or a Bool
         """
         return self.build_or([self.create_group_or_term(member) for member in group])
 
@@ -183,8 +185,8 @@ class v1_0_0Schema(Schema):
         """
         return self.build_or(
             [
-                Q("term", **{keyword(field): options["value"]})
-                for field in options["fields"]
+                Q('term', **{keyword(field): options['value']})
+                for field in options['fields']
             ]
         )
 
@@ -199,15 +201,15 @@ class v1_0_0Schema(Schema):
         :param options: the options for the string_contains query
         :return: an elasticsearch-dsl Query object or a Bool object
         """
-        fields = options["fields"]
-        query = {"query": options["value"], "operator": "and"}
+        fields = options['fields']
+        query = {'query': options['value'], 'operator': 'and'}
 
         if fields:
             return self.build_or(
-                [Q("match", **{text(field): query}) for field in fields]
+                [Q('match', **{text(field): query}) for field in fields]
             )
         else:
-            return Q("match", **{ALL_TEXT: query})
+            return Q('match', **{ALL_TEXT: query})
 
     def create_number_equals(self, options):
         """
@@ -222,8 +224,8 @@ class v1_0_0Schema(Schema):
         """
         return self.build_or(
             [
-                Q("term", **{number(field): options["value"]})
-                for field in options["fields"]
+                Q('term', **{number(field): options['value']})
+                for field in options['fields']
             ]
         )
 
@@ -238,18 +240,18 @@ class v1_0_0Schema(Schema):
         :param options: the options for the number_range query
         :return: an elasticsearch-dsl Query object or a Bool object
         """
-        less_than = options.get("less_than", None)
-        greater_than = options.get("greater_than", None)
-        less_than_inclusive = options.get("less_than_inclusive", True)
-        greater_than_inclusive = options.get("greater_than_inclusive", True)
+        less_than = options.get('less_than', None)
+        greater_than = options.get('greater_than', None)
+        less_than_inclusive = options.get('less_than_inclusive', True)
+        greater_than_inclusive = options.get('greater_than_inclusive', True)
         query = {}
         if less_than is not None:
-            query["lt" if not less_than_inclusive else "lte"] = less_than
+            query['lt' if not less_than_inclusive else 'lte'] = less_than
         if greater_than is not None:
-            query["gt" if not greater_than_inclusive else "gte"] = greater_than
+            query['gt' if not greater_than_inclusive else 'gte'] = greater_than
 
         return self.build_or(
-            [Q("range", **{number(field): query}) for field in options["fields"]]
+            [Q('range', **{number(field): query}) for field in options['fields']]
         )
 
     def create_exists(self, options):
@@ -264,10 +266,10 @@ class v1_0_0Schema(Schema):
         :return: an elasticsearch-dsl Query object or a Bool object
         """
         # TODO: should we provide exists on subfields?
-        if options.get("geo_field", False):
-            return Q("exists", field=ALL_POINTS)
+        if options.get('geo_field', False):
+            return Q('exists', field=ALL_POINTS)
         else:
-            return self.build_or([exists_query(field) for field in options["fields"]])
+            return self.build_or([exists_query(field) for field in options['fields']])
 
     def create_geo_point(self, options):
         """
@@ -280,15 +282,15 @@ class v1_0_0Schema(Schema):
         :param options: the options for the geo_point query
         :return: an elasticsearch-dsl Query object or a Bool object
         """
-        radius = options.get("radius", 0)
-        unit = options.get("radius_unit", "m")
+        radius = options.get('radius', 0)
+        unit = options.get('radius_unit', 'm')
         return Q(
-            "geo_distance",
+            'geo_distance',
             **{
-                "distance": f"{radius}{unit}",
+                'distance': f'{radius}{unit}',
                 ALL_POINTS: {
-                    "lat": options["latitude"],
-                    "lon": options["longitude"],
+                    'lat': options['latitude'],
+                    'lon': options['longitude'],
                 },
             },
         )
@@ -308,7 +310,7 @@ class v1_0_0Schema(Schema):
 
         :param options: the options for the geo_named_area query
         :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
-                 Query)
+            Query)
         """
         category, name = next(iter(options.items()))
         return self.build_multipolygon_query(self.geojson[category][name])
@@ -322,7 +324,8 @@ class v1_0_0Schema(Schema):
         holes defined in the Polygon).
 
         :param coordinates: a MultiPolygon coordinates list
-        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool Query)
+        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
+            Query)
         """
         return self.build_multipolygon_query(coordinates)
 
@@ -352,10 +355,10 @@ class v1_0_0Schema(Schema):
         :return: an elasticsearch-dsl query object
         """
         return Q(
-            "geo_polygon",
+            'geo_polygon',
             **{
                 ALL_POINTS: {
-                    "points": [{"lat": point[1], "lon": point[0]} for point in points]
+                    'points': [{'lat': point[1], 'lon': point[0]} for point in points]
                 }
             },
         )
@@ -371,7 +374,7 @@ class v1_0_0Schema(Schema):
         of nested lists, see the GeoJSON docs for details.
 
         :param coordinates: the coordinate list, which is basically a list of Polygons.
-                            See the GeoJSON doc for the exact format and meaning
+            See the GeoJSON doc for the exact format and meaning
         :return: an elasticsearch-dsl object representing the MultiPolygon
         """
         queries = []
@@ -411,15 +414,15 @@ class v1_0_0Schema(Schema):
 
         :param filename: the name geojson file to load from the given path
         :param name_keys: a priority ordered sequence of keys to use for feature name
-                          retrieval
+            retrieval
         :return: a dict of names -> MultiPolygons
         """
-        path = schema_base_path.joinpath(v1_0_0Schema.version).joinpath("geojson")
+        path = schema_base_path.joinpath(v1_0_0Schema.version).joinpath('geojson')
 
         # make sure we read the file using utf-8
-        with io.open(path.joinpath(filename), "r", encoding="utf-8") as f:
+        with io.open(path.joinpath(filename), 'r', encoding='utf-8') as f:
             lookup = defaultdict(list)
-            for feature in json.load(f)["features"]:
+            for feature in json.load(f)['features']:
                 # find the first name key with a value and pass it to string.capwords
                 name = string.capwords(
                     next(
@@ -427,7 +430,7 @@ class v1_0_0Schema(Schema):
                             filter(
                                 None,
                                 (
-                                    feature["properties"].get(key, None)
+                                    feature['properties'].get(key, None)
                                     for key in name_keys
                                 ),
                             )
@@ -435,10 +438,10 @@ class v1_0_0Schema(Schema):
                     )
                 )
 
-                coordinates = feature["geometry"]["coordinates"]
+                coordinates = feature['geometry']['coordinates']
                 # if the feature is a Polygon, wrap it in a list to make it a
                 # MultiPolygon
-                if feature["geometry"]["type"] == "Polygon":
+                if feature['geometry']['type'] == 'Polygon':
                     coordinates = [coordinates]
 
                 # add the polygons found to the existing MultiPolygon (some names are
@@ -466,11 +469,11 @@ class v1_0_0Hasher:
         :return: the hex digest
         """
         query_hash = hashlib.sha1()
-        if "search" in query:
-            query_hash.update(f'search:{query["search"]}'.encode("utf-8"))
-        if "filters" in query:
+        if 'search' in query:
+            query_hash.update(f'search:{query["search"]}'.encode('utf-8'))
+        if 'filters' in query:
             data = f'filters:{self.create_group_or_term(query["filters"])}'.encode(
-                "utf-8"
+                'utf-8'
             )
             query_hash.update(data)
         return query_hash.hexdigest()
@@ -486,7 +489,7 @@ class v1_0_0Hasher:
         # only one property is allowed so we can safely just extract the only name and
         # options
         group_or_term_type, group_or_term_options = next(iter(group_or_term.items()))
-        return getattr(self, f"create_{group_or_term_type}")(group_or_term_options)
+        return getattr(self, f'create_{group_or_term_type}')(group_or_term_options)
 
     def create_and(self, group):
         """
@@ -531,7 +534,7 @@ class v1_0_0Hasher:
         :return: a string representing the term
         """
         # sorting the fields makes this stable
-        fields = ",".join(sorted(options["fields"]))
+        fields = ','.join(sorted(options['fields']))
         return f'string_equals:{fields};{options["value"]}'
 
     @staticmethod
@@ -544,7 +547,7 @@ class v1_0_0Hasher:
         :return: a string representing the term
         """
         # sorting the fields makes this stable
-        fields = ",".join(sorted(options["fields"]))
+        fields = ','.join(sorted(options['fields']))
         return f'string_contains:{fields};{options["value"]}'
 
     @staticmethod
@@ -557,7 +560,7 @@ class v1_0_0Hasher:
         :return: a string representing the term
         """
         # sorting the fields makes this stable
-        fields = ",".join(sorted(options["fields"]))
+        fields = ','.join(sorted(options['fields']))
         return f'number_equals:{fields};{options["value"]}'
 
     @staticmethod
@@ -570,23 +573,23 @@ class v1_0_0Hasher:
         :return: a string representing the term
         """
         # sorting the fields makes this stable
-        fields = ",".join(sorted(options["fields"]))
-        hash_value = f"number_range:{fields};"
+        fields = ','.join(sorted(options['fields']))
+        hash_value = f'number_range:{fields};'
 
-        less_than = options.get("less_than", None)
-        less_than_inclusive = options.get("less_than_inclusive", True)
+        less_than = options.get('less_than', None)
+        less_than_inclusive = options.get('less_than_inclusive', True)
         if less_than is not None:
-            hash_value += "<"
+            hash_value += '<'
             if less_than_inclusive:
-                hash_value += "="
+                hash_value += '='
             hash_value += str(less_than)
 
-        greater_than = options.get("greater_than", None)
-        greater_than_inclusive = options.get("greater_than_inclusive", True)
+        greater_than = options.get('greater_than', None)
+        greater_than_inclusive = options.get('greater_than_inclusive', True)
         if greater_than is not None:
-            hash_value += ">"
+            hash_value += '>'
             if greater_than_inclusive:
-                hash_value += "="
+                hash_value += '='
             hash_value += str(greater_than)
 
         return hash_value
@@ -599,12 +602,12 @@ class v1_0_0Hasher:
         :param options: the options for the exists query
         :return: a string representing the term
         """
-        if options.get("geo_field", False):
-            return "geo_exists"
+        if options.get('geo_field', False):
+            return 'geo_exists'
         else:
             # sorting the fields makes this stable
-            fields = ",".join(sorted(options["fields"]))
-            return f"exists:{fields}"
+            fields = ','.join(sorted(options['fields']))
+            return f'exists:{fields}'
 
     @staticmethod
     def create_geo_point(options):
@@ -627,7 +630,7 @@ class v1_0_0Hasher:
         :param options: the options for the geo_named_area query
         :return: a string representing the term
         """
-        return "geo_named_area:{};{}".format(*next(iter(options.items())))
+        return 'geo_named_area:{};{}'.format(*next(iter(options.items())))
 
     def create_geo_custom_area(self, coordinates):
         """
@@ -652,7 +655,7 @@ class v1_0_0Hasher:
                     self.build_geo_polygon_query(hole) for hole in holes
                 )
                 # create a query which filters the outer query but filters out the holes
-                queries.append(f"{outer_query}/{holes_queries}")
+                queries.append(f'{outer_query}/{holes_queries}')
             else:
                 queries.append(outer_query)
 
@@ -667,4 +670,4 @@ class v1_0_0Hasher:
         :param points: the points as lat lon pairs
         :return: a string representing the points
         """
-        return ",".join(f"[{point[1]},{point[0]}]" for point in points)
+        return ','.join(f'[{point[1]},{point[0]}]' for point in points)

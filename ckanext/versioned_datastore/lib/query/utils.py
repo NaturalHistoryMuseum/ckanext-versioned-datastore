@@ -2,15 +2,15 @@ import json
 from copy import deepcopy
 from typing import Dict
 
+from ckan.plugins import toolkit
 from splitgill.utils import now
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib import common
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 from ckanext.versioned_datastore.lib.utils import (
-    ivds_implementations,
-    get_database,
     get_available_resources,
+    get_database,
+    ivds_implementations,
 )
 
 
@@ -28,13 +28,14 @@ def get_resources_and_versions(
 
     :param query: a SchemaQuery object representing the query
     :param allow_non_datastore: allow non datastore resources to be included (will be
-                                returned with common.NON_DATASTORE_VERSION)
+        returned with common.NON_DATASTORE_VERSION)
     :return: a dict of resource IDs and versions
     """
     available_resource_ids = get_available_resources(datastore_only=False)
+    print(f'AVAIL: {available_resource_ids}')
     if not available_resource_ids.issuperset(query.resource_ids):
         raise toolkit.ValidationError(
-            "Not all requested resources are accessible to this user"
+            'Not all requested resources are accessible to this user'
         )
 
     version = now() if query.version is None else query.version
@@ -73,20 +74,20 @@ def convert_to_multisearch(query: dict) -> dict:
     for plugin in ivds_implementations():
         query = plugin.datastore_before_convert_basic_query(query)
 
-    if "q" in query:
-        multisearch_query["search"] = query["q"]
+    if 'q' in query:
+        multisearch_query['search'] = query['q']
 
-    if "filters" in query:
+    if 'filters' in query:
         filter_list = []
-        for field, values in query["filters"].items():
+        for field, values in query['filters'].items():
             if not isinstance(values, list):
                 values = [values]
-            if field == "__geo__":
+            if field == '__geo__':
                 for value in values:
                     if isinstance(value, str):
                         value = json.loads(value)
-                    if value["type"] == "Polygon":
-                        filter_list.append({"geo_custom_area": [value["coordinates"]]})
+                    if value['type'] == 'Polygon':
+                        filter_list.append({'geo_custom_area': [value['coordinates']]})
                     else:
                         # I cannot find any examples of anything other than polygons, so
                         # I'm not sure it was ever implemented for the old searches
@@ -95,16 +96,16 @@ def convert_to_multisearch(query: dict) -> dict:
                 subgroup = []
                 subgroup_count = 0
                 for value in values:
-                    if field != "" and value != "":
+                    if field != '' and value != '':
                         subgroup.append(
-                            {"string_equals": {"fields": [field], "value": value}}
+                            {'string_equals': {'fields': [field], 'value': value}}
                         )
                         subgroup_count += 1
                 if subgroup_count > 1:
-                    filter_list.append({"or": subgroup})
+                    filter_list.append({'or': subgroup})
                 elif subgroup_count == 1:
                     filter_list += subgroup
-        multisearch_query["filters"] = {"and": filter_list}
+        multisearch_query['filters'] = {'and': filter_list}
 
     # allow plugins to modify the output, with the additional context of the original
     # basic query

@@ -1,13 +1,12 @@
 import re
-from typing import Iterable, TypeVar, Set
-from typing import Optional
-
-from elasticsearch import Elasticsearch
-from pymongo import MongoClient
-from splitgill.manager import SplitgillDatabase, SplitgillClient
+from typing import Iterable, Optional, Set, TypeVar
 
 from ckan import plugins
-from ckan.plugins import toolkit, get_plugin
+from ckan.plugins import get_plugin, toolkit
+from elasticsearch import Elasticsearch
+from pymongo import MongoClient
+from splitgill.manager import SplitgillClient, SplitgillDatabase
+
 from ckanext.versioned_datastore.interfaces import (
     IVersionedDatastore,
     IVersionedDatastoreDownloads,
@@ -16,7 +15,9 @@ from ckanext.versioned_datastore.interfaces import (
 from ckanext.versioned_datastore.lib import common
 
 
-def get_available_datastore_resources(ignore_auth: bool = False) -> Set[str]:
+def get_available_datastore_resources(
+    ignore_auth: bool = False, user_id: str = ''
+) -> Set[str]:
     """
     Simple wrapper around get_available_resources which provides a list of available
     datastore resources to the currently logged-in user.
@@ -24,11 +25,13 @@ def get_available_datastore_resources(ignore_auth: bool = False) -> Set[str]:
     :param ignore_auth: whether to ignore authentication (default: False)
     :return: a set of resource IDs
     """
-    return get_available_resources(datastore_only=True, ignore_auth=ignore_auth)
+    return get_available_resources(
+        datastore_only=True, ignore_auth=ignore_auth, user_id=user_id
+    )
 
 
 def get_available_resources(
-    datastore_only: bool, ignore_auth: bool = False
+    datastore_only: bool, ignore_auth: bool = False, user_id: str = ''
 ) -> Set[str]:
     """
     Get a set of resource IDs that are available to the currently logged-in user and, if
@@ -44,25 +47,24 @@ def get_available_resources(
     resource_ids = set()
 
     offset = 0
-    action = toolkit.get_action("current_package_list_with_resources")
+    action = toolkit.get_action('current_package_list_with_resources')
 
     while True:
-        # pass no context to force ckan to stick the current user in the context and
-        # therefore limit the response to packages and resources that the current user
-        # can access
         context = {}
         if ignore_auth:
             # unless ignore auth is passed, in which case pass that in the context
-            context["ignore_auth"] = True
-        packages = action(context, {"offset": offset, "limit": 100})
+            context['ignore_auth'] = True
+        else:
+            context['user'] = user_id
+        packages = action(context, {'offset': offset, 'limit': 100})
         if not packages:
             break
         for package in packages:
             # add the datastore active resources
             resource_ids.update(
-                resource["id"]
-                for resource in package["resources"]
-                if not datastore_only or resource.get("datastore_active", False)
+                resource['id']
+                for resource in package['resources']
+                if not datastore_only or resource.get('datastore_active', False)
             )
         offset += len(packages)
 
@@ -88,9 +90,9 @@ def sg_client() -> SplitgillClient:
 
     :return: an SplitgillClient object
     """
-    vds_plugin = get_plugin("versioned_datastore")
+    vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
-        raise Exception("VDS plugin not configured yet")
+        raise Exception('VDS plugin not configured yet')
     return vds_plugin.sg_client
 
 
@@ -101,9 +103,9 @@ def es_client() -> Elasticsearch:
 
     :return: an Elasticsearch object
     """
-    vds_plugin = get_plugin("versioned_datastore")
+    vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
-        raise Exception("VDS plugin not configured yet")
+        raise Exception('VDS plugin not configured yet')
     return vds_plugin.elasticsearch_client
 
 
@@ -114,9 +116,9 @@ def mongo_client() -> MongoClient:
 
     :return: an MongoClient object
     """
-    vds_plugin = get_plugin("versioned_datastore")
+    vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
-        raise Exception("VDS plugin not configured yet")
+        raise Exception('VDS plugin not configured yet')
     return vds_plugin.mongo_client
 
 
@@ -138,8 +140,8 @@ def get_sg_name(resource_id: str) -> str:
     :param resource_id: the resource id
     :return: the resource's Splitgill database name
     """
-    prefix = toolkit.config.get("ckanext.versioned_datastore.sg_prefix", "")
-    return f"{prefix}{resource_id}"
+    prefix = toolkit.config.get('ckanext.versioned_datastore.sg_prefix', '')
+    return f'{prefix}{resource_id}'
 
 
 def unprefix_sg_name(sg_name: str) -> str:
@@ -150,7 +152,7 @@ def unprefix_sg_name(sg_name: str) -> str:
     :param sg_name: the Spitgill database name
     :return: the resource's id
     """
-    prefix = toolkit.config.get("ckanext.versioned_datastore.sg_prefix", "")
+    prefix = toolkit.config.get('ckanext.versioned_datastore.sg_prefix', '')
     return sg_name[len(prefix) :]
 
 
@@ -164,12 +166,12 @@ def unprefix_index_name(sg_index_name: str) -> str:
     :return: the resource's ID
     """
     # all indexes have data- at the start and -latest or -arc-# on the end
-    regexes = [re.compile(r"data-(.*)-latest"), re.compile(r"data-(.*)-arc-[0-9]+")]
+    regexes = [re.compile(r'data-(.*)-latest'), re.compile(r'data-(.*)-arc-[0-9]+')]
     for regex in regexes:
         match = regex.match(sg_index_name)
         if match:
             return unprefix_sg_name(match.group(1))
-    raise ValueError(f"Failed to extract resource name from index: {sg_index_name}")
+    raise ValueError(f'Failed to extract resource name from index: {sg_index_name}')
 
 
 class ReadOnlyResourceException(toolkit.ValidationError):
@@ -220,8 +222,8 @@ def is_datastore_only_resource(resource_url: str) -> bool:
     """
     return (
         resource_url == common.DATASTORE_ONLY_RESOURCE
-        or resource_url == f"http://{common.DATASTORE_ONLY_RESOURCE}"
-        or resource_url == f"https://{common.DATASTORE_ONLY_RESOURCE}"
+        or resource_url == f'http://{common.DATASTORE_ONLY_RESOURCE}'
+        or resource_url == f'https://{common.DATASTORE_ONLY_RESOURCE}'
     )
 
 
@@ -237,18 +239,18 @@ def is_ingestible(resource: dict) -> bool:
     :param resource: the resource dict
     :return: True if it is, False if not
     """
-    if resource.get("url", None) is None:
+    if resource.get('url', None) is None:
         return False
 
-    resource_format = resource.get("format", None)
-    return is_datastore_only_resource(resource["url"]) or (
+    resource_format = resource.get('format', None)
+    return is_datastore_only_resource(resource['url']) or (
         resource_format is not None and resource_format.lower() in common.ALL_FORMATS
     )
 
 
-T = TypeVar("T", bound=IVersionedDatastore)
-U = TypeVar("U", bound=IVersionedDatastoreDownloads)
-V = TypeVar("V", bound=IVersionedDatastoreQuerySchema)
+T = TypeVar('T', bound=IVersionedDatastore)
+U = TypeVar('U', bound=IVersionedDatastoreDownloads)
+V = TypeVar('V', bound=IVersionedDatastoreQuerySchema)
 
 
 def ivds_implementations() -> Iterable[T]:

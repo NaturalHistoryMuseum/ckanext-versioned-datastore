@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Dict
+from typing import Dict, List, Optional, Union
 
 from splitgill.indexing.fields import DataField
 
@@ -19,20 +19,20 @@ def _get_field_type(field: DataField) -> List[Union[str, dict]]:
 
     # check all basic types except nulls (they are always added last)
     if field.is_str:
-        types.append("string")
+        types.append('string')
     if field.is_int:
-        types.append("long")
+        types.append('long')
     if field.is_float:
-        types.append("double")
+        types.append('double')
     if field.is_bool:
-        types.append("boolean")
+        types.append('boolean')
 
     # now check the complex types, first lists
     if field.is_list:
         types.append(
             {
-                "type": "array",
-                "items": [
+                'type': 'array',
+                'items': [
                     _get_field_type(child)
                     for child in field.children
                     if child.is_list_element
@@ -44,12 +44,12 @@ def _get_field_type(field: DataField) -> List[Union[str, dict]]:
     if field.is_dict:
         types.append(
             {
-                "type": "record",
-                "name": f"{field.path}Record",
-                "fields": [
+                'type': 'record',
+                'name': f'{field.path}Record',
+                'fields': [
                     {
-                        "name": child.name,
-                        "type": _get_field_type(child),
+                        'name': child.name,
+                        'type': _get_field_type(child),
                     }
                     for child in field.children
                     if not child.is_list_element
@@ -58,7 +58,7 @@ def _get_field_type(field: DataField) -> List[Union[str, dict]]:
         )
 
     # ensure all types are nullable
-    types.append("null")
+    types.append('null')
     return types
 
 
@@ -75,14 +75,14 @@ def get_schema(
     :return: an Avro schema as a dict
     """
     database = get_database(resource_id)
-    fields = database.get_data_fields(version, query.to_dsl())
+    fields = database.get_data_fields(version, query.to_dsl() if query else None)
     schema = {
-        "type": "record",
-        "name": "Record",
-        "fields": [
+        'type': 'record',
+        'name': 'Record',
+        'fields': [
             {
-                "name": field.name,
-                "type": _get_field_type(field),
+                'name': field.name,
+                'type': _get_field_type(field),
             }
             for field in fields
             if field.is_root_field
@@ -103,9 +103,9 @@ def get_fields(field_counts, ignore_empty_fields, resource_id=None):
 
     :param field_counts: the dict of resource ids -> fields -> counts
     :param ignore_empty_fields: whether fields with no values should be included in the
-                                resulting list or not
+        resulting list or not
     :param resource_id: the resource id to get the fields for. The default is None which
-                        means that the fields from all resources will be returned
+        means that the fields from all resources will be returned
     :return: a list of fields in case-insensitive ascending order
     """
     # TODO: retrieve the sort order for resources from the database and use
@@ -140,8 +140,16 @@ def calculate_field_counts(
     """
     database = get_database(resource_id)
     # todo: depending on what this is used for, should this be using get_data_fields?
-    fields = database.get_parsed_fields(version, query.to_dsl())
-    return {field.path: field.count for field in fields}
+    # grab all the fields at this version
+    all_fields = database.get_parsed_fields(version)
+    # grab the fields that appear in this specific query's results
+    found_fields = {
+        field.path for field in database.get_parsed_fields(version, query.to_dsl())
+    }
+    return {
+        field.path: field.count if field.path in found_fields else 0
+        for field in all_fields
+    }
 
 
 def filter_data_fields(data, field_counts, prefix=None):
@@ -165,10 +173,11 @@ def filter_data_fields(data, field_counts, prefix=None):
     :return: a new dict containing only the fields from the original data dict that had
              a value other than 0 in the fields_count dict
     """
+    print(f'FILT {data}, {field_counts}')
     filtered_data = {}
     for field, value in data.items():
         if prefix is not None:
-            path = f"{prefix}.{field}"
+            path = f'{prefix}.{field}'
         else:
             path = field
 
@@ -205,7 +214,7 @@ def filter_data_fields(data, field_counts, prefix=None):
     return filtered_data
 
 
-def flatten_dict(data, path=None, separator=" | "):
+def flatten_dict(data, path=None, separator=' | '):
     """
     Flattens a given dictionary so that nested dicts and lists of dicts are available
     from the root of the dict. For nested dicts, the keys in the nested dict are simply
@@ -232,7 +241,7 @@ def flatten_dict(data, path=None, separator=" | "):
     for key, value in data.items():
         if path is not None:
             # use a dot to indicate this key is below the parent in the path
-            key = f"{path}.{key}"
+            key = f'{path}.{key}'
 
         if isinstance(value, dict):
             # flatten the nested dict then update the current dict we've got on the go
@@ -248,7 +257,7 @@ def flatten_dict(data, path=None, separator=" | "):
                         if subkey not in flat:
                             flat[subkey] = subvalue
                         else:
-                            flat[subkey] = f"{flat[subkey]}{separator}{subvalue}"
+                            flat[subkey] = f'{flat[subkey]}{separator}{subvalue}'
             else:
                 flat[key] = separator.join(map(str, value))
         else:

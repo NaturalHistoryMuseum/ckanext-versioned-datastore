@@ -11,34 +11,34 @@ from functools import partial
 from glob import iglob
 
 import fastavro
+from ckan.lib import uploader
+from ckan.plugins import toolkit
 from splitgill.search import rebuild_data
 
-from ckan.lib import uploader
-from ckan.plugins import toolkit, PluginImplementations
-from ckanext.versioned_datastore.interfaces import IVersionedDatastoreDownloads
 from ckanext.versioned_datastore.lib import common
 from ckanext.versioned_datastore.lib.downloads.utils import (
-    get_schema,
     calculate_field_counts,
     filter_data_fields,
     get_fields,
+    get_schema,
 )
 from ckanext.versioned_datastore.lib.query.utils import get_resources_and_versions
 from ckanext.versioned_datastore.lib.utils import (
-    idownload_implementations,
     get_database,
+    idownload_implementations,
 )
 from ckanext.versioned_datastore.logic.download.arg_objects import (
-    QueryArgs,
     DerivativeArgs,
-    ServerArgs,
     NotifierArgs,
+    QueryArgs,
+    ServerArgs,
 )
 from ckanext.versioned_datastore.model.downloads import (
-    DownloadRequest,
     CoreFileRecord,
     DerivativeFileRecord,
+    DownloadRequest,
 )
+
 from .loaders import (
     get_derivative_generator,
     get_file_server,
@@ -48,12 +48,12 @@ from .loaders import (
 
 
 class DownloadRunManager:
-    download_dir = toolkit.config.get("ckanext.versioned_datastore.download_dir")
+    download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
     if download_dir is None:
-        raise Exception("ckanext.versioned_datastore.download_dir must be set.")
-    core_dir = os.path.join(download_dir, "core")
+        raise Exception('ckanext.versioned_datastore.download_dir must be set.')
+    core_dir = os.path.join(download_dir, 'core')
     custom_dir = toolkit.config.get(
-        "ckanext.versioned_datastore.custom_dir", os.path.join(download_dir, "custom")
+        'ckanext.versioned_datastore.custom_dir', os.path.join(download_dir, 'custom')
     )
 
     def __init__(
@@ -74,7 +74,7 @@ class DownloadRunManager:
                 query_args, derivative_args, server_args, notifier_args
             )
 
-        if derivative_args.format == "raw":
+        if derivative_args.format == 'raw':
             # if we're serving raw files then we're not doing any transformations
             derivative_args.separate_files = True
             derivative_args.ignore_empty_fields = False
@@ -85,8 +85,8 @@ class DownloadRunManager:
 
         self.query = query_args.to_schema_query()
         self.allow_non_datastore = (
-            derivative_args.format == "raw"
-            and derivative_args.format_args.get("allow_non_datastore", False)
+            derivative_args.format == 'raw'
+            and derivative_args.format_args.get('allow_non_datastore', False)
         )
         self.resource_ids_and_versions = get_resources_and_versions(
             self.query,
@@ -118,7 +118,7 @@ class DownloadRunManager:
 
         self._temp = []
 
-        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+        for plugin in idownload_implementations():
             plugin.download_after_init(self.request)
 
     @property
@@ -130,7 +130,7 @@ class DownloadRunManager:
             f: getattr(self.derivative_options, f)
             for f in self.derivative_options.fields
         }
-        file_options_hash = hashlib.sha1(json.dumps(file_options).encode("utf-8"))
+        file_options_hash = hashlib.sha1(json.dumps(file_options).encode('utf-8'))
         return file_options_hash.hexdigest()
 
     @property
@@ -140,18 +140,18 @@ class DownloadRunManager:
         derivative options.
         """
         to_hash = [self.record_hash, self.derivative_hash]
-        download_hash = hashlib.sha1("|".join(to_hash).encode("utf-8"))
+        download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
     @property
     def resource_hash(self) -> str:
         resources = sorted(self.resource_ids_and_versions.items())
-        return hashlib.sha1("|".join(map(str, resources)).encode("utf-8")).hexdigest()
+        return hashlib.sha1('|'.join(map(str, resources)).encode('utf-8')).hexdigest()
 
     @property
     def record_hash(self):
         to_hash = [self.query.hash, self.resource_hash]
-        download_hash = hashlib.sha1("|".join(to_hash).encode("utf-8"))
+        download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
     @property
@@ -193,7 +193,7 @@ class DownloadRunManager:
             current_state = self.request.state
             self.request.update_status(
                 DownloadRequest.state_failed,
-                f"{current_state}, {e.__class__.__name__}: {str(e)}",
+                f'{current_state}, {e.__class__.__name__}: {str(e)}',
             )
             self.notifier.notify_error()
             raise e
@@ -203,7 +203,7 @@ class DownloadRunManager:
                     shutil.rmtree(t)
                 except FileNotFoundError:
                     pass
-            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            for plugin in idownload_implementations():
                 plugin.download_after_run(self.request)
 
     def check_for_records(self):
@@ -226,12 +226,12 @@ class DownloadRunManager:
         derivative_record = None
 
         # search for derivative first
-        fp = os.path.join(self.download_dir, f"{self.hash}.zip")
+        fp = os.path.join(self.download_dir, f'{self.hash}.zip')
         if os.path.exists(fp):
             existing_file = fp
         else:
             # check old-style names with the request id in front as well
-            fn = f"*_{self.hash}.zip"
+            fn = f'*_{self.hash}.zip'
             existing_file = next(iglob(os.path.join(self.download_dir, fn)), None)
         if existing_file is not None:
             # could return multiple options, sorted by most recent first
@@ -271,7 +271,7 @@ class DownloadRunManager:
                 options={
                     f: getattr(self.derivative_options, f)
                     for f in self.derivative_options.fields
-                    if f != "format"
+                    if f != 'format'
                 },
             )
             derivative_record.save()
@@ -282,8 +282,8 @@ class DownloadRunManager:
         """
         Generates and loads core files.
 
-        This method will add new resources to existing core records
-        with identical filters, reducing data duplication.
+        This method will add new resources to existing core records with identical
+        filters, reducing data duplication.
         :return: the core record
         """
         if not os.path.exists(self.core_folder_path):
@@ -294,7 +294,7 @@ class DownloadRunManager:
         resources_to_generate = {
             rid: v
             for rid, v in self.core_record.resource_ids_and_versions.items()
-            if f"{rid}_{v}.avro" not in existing_files
+            if f'{rid}_{v}.avro' not in existing_files
             and v != common.NON_DATASTORE_VERSION
         }
 
@@ -325,7 +325,7 @@ class DownloadRunManager:
                     resource_id
                 ]
                 core_file_path = os.path.join(
-                    self.core_folder_path, f"{resource_id}_{resource_version}.avro"
+                    self.core_folder_path, f'{resource_id}_{resource_version}.avro'
                 )
                 os.remove(core_file_path)
                 resources_to_generate[resource_id] = resource_version
@@ -346,16 +346,16 @@ class DownloadRunManager:
                     get_schema(resource_id, version, self.query)
                 )
 
-                fn = f"{resource_id}_{version}.avro"
+                fn = f'{resource_id}_{version}.avro'
                 fp = os.path.join(self.core_folder_path, fn)
 
-                codec_kwargs = dict(codec="bzip2", codec_compression_level=9)
+                codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
                 chunk_size = 10000
-                with open(fp, "wb") as f:
+                with open(fp, 'wb') as f:
                     fastavro.writer(f, schema, [], **codec_kwargs)
 
                 def _flush(record_block):
-                    with open(fp, "a+b") as outfile:
+                    with open(fp, 'a+b') as outfile:
                         fastavro.writer(outfile, None, record_block, **codec_kwargs)
 
                 chunk = []
@@ -396,7 +396,7 @@ class DownloadRunManager:
 
         if self.derivative_record.filepath is None:
             # if this _is_ defined, we don't need to generate the file
-            zip_name = f"{self.hash}.zip"
+            zip_name = f'{self.hash}.zip'
             zip_path = os.path.join(self.download_dir, zip_name)
 
             self.derivative_record.update(filepath=zip_path)
@@ -408,22 +408,22 @@ class DownloadRunManager:
             self._temp.append(temp_dir)
 
             manifest = {
-                "download_id": self.request.id,
-                "resources": {},
-                "separate_files": self.derivative_options.separate_files,
-                "file_format": self.derivative_options.format,
-                "format_args": self.derivative_options.format_args,
-                "ignore_empty_fields": self.derivative_options.ignore_empty_fields,
-                "transform": self.derivative_options.transform,
-                "total_records": self.core_record.total,
-                "start": start.isoformat(),
+                'download_id': self.request.id,
+                'resources': {},
+                'separate_files': self.derivative_options.separate_files,
+                'file_format': self.derivative_options.format,
+                'format_args': self.derivative_options.format_args,
+                'ignore_empty_fields': self.derivative_options.ignore_empty_fields,
+                'transform': self.derivative_options.transform,
+                'total_records': self.core_record.total,
+                'start': start.isoformat(),
                 # these get filled in later but we'll initialise them here
-                "files": [],
-                "end": None,
-                "duration_in_seconds": 0,
+                'files': [],
+                'end': None,
+                'duration_in_seconds': 0,
             }
 
-            if self.derivative_options.format != "raw":
+            if self.derivative_options.format != 'raw':
                 # set up the derivative generators; each generator creates one
                 # component. components = individual file groups within the main zip,
                 # e.g. one CSV for each resource (multiple components), or multiple
@@ -462,6 +462,7 @@ class DownloadRunManager:
                 ]
 
                 for resource_id, version in self.resource_ids_and_versions.items():
+                    print(f'GEN DER: {resource_id}')
                     # add the resource ID as the message for use in the status page
                     self.request.update_status(
                         DownloadRequest.state_derivative_gen, resource_id
@@ -474,10 +475,11 @@ class DownloadRunManager:
                         continue
                     derivative_generator = components[resource_id]
                     core_file_path = os.path.join(
-                        self.core_folder_path, f"{resource_id}_{version}.avro"
+                        self.core_folder_path, f'{resource_id}_{version}.avro'
                     )
-                    with derivative_generator, open(core_file_path, "rb") as core_file:
+                    with derivative_generator, open(core_file_path, 'rb') as core_file:
                         for record in fastavro.reader(core_file):
+                            print(f'YOOYOOY {resource_id}: {record}\n')
                             # apply the transformations first
                             for transform in transformations:
                                 record = transform(record)
@@ -496,54 +498,54 @@ class DownloadRunManager:
                     components.default_factory().cleanup()
 
             else:
-                resource_show = toolkit.get_action("resource_show")
+                resource_show = toolkit.get_action('resource_show')
                 for resource_id, version in self.resource_ids_and_versions.items():
                     self.request.update_status(
                         DownloadRequest.state_derivative_gen, resource_id
                     )
-                    res = resource_show({}, {"id": resource_id})
-                    if res.get("url_type") == "upload":
+                    res = resource_show({}, {'id': resource_id})
+                    if res.get('url_type') == 'upload':
                         upload = uploader.get_resource_uploader(res)
                         if not upload.storage_path:
                             # if ckan.storage_path is not set
-                            raise Exception("Non-datastore uploads are not configured.")
-                        filepath = upload.get_path(res["id"])
-                        original_filename = res.get("url", "").split("/")[-1]
+                            raise Exception('Non-datastore uploads are not configured.')
+                        filepath = upload.get_path(res['id'])
+                        original_filename = res.get('url', '').split('/')[-1]
                         fileext = (
-                            os.path.splitext(original_filename)[-1].strip(".")
-                            or res["format"].lower()
+                            os.path.splitext(original_filename)[-1].strip('.')
+                            or res['format'].lower()
                         )
                         filename = os.path.extsep.join([resource_id, fileext])
                         shutil.copy2(filepath, os.path.join(temp_dir, filename))
                     else:
                         raise NotImplemented(
-                            f"No raw file is available for resource {resource_id}"
+                            f'No raw file is available for resource {resource_id}'
                         )
 
             # generation finished
             self.request.update_status(DownloadRequest.state_packaging)
 
             end = dt.utcnow()
-            manifest["end"] = end.isoformat()
+            manifest['end'] = end.isoformat()
 
             duration = (end - start).total_seconds()
-            manifest["duration_in_seconds"] = duration
+            manifest['duration_in_seconds'] = duration
 
-            files_to_zip = os.listdir(temp_dir) + ["manifest.json"]
-            manifest["files"] = files_to_zip
+            files_to_zip = os.listdir(temp_dir) + ['manifest.json']
+            manifest['files'] = files_to_zip
 
             # allow plugins to make changes
-            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            for plugin in idownload_implementations():
                 manifest = plugin.download_modify_manifest(manifest, self.request)
 
             # write out manifest
             with open(
-                os.path.join(temp_dir, "manifest.json"), "w", encoding="utf8"
+                os.path.join(temp_dir, 'manifest.json'), 'w', encoding='utf8'
             ) as f:
                 json.dump(manifest, f, sort_keys=True, indent=2, ensure_ascii=False)
 
             # zip everything up
-            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED, True) as z:
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED, True) as z:
                 for filename in files_to_zip:
                     z.write(os.path.join(temp_dir, filename), arcname=filename)
 
@@ -553,7 +555,7 @@ class DownloadRunManager:
             # ensure the custom dir exists
             if not os.path.exists(self.custom_dir):
                 os.mkdir(self.custom_dir)
-            symlink_path = os.path.join(self.custom_dir, f"{self.server.filename}.zip")
+            symlink_path = os.path.join(self.custom_dir, f'{self.server.filename}.zip')
             if (
                 os.path.islink(symlink_path)
                 and os.path.realpath(symlink_path) != self.derivative_record.filepath

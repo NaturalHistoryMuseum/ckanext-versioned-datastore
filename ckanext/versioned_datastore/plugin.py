@@ -1,41 +1,83 @@
 import logging
 from contextlib import suppress
-from typing import Optional, List
+from typing import List, Optional
 
+from ckan.plugins import (
+    SingletonPlugin,
+    implements,
+    interfaces,
+    toolkit,
+)
 from ckantools.loaders import create_actions, create_auth
 from elasticsearch import Elasticsearch
 from pymongo import MongoClient
 from splitgill.manager import SplitgillClient
 
-from ckan.plugins import (
-    toolkit,
-    interfaces,
-    SingletonPlugin,
-    implements,
-)
-from ckanext.versioned_datastore import routes, helpers, cli
+from ckanext.versioned_datastore import cli, helpers, routes
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
 from ckanext.versioned_datastore.lib.query.schema import register_schema
 from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
-from ckanext.versioned_datastore.lib.tasks import get_queue_length, get_es_health
+from ckanext.versioned_datastore.lib.tasks import get_es_health, get_queue_length
 from ckanext.versioned_datastore.lib.utils import (
-    is_datastore_resource,
     ReadOnlyResourceException,
-    ivds_implementations,
     iqs_implementations,
+    is_datastore_resource,
+    ivds_implementations,
 )
-from ckanext.versioned_datastore.logic import (
-    basic,
-    data,
-    download,
-    multi,
-    options,
-    # rename to avoid variable name clashing
-    resource as resource_logic,
-    schema,
-    slug,
-    version,
+from ckanext.versioned_datastore.logic.basic import (
+    action as basic_action,
+)
+from ckanext.versioned_datastore.logic.basic import (
+    auth as basic_auth,
+)
+from ckanext.versioned_datastore.logic.data import (
+    action as data_action,
+)
+from ckanext.versioned_datastore.logic.data import (
+    auth as data_auth,
+)
+from ckanext.versioned_datastore.logic.download import (
+    action as download_action,
+)
+from ckanext.versioned_datastore.logic.download import (
+    auth as download_auth,
+)
+from ckanext.versioned_datastore.logic.multi import (
+    action as multi_action,
+)
+from ckanext.versioned_datastore.logic.multi import (
+    auth as multi_auth,
+)
+from ckanext.versioned_datastore.logic.options import (
+    action as options_action,
+)
+from ckanext.versioned_datastore.logic.options import (
+    auth as options_auth,
+)
+from ckanext.versioned_datastore.logic.resource import (
+    action as resource_action,
+)
+from ckanext.versioned_datastore.logic.resource import (
+    auth as resource_auth,
+)
+from ckanext.versioned_datastore.logic.schema import (
+    action as schema_action,
+)
+from ckanext.versioned_datastore.logic.schema import (
+    auth as schema_auth,
+)
+from ckanext.versioned_datastore.logic.slug import (
+    action as slug_action,
+)
+from ckanext.versioned_datastore.logic.slug import (
+    auth as slug_auth,
+)
+from ckanext.versioned_datastore.logic.version import (
+    action as version_action,
+)
+from ckanext.versioned_datastore.logic.version import (
+    auth as version_auth,
 )
 
 try:
@@ -48,7 +90,7 @@ except ImportError:
 log = logging.getLogger(__name__)
 
 # stop elasticsearch from showing warning logs
-logging.getLogger("elasticsearch").setLevel(logging.ERROR)
+logging.getLogger('elasticsearch').setLevel(logging.ERROR)
 
 
 class VersionedSearchPlugin(SingletonPlugin):
@@ -76,15 +118,15 @@ class VersionedSearchPlugin(SingletonPlugin):
         # do the setup for Splitgill first, create Mongo client, Elasticsearch client,
         # and then the Splitgill client
         self.mongo_client = MongoClient(
-            host=ckan_config.get("ckanext.versioned_datastore.mongo_host"),
-            port=int(ckan_config.get("ckanext.versioned_datastore.mongo_port")),
+            host=ckan_config.get('ckanext.versioned_datastore.mongo_host'),
+            port=int(ckan_config.get('ckanext.versioned_datastore.mongo_port')),
         )
         es_hosts = ckan_config.get(
-            "ckanext.versioned_datastore.elasticsearch_hosts"
-        ).split(",")
-        es_port = ckan_config.get("ckanext.versioned_datastore.elasticsearch_port")
+            'ckanext.versioned_datastore.elasticsearch_hosts'
+        ).split(',')
+        es_port = ckan_config.get('ckanext.versioned_datastore.elasticsearch_port')
         self.elasticsearch_client = Elasticsearch(
-            hosts=[f"http://{host}:{es_port}/" for host in es_hosts],
+            hosts=[f'http://{host}:{es_port}/' for host in es_hosts],
             # todo: check these params
             sniff_on_start=True,
             sniff_on_node_failure=True,
@@ -92,7 +134,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             http_compress=False,
             request_timeout=60,
         )
-        mongo_db_name = ckan_config.get("ckanext.versioned_datastore.mongo_database")
+        mongo_db_name = ckan_config.get('ckanext.versioned_datastore.mongo_database')
         self.sg_client = SplitgillClient(
             self.mongo_client, self.elasticsearch_client, mongo_db_name
         )
@@ -129,29 +171,29 @@ class VersionedSearchPlugin(SingletonPlugin):
     # IActions
     def get_actions(self):
         return create_actions(
-            basic.action,
-            data.action,
-            download.action,
-            multi.action,
-            options.action,
-            resource_logic.action,
-            schema.action,
-            slug.action,
-            version.action,
+            basic_action,
+            data_action,
+            download_action,
+            multi_action,
+            options_action,
+            resource_action,
+            schema_action,
+            slug_action,
+            version_action,
         )
 
     # IAuthFunctions
     def get_auth_functions(self):
         return create_auth(
-            basic.auth,
-            data.auth,
-            download.auth,
-            multi.auth,
-            options.auth,
-            resource_logic.auth,
-            schema.auth,
-            slug.auth,
-            version.auth,
+            basic_auth,
+            data_auth,
+            download_auth,
+            multi_auth,
+            options_auth,
+            resource_auth,
+            schema_auth,
+            slug_auth,
+            version_auth,
         )
 
     # IClick
@@ -161,49 +203,49 @@ class VersionedSearchPlugin(SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            "is_datastore_resource": is_datastore_resource,
-            "is_duplicate_ingestion": helpers.is_duplicate_ingestion,
-            "get_human_duration": helpers.get_human_duration,
-            "get_stat_icon": helpers.get_stat_icon,
-            "get_stat_activity_class": helpers.get_stat_activity_class,
-            "get_stat_title": helpers.get_stat_title,
-            "get_available_formats": helpers.get_available_formats,
-            "pretty_print_json": helpers.pretty_print_json,
-            "get_version_date": helpers.get_version_date,
-            "latest_item_version": helpers.latest_item_version,
-            "nav_slug": helpers.nav_slug,
+            'is_datastore_resource': is_datastore_resource,
+            'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
+            'get_human_duration': helpers.get_human_duration,
+            'get_stat_icon': helpers.get_stat_icon,
+            'get_stat_activity_class': helpers.get_stat_activity_class,
+            'get_stat_title': helpers.get_stat_title,
+            'get_available_formats': helpers.get_available_formats,
+            'pretty_print_json': helpers.pretty_print_json,
+            'get_version_date': helpers.get_version_date,
+            'latest_item_version': helpers.latest_item_version,
+            'nav_slug': helpers.nav_slug,
         }
 
     # IResourceController
     def before_show(self, resource_dict):
         # ensure datastore_active is set where it should be
-        resource_dict["datastore_active"] = is_datastore_resource(resource_dict["id"])
+        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
         return resource_dict
 
     # IResourceController
     def after_update(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
-        data_dict = {"resource_id": resource["id"], "replace": True}
+        data_dict = {'resource_id': resource['id'], 'replace': True}
         with suppress(ReadOnlyResourceException):
-            toolkit.get_action("vds_data_add")(context, data_dict)
+            toolkit.get_action('vds_data_add')(context, data_dict)
 
     # IResourceController
     def after_create(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
-        data_dict = {"resource_id": resource["id"], "replace": True}
+        data_dict = {'resource_id': resource['id'], 'replace': True}
         with suppress(ReadOnlyResourceException):
-            toolkit.get_action("vds_data_add")(context, data_dict)
+            toolkit.get_action('vds_data_add')(context, data_dict)
 
     def before_delete(self, context: dict, resource: dict, resources: List[dict]):
-        toolkit.get_action("vds_data_delete")(context, {"resource_id": resource["id"]})
+        toolkit.get_action('vds_data_delete')(context, {'resource_id': resource['id']})
 
     # IConfigurer
     def update_config(self, config):
         # add public folder containing schemas
-        toolkit.add_public_directory(config, "theme/public")
+        toolkit.add_public_directory(config, 'theme/public')
         # add templates
-        toolkit.add_template_directory(config, "theme/templates")
-        toolkit.add_resource("theme/assets", "ckanext-versioned-datastore")
+        toolkit.add_template_directory(config, 'theme/templates')
+        toolkit.add_resource('theme/assets', 'ckanext-versioned-datastore')
 
     # IBlueprint
     def get_blueprint(self):
