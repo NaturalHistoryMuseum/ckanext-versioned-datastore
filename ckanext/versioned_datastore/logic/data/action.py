@@ -72,6 +72,20 @@ def vds_data_add(
 
 @action(schema.vds_data_delete(), helptext.vds_data_delete)
 def vds_data_delete(context: dict, resource_id: str):
+    """
+    Deletes all the data from the given resource. This is an async operation as
+    signified by the return of this action which is details about the created jobs. The
+    data will be deleted by creating new deleted versions of the records in the resource
+    and thus the old data will still be available in old versions, but the latest
+    version of the resource will be empty.
+
+    Two jobs will be queued, one to delete all the records in MongoDB and then one to
+    sync the changes with Elasticsearch.
+
+    :param context: the CKAN action context
+    :param resource_id: the resource ID to delete the data from
+    :return: a dict containing information about the delete
+    """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')
 
@@ -87,6 +101,20 @@ def vds_data_delete(context: dict, resource_id: str):
 
 @action(schema.vds_data_sync(), helptext.vds_data_sync)
 def vds_data_sync(context: dict, resource_id: str, full: bool = False):
+    """
+    Queues as sync operation to ensure that the resource's data in MongoDB matches the
+    data in Elasticsearch.
+
+    With full=False (the default), only any unsynced changes will be synced. With
+    full=True, all records will be resynced. This is managed by Splitgill and may delete
+    records before syncing (check Splitgill docs).
+
+    :param context: the CKAN action context
+    :param resource_id: the resource ID to sync
+    :param full: whether to sync all records again or just the changed ones since the
+        last sync (default is False).
+    :return: a dict containing information about the sync
+    """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')
 
@@ -102,11 +130,29 @@ def vds_data_sync(context: dict, resource_id: str, full: bool = False):
 # for compat reasons
 @action(schema.vds_data_get(), helptext.vds_data_get, get=True)
 def record_show(resource_id: str, record_id: str, version: Optional[int] = None):
+    """
+    Compatibility action for vds_data_get.
+
+    :param resource_id: the resource's ID
+    :param record_id: the record's ID
+    :param version: the version to get of the record, or None to get the latest
+    :return: the record data
+    """
     return vds_data_get(resource_id, record_id, version)
 
 
 @action(schema.vds_data_get(), helptext.vds_data_get, get=True)
 def vds_data_get(resource_id: str, record_id: str, version: Optional[int] = None):
+    """
+    Retrieves the data for one record from the given resource at the given optional
+    version and returns it. If the record can't be found an ObjectNotFound exception is
+    raised.
+
+    :param resource_id: the resource's ID
+    :param record_id: the record's ID
+    :param version: the version to get of the record, or None to get the latest
+    :return:
+    """
     query = DirectQuery(
         [resource_id], version, Q('term', **{DocumentField.ID: record_id})
     )

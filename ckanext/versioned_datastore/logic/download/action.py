@@ -1,14 +1,14 @@
+from ckan.plugins import toolkit
 from ckantools.decorators import action
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.downloads.download import DownloadRunManager
 from ckanext.versioned_datastore.lib.downloads.notifiers import validate_notifier_args
 from ckanext.versioned_datastore.logic.download import helptext, schema
 from ckanext.versioned_datastore.logic.download.arg_objects import (
-    QueryArgs,
     DerivativeArgs,
-    ServerArgs,
     NotifierArgs,
+    QueryArgs,
+    ServerArgs,
 )
 from ckanext.versioned_datastore.model.downloads import DownloadRequest
 
@@ -21,6 +21,16 @@ def vds_download_queue(
     server: ServerArgs = None,
     notifier: NotifierArgs = None,
 ):
+    """
+    Queues a download and returns information about the job and status.
+
+    :param context: the CKAN action context
+    :param query: the query as a QueryArgs object
+    :param file: the file options as a DerivativeArgs object
+    :param server: the server options as a ServerArgs object (default is None)
+    :param notifier: the notifier options as a NotifierArgs object (default is None)
+    :return: a dict of information about the download
+    """
     server = server or ServerArgs(**ServerArgs.defaults)
     notifier = notifier or NotifierArgs(**NotifierArgs.defaults)
 
@@ -29,7 +39,7 @@ def vds_download_queue(
     if server.custom_filename:
         # check if admin
         try:
-            toolkit.check_access("datastore_custom_download_filename", context)
+            toolkit.check_access('datastore_custom_download_filename', context)
         except toolkit.NotAuthorized:
             server.custom_filename = None
 
@@ -42,22 +52,22 @@ def vds_download_queue(
 
     job = toolkit.enqueue_job(
         download_runner.run,
-        queue="download",
-        title=download_runner.request.created.strftime("%Y-%m-%d %H:%M:%S"),
-        rq_kwargs={"timeout": "24h"},
+        queue='download',
+        title=download_runner.request.created.strftime('%Y-%m-%d %H:%M:%S'),
+        rq_kwargs={'timeout': '24h'},
     )
 
     return {
-        "queued_at": job.enqueued_at.isoformat(),
-        "job_id": job.id,
-        "download_id": download_runner.request.id,
-        "status_json": toolkit.url_for(
-            "datastore_status.download_status_json",
+        'queued_at': job.enqueued_at.isoformat(),
+        'job_id': job.id,
+        'download_id': download_runner.request.id,
+        'status_json': toolkit.url_for(
+            'datastore_status.download_status_json',
             download_id=download_runner.request.id,
             qualified=True,
         ),
-        "status_html": toolkit.url_for(
-            "datastore_status.download_status",
+        'status_html': toolkit.url_for(
+            'datastore_status.download_status',
             download_id=download_runner.request.id,
             qualified=True,
         ),
@@ -71,6 +81,15 @@ def vds_download_regenerate(
     server: ServerArgs = None,
     notifier: NotifierArgs = None,
 ):
+    """
+    Regenerates a download.
+
+    :param context: the CKAN action context
+    :param download_id: the download ID
+    :param server: the server options as a ServerArgs object (default is None)
+    :param notifier: the notifier options as a NotifierArgs object (default is None)
+    :return: a dict of information about the download
+    """
     # find the download request first
     original_request = DownloadRequest.get(download_id)
     if original_request is None:
@@ -86,7 +105,8 @@ def vds_download_regenerate(
     query = QueryArgs(
         query=original_request.core_record.query,
         query_version=original_request.core_record.query_version,
-        resource_ids_and_versions=original_request.core_record.resource_ids_and_versions,
+        resource_ids=original_request.core_record.get_resource_ids(),
+        version=original_request.core_record.get_version(),
     )
 
     file = DerivativeArgs(

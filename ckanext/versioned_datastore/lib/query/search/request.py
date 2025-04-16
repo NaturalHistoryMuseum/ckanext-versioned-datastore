@@ -1,19 +1,19 @@
 import dataclasses
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
-from elasticsearch_dsl import Search, MultiSearch, AttrDict
+from elasticsearch_dsl import AttrDict, MultiSearch, Search
 from elasticsearch_dsl.aggs import A
 from elasticsearch_dsl.query import Bool
 from elasticsearch_dsl.response import Response
 from splitgill.indexing.fields import DocumentField
-from splitgill.search import version_query, rebuild_data
+from splitgill.search import rebuild_data, version_query
 
 from ckanext.versioned_datastore.lib.query.search.query import Query
 from ckanext.versioned_datastore.lib.query.search.sort import Sort
 from ckanext.versioned_datastore.lib.utils import (
-    ivds_implementations,
-    get_database,
     es_client,
+    get_database,
+    ivds_implementations,
     unprefix_index_name,
 )
 
@@ -50,7 +50,7 @@ class SearchRequest:
 
         :param field: the field to sort on
         :param ascending: whether to sort in ascending (True, default) or descending
-                          (False)
+            (False)
         """
         self.sorts.append(Sort(field, ascending))
 
@@ -110,7 +110,8 @@ class SearchRequest:
         :return: a new Elasticsearch Search object
         """
         search = (
-            Search().index(self.indexes())
+            Search()
+            .index(self.indexes())
             # we want to provide an accurate count, and damn the expense
             .extra(track_total_hits=True)
         )
@@ -122,7 +123,7 @@ class SearchRequest:
             search = search.filter(version_query(self.query.version))
 
         # add any extra filters if there are any
-        if self.extra_filter.to_dict()["bool"]:
+        if self.extra_filter.to_dict()['bool']:
             search = search.filter(self.extra_filter)
 
         size = self.get_safe_size()
@@ -141,7 +142,7 @@ class SearchRequest:
 
             # set the source if required
             if self.fields:
-                fields = [f"{DocumentField.DATA}.{field}" for field in self.fields]
+                fields = [f'{DocumentField.DATA}.{field}' for field in self.fields]
                 # add the fields we need for the ResultRecord wrapper class to work
                 fields.extend([DocumentField.ID, DocumentField.VERSION])
                 search = search.source(fields)
@@ -150,10 +151,10 @@ class SearchRequest:
             if self.sorts:
                 sorts = [sort.to_sort() for sort in self.sorts]
             else:
-                sorts = [{DocumentField.VERSION: "desc"}]
+                sorts = [{DocumentField.VERSION: 'desc'}]
             # TODO: can we use _doc here? Is it safe across indexes?
             # always add the default sort to ensure search after values are unique
-            sorts.extend([Sort.desc("_id").to_sort(), {"_index": "desc"}])
+            sorts.extend([Sort.desc('_id').to_sort(), {'_index': 'desc'}])
             search = search.sort(*sorts)
 
         # add any aggregations
@@ -162,7 +163,7 @@ class SearchRequest:
 
         return search
 
-    def run(self) -> "SearchResponse":
+    def run(self) -> 'SearchResponse':
         """
         Builds the search, runs it, and returns a SearchResponse object.
 
@@ -295,7 +296,7 @@ class SearchResponse:
             return None
 
         if len(self.response.hits) > self._request_size:
-            if "sort" in self.hits[-1].hit.meta:
-                return list(self.hits[-1].hit.meta["sort"])
+            if 'sort' in self.hits[-1].hit.meta:
+                return list(self.hits[-1].hit.meta['sort'])
 
         return None
