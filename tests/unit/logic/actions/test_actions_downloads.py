@@ -1,32 +1,31 @@
-import pytest
-from mock import patch
+from unittest.mock import patch
 
-from ckanext.versioned_datastore.logic.actions.downloads import datastore_queue_download
-from ckanext.versioned_datastore.logic.actions.meta.arg_objects import (
-    QueryArgs,
+import pytest
+
+from ckanext.versioned_datastore.logic.download.action import vds_download_queue
+from ckanext.versioned_datastore.logic.download.arg_objects import (
     DerivativeArgs,
     NotifierArgs,
+    QueryArgs,
 )
 from tests.helpers import patches
 
 
 class TestQueueDownload:
-    @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
-    @pytest.mark.usefixtures('with_plugins', 'with_versioned_datastore_tables')
+    @pytest.mark.usefixtures('with_vds')
     def test_queue_direct_call(self):
         # there is a very similar test in test_downloads.py that calls this via the API
         # instead
         resource_ids = ['test-resource-id']
 
-        with patch(
-            'ckan.plugins.toolkit.enqueue_job'
-        ) as enqueue_mock, patches.rounded_versions(), patches.get_available_resources(
-            resource_ids
-        ), patches.url_for():
-            datastore_queue_download(
-                {},
-                QueryArgs(),
-                DerivativeArgs(format='csv'),
-                notifier=NotifierArgs(type='none'),
-            )
-            assert enqueue_mock.call_count == 1
+        with patch('ckan.plugins.toolkit.enqueue_job') as enqueue_mock:
+            with patches.rounded_versions():
+                with patches.get_available_resources(resource_ids):
+                    with patches.url_for():
+                        vds_download_queue(
+                            {},
+                            QueryArgs(),
+                            DerivativeArgs(format='csv'),
+                            notifier=NotifierArgs(type='none'),
+                        )
+                        assert enqueue_mock.call_count == 1

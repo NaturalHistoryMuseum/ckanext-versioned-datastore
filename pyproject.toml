@@ -19,12 +19,12 @@ classifiers = [
     "Programming Language :: Python :: 3.8"
 ]
 dependencies = [
+    "splitgill==3.0.1",
     "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
-    "splitgill==2.0.0",
-    "elasticsearch-dsl>=6.0.0,<7.0.0",
-    "elasticsearch>=6.0.0,<7.0.0",
+    "elasticsearch>=8.10.1",
+    "elasticsearch-dsl>=8.9.0",
     "jsonschema==3.0.0",
     "openpyxl==2.5.8",
     "pandas==1.4.1",
@@ -33,7 +33,7 @@ dependencies = [
     "xlrd==1.1.0",
     "fastavro==1.7.0",
     "ckantools>=0.3.0",
-    "cachetools>=4.2.4"
+    "cachetools>=4.2.4",
 ]
 
 [project.optional-dependencies]
@@ -44,10 +44,11 @@ test = [
     "coveralls"
 ]
 doi = [
-    "ckanext-query-dois~=2.3.0"
+    "ckanext-query-dois@git+https://github.com/NaturalHistoryMuseum/ckanext-query-dois@b8eeb542c5a5c80cd1d05a23979dc87a05b39a35",
+#    "ckanext-query-dois~=2.3.0"
 ]
 attribution = [
-    "ckanext-attribution~=1.2.0"
+    "ckanext-attribution~=1.2.13"
 ]
 
 [project.urls]
@@ -85,9 +86,8 @@ version_files = [
     "CITATION.cff:^version"
 ]
 
-[tool.black]
-line-length = 88
-skip_string_normalization = true
+[tool.ruff.format]
+quote-style = "single"
 
 [tool.pylint]
 max-line-length = 88

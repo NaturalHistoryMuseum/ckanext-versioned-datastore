@@ -13,7 +13,7 @@ ckan.module('vds_search', function () {
 
       let runSearch = function () {
         search.query('match', 'meta.all', searchBox.val());
-        fetch('/api/3/action/datastore_multisearch', {
+        fetch('/api/3/action/vds_multi_query', {
           method: 'POST',
           mode: 'cors',
           cache: 'no-cache',

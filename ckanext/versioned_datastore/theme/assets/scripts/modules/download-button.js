@@ -196,7 +196,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
       this._setLoading(true);
       this.sandbox.client.call(
         'POST',
-        'datastore_queue_download',
+        'vds_download_queue',
         formData,
         (response) => {
           if (response.success) {
@@ -299,7 +299,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
       return new Promise((resolve, reject) => {
         this.sandbox.client.call(
           'POST',
-          'datastore_create_slug',
+          'vds_slug_create',
           slugOptions,
           (response) => {
             if (response.success) {
