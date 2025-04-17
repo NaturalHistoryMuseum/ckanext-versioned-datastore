@@ -19,8 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8"
 ]
 dependencies = [
-    # TODO: switch to pypi once stable
-    "splitgill@git+https://github.com/NaturalHistoryMuseum/splitgill@eed0d40f0923e9b2e152e395ce0de4c29a418ae2",
+    "splitgill==3.0.1",
     "importlib-resources",
     "backports.csv==1.0.6",
     "cchardet==2.1.4",
@@ -45,11 +44,11 @@ test = [
     "coveralls"
 ]
 doi = [
-    "ckanext-query-dois@git+https://github.com/NaturalHistoryMuseum/ckanext-query-dois@4c2e521cadb12377489d6c916ca954c988dd1f03",
+    "ckanext-query-dois@git+https://github.com/NaturalHistoryMuseum/ckanext-query-dois@b8eeb542c5a5c80cd1d05a23979dc87a05b39a35",
 #    "ckanext-query-dois~=2.3.0"
 ]
 attribution = [
-    "ckanext-attribution~=1.2.0"
+    "ckanext-attribution~=1.2.13"
 ]
 
 [project.urls]
