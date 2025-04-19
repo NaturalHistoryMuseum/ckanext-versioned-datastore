@@ -1,60 +1,29 @@
-from traceback import format_exception_only
-
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from ckanext.versioned_datastore.helpers import (
-    is_duplicate_ingestion,
-    get_human_duration,
-    get_stat_icon,
-    get_stat_activity_class,
-    get_stat_title,
     get_available_formats,
+    get_human_duration,
+    get_stat_activity_class,
+    get_stat_icon,
+    get_stat_title,
+    is_duplicate_ingestion,
 )
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS
-from ckanext.versioned_datastore.lib.importing.ingestion.exceptions import (
-    DuplicateDataSource,
-    UnsupportedDataSource,
-)
-from ckanext.versioned_datastore.lib.importing.stats import (
-    INGEST,
-    INDEX,
-    PREP,
-    ALL_TYPES,
-)
+from ckanext.versioned_datastore.lib.importing.readers import ReaderNotFound
+from ckanext.versioned_datastore.lib.importing.tasks import get_dupe_message
+from ckanext.versioned_datastore.model.stats import ALL_TYPES, INDEX, INGEST, PREP
 
 
 class TestHelpers(object):
-    def test_is_duplicate_ingestion(self):
-        dup_exception = DuplicateDataSource('some_file_hash')
+    def test_is_duplicate_ingestion_works(self):
+        stat = MagicMock(error=get_dupe_message('notarealhash'))
+        assert is_duplicate_ingestion(stat)
 
-        # should be able to match on just the message
-        stat1 = MagicMock(error=str(dup_exception))
-        assert is_duplicate_ingestion(stat1)
-
-        # but also the final line of the actual stack output
-        stat2 = MagicMock(
-            error=str(
-                format_exception_only(DuplicateDataSource, dup_exception)[-1].strip()
-            )
-        )
-        assert is_duplicate_ingestion(stat2)
-
-        # it shouldn't match other things, for example a UnsupportedDataSource exception
-        non_dup_exception = UnsupportedDataSource('csv')
-
+    def test_is_duplicate_ingestion_avoids_other_errors(self):
+        reader_not_found_exception = ReaderNotFound('test')
         # just the message should fail
-        stat3 = MagicMock(error=str(non_dup_exception))
-        assert not is_duplicate_ingestion(stat3)
-
-        # and so should the final line of the actual stack output
-        stat4 = MagicMock(
-            error=str(
-                format_exception_only(UnsupportedDataSource, non_dup_exception)[
-                    -1
-                ].strip()
-            )
-        )
-        assert not is_duplicate_ingestion(stat4)
+        stat = MagicMock(error=str(reader_not_found_exception))
+        assert not is_duplicate_ingestion(stat)
 
     def test_get_human_duration(self):
         scenarios = [
@@ -174,6 +143,6 @@ class TestHelpers(object):
 
     def test_get_available_formats(self):
         formats = get_available_formats()
-        assert isinstance(formats, list)
+        assert isinstance(formats, set)
         for f in ALL_FORMATS:
             assert f in formats

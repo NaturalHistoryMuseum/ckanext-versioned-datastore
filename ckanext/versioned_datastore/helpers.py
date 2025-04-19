@@ -1,10 +1,11 @@
 import json
-from ckan.plugins import toolkit
 from datetime import date
 
-from .lib.common import ALL_FORMATS
-from .lib.importing import stats
-from .lib.query.slugs import create_nav_slug
+from ckan.plugins import toolkit
+from ckanext.versioned_datastore.lib.common import ALL_FORMATS
+from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
+from ckanext.versioned_datastore.lib.query.slugs.slugs import create_nav_slug
+from ckanext.versioned_datastore.model import stats
 
 
 def is_duplicate_ingestion(stat):
@@ -18,7 +19,7 @@ def is_duplicate_ingestion(stat):
     :param stat: the ImportStats object
     :return: True if the error on this stat is a duplicate ingestion error, False if not
     """
-    return stat.error and 'this file has been ingested before' in stat.error.lower()
+    return stat.error and "this file has been ingested before" in stat.error.lower()
 
 
 def get_human_duration(stat):
@@ -33,11 +34,11 @@ def get_human_duration(stat):
     :return: a nicely formatted duration string
     """
     if stat.duration < 60:
-        return toolkit._(f'{stat.duration:.2f} seconds')
+        return toolkit._(f"{stat.duration:.2f} seconds")
     elif stat.duration < 60 * 60:
-        return toolkit._(f'{stat.duration / 60:.0f} minutes')
+        return toolkit._(f"{stat.duration / 60:.0f} minutes")
     else:
-        return toolkit._(f'{stat.duration / (60 * 60):.0f} hours')
+        return toolkit._(f"{stat.duration / (60 * 60):.0f} hours")
 
 
 def get_stat_icon(stat):
@@ -51,21 +52,21 @@ def get_stat_icon(stat):
     """
     if stat.in_progress:
         # a spinner, that spins
-        return 'fa-spinner fa-pulse'
+        return "fa-spinner fa-pulse"
     if stat.error:
         if is_duplicate_ingestion(stat):
             # we don't want this to look like an error
-            return 'fa-copy'
-        return 'fa-exclamation'
+            return "fa-copy"
+        return "fa-exclamation"
 
     if stat.type == stats.INGEST:
-        return 'fa-tasks'
+        return "fa-tasks"
     if stat.type == stats.INDEX:
-        return 'fa-search'
+        return "fa-search"
     if stat.type == stats.PREP:
-        return 'fa-cogs'
+        return "fa-cogs"
     # shouldn't get here, just use some default tick thing
-    return 'fa-check'
+    return "fa-check"
 
 
 def get_stat_activity_class(stat):
@@ -78,11 +79,11 @@ def get_stat_activity_class(stat):
     :return: a string
     """
     if stat.in_progress:
-        return 'in_progress'
+        return "in_progress"
     if stat.error:
         if is_duplicate_ingestion(stat):
-            return 'duplicate'
-        return 'failure'
+            return "duplicate"
+        return "failure"
     return stat.type
 
 
@@ -95,11 +96,11 @@ def get_stat_title(stat):
     :return: the title for the activity item as a unicode string
     """
     if stat.type == stats.INGEST:
-        return toolkit._('Ingested new resource data')
+        return toolkit._("Ingested new resource data")
     if stat.type == stats.INDEX:
-        return toolkit._('Updated search index with resource data')
+        return toolkit._("Updated search index with resource data")
     if stat.type == stats.PREP:
-        return toolkit._('Validated and prepared the data for ingestion')
+        return toolkit._("Validated and prepared the data for ingestion")
     return stat.type
 
 
@@ -140,26 +141,26 @@ def latest_item_version(resource_id, record_id=None):
     :param record_id: optional; a record id to search for instead
     :return: if record id is provided, the latest record version, else the latest resource version
     """
-    action = (
-        'datastore_get_record_versions'
-        if record_id
-        else 'datastore_get_resource_versions'
-    )
-    data_dict = {'resource_id': resource_id}
     if record_id:
-        data_dict['id'] = record_id
+        action = "vds_version_record"
+        data_dict = {"resource_id": resource_id, "record_id": record_id}
+    else:
+        action = "vds_version_resource"
+        data_dict = {"resource_id": resource_id}
 
-    versions = toolkit.get_action(action)({}, data_dict)
-    return versions[-1]
+    result = toolkit.get_action(action)({}, data_dict)
+
+    if record_id:
+        # we get back a list of versions in ascending order
+        return result[-1]
+    else:
+        # we get back a dict of versions and counts
+        return max(result.keys())
 
 
-def nav_slug(
-    query=None, version=None, resource_ids=None, resource_ids_and_versions=None
-):
+def nav_slug(query=None, version=None, resource_ids=None):
     """
     Just a helper proxy for create_nav_slug.
     """
-    is_new, slug = create_nav_slug(
-        {}, query or {}, version, resource_ids, resource_ids_and_versions
-    )
+    is_new, slug = create_nav_slug(SchemaQuery(resource_ids, version, query))
     return slug.get_slug_string()

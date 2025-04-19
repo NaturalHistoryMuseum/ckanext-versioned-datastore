@@ -55,10 +55,12 @@
                             <th>{{ _("Type") }}</th>
                             <td>{{ stat.type }}</td>
                         </tr>
+                        {% if stat.version %}
                         <tr>
                             <th>{{ _("Version") }}</th>
                             <td>{{ stat.version }}</td>
                         </tr>
+                        {% endif %}
                         <tr>
                             <th>{{ _("Start") }}</th>
                             <td>{{ stat.start }}</td>

@@ -1,36 +1,50 @@
-import os.path
-from collections import defaultdict
-
-import fastavro
 import hashlib
 import json
 import os
+import os.path
 import shutil
 import tempfile
 import zipfile
+from collections import defaultdict
 from datetime import datetime as dt
-from elasticsearch_dsl import Search
 from functools import partial
 from glob import iglob
-from splitgill.indexing.utils import get_elasticsearch_client
-from splitgill.search import create_version_query
 
+import fastavro
 from ckan.lib import uploader
-from ckan.plugins import toolkit, PluginImplementations
+from ckan.plugins import toolkit
+from splitgill.search import rebuild_data
+
+from ckanext.versioned_datastore.lib import common
+from ckanext.versioned_datastore.lib.downloads.utils import (
+    calculate_field_counts,
+    filter_data_fields,
+    get_fields,
+    get_schema,
+)
+from ckanext.versioned_datastore.lib.query.utils import get_resources_and_versions
+from ckanext.versioned_datastore.lib.utils import (
+    get_database,
+    idownload_implementations,
+)
+from ckanext.versioned_datastore.logic.download.arg_objects import (
+    DerivativeArgs,
+    NotifierArgs,
+    QueryArgs,
+    ServerArgs,
+)
+from ckanext.versioned_datastore.model.downloads import (
+    CoreFileRecord,
+    DerivativeFileRecord,
+    DownloadRequest,
+)
+
 from .loaders import (
     get_derivative_generator,
     get_file_server,
     get_notifier,
     get_transformation,
 )
-from .query import Query
-from .utils import get_schemas, calculate_field_counts, filter_data_fields, get_fields
-from .. import common
-from ..datastore_utils import prefix_resource
-from ...interfaces import IVersionedDatastoreDownloads
-from ...logic.actions.meta.arg_objects import DerivativeArgs
-from ...model.downloads import CoreFileRecord, DownloadRequest
-from ...model.downloads import DerivativeFileRecord
 
 
 class DownloadRunManager:
@@ -42,15 +56,21 @@ class DownloadRunManager:
         'ckanext.versioned_datastore.custom_dir', os.path.join(download_dir, 'custom')
     )
 
-    def __init__(self, query_args, derivative_args, server_args, notifier_args):
+    def __init__(
+        self,
+        query_args: QueryArgs,
+        derivative_args: DerivativeArgs,
+        server_args: ServerArgs,
+        notifier_args: NotifierArgs,
+    ):
         # allow plugins to make changes to the args
-        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+        for plugin in idownload_implementations():
             (
                 query_args,
                 derivative_args,
                 server_args,
                 notifier_args,
-            ) = plugin.download_before_run(
+            ) = plugin.download_before_init(
                 query_args, derivative_args, server_args, notifier_args
             )
 
@@ -62,23 +82,19 @@ class DownloadRunManager:
             # we also can't use a query
             query_args.query = {}
             query_args.slug_or_doi = None
-            # resource versions will always be the latest version
-            query_args.resource_ids = query_args.resource_ids or list(
-                query_args.resource_ids_and_versions.keys()
-            )
-            query_args.resource_ids_and_versions = None
 
+        self.query = query_args.to_schema_query()
         self.allow_non_datastore = (
             derivative_args.format == 'raw'
             and derivative_args.format_args.get('allow_non_datastore', False)
         )
-        self.query = Query.from_query_args(
-            query_args, allow_non_datastore=self.allow_non_datastore
+        self.resource_ids_and_versions = get_resources_and_versions(
+            self.query,
+            allow_non_datastore=self.allow_non_datastore,
         )
         self.derivative_options = derivative_args
-        for field, default_value in DerivativeArgs.defaults.items():
-            if getattr(self.derivative_options, field) is None:
-                setattr(self.derivative_options, field, default_value)
+        # todo: i don't think this is necessary cause BaseArgs handles defaults?
+        self.derivative_options.ensure_defaults_are_set()
         self.server = get_file_server(
             server_args.type,
             filename=server_args.custom_filename,
@@ -102,7 +118,7 @@ class DownloadRunManager:
 
         self._temp = []
 
-        for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+        for plugin in idownload_implementations():
             plugin.download_after_init(self.request)
 
     @property
@@ -123,7 +139,18 @@ class DownloadRunManager:
         Unique hash for this download request, identified by the query and the
         derivative options.
         """
-        to_hash = [self.query.record_hash, self.derivative_hash]
+        to_hash = [self.record_hash, self.derivative_hash]
+        download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
+        return download_hash.hexdigest()
+
+    @property
+    def resource_hash(self) -> str:
+        resources = sorted(self.resource_ids_and_versions.items())
+        return hashlib.sha1('|'.join(map(str, resources)).encode('utf-8')).hexdigest()
+
+    @property
+    def record_hash(self):
+        to_hash = [self.query.hash, self.resource_hash]
         download_hash = hashlib.sha1('|'.join(to_hash).encode('utf-8'))
         return download_hash.hexdigest()
 
@@ -176,7 +203,7 @@ class DownloadRunManager:
                     shutil.rmtree(t)
                 except FileNotFoundError:
                     pass
-            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            for plugin in idownload_implementations():
                 plugin.download_after_run(self.request)
 
     def check_for_records(self):
@@ -214,12 +241,13 @@ class DownloadRunManager:
                 derivative_record = possible_records[0]
                 core_record = derivative_record.core_record
 
-        # if the core record hasn't been found by searching for the derivative, try and find it now
+        # if the core record hasn't been found by searching for the derivative, try and
+        # find it now
         if core_record is None:
             if os.path.exists(self.core_folder_path):
                 # could return multiple options, sorted by most recent first
                 possible_records = CoreFileRecord.get_by_hash(
-                    self.query.hash, self.query.resource_hash
+                    self.query.hash, self.resource_hash
                 )
                 if possible_records:
                     # use the most recent one
@@ -230,8 +258,8 @@ class DownloadRunManager:
                 query_hash=self.query.hash,
                 query=self.query.query,
                 query_version=self.query.query_version,
-                resource_ids_and_versions=self.query.resource_ids_and_versions,
-                resource_hash=self.query.resource_hash,
+                resource_ids_and_versions=self.resource_ids_and_versions,
+                resource_hash=self.resource_hash,
             )
             core_record.save()
 
@@ -254,8 +282,8 @@ class DownloadRunManager:
         """
         Generates and loads core files.
 
-        This method will add new resources to existing core records
-        with identical filters, reducing data duplication.
+        This method will add new resources to existing core records with identical
+        filters, reducing data duplication.
         :return: the core record
         """
         if not os.path.exists(self.core_folder_path):
@@ -265,11 +293,12 @@ class DownloadRunManager:
         existing_files = os.listdir(self.core_folder_path)
         resources_to_generate = {
             rid: v
-            for rid, v in self.query.resource_ids_and_versions.items()
+            for rid, v in self.core_record.resource_ids_and_versions.items()
             if f'{rid}_{v}.avro' not in existing_files
             and v != common.NON_DATASTORE_VERSION
         }
 
+        # todo: are these needed?
         resource_totals = {k: 0 for k in self.core_record.resource_ids_and_versions}
         field_counts = {k: None for k in self.core_record.resource_ids_and_versions}
 
@@ -277,7 +306,7 @@ class DownloadRunManager:
         # need regenerating
         existing_resources = [
             k
-            for k, v in self.query.resource_ids_and_versions.items()
+            for k, v in self.core_record.resource_ids_and_versions.items()
             if k not in resources_to_generate and v != common.NON_DATASTORE_VERSION
         ]
         for resource_id in existing_resources:
@@ -285,14 +314,16 @@ class DownloadRunManager:
             record = CoreFileRecord.find_resource(
                 self.query.hash,
                 resource_id,
-                self.query.resource_ids_and_versions[resource_id],
+                self.core_record.resource_ids_and_versions[resource_id],
             )
             if record:
                 resource_totals[resource_id] = record.resource_totals[resource_id]
                 field_counts[resource_id] = record.field_counts[resource_id]
             else:
                 # if there's no record we should regenerate the avro file
-                resource_version = self.query.resource_ids_and_versions[resource_id]
+                resource_version = self.core_record.resource_ids_and_versions[
+                    resource_id
+                ]
                 core_file_path = os.path.join(
                     self.core_folder_path, f'{resource_id}_{resource_version}.avro'
                 )
@@ -300,30 +331,19 @@ class DownloadRunManager:
                 resources_to_generate[resource_id] = resource_version
 
         if len(resources_to_generate) > 0:
-            es_client = get_elasticsearch_client(
-                common.CONFIG,
-                sniff_on_start=True,
-                sniffer_timeout=60,
-                sniff_on_connection_fail=True,
-                sniff_timeout=10,
-                http_compress=False,
-                timeout=30,
-            )
-
-            schemas = get_schemas(self.query)
-
             for resource_id, version in resources_to_generate.items():
                 self.request.update_status(DownloadRequest.state_core_gen, resource_id)
+
                 resource_totals[resource_id] = 0
                 field_counts[resource_id] = calculate_field_counts(
-                    self.query, es_client, resource_id, version
+                    resource_id, version, self.query
                 )
 
-                search = (
-                    Search.from_dict(self.query.translate().to_dict())
-                    .index(prefix_resource(resource_id))
-                    .using(es_client)
-                    .filter(create_version_query(version))
+                database = get_database(resource_id)
+                search = database.search(version).filter(self.query.to_dsl())
+
+                schema = fastavro.parse_schema(
+                    get_schema(resource_id, version, self.query)
                 )
 
                 fn = f'{resource_id}_{version}.avro'
@@ -332,7 +352,7 @@ class DownloadRunManager:
                 codec_kwargs = dict(codec='bzip2', codec_compression_level=9)
                 chunk_size = 10000
                 with open(fp, 'wb') as f:
-                    fastavro.writer(f, schemas[resource_id], [], **codec_kwargs)
+                    fastavro.writer(f, schema, [], **codec_kwargs)
 
                 def _flush(record_block):
                     with open(fp, 'a+b') as outfile:
@@ -340,7 +360,7 @@ class DownloadRunManager:
 
                 chunk = []
                 for hit in search.scan():
-                    data = hit.data.to_dict()
+                    data = rebuild_data(hit.data.to_dict())
                     resource_totals[resource_id] += 1
                     chunk.append(data)
                     if len(chunk) == chunk_size:
@@ -350,7 +370,7 @@ class DownloadRunManager:
 
         non_datastore_resources = [
             k
-            for k, v in self.query.resource_ids_and_versions.items()
+            for k, v in self.resource_ids_and_versions.items()
             if v == common.NON_DATASTORE_VERSION
         ]
         for resource_id in non_datastore_resources:
@@ -404,10 +424,10 @@ class DownloadRunManager:
             }
 
             if self.derivative_options.format != 'raw':
-                # set up the derivative generators; each generator creates one component.
-                # components = individual file groups within the main zip, e.g. one CSV for each
-                # resource (multiple components), or multiple files comprising a single DarwinCore
-                # archive (single component)
+                # set up the derivative generators; each generator creates one
+                # component. components = individual file groups within the main zip,
+                # e.g. one CSV for each resource (multiple components), or multiple
+                # files comprising a single DarwinCore archive (single component)
                 fields = partial(
                     get_fields,
                     self.core_record.field_counts,
@@ -423,7 +443,7 @@ class DownloadRunManager:
                             query=self.query,
                             **self.derivative_options.format_args,
                         )
-                        for rid in self.query.resource_ids_and_versions
+                        for rid in self.resource_ids_and_versions
                     }
                 else:
                     gen = get_derivative_generator(
@@ -441,16 +461,13 @@ class DownloadRunManager:
                     for t, targs in (self.derivative_options.transform or {}).items()
                 ]
 
-                for (
-                    resource_id,
-                    version,
-                ) in self.query.resource_ids_and_versions.items():
+                for resource_id, version in self.resource_ids_and_versions.items():
                     # add the resource ID as the message for use in the status page
                     self.request.update_status(
                         DownloadRequest.state_derivative_gen, resource_id
                     )
                     if (
-                        len(self.query.resource_ids_and_versions) > 1
+                        len(self.resource_ids_and_versions) > 1
                         and self.core_record.resource_totals[resource_id] == 0
                     ):
                         # don't generate empty files unless there's only one resource
@@ -480,10 +497,7 @@ class DownloadRunManager:
 
             else:
                 resource_show = toolkit.get_action('resource_show')
-                for (
-                    resource_id,
-                    version,
-                ) in self.query.resource_ids_and_versions.items():
+                for resource_id, version in self.resource_ids_and_versions.items():
                     self.request.update_status(
                         DownloadRequest.state_derivative_gen, resource_id
                     )
@@ -519,7 +533,7 @@ class DownloadRunManager:
             manifest['files'] = files_to_zip
 
             # allow plugins to make changes
-            for plugin in PluginImplementations(IVersionedDatastoreDownloads):
+            for plugin in idownload_implementations():
                 manifest = plugin.download_modify_manifest(manifest, self.request)
 
             # write out manifest

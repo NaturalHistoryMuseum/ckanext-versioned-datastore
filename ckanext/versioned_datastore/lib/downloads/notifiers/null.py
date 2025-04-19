@@ -1,18 +1,18 @@
 from logging import getLogger
 
-from .base import BaseNotifier
+from ckanext.versioned_datastore.lib.downloads.notifiers.base import BaseNotifier
 
 logger = getLogger(__name__)
 
 
 class NullNotifier(BaseNotifier):
-    name = 'none'
+    name = "none"
 
     def notify_start(self):
-        logger.debug('Processing started.')
+        logger.debug("Processing started.")
 
     def notify_end(self, file_url):
-        logger.debug('Processing ended.')
+        logger.debug("Processing ended.")
 
     def notify_error(self):
-        logger.debug('Processing failed.')
+        logger.debug("Processing failed.")

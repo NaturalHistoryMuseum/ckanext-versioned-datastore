@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 from sqlalchemy import (
     Column,
@@ -15,6 +16,7 @@ from sqlalchemy.exc import InvalidRequestError
 
 from ckan.model import meta, DomainObject, Session
 from ckan.model.types import make_uuid
+from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
 state_initial = 'initiated'
@@ -122,6 +124,35 @@ class CoreFileRecord(DomainObject):
             .all()
         )
 
+    def get_resource_ids(self) -> List[str]:
+        """
+        Returns the list of resource IDs this download searches over.
+
+        :return: a sorted list of resource IDs
+        """
+        return sorted(self.resource_ids_and_versions.keys())
+
+    def get_version(self) -> int:
+        """
+        Infers the version of this search by taking the maximum version from the
+        resource_ids_and_versions dict. This is highly unlikely to be the actual version
+        that was searched at the time the download was created, but it will produce the
+        same data.
+
+        :return: an integer version
+        """
+        return max(self.resource_ids_and_versions.values())
+
+    def to_schema_query(self) -> SchemaQuery:
+        """
+        Converts this download core into a SchemaQuery object.
+
+        :return: a new SchemaQuery object
+        """
+        return SchemaQuery(
+            self.get_resource_ids(), self.get_version(), self.query, self.query_version
+        )
+
     @classmethod
     def find_resource(cls, query_hash, resource_id, resource_version, exclude=None):
         exclude = exclude or []
@@ -218,7 +249,7 @@ class DownloadRequest(DomainObject):
     state_retrieving = 'retrieving'
 
     @classmethod
-    def get(cls, request_id):
+    def get(cls, request_id) -> "DownloadRequest":
         return Session.query(cls).get(request_id)
 
     def update(self, **kwargs):

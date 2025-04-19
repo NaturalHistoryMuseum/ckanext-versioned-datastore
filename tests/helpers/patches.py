@@ -1,6 +1,6 @@
 from collections import defaultdict, namedtuple
 
-from mock import patch, MagicMock
+from mock import MagicMock, patch
 
 from tests.helpers.utils import sync_enqueue_job
 
@@ -16,7 +16,7 @@ def rounded_versions():
         return defaultdict(lambda: target_version)
 
     return patch(
-        'ckanext.versioned_datastore.lib.common.SEARCH_HELPER.get_rounded_versions',
+        'ckanext.versioned_datastore.logic.version.action.vds_version_round',
         side_effect=rounded_versions_mock,
     )
 
@@ -53,7 +53,7 @@ def elasticsearch_client():
 def get_available_resources(resource_ids=None):
     resource_ids = resource_ids or ['test-resource-id']
     return patch(
-        'ckanext.versioned_datastore.lib.query.utils.get_available_datastore_resources',
+        'ckanext.versioned_datastore.lib.utils.get_available_datastore_resources',
         return_value=resource_ids,
     )
 

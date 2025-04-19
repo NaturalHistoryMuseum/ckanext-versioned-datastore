@@ -1,12 +1,18 @@
 import json
 from collections import OrderedDict
+from typing import Optional, Dict, List
 
 from ckan import model
 
 from ...model.details import DatastoreResourceDetails
 
 
-def create_details(resource_id, version, columns, file_hash=None):
+def create_details(
+    resource_id: str,
+    version: int,
+    columns: List[str],
+    file_hash: Optional[str] = None,
+) -> int:
     """
     Helper for creating a DatastoreResourceDetails object.
 
@@ -44,7 +50,9 @@ def get_details(resource_id, version):
     )
 
 
-def get_all_details(resource_id, up_to_version=None):
+def get_all_details(
+    resource_id, up_to_version=None
+) -> Dict[int, DatastoreResourceDetails]:
     """
     Retrieve all the details for a resource and return them as an OrderedDict using the
     versions as the keys. If the up_to_version parameter is passed then any versions
@@ -70,11 +78,43 @@ def get_all_details(resource_id, up_to_version=None):
     return all_details
 
 
+def get_details_at(
+    resource_id: str, version: Optional[int] = None
+) -> Optional[DatastoreResourceDetails]:
+    """
+    Retrieve the details that apply at the given version. If the version is None (the
+    default) then the latest details are returned.
+
+    :param resource_id: the resource ID to get the details for
+    :param version: the version of the details to get (or None for latest)
+    :return: None if no details were found, or a DatastoreResourceDetails object
+    """
+    all_details = query = (
+        model.Session.query(DatastoreResourceDetails)
+        .filter(DatastoreResourceDetails.resource_id == resource_id)
+        .order_by(DatastoreResourceDetails.version.asc())
+    ).all()
+
+    if not all_details:
+        return None
+
+    if version is None:
+        return all_details[-1]
+
+    candidate = None
+    for details in query:
+        if version >= details.version:
+            candidate = details
+        else:
+            break
+    return candidate
+
+
 def get_last_file_hash(resource_id):
     """
     Retrieves the most recent file hash and returns it. If there is no most recent file
     hash (either because there isn't a file hash present or because there aren't any
-    details rows available, then this function returns None.
+    details rows available) then this function returns None.
 
     :param resource_id: the resource id
     :return: None or the most recent file hash

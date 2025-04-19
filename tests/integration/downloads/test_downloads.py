@@ -1,16 +1,18 @@
 import csv
 import json
 import os
-import pytest
 import shutil
 import tempfile
 import zipfile
-from mock import patch, MagicMock
-from tests.helpers import patches, data as test_data
 
+import pytest
 from ckan.plugins import toolkit
 from ckan.tests import factories
+from mock import MagicMock, patch
+
 from ckanext.versioned_datastore.model.downloads import DownloadRequest
+from tests.helpers import data as test_data
+from tests.helpers import patches
 
 scenarios = [
     ('csv', {}),
@@ -31,13 +33,7 @@ scenarios = [
 expected_extensions = {'csv': '.csv', 'json': '.json', 'xlsx': '.xlsx', 'dwc': '.zip'}
 
 
-@pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
-@pytest.mark.usefixtures(
-    'with_plugins',
-    'with_versioned_datastore_tables',
-    'with_vds_resource',
-    'clear_download_dir',
-)
+@pytest.mark.usefixtures('with_vds')
 class TestQueueDownload:
     @patches.enqueue_job()
     @pytest.mark.parametrize('file_format,format_args', scenarios)
@@ -45,8 +41,11 @@ class TestQueueDownload:
     def test_run_download_formats(
         self, enqueue_job, with_vds_resource, file_format, format_args, separate_files
     ):
+        resource_1_id = with_vds_resource[0]['id']
+        resource_2_id = with_vds_resource[1]['id']
+
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {'query': {}},
@@ -77,18 +76,18 @@ class TestQueueDownload:
             else:
                 assert len(archive_files) == 3
                 assert (
-                    f'{with_vds_resource[0]["id"]}{expected_extensions[file_format]}'
+                    f'{resource_1_id}{expected_extensions[file_format]}'
                     in archive_files
                 )
                 assert (
-                    f'{with_vds_resource[1]["id"]}{expected_extensions[file_format]}'
+                    f'{resource_2_id}{expected_extensions[file_format]}'
                     in archive_files
                 )
 
     @patches.enqueue_job()
-    def test_run_download_without_query(self, enqueue_job):
+    def test_run_download_without_query(self, enqueue_job, with_vds_resource):
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {'query': {}},
@@ -109,6 +108,7 @@ class TestQueueDownload:
         self.temp_dir = tempfile.mktemp()
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
             archive_files = zf.namelist()
+            print(archive_files)
             assert 'manifest.json' in archive_files
             zf.extract('manifest.json', self.temp_dir)
             assert 'resource.csv' in archive_files
@@ -144,7 +144,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     def test_run_download_with_query(self, enqueue_job, with_vds_resource):
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {
@@ -192,7 +192,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     def test_run_download_keep_empty(self, enqueue_job, with_vds_resource):
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {
@@ -244,7 +244,7 @@ class TestQueueDownload:
     @patches.enqueue_job()
     def test_run_download_ignore_empty(self, enqueue_job, with_vds_resource):
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {
@@ -295,9 +295,11 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     @pytest.mark.parametrize('transform', [{'id_as_url': {'field': 'urlSlug'}}])
-    def test_run_download_with_transform(self, enqueue_job, transform):
+    def test_run_download_with_transform(
+        self, enqueue_job, transform, with_vds_resource
+    ):
         with patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {'query': {}},
@@ -333,7 +335,11 @@ class TestQueueDownload:
 
     @patches.enqueue_job()
     def test_run_download_with_non_vds_resource(self, enqueue_job, with_vds_resource):
-        non_ds_resource = factories.Resource(url_type='upload')
+        with patch(
+            'ckanext.versioned_datastore.logic.data.action.is_resource_read_only',
+            MagicMock(return_value=True),
+        ):
+            non_ds_resource = factories.Resource(url_type='upload')
 
         def _shutil_mock(src, dest):
             # there's nothing to copy from, so just write the new file
@@ -341,7 +347,7 @@ class TestQueueDownload:
                 f.write('hello')
 
         with patch('shutil.copy2', side_effect=_shutil_mock), patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
+            download_details = toolkit.get_action('vds_download_queue')(
                 {},
                 {
                     'query': {
@@ -387,70 +393,11 @@ class TestQueueDownload:
         shutil.rmtree(self.temp_dir)
 
 
-@pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore query_dois')
-@pytest.mark.ckan_config('ckanext.query_dois.prefix', 'xx.xxxx')
-@pytest.mark.usefixtures(
-    'with_plugins',
-    'with_versioned_datastore_tables',
-    'with_vds_resource',
-    'clear_download_dir',
-)
-class TestDownloadWithQueryDois:
-    @classmethod
-    def setup_class(cls):
-        from ckanext.query_dois.model import query_doi_table, query_doi_stat_table
-
-        cls.tables = [query_doi_table, query_doi_stat_table]
-
-        for table in cls.tables:
-            table.create(checkfirst=True)
-
-    @classmethod
-    def teardown_class(cls):
-        for table in cls.tables:
-            if table.exists():
-                table.drop()
-
-    @patches.enqueue_job()
-    def test_run_download_with_query_dois(self, enqueue_job):
-        # I cannot get the query_doi endpoints to load for the life of me so we're just
-        # going to mock it before I lose my mind
-        def _url_for_mock(endpoint, **kwargs):
-            if endpoint == 'query_doi.landing_page':
-                return f'/{kwargs["data_centre"]}/{kwargs["identifier"]}'
-            else:
-                return '/banana'
-
-        with patch(
-            'ckanext.query_dois.lib.doi.find_existing_doi',
-            return_value=MagicMock(doi='123456'),
-        ), patch('ckan.plugins.toolkit.url_for', _url_for_mock):
-            download_details = toolkit.get_action('datastore_queue_download')(
-                {},
-                {
-                    'query': {'query': {}},
-                    'file': {'format': 'dwc'},
-                    'notifier': {'type': 'none'},
-                },
-            )
-        enqueue_job.assert_called()
-        download_request = DownloadRequest.get(download_details['download_id'])
-        assert download_request is not None
-        download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
-        assert any(
-            [
-                f.startswith(download_request.derivative_record.download_hash)
-                for f in os.listdir(download_dir)
-            ]
-        )
-
-
 @pytest.mark.ckan_config('ckan.plugins', 'versioned_datastore')
 @pytest.mark.usefixtures(
     'with_plugins',
-    'with_versioned_datastore_tables',
+    'with_vds',
     'with_vds_resource',
-    'clear_download_dir',
 )
 @patches.enqueue_job()
 class TestDownloadInterfaces:
@@ -458,17 +405,18 @@ class TestDownloadInterfaces:
         mock_plugin = ModifyArgsPlugin()
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.download.idownload_implementations',
             return_value=[mock_plugin],
-        ), patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
-                {},
-                {
-                    'query': {'query': {}},
-                    'file': {'format': 'csv'},
-                    'notifier': {'type': 'none'},
-                },
-            )
+        ):
+            with patches.url_for():
+                download_details = toolkit.get_action('vds_download_queue')(
+                    {},
+                    {
+                        'query': {'query': {}},
+                        'file': {'format': 'csv'},
+                        'notifier': {'type': 'none'},
+                    },
+                )
 
         download_request = DownloadRequest.get(download_details['download_id'])
         assert download_request is not None
@@ -489,17 +437,18 @@ class TestDownloadInterfaces:
         mock_plugin = ModifyManifestPlugin()
 
         with patch(
-            'ckanext.versioned_datastore.lib.downloads.download.PluginImplementations',
+            'ckanext.versioned_datastore.lib.downloads.download.idownload_implementations',
             return_value=[mock_plugin],
-        ), patches.url_for():
-            download_details = toolkit.get_action('datastore_queue_download')(
-                {},
-                {
-                    'query': {'query': {}},
-                    'file': {'format': 'csv'},
-                    'notifier': {'type': 'none'},
-                },
-            )
+        ):
+            with patches.url_for():
+                download_details = toolkit.get_action('vds_download_queue')(
+                    {},
+                    {
+                        'query': {'query': {}},
+                        'file': {'format': 'csv'},
+                        'notifier': {'type': 'none'},
+                    },
+                )
 
         download_request = DownloadRequest.get(download_details['download_id'])
         assert download_request is not None
@@ -527,7 +476,7 @@ class TestDownloadInterfaces:
 
 
 class ModifyArgsPlugin:
-    def download_before_run(
+    def download_before_init(
         self, query_args, derivative_args, server_args, notifier_args
     ):
         derivative_args.format = 'xlsx'
@@ -544,7 +493,7 @@ class ModifyArgsPlugin:
 
 
 class ModifyManifestPlugin:
-    def download_before_run(self, *args):
+    def download_before_init(self, *args):
         return args
 
     def download_modify_manifest(self, manifest, request):
