@@ -44,8 +44,7 @@ test = [
     "coveralls"
 ]
 doi = [
-    "ckanext-query-dois@git+https://github.com/NaturalHistoryMuseum/ckanext-query-dois@b8eeb542c5a5c80cd1d05a23979dc87a05b39a35",
-#    "ckanext-query-dois~=2.3.0"
+    "ckanext-query-dois~=5.0.0"
 ]
 attribution = [
     "ckanext-attribution~=1.2.13"
