@@ -32,7 +32,6 @@ def get_resources_and_versions(
     :return: a dict of resource IDs and versions
     """
     available_resource_ids = get_available_resources(datastore_only=False)
-    print(f'AVAIL: {available_resource_ids}')
     if not available_resource_ids.issuperset(query.resource_ids):
         raise toolkit.ValidationError(
             'Not all requested resources are accessible to this user'

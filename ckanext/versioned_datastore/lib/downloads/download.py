@@ -462,7 +462,6 @@ class DownloadRunManager:
                 ]
 
                 for resource_id, version in self.resource_ids_and_versions.items():
-                    print(f'GEN DER: {resource_id}')
                     # add the resource ID as the message for use in the status page
                     self.request.update_status(
                         DownloadRequest.state_derivative_gen, resource_id
@@ -479,7 +478,6 @@ class DownloadRunManager:
                     )
                     with derivative_generator, open(core_file_path, 'rb') as core_file:
                         for record in fastavro.reader(core_file):
-                            print(f'YOOYOOY {resource_id}: {record}\n')
                             # apply the transformations first
                             for transform in transformations:
                                 record = transform(record)

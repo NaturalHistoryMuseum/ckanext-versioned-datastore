@@ -43,7 +43,6 @@ class TestQueueDownload:
     ):
         resource_1_id = with_vds_resource[0]['id']
         resource_2_id = with_vds_resource[1]['id']
-        print(f'resource_1_id: {resource_1_id}, resource_2_id: {resource_2_id}')
 
         with patches.url_for():
             download_details = toolkit.get_action('vds_download_queue')(

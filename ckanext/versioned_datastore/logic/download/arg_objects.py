@@ -62,7 +62,6 @@ class QueryArgs(BaseArgs):
 
         # if no resource IDs have been provided, use all resources available to the user
         if not resource_ids:
-            print('NONE PROVIDED BRO')
             resource_ids = list(get_available_datastore_resources())
 
         # schema query init will handle defaulting the various parts

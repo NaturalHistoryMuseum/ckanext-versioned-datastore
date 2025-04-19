@@ -173,7 +173,6 @@ def filter_data_fields(data, field_counts, prefix=None):
     :return: a new dict containing only the fields from the original data dict that had
              a value other than 0 in the fields_count dict
     """
-    print(f'FILT {data}, {field_counts}')
     filtered_data = {}
     for field, value in data.items():
         if prefix is not None:
