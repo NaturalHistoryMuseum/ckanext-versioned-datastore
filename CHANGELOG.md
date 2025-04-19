@@ -1,3 +1,68 @@
+## v6.0.0 (2025-04-19)
+
+### Breaking Changes
+
+- rename action vds_slug_edit to vds_slug_reserve
+- improve vds_version_resource perf by not including counts
+- apply compatibility changes to work with Splitgill vNext
+- upgrade to es 8+ and mongo 6+, as well as the splitgill vNext branch
+
+### Feature
+
+- upgrade deps
+- rename action vds_slug_edit to vds_slug_reserve
+- update splitgill version
+- update to latest verion of splitgill
+- apply compatibility changes to work with Splitgill vNext
+- upgrade to es 8+ and mongo 6+, as well as the splitgill vNext branch
+
+### Fix
+
+- rebuild data correctly in downloads
+- change more new splitgill version related issues
+- update to work with latest version of splitgill
+- change package.read to dataset.read in dwc downloader
+- create migration for removal of not null constraint on stats version
+- use ALL_POINTS for now
+- fix basic polygon searches
+
+### Performance
+
+- improve vds_version_resource perf by not including counts
+
+### Docs
+
+- add documentation for all actions
+- update some out of date docs
+
+### Tests
+
+- fix the tests
+
+### Build System(s)
+
+- update ckanext-query-dois to new version
+- update to newer elasticsearch and mongo versions
+- update pre-commit and pyproject
+- update splitgill version
+- remove no log settings
+- rename the test running service test instead of ckan
+
+### CI System(s)
+
+- call correct service in ci
+- fix docker compose old style call
+
+### Chores/Misc
+
+- remove debug print statements
+- remove empty module
+- rename ckan test service from test -> ckan
+- remove version from docker compose file
+- remove stray file apparently
+- show resource id which failed check in validation
+- add docker compose override file to gitignore
+
 ## v5.6.3 (2024-08-20)
 
 ## v5.6.2 (2024-07-15)
