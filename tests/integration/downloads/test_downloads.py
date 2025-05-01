@@ -17,7 +17,6 @@ from tests.helpers import patches
 scenarios = [
     ('csv', {}),
     ('json', {}),
-    ('xlsx', {}),
     ('dwc', {}),
     ('csv', {'delimiter': 'tab'}),
     (
@@ -30,7 +29,7 @@ scenarios = [
     ),
 ]
 
-expected_extensions = {'csv': '.csv', 'json': '.json', 'xlsx': '.xlsx', 'dwc': '.zip'}
+expected_extensions = {'csv': '.csv', 'json': '.json', 'dwc': '.zip'}
 
 
 @pytest.mark.usefixtures('with_vds')
@@ -430,7 +429,7 @@ class TestDownloadInterfaces:
         with zipfile.ZipFile(os.path.join(download_dir, matching_zips[0]), 'r') as zf:
             archive_files = zf.namelist()
             assert 'manifest.json' in archive_files
-            assert 'resource.xlsx' in archive_files
+            assert 'resource.json' in archive_files
             assert len(archive_files) == 2
 
     def test_modify_manifest(self, enqueue_job):
@@ -479,7 +478,7 @@ class ModifyArgsPlugin:
     def download_before_init(
         self, query_args, derivative_args, server_args, notifier_args
     ):
-        derivative_args.format = 'xlsx'
+        derivative_args.format = 'json'
         return query_args, derivative_args, server_args, notifier_args
 
     def download_modify_manifest(self, manifest, request):
