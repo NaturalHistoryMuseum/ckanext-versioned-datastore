@@ -20,17 +20,6 @@ Comma-separated value format.
 }
 ```
 
-### Excel spreadsheet
-
-A Microsoft Excel spreadsheet.
-
-```json
-{
-    "format": "xlsx"
-    // no additional options
-}
-```
-
 ### JSON
 
 JSON format.
