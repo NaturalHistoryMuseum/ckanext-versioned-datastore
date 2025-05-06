@@ -1,3 +1,18 @@
+## v6.0.1 (2025-05-06)
+
+### Fix
+
+- remove excel download option
+- eat exceptions when attempting to resolve a query doi
+
+### Docs
+
+- remove references to xlsx download in docs
+
+### Tests
+
+- remove excel download option from tests
+
 ## v6.0.0 (2025-04-19)
 
 ### Breaking Changes
