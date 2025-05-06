@@ -28,7 +28,7 @@ like to an existing search.
         "slug_or_doi": "noisy-yelling-cat"
     },
     "file": {
-        "format": "xlsx",
+        "format": "json",
         "ignore_empty_fields": true
     },
     "notifier": {

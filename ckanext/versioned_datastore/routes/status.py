@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from datetime import datetime as dt, timedelta
 
 from flask import Blueprint, jsonify
@@ -84,9 +85,10 @@ def get_download_details(download_id):
         from ckanext.query_dois.lib.query import Query
         from ckanext.query_dois.helpers import get_landing_page_url
 
-        query_doi = find_existing_doi(Query.create_from_download_request(dl))
-        if query_doi:
-            doi_url = get_landing_page_url(query_doi)
+        with suppress(Exception):
+            query_doi = find_existing_doi(Query.create_from_download_request(dl))
+            if query_doi:
+                doi_url = get_landing_page_url(query_doi)
 
     try:
         nav_slug = create_nav_slug(dl.core_record.to_schema_query())[1]
