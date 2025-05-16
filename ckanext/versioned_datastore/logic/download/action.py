@@ -39,7 +39,7 @@ def vds_download_queue(
     if server.custom_filename:
         # check if admin
         try:
-            toolkit.check_access('datastore_custom_download_filename', context)
+            toolkit.check_access('vds_custom_download_filename', context)
         except toolkit.NotAuthorized:
             server.custom_filename = None
 
