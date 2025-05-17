@@ -87,7 +87,7 @@ def _deduplicate(values: Iterable[str]) -> Iterable[str]:
 
 def validate_resource_ids(value: Union[str, list], context: Optional[dict] = None):
     if isinstance(value, str):
-        value = value.split(',')
+        value = value.split(',') if value else []
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
@@ -109,7 +109,7 @@ def validate_datastore_resource_ids(
     value: Union[str, list], context: Optional[dict] = None
 ):
     if isinstance(value, str):
-        value = value.split(',')
+        value = value.split(',') if value else []
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 

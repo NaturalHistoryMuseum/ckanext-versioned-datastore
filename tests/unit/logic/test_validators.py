@@ -29,6 +29,7 @@ class TestDeduplicate:
 class TestValidateResourceIDs:
     def test_empty(self):
         assert validate_resource_ids([]) == []
+        assert validate_resource_ids('') == []
 
     def test_not_a_list(self):
         with pytest.raises(
@@ -80,6 +81,7 @@ class TestValidateResourceIDs:
 class TestValidateDatastoreResourceIDs:
     def test_empty(self):
         assert validate_datastore_resource_ids([]) == []
+        assert validate_datastore_resource_ids('') == []
 
     def test_not_a_list(self):
         with pytest.raises(
