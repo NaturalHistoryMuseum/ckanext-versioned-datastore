@@ -159,7 +159,7 @@ def infer_type(
 
     # check for dates first, then booleans, then numbers, and then default to string
     for parsed_type in (ParsedType.DATE, ParsedType.BOOLEAN, ParsedType.NUMBER):
-        if parsed_field.type_counts[parsed_type] / parsed_field.count > threshold:
+        if parsed_field.type_counts[parsed_type] / parsed_field.count >= threshold:
             # just so happens that the recline types match the ParsedType names
             return parsed_type.name.lower()
     return 'string'
