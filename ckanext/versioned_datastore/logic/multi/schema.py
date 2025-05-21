@@ -71,3 +71,11 @@ def vds_multi_stats() -> dict:
         'missing': [ignore_missing, float],
         'field': [not_empty, str],
     }
+
+
+def vds_multi_direct() -> dict:
+    return {
+        'resource_ids': [validate_datastore_resource_ids],
+        'search': [ignore_missing, json_validator],
+        'version': [ignore_missing, str],
+    }

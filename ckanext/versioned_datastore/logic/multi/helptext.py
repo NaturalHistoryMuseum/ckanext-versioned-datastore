@@ -1,7 +1,8 @@
-vds_multi_query = ""
-vds_multi_count = ""
-vds_multi_autocomplete_value = ""
-vds_multi_autocomplete_field = ""
-vds_multi_hash = ""
-vds_multi_fields = ""
-vds_multi_stats = ""
+vds_multi_query = ''
+vds_multi_count = ''
+vds_multi_autocomplete_value = ''
+vds_multi_autocomplete_field = ''
+vds_multi_hash = ''
+vds_multi_fields = ''
+vds_multi_stats = ''
+vds_multi_direct = ''
