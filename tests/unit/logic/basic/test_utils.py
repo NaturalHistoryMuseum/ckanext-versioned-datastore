@@ -1,4 +1,7 @@
+from collections import Counter
+
 import pytest
+from splitgill.indexing.fields import DataField, ParsedField, ParsedType
 from splitgill.model import Record
 
 from ckanext.versioned_datastore.lib.importing.options import (
@@ -11,6 +14,7 @@ from ckanext.versioned_datastore.logic.basic.utils import (
     find_version,
     format_facets,
     get_fields,
+    infer_type,
     make_request,
 )
 
@@ -72,9 +76,40 @@ def test_get_fields():
     assert fields == [
         {'id': '_id', 'type': 'string'},
         {'id': 'field1', 'type': 'string', 'sortable': True},
-        {'id': 'field2', 'type': 'string', 'sortable': True},
+        {'id': 'field2', 'type': 'number', 'sortable': True},
         {'id': 'field3', 'type': 'array', 'sortable': False},
     ]
+
+
+class TestInferType:
+    def test_non_parsed(self):
+        df = DataField('test')
+        pfs = {}
+        assert infer_type(df, pfs) == 'object'
+
+    def test_threshold(self):
+        df = DataField('test')
+        pf = ParsedField('test', count=10, type_counts=Counter({ParsedType.NUMBER: 5}))
+        pfs = {'test': pf}
+        assert infer_type(df, pfs, threshold=0.9) == 'string'
+        assert infer_type(df, pfs, threshold=0.3) == 'number'
+        assert infer_type(df, pfs, threshold=0.5) == 'number'
+
+    def test_order_of_preference(self):
+        df = DataField('test')
+        pf = ParsedField('test', count=10, type_counts=Counter())
+        pfs = {'test': pf}
+
+        assert infer_type(df, pfs) == 'string'
+
+        pf.type_counts[ParsedType.NUMBER] = 10
+        assert infer_type(df, pfs) == 'number'
+
+        pf.type_counts[ParsedType.BOOLEAN] = 10
+        assert infer_type(df, pfs) == 'boolean'
+
+        pf.type_counts[ParsedType.DATE] = 10
+        assert infer_type(df, pfs) == 'date'
 
 
 class TestFindVersion:

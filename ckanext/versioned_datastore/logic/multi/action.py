@@ -2,8 +2,8 @@ from collections import defaultdict
 from typing import List, Optional
 
 from ckantools.decorators import action
-from elasticsearch_dsl import A, Q
-from splitgill.search import keyword, number
+from elasticsearch_dsl import A, MultiSearch, Q, Search
+from splitgill.search import keyword, number, version_query
 
 from ckanext.versioned_datastore.lib.query.schema import (
     get_latest_query_version,
@@ -11,6 +11,7 @@ from ckanext.versioned_datastore.lib.query.schema import (
     validate_query,
 )
 from ckanext.versioned_datastore.lib.utils import (
+    es_client,
     get_database,
     ivds_implementations,
     unprefix_index_name,
@@ -293,3 +294,46 @@ def vds_multi_stats(data_dict: dict, field: str, missing: Optional[float] = None
     request.add_agg('field_stats', 'stats', **agg_options)
     response = request.run()
     return response.aggs['field_stats']
+
+
+@action(schema.vds_multi_direct(), helptext.vds_multi_direct)
+def vds_multi_direct(data_dict: dict):
+    """
+    Allows users to run Elasticsearch queries directly against the cluster. The raw
+    response from Elasticsearch is returned directly as well. This is locked down to
+    admin users only to avoid misuse, but can be used from other extensions easily with
+    the ignore_auth context option.
+
+    To control the version that is searched, either include it in the search object
+    directly, or:
+        - pass "latest", None, or don't include the version key in the data dict to
+          search the latest version
+        - pass "all" to search all versions
+        - pass a version timestamp value to search at a specific version
+
+    A list of resource IDs must be passed and if no resource IDs are passed an error is
+    raised during validation.
+
+    :param data_dict: the action data dict
+    :return: the raw response from Elasticsearch
+    """
+    resource_ids = data_dict['resource_ids']
+    version = data_dict.get('version', 'latest')
+    search = Search.from_dict(data_dict.get('search', {}))
+
+    databases = map(get_database, resource_ids)
+    if version == 'latest':
+        indices = [database.indices.latest for database in databases]
+    else:
+        indices = [database.indices.wildcard for database in databases]
+        if version is not None and version != 'all':
+            search = search.filter(version_query(int(version)))
+
+    # call search.index() empty first to reset the indices thus avoiding them being set
+    # in the passed search dict
+    search = search.index().index(indices)
+
+    multi_search = MultiSearch(using=es_client()).add(search)
+    result = next(iter(multi_search.execute()))
+
+    return result.to_dict()

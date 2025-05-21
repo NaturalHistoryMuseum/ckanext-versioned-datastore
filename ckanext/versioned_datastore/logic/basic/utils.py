@@ -1,6 +1,7 @@
 from operator import itemgetter
-from typing import List, Optional
+from typing import Dict, List, Optional
 
+from splitgill.indexing.fields import DataField, ParsedField, ParsedType
 from splitgill.search import keyword
 
 from ckanext.versioned_datastore.lib.importing.details import get_details_at
@@ -123,6 +124,47 @@ def format_facets(aggs: dict) -> dict:
     return facets
 
 
+def infer_type(
+    data_field: DataField, parsed_fields: Dict[str, ParsedField], threshold: float = 0.8
+) -> str:
+    """
+    Infers the type of each of the given data fields, using the parsed fields to
+    determine what type to assign. A type is assigned to a field if more than the
+    threshold percentage of values in the field are of the parsed type.
+
+    This function uses the parsed types instead of the data types for three reasons:
+      - often the field data types are just strings, so we'd need to use the parsed
+        types anyway to get a non-string type
+      - the response to the get_fields function where this function is called is
+        typically used in a search result and therefore the fields response may be used
+        to create another search in which case the parsed types would have to be used
+        as you can't search using the data types
+      - there is no date field data type, whereas there is a date field parsed type
+
+    In most cases, the parsed type returned by this function will match the data type of
+    the field's values.
+
+    :param data_field: the data field to infer for
+    :param parsed_fields: a dict of parsed paths to parsed fields
+    :param threshold: a threshold determining the percentage of the values in the field
+                      which must be of the parsed type to be inferred as it
+                      (default: 0.8, i.e., 80%)
+    :return: the name of the inferred type (one of string, number, date, boolean)
+    """
+    parsed_field = parsed_fields.get(data_field.parsed_path)
+
+    # this should only ever happen for fields which are always nested objects
+    if not parsed_field:
+        return 'object'
+
+    # check for dates first, then booleans, then numbers, and then default to string
+    for parsed_type in (ParsedType.DATE, ParsedType.BOOLEAN, ParsedType.NUMBER):
+        if parsed_field.type_counts[parsed_type] / parsed_field.count >= threshold:
+            # just so happens that the recline types match the ParsedType names
+            return parsed_type.name.lower()
+    return 'string'
+
+
 def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
     """
     Given a resource id, returns the fields that existed at the given version. If the
@@ -150,6 +192,7 @@ def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
     """
     database = get_database(resource_id)
     data_fields = database.get_data_fields(version)
+    parsed_fields = {field.path: field for field in database.get_parsed_fields(version)}
 
     fields = []
     seen = {'_id'}
@@ -159,7 +202,7 @@ def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
             continue
         field_repr = {
             'id': field.parsed_path,
-            'type': 'string',
+            'type': infer_type(field, parsed_fields),
             'sortable': True,
         }
         if field.children:

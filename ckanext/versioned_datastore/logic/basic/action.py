@@ -56,7 +56,6 @@ def vds_basic_query(
         "records": response.data,
         "facets": format_facets(response.aggs),
         "fields": get_fields(resource_id, request.query.version),
-        "raw_fields": {},
         "after": response.next_after,
     }
 
