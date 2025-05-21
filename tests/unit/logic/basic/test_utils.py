@@ -72,7 +72,7 @@ def test_get_fields():
     assert fields == [
         {'id': '_id', 'type': 'string'},
         {'id': 'field1', 'type': 'string', 'sortable': True},
-        {'id': 'field2', 'type': 'string', 'sortable': True},
+        {'id': 'field2', 'type': 'number', 'sortable': True},
         {'id': 'field3', 'type': 'array', 'sortable': False},
     ]
 
