@@ -1,3 +1,25 @@
+## v6.1.0 (2025-05-27)
+
+### Feature
+
+- infer basic search field response types
+- reimplement vds_multi_direct (datastore_search_raw)
+- update splitgill to v3.1.0
+
+### Fix
+
+- use max resource version if no requested version specified
+- treat types at the threshold as that type
+- remove raw_fields from basic response
+- handle empty string resource ID list validation
+- deduplicate resource IDs when validating them
+- rename and redefine custom filename auth function
+
+### Tests
+
+- add infer_type tests
+- fix tests
+
 ## v6.0.1 (2025-05-06)
 
 ### Fix
