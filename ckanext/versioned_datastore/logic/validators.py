@@ -1,6 +1,6 @@
 import re
 from math import isfinite
-from typing import Optional, Union
+from typing import Iterable, Optional, Union
 
 from ckan import logic
 from ckan.plugins import toolkit
@@ -70,16 +70,33 @@ def check_datastore_resource_id(
     )
 
 
+def _deduplicate(values: Iterable[str]) -> Iterable[str]:
+    """
+    Simple util function to remove duplicate entries in an iterable.
+
+    :param values: the iterable to deduplicate
+    :return: the deduplicated values as another iterable
+    """
+    seen = set()
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        yield value
+
+
 def validate_resource_ids(value: Union[str, list], context: Optional[dict] = None):
     if isinstance(value, str):
-        value = value.split(',')
+        value = value.split(',') if value else []
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
     if context is None:
         context = {}
     valid_resource_ids = [
-        resource_id for resource_id in value if check_resource_id(resource_id, context)
+        resource_id
+        for resource_id in _deduplicate(value)
+        if check_resource_id(resource_id, context)
     ]
     if value and not valid_resource_ids:
         # the user passed some resources, but none of them were datastore resources
@@ -92,7 +109,7 @@ def validate_datastore_resource_ids(
     value: Union[str, list], context: Optional[dict] = None
 ):
     if isinstance(value, str):
-        value = value.split(',')
+        value = value.split(',') if value else []
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
@@ -100,7 +117,7 @@ def validate_datastore_resource_ids(
         context = {}
     valid_resource_ids = [
         resource_id
-        for resource_id in value
+        for resource_id in _deduplicate(value)
         if check_datastore_resource_id(resource_id, context)
     ]
     if value and not valid_resource_ids:
