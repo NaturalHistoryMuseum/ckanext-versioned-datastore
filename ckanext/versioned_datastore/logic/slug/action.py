@@ -114,10 +114,17 @@ def vds_slug_resolve(slug: str):
             else:
                 query = resolved.query
                 query_version = resolved.query_version
+            if resolved.requested_version:
+                requested_version = resolved.requested_version
+            else:
+                # this should only be applicable for multisearch DOIs created before VDS
+                # v6, which allowed different versions per resource; this rounds them
+                # all up to  the newest version in the list. See #187 for more detail.
+                requested_version = max(resolved.get_rounded_versions())
             return {
                 'query': query,
                 'query_version': query_version,
-                'version': resolved.requested_version,
+                'version': requested_version,
                 'resource_ids': resolved.get_resource_ids(),
                 'created': resolved.timestamp.isoformat(),
             }
