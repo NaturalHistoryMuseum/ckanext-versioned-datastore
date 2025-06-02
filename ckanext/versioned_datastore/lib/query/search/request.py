@@ -42,6 +42,19 @@ class SearchRequest:
     # None, indicating there is no associated (or relevant) data dict available.
     data_dict: Optional[dict] = None
     ignore_auth: bool = False
+    # optional additional request parameters to be included when performing the search
+    req_params: dict = dataclasses.field(default_factory=dict)
+
+    def add_param(self, param: str, value: Any):
+        """
+        Add a request parameter to be passed as part of this search request. The search
+        request is completed using the _msearch endpoint on Elasticsearch so only
+        parameters that work on that endpoint should be added.
+
+        :param param: the param name
+        :param value: the param value
+        """
+        self.req_params[param] = value
 
     def add_sort(self, field: str, ascending: bool = True):
         """
@@ -181,6 +194,7 @@ class SearchRequest:
         # problem because the multisearch is sent to Elasticsearch as a POST request
         # with all parts of the search, including the indexes, as part of the payload
         multi_search = MultiSearch(using=es_client()).add(search)
+        multi_search = multi_search.params(**self.req_params)
         result = next(iter(multi_search.execute()))
         return SearchResponse(self, result)
 
