@@ -11,7 +11,7 @@ def make_request(data_dict: dict) -> SearchRequest:
     Given an action data dict, creates a SearchRequest object for it.
 
     :param data_dict: the action data dict
-    :return: a SearchRequest object
+    :returns: a SearchRequest object
     """
     # if no resource IDs are provided, default to all resources available to the user
     resource_ids = data_dict.get('resource_ids', [])

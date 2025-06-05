@@ -30,7 +30,7 @@ def slug_generator():
     A queryless slug generator.
 
     Because why not.
-    :return:
+    :returns:
     """
     extra_vars = {}
     slug_q = Session.query(DatastoreSlug)

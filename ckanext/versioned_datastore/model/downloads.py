@@ -128,7 +128,7 @@ class CoreFileRecord(DomainObject):
         """
         Returns the list of resource IDs this download searches over.
 
-        :return: a sorted list of resource IDs
+        :returns: a sorted list of resource IDs
         """
         return sorted(self.resource_ids_and_versions.keys())
 
@@ -139,7 +139,7 @@ class CoreFileRecord(DomainObject):
         that was searched at the time the download was created, but it will produce the
         same data.
 
-        :return: an integer version
+        :returns: an integer version
         """
         return max(self.resource_ids_and_versions.values())
 
@@ -147,7 +147,7 @@ class CoreFileRecord(DomainObject):
         """
         Converts this download core into a SchemaQuery object.
 
-        :return: a new SchemaQuery object
+        :returns: a new SchemaQuery object
         """
         return SchemaQuery(
             self.get_resource_ids(), self.get_version(), self.query, self.query_version

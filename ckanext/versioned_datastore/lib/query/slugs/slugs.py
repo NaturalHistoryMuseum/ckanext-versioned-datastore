@@ -22,7 +22,7 @@ def generate_query_hash(query: SchemaQuery) -> str:
     hash) and returns it. The hashing algorithm used is sha1 and the output will be a 40
     character hexidecimal string.
 
-    :return: a unique id for the query, which is a hash of the query and parameters
+    :returns: a unique id for the query, which is a hash of the query and parameters
     """
     query.validate()
     hash_value = hashlib.sha1()
@@ -46,7 +46,7 @@ def generate_pretty_slug(word_lists=(list_one, list_two, list_three)) -> str:
     green-green-llama) but the chances are really low and it doesn't really matter.
 
     :param word_lists: a sequence of word lists to choose from
-    :return: the slug
+    :returns: the slug
     """
     return '-'.join(map(random.choice, word_lists))
 
@@ -63,11 +63,11 @@ def create_slug(
     was new or not.
 
     :param pretty_slug: whether to generate a pretty slug or just use the uuid id of the
-                        slug, by default this is True
+        slug, by default this is True
     :param attempts: how many times to try creating a pretty slug, default: 5
-    :return: a 2-tuple containing a boolean indicating whether the slug object returned
-             was newly created and the DatastoreSlug object itself. If we couldn't
-             create a slug object for some reason then (False, None) is returned.
+    :returns: a 2-tuple containing a boolean indicating whether the slug object returned
+        was newly created and the DatastoreSlug object itself. If we couldn't create a
+        slug object for some reason then (False, None) is returned.
     """
     query_hash = generate_query_hash(query)
 
@@ -146,7 +146,7 @@ def resolve_slug(slug, allow_nav=True) -> Optional[DatastoreSlug]:
 
     :param slug: the slug
     :param allow_nav: allow resolving to a navigational slug
-    :return: a DatastoreSlug object or None if the slug couldn't be found
+    :returns: a DatastoreSlug object or None if the slug couldn't be found
     """
     if slug.startswith(NavigationalSlug.prefix) and allow_nav:
         try:
@@ -175,19 +175,19 @@ def reserve_slug(reserved_pretty_slug: str, query: SchemaQuery) -> DatastoreSlug
     probably only be called during this extension's initialisation via the
     vds_reserve_slugs interface function.
 
-    If a slug already exists in the database with the same reserved pretty slug and the same
-    query parameters then nothing happens.
+    If a slug already exists in the database with the same reserved pretty slug and the
+    same query parameters then nothing happens.
 
-    If a slug already exists in the database with the same reserved pretty slug but a different
-    set of query parameters then a DuplicateSlugException is raised.
+    If a slug already exists in the database with the same reserved pretty slug but a
+    different set of query parameters then a DuplicateSlugException is raised.
 
-    If a slug already exists in the database with the same query parameters but no reserved
-    pretty slug then the reserved pretty slug is added to the slug.
+    If a slug already exists in the database with the same query parameters but no
+    reserved pretty slug then the reserved pretty slug is added to the slug.
 
     :param reserved_pretty_slug: the slug string to reserve
-    :return: a DatastoreSlug object that has either been found (if it already existed), created (if
-             no slug existed) or updated (if a slug existed for the query parameters, but no
-             reserved query string was associated with it).
+    :returns: a DatastoreSlug object that has either been found (if it already existed),
+        created (if no slug existed) or updated (if a slug existed for the query
+        parameters, but no reserved query string was associated with it).
     """
     slug = resolve_slug(reserved_pretty_slug, False)
     if slug is not None:
@@ -229,8 +229,8 @@ def clean_nav_slugs(before=None) -> int:
     Delete old/expired navigational slugs.
 
     :param before: a datetime object; slugs created before this time will be removed
-                   (defaults to 2 days ago)
-    :return: the number of deleted slugs
+        (defaults to 2 days ago)
+    :returns: the number of deleted slugs
     """
     if before is None:
         before = datetime.datetime.utcnow() - datetime.timedelta(days=2)

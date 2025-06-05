@@ -40,7 +40,7 @@ def queue_ingest(
         private datasets)
     :param records: optional list of dicts to ingest instead of the file/URL on the
         resource
-    :return: a 2-tuple of the created ingest job and sync job which is dependent on the
+    :returns: a 2-tuple of the created ingest job and sync job which is dependent on the
         ingest job
     """
     if is_resource_read_only(resource['id']):
@@ -64,7 +64,7 @@ def queue_delete(resource: dict) -> Tuple[Job, Job]:
     of all records are set to empty.
 
     :param resource: the resource dict
-    :return: a 2-tuple of the created ingest job and sync job which is dependent on the
+    :returns: a 2-tuple of the created ingest job and sync job which is dependent on the
         ingest job
     """
     if is_resource_read_only(resource['id']):
@@ -89,7 +89,7 @@ def queue_sync(resource: dict, full: bool = False) -> Job:
     :param resource: the resource dict
     :param full: whether to completely resync the Elasticsearch data with MongoDB or
         just sync the changes (default: False, just sync the changes)
-    :return: the queued sync job
+    :returns: the queued sync job
     """
     if is_resource_read_only(resource['id']):
         raise ReadOnlyResourceException('This resource has been marked as read only')
@@ -104,7 +104,7 @@ def get_dupe_message(file_hash: str) -> str:
     bad way to deal with this, hence this str generator.
 
     :param file_hash: the file's hash
-    :return: a str to be stored as the stat's "error"
+    :returns: a str to be stored as the stat's "error"
     """
     return f'This file has been ingested before, ignoring [hash: {file_hash}]'
 
@@ -150,7 +150,7 @@ class IngestResourceTask(Task):
         Simple helper to convert an IngestResult object to a dict.
 
         :param result: the IngestResult object
-        :return: a dict
+        :returns: a dict
         """
         return {
             'inserted': result.inserted,
@@ -161,7 +161,7 @@ class IngestResourceTask(Task):
     @property
     def resource_id(self) -> str:
         """
-        :return: the ID of the resource this ingest is operating on
+        :returns: the ID of the resource this ingest is operating on
         """
         return self.resource['id']
 

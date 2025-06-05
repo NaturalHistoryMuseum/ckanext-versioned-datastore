@@ -42,8 +42,8 @@ def vds_basic_query(
     :param data_dict: the data dict passed to this action
     :param resource_id: the ID of the resource to search
     :param run_query: whether to run the query, or just return information about what
-                      would have been run
-    :return: a dict
+        would have been run
+    :returns: a dict
     """
     request = make_request(data_dict)
     if not run_query:
@@ -66,7 +66,7 @@ def vds_basic_count(data_dict: dict):
     given ID and returns this number.
 
     :param data_dict: the data dict passed to this action
-    :return: an integer >= 0
+    :returns: an integer >= 0
     """
     request = make_request(data_dict)
     request.set_no_results()
@@ -84,7 +84,7 @@ def vds_basic_autocomplete(data_dict: dict, field: str, term: str):
     :param data_dict: the data dict passed to this action
     :param field: the field to autocomplete values on
     :param term: a prefix to filter field values by
-    :return: a dict containing the values and optionally an after key for pagination
+    :returns: a dict containing the values and optionally an after key for pagination
     """
     # extract the limit but default to a size of 20 if it's not present
     size = data_dict.pop('limit', 20)
@@ -140,7 +140,7 @@ def vds_basic_extent(data_dict: dict):
     of coordinates (top left, bottom right).
 
     :param data_dict: the data dict passed to this action
-    :return: a dict
+    :returns: a dict
     """
     request = make_request(data_dict)
     request.set_no_results()

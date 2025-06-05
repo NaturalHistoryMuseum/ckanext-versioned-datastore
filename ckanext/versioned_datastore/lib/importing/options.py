@@ -17,8 +17,8 @@ def get_options(
 
     :param resource_id: the resource ID
     :param version: optional version which, if passed, will mean the options returned
-                    are the options that would be available at the given version.
-    :return: a ParsingOptions instance or None if no parsing options are in use
+        are the options that would be available at the given version.
+    :returns: a ParsingOptions instance or None if no parsing options are in use
     """
     database = get_database(resource_id)
     all_options = database.get_options(include_uncommitted=False)
@@ -46,8 +46,8 @@ def update_options(resource_id: str, overrides: Optional[dict] = None) -> Option
 
     :param resource_id: the resource ID
     :param overrides: any override options to set
-    :return: the new options version that has been committed or None if nothing was
-             changed
+    :returns: the new options version that has been committed or None if nothing was
+        changed
     """
     overrides = overrides or {}
     current_options = get_options(resource_id)
@@ -82,7 +82,7 @@ def create_default_options_builder() -> ParsingOptionsBuilder:
     deliberately pretty slim (just the minimum required options are set). Use
     vds_update_options to make modifications.
 
-    :return: a ParsingOptionsBuilder instance
+    :returns: a ParsingOptionsBuilder instance
     """
     builder = ParsingOptionsBuilder()
     builder.with_keyword_length(8191)

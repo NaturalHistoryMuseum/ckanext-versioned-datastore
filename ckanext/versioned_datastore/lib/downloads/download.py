@@ -211,7 +211,7 @@ class DownloadRunManager:
         Check if relevant files and records already exist and returns the records if
         they exist.
 
-        :return: tuple of core_record (or None) and derivative_record (or None)
+        :returns: tuple of core_record (or None) and derivative_record (or None)
         """
         # check the download dir exists
         if not os.path.exists(self.download_dir):
@@ -284,7 +284,7 @@ class DownloadRunManager:
 
         This method will add new resources to existing core records with identical
         filters, reducing data duplication.
-        :return: the core record
+        :returns: the core record
         """
         if not os.path.exists(self.core_folder_path):
             os.makedirs(self.core_folder_path)
@@ -389,7 +389,7 @@ class DownloadRunManager:
         """
         Generates derivative files, if necessary.
 
-        :return:
+        :returns:
         """
 
         self.request.update_status(DownloadRequest.state_derivative_gen)

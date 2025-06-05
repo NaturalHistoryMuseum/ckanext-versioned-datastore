@@ -32,10 +32,11 @@ class DatastoreResourceDetails(DomainObject):
         """
         Retrieve the columns contained in this resource's version.
 
-        :param validate: if True (the default) then fullstops are replaced with underscores before
-                         returning the list of columns and any falsey columns (empty strings, Nones)
-                         are removed
-        :return: a list of column names in the order they were in the original data source
+        :param validate: if True (the default) then fullstops are replaced with
+            underscores before returning the list of columns and any falsey columns
+            (empty strings, Nones) are removed
+        :returns: a list of column names in the order they were in the original data
+            source
         """
         columns = []
         for column in json.loads(self.columns):

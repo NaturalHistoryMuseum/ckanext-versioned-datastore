@@ -160,7 +160,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         Mongo client, Elasticsearch client, and Splitgill client have all been created
         and stored against this plugin instance.
 
-        :return: True if it's ready, False if not
+        :returns: True if it's ready, False if not
         """
         return (
             self.mongo_client is not None

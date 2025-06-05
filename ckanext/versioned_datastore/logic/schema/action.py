@@ -17,7 +17,7 @@ def vds_schema_latest():
     """
     Retrieves the latest query schema version and returns it.
 
-    :return: the query schema version
+    :returns: the query schema version
     """
     return get_latest_query_version()
 
@@ -31,7 +31,7 @@ def vds_schema_validate(query: dict, query_version: Optional[str] = None):
     :param query: the query to validate
     :param query_version: the query schema version to validate against (default is None
         which means use the latest query schema version)
-    :return: True if the schema is valid, otherwise raises a CKAN ValidationError
+    :returns: True if the schema is valid, otherwise raises a CKAN ValidationError
     """
     if query_version is None:
         query_version = get_latest_query_version()

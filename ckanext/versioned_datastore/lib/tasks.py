@@ -40,7 +40,7 @@ class Task(abc.ABC):
         when a task begins after some setup is completed.
 
         :param tmpdir: a temporary directory which can be used by the task and will be
-                       cleaned up after this run method completes
+            cleaned up after this run method completes
         """
         ...
 
@@ -63,13 +63,13 @@ class Task(abc.ABC):
         Queues this task on the appropriate RQ queue.
 
         :param depends_on: a job, or list of jobs, which this task depends on. If given,
-                           this task will only start when the other jobs finish
-                           successfully. Check the RQ docs for more information.
+            this task will only start when the other jobs finish successfully. Check the
+            RQ docs for more information.
         :param timeout: a timeout in seconds for this task. If provided this overrides
-                        the base timeout defined in the task, otherwise the default
-                        task's timeout is used.
-        :return: returns the result of calling CKAN's enqueue_job which will provide
-                 details about the queued job for this task
+            the base timeout defined in the task, otherwise the default task's timeout
+            is used.
+        :returns: returns the result of calling CKAN's enqueue_job which will provide
+            details about the queued job for this task
         """
         rq_kwargs = {'timeout': timeout or self.timeout}
         if depends_on:
@@ -90,7 +90,7 @@ def get_queue_length(queue_name):
     processing.
 
     :param queue_name: the name of the queue to check, e.g. 'download'
-    :return: length of queue as int
+    :returns: length of queue as int
     """
     queued_jobs = toolkit.get_action('job_list')(
         {'ignore_auth': True}, {'queues': [queue_name]}

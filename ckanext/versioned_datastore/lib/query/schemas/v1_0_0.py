@@ -63,7 +63,7 @@ class v1_0_0Schema(Schema):
         Hashes the given query and returns the hex digest of it.
 
         :param query: the query dict
-        :return: the hex digest of the hash of the query
+        :returns: the hex digest of the hash of the query
         """
         return self.hasher.hash_query(query)
 
@@ -72,7 +72,7 @@ class v1_0_0Schema(Schema):
         Corrects some (small) common query errors, e.g. removing empty groups.
 
         :param query: the query dict
-        :return: the corrected/normalised query dict
+        :returns: the corrected/normalised query dict
         """
         query = convert_small_or_groups(query)
         query = remove_empty_groups(query)
@@ -83,7 +83,7 @@ class v1_0_0Schema(Schema):
         Translates the query into an elasticsearch-dsl search object.
 
         :param query: the whole query dict
-        :return: an instantiated elasticsearch-dsl object
+        :returns: an instantiated elasticsearch-dsl object
         """
         if 'search' in query:
             search = match_query(query['search'], operator='and')
@@ -112,7 +112,7 @@ class v1_0_0Schema(Schema):
         it. If no filters are defined in the query then None is returned.
 
         :param query: the whole query dict
-        :return: a Bool object or None
+        :returns: a Bool object or None
         """
         if 'filters' in query:
             return self.create_group_or_term(query['filters'])
@@ -124,7 +124,7 @@ class v1_0_0Schema(Schema):
         group or term dict and returns it.
 
         :param group_or_term: a dict defining a single group or term
-        :return: an elasticsearch-dsl Query object
+        :returns: an elasticsearch-dsl Query object
         """
         # only one property is allowed so we can safely just extract the only name and
         # options
@@ -141,7 +141,7 @@ class v1_0_0Schema(Schema):
         here seeing as we can, and it makes smaller elasticsearch queries.
 
         :param group: the group to build the and from
-        :return: the first member from the group if there's only one member in the
+        :returns: the first member from the group if there's only one member in the
             group, or a Bool
         """
         members = [self.create_group_or_term(member) for member in group]
@@ -157,7 +157,7 @@ class v1_0_0Schema(Schema):
         here seeing as we can, and it makes smaller elasticsearch queries.
 
         :param group: the group to build the or from
-        :return: the first member from the group if there's only one member in the
+        :returns: the first member from the group if there's only one member in the
             group, or a Bool
         """
         return self.build_or([self.create_group_or_term(member) for member in group])
@@ -168,7 +168,7 @@ class v1_0_0Schema(Schema):
         group as a not query. This will be a Bool with a must_not in it.
 
         :param group: the group to build the not from
-        :return: a Bool query
+        :returns: a Bool query
         """
         return Bool(must_not=[self.create_group_or_term(member) for member in group])
 
@@ -181,7 +181,7 @@ class v1_0_0Schema(Schema):
         across all the fields requested.
 
         :param options: the options for the string_equals query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         return self.build_or(
             [
@@ -199,7 +199,7 @@ class v1_0_0Schema(Schema):
         query is returned across all the fields requested.
 
         :param options: the options for the string_contains query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         fields = options['fields']
         query = {'query': options['value'], 'operator': 'and'}
@@ -220,7 +220,7 @@ class v1_0_0Schema(Schema):
         across all the fields requested.
 
         :param options: the options for the number_equals query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         return self.build_or(
             [
@@ -238,7 +238,7 @@ class v1_0_0Schema(Schema):
         requested.
 
         :param options: the options for the number_range query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         less_than = options.get('less_than', None)
         greater_than = options.get('greater_than', None)
@@ -263,7 +263,7 @@ class v1_0_0Schema(Schema):
         requested.
 
         :param options: the options for the exists query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         # TODO: should we provide exists on subfields?
         if options.get('geo_field', False):
@@ -280,7 +280,7 @@ class v1_0_0Schema(Schema):
         the fields requested.
 
         :param options: the options for the geo_point query
-        :return: an elasticsearch-dsl Query object or a Bool object
+        :returns: an elasticsearch-dsl Query object or a Bool object
         """
         radius = options.get('radius', 0)
         unit = options.get('radius_unit', 'm')
@@ -309,8 +309,8 @@ class v1_0_0Schema(Schema):
         source data and readme, and also the load_geojson function in this class.
 
         :param options: the options for the geo_named_area query
-        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
-            Query)
+        :returns: an elasticsearch-dsl Query object (a single geo_polygon Query or a
+            Bool Query)
         """
         category, name = next(iter(options.items()))
         return self.build_multipolygon_query(self.geojson[category][name])
@@ -324,8 +324,8 @@ class v1_0_0Schema(Schema):
         holes defined in the Polygon).
 
         :param coordinates: a MultiPolygon coordinates list
-        :return: an elasticsearch-dsl Query object (a single geo_polygon Query or a Bool
-            Query)
+        :returns: an elasticsearch-dsl Query object (a single geo_polygon Query or a
+            Bool Query)
         """
         return self.build_multipolygon_query(coordinates)
 
@@ -337,7 +337,7 @@ class v1_0_0Schema(Schema):
         them.
 
         :param terms: a list of elasticsearch-dsl terms
-        :return: either a Query object or a Bool should object
+        :returns: either a Query object or a Bool should object
         """
         return (
             terms[0] if len(terms) == 1 else Bool(should=terms, minimum_should_match=1)
@@ -352,7 +352,7 @@ class v1_0_0Schema(Schema):
         it.
 
         :param points: a list of points
-        :return: an elasticsearch-dsl query object
+        :returns: an elasticsearch-dsl query object
         """
         return Q(
             'geo_polygon',
@@ -375,7 +375,7 @@ class v1_0_0Schema(Schema):
 
         :param coordinates: the coordinate list, which is basically a list of Polygons.
             See the GeoJSON doc for the exact format and meaning
-        :return: an elasticsearch-dsl object representing the MultiPolygon
+        :returns: an elasticsearch-dsl object representing the MultiPolygon
         """
         queries = []
         # the first list is a list of GeoJSON Polygons
@@ -415,7 +415,7 @@ class v1_0_0Schema(Schema):
         :param filename: the name geojson file to load from the given path
         :param name_keys: a priority ordered sequence of keys to use for feature name
             retrieval
-        :return: a dict of names -> MultiPolygons
+        :returns: a dict of names -> MultiPolygons
         """
         path = schema_base_path.joinpath(v1_0_0Schema.version).joinpath('geojson')
 
@@ -466,7 +466,7 @@ class v1_0_0Hasher:
         Stable hash function for v1.0.0 queries.
 
         :param query: the query dict
-        :return: the hex digest
+        :returns: the hex digest
         """
         query_hash = hashlib.sha1()
         if 'search' in query:
@@ -484,7 +484,7 @@ class v1_0_0Hasher:
         it.
 
         :param group_or_term: a dict defining a single group or term
-        :return: a string representing the group or term
+        :returns: a string representing the group or term
         """
         # only one property is allowed so we can safely just extract the only name and
         # options
@@ -496,7 +496,7 @@ class v1_0_0Hasher:
         Creates and returns a string version of the given group as an and query.
 
         :param group: the group to build the and from
-        :return: a string representing the group
+        :returns: a string representing the group
         """
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
@@ -507,7 +507,7 @@ class v1_0_0Hasher:
         Creates and returns a string version of the given group as an or query.
 
         :param group: the group to build the or from
-        :return: a string representing the group
+        :returns: a string representing the group
         """
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
@@ -518,7 +518,7 @@ class v1_0_0Hasher:
         Creates and returns a string version of the given group as a not query.
 
         :param group: the group to build the not from
-        :return: a string representing the group
+        :returns: a string representing the group
         """
         # sorting the members makes this stable
         members = sorted(self.create_group_or_term(member) for member in group)
@@ -531,7 +531,7 @@ class v1_0_0Hasher:
         of it.
 
         :param options: the options for the string_equals query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         # sorting the fields makes this stable
         fields = ','.join(sorted(options['fields']))
@@ -544,7 +544,7 @@ class v1_0_0Hasher:
         version of it.
 
         :param options: the options for the string_contains query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         # sorting the fields makes this stable
         fields = ','.join(sorted(options['fields']))
@@ -557,7 +557,7 @@ class v1_0_0Hasher:
         of it.
 
         :param options: the options for the number_equals query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         # sorting the fields makes this stable
         fields = ','.join(sorted(options['fields']))
@@ -570,7 +570,7 @@ class v1_0_0Hasher:
         of it.
 
         :param options: the options for the number_range query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         # sorting the fields makes this stable
         fields = ','.join(sorted(options['fields']))
@@ -600,7 +600,7 @@ class v1_0_0Hasher:
         Given the options for a exists term, creates and returns a string version of it.
 
         :param options: the options for the exists query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         if options.get('geo_field', False):
             return 'geo_exists'
@@ -616,7 +616,7 @@ class v1_0_0Hasher:
         it.
 
         :param options: the options for the geo_point query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         distance = f'{options.get("radius", 0)}{options.get("radius_unit", "m")}'
         return f'geo_point:{distance};{options["latitude"]};{options["longitude"]}'
@@ -628,7 +628,7 @@ class v1_0_0Hasher:
         version of it.
 
         :param options: the options for the geo_named_area query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         return 'geo_named_area:{};{}'.format(*next(iter(options.items())))
 
@@ -638,7 +638,7 @@ class v1_0_0Hasher:
         version of it.
 
         :param coordinates: the coordinates for the geo_custom_area query
-        :return: a string representing the term
+        :returns: a string representing the term
         """
         queries = []
         # the first list is a list of GeoJSON Polygons
@@ -668,6 +668,6 @@ class v1_0_0Hasher:
         sort them as that could change the meaning.
 
         :param points: the points as lat lon pairs
-        :return: a string representing the points
+        :returns: a string representing the points
         """
         return ','.join(f'[{point[1]},{point[0]}]' for point in points)

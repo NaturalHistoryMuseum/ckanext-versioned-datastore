@@ -126,7 +126,7 @@ def get_all_stats(resource_id):
     results coming back first.
 
     :param resource_id: the id of the resource
-    :return: a Query object which can be iterated over to retrieve all the results
+    :returns: a Query object which can be iterated over to retrieve all the results
     """
     return list(
         model.Session.query(ImportStats)
@@ -140,7 +140,7 @@ def get_last_ingest(resource_id):
     Retrieve the last ingest stat object from the database, or None if there aren't any.
 
     :param resource_id: the resource id
-    :return: an ImportStats object or None
+    :returns: an ImportStats object or None
     """
     return (
         model.Session.query(ImportStats)

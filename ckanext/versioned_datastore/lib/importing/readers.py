@@ -36,7 +36,7 @@ def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> 'Rea
 
     :param resource_format: the resource format
     :param source: the source data, either a path to a file, or a list of dicts
-    :return: a Reader instance
+    :returns: a Reader instance
     """
     if isinstance(source, Path):
         if resource_format in SV_FORMATS:
@@ -61,7 +61,7 @@ def choose_reader_for_resource(
 
     :param resource: the resource dict
     :param source: the source data, either a path to a file, or a list of dicts
-    :return: a Reader instance
+    :returns: a Reader instance
     """
     # start off trying to use the format they have set/CKAN has inferred
     resource_format = resource.get('format', '')
@@ -79,7 +79,7 @@ def detect_encoding(source: Path) -> str:
     Given a file, attempt to detect the character encoding it uses.
 
     :param source: the path to the file
-    :return: the character encoding
+    :returns: the character encoding
     """
     with source.open('rb') as f:
         detector = UniversalDetector()
@@ -110,7 +110,7 @@ class Reader(abc.ABC):
     @abc.abstractmethod
     def get_name(self) -> str:
         """
-        :return: a name for the Reader instance (for logging)
+        :returns: a name for the Reader instance (for logging)
         """
         ...
 
@@ -119,7 +119,7 @@ class Reader(abc.ABC):
         """
         Returns the list of the field names found in the source.
 
-        :return: the fields in the source this Reader is reading
+        :returns: the fields in the source this Reader is reading
         """
         ...
 
@@ -128,7 +128,7 @@ class Reader(abc.ABC):
         """
         Actually reads the data from the source and yields dicts for each row found.
 
-        :return: yields dicts
+        :returns: yields dicts
         """
         ...
 
@@ -137,7 +137,7 @@ class Reader(abc.ABC):
         """
         Returns the number of rows in the source.
 
-        :return: an integer representing the number of rows
+        :returns: an integer representing the number of rows
         """
         ...
 
@@ -165,7 +165,7 @@ class SVReader(Reader):
         character encoding found (useful for debugging why someone's data wasn't
         ingested as expected).
 
-        :return: the name
+        :returns: the name
         """
         dialect_info = ', '.join(
             f'{attr}: {str(getattr(self.dialect, attr))}'
@@ -185,7 +185,7 @@ class SVReader(Reader):
         """
         Reads the first line of the source file and returns it as a list.
 
-        :return: the field names
+        :returns: the field names
         """
         with self.source.open(encoding=self.encoding, newline='') as f:
             return next(csv.reader(f, dialect=self.dialect))
@@ -194,7 +194,7 @@ class SVReader(Reader):
         """
         Reads each line of the source file and yields each row as a dict.
 
-        :return: yields each row as a dict
+        :returns: yields each row as a dict
         """
         with self.source.open(encoding=self.encoding, newline='') as f:
             yield from csv.DictReader(f, dialect=self.dialect)
@@ -243,7 +243,7 @@ class XLSReader(Reader):
 
         Empty field names, empty values, and values we can't convert are ignored.
 
-        :return: yields a dict per row
+        :returns: yields a dict per row
         """
         converters = {
             # value should be a str, just use it
@@ -297,7 +297,7 @@ class XLSXReader(Reader):
         conversions are handled by openpyxl. Empty field names or empty cell values are
         ignored.
 
-        :return: a dict per row
+        :returns: a dict per row
         """
         for row in self.rows[1:]:
             yield {
@@ -331,7 +331,7 @@ class MemoryReader(Reader):
         the order they are found in the source from first dict to last. This ensures the
         ordering is representative of the source.
 
-        :return: a list of field names
+        :returns: a list of field names
         """
         fields = []
         for record_data in self.source:

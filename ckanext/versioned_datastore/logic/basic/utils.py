@@ -22,7 +22,7 @@ def find_version(data_dict: dict) -> Optional[int]:
 
     :param data_dict: the data dict, this might be modified if the __version__ key is
         used (it will be removed if present)
-    :return: the version found as an integer, or None if no version was found
+    :returns: the version found as an integer, or None if no version was found
     """
     version = data_dict.get('version')
     # pop the __version__ to avoid including it in the normal search filters, even if we
@@ -53,7 +53,7 @@ def make_request(data_dict: dict) -> SearchRequest:
     use basic queries for searches.
 
     :param data_dict: the data_dict passed to the action
-    :return: a SearchRequest object
+    :returns: a SearchRequest object
     """
     query = BasicQuery(
         data_dict['resource_id'],
@@ -106,7 +106,7 @@ def format_facets(aggs: dict) -> dict:
     etc.
 
     :param aggs: the aggregation dict returned from splitgill/elasticsearch
-    :return: the facet information as a dict
+    :returns: the facet information as a dict
     """
     facets = {}
     for facet, details in aggs.items():
@@ -149,7 +149,7 @@ def infer_type(
     :param threshold: a threshold determining the percentage of the values in the field
                       which must be of the parsed type to be inferred as it
                       (default: 0.8, i.e., 80%)
-    :return: the name of the inferred type (one of string, number, date, boolean)
+    :returns: the name of the inferred type (one of string, number, date, boolean)
     """
     parsed_field = parsed_fields.get(data_field.parsed_path)
 
@@ -188,7 +188,7 @@ def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
     :param resource_id: the resource's id
     :param version: the version of the data we're querying (default: None, which means
         latest)
-    :return: a list of dicts containing the field data
+    :returns: a list of dicts containing the field data
     """
     database = get_database(resource_id)
     data_fields = database.get_data_fields(version)

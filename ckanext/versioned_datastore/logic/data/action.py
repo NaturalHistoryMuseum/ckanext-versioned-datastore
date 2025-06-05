@@ -46,7 +46,7 @@ def vds_data_add(
     :param context: the CKAN context
     :param resource_id: the resource ID
     :param replace: whether to replace all existing records with the new ones
-    :return: a dict containing information about the add
+    :returns: a dict containing information about the add
     """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')
@@ -84,7 +84,7 @@ def vds_data_delete(context: dict, resource_id: str):
 
     :param context: the CKAN action context
     :param resource_id: the resource ID to delete the data from
-    :return: a dict containing information about the delete
+    :returns: a dict containing information about the delete
     """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')
@@ -113,7 +113,7 @@ def vds_data_sync(context: dict, resource_id: str, full: bool = False):
     :param resource_id: the resource ID to sync
     :param full: whether to sync all records again or just the changed ones since the
         last sync (default is False).
-    :return: a dict containing information about the sync
+    :returns: a dict containing information about the sync
     """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')
@@ -136,7 +136,7 @@ def record_show(resource_id: str, record_id: str, version: Optional[int] = None)
     :param resource_id: the resource's ID
     :param record_id: the record's ID
     :param version: the version to get of the record, or None to get the latest
-    :return: the record data
+    :returns: the record data
     """
     return vds_data_get(resource_id, record_id, version)
 
@@ -151,7 +151,7 @@ def vds_data_get(resource_id: str, record_id: str, version: Optional[int] = None
     :param resource_id: the resource's ID
     :param record_id: the record's ID
     :param version: the version to get of the record, or None to get the latest
-    :return:
+    :returns:
     """
     query = DirectQuery(
         [resource_id], version, Q('term', **{DocumentField.ID: record_id})

@@ -11,6 +11,6 @@ def vds_resource_check(resource_id: str) -> bool:
     it has data in Elasticsearch or not.
 
     :param resource_id: the resource ID
-    :return: True if the resource has data in Elasticsearch, False if not
+    :returns: True if the resource has data in Elasticsearch, False if not
     """
     return is_datastore_resource(resource_id)

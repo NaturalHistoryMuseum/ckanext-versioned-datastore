@@ -28,7 +28,7 @@ class IdAsUrlTransform(BaseTransform):
         default 'object.view') taking the ID field as the 'uuid' named argument.
 
         :param data: the record data to be transformed
-        :return: the transformed data (or untransformed if there was an error).
+        :returns: the transformed data (or untransformed if there was an error).
         """
         if self.field is None:
             return data

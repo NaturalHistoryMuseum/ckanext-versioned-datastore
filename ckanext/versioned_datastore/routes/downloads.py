@@ -12,7 +12,7 @@ def direct(zip_name):
     development. In production we should always serve files through the web server.
 
     :param zip_name: the zip name
-    :return: the send file response
+    :returns: the send file response
     """
     download_dir = toolkit.config.get('ckanext.versioned_datastore.download_dir')
     return send_from_directory(download_dir, zip_name)
@@ -25,7 +25,7 @@ def custom(zip_name):
     custom filenames.
 
     :param zip_name: the zip name
-    :return: the send file response
+    :returns: the send file response
     """
     download_dir = toolkit.config.get('ckanext.versioned_datastore.custom_dir')
     return send_from_directory(download_dir, zip_name)

@@ -23,7 +23,7 @@ def download_resource_data(resource: dict, into: Path, api_key: str) -> str:
     :param resource: the resource dict
     :param into: the path to the file where the data should be put
     :param api_key: the user's API key
-    :return: the hash of the downloaded file
+    :returns: the hash of the downloaded file
     """
     hasher = hashlib.sha1()
     # grab the resource's data via this URL
@@ -82,8 +82,8 @@ def iter_records(data: Iterable[dict], stats: ImportStats) -> Iterable[Record]:
 
     :param data: an iterable of dicts representing record data
     :param stats: the current ImportStats object in use which will be updated with
-                  progress every 5000 records handled
-    :return: yields Record objects
+        progress every 5000 records handled
+    :returns: yields Record objects
     """
     stats.update(count=0)
 

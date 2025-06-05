@@ -29,7 +29,7 @@ def get_resources_and_versions(
     :param query: a SchemaQuery object representing the query
     :param allow_non_datastore: allow non datastore resources to be included (will be
         returned with common.NON_DATASTORE_VERSION)
-    :return: a dict of resource IDs and versions
+    :returns: a dict of resource IDs and versions
     """
     available_resource_ids = get_available_resources(datastore_only=False)
     if not available_resource_ids.issuperset(query.resource_ids):
@@ -62,7 +62,7 @@ def convert_to_multisearch(query: dict) -> dict:
     Converts the given basic query dict into a multisearch query and returns it.
 
     :param query: a basic query dict
-    :return: a multisearch query dict
+    :returns: a multisearch query dict
     """
     # save a copy of the original query
     basic_query = deepcopy(query)
@@ -121,7 +121,7 @@ def convert_small_or_groups(query):
     Convert OR groups containing only 1 item to AND groups.
 
     :param query: a multisearch query dict
-    :return: the query with a converted filter dict, if applicable
+    :returns: the query with a converted filter dict, if applicable
     """
     if 'filters' not in query:
         return query
@@ -149,7 +149,7 @@ def remove_empty_groups(query):
     Remove empty groups from filter list.
 
     :param query: a multisearch query dict
-    :return: the query with a processed filter dict, if applicable
+    :returns: the query with a processed filter dict, if applicable
     """
     if 'filters' not in query:
         return query

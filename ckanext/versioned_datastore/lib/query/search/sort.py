@@ -22,7 +22,7 @@ class Sort:
         """
         Produce a sort dict for the Elasticsearch request.
 
-        :return: a dict
+        :returns: a dict
         """
         # you're not allowed to sort on text types
         if self.type == ParsedType.TEXT:
