@@ -32,8 +32,8 @@ dependencies = [
     "six>=1.11.0",
     "xlrd==1.1.0",
     "fastavro==1.7.0",
-    "ckantools>=0.3.0",
     "cachetools>=4.2.4",
+    "ckantools>=0.4.2"
 ]
 
 [project.optional-dependencies]
