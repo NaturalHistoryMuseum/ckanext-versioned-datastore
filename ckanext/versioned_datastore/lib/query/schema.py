@@ -1,16 +1,16 @@
 import abc
+import itertools
 import json
 from collections import OrderedDict
 from typing import List
 
-import itertools
 from elasticsearch_dsl.query import Query as DSLQuery
 from importlib_resources import files
-from jsonschema.validators import validator_for, RefResolver
+from jsonschema.validators import RefResolver, validator_for
 
 schemas = OrderedDict()
 schema_base_path = (
-    files("ckanext.versioned_datastore.theme") / "public" / "querySchemas"
+    files('ckanext.versioned_datastore.theme') / 'public' / 'querySchemas'
 )
 
 
@@ -30,7 +30,7 @@ def register_schema(version: str, schema: dict):
     schemas = OrderedDict(
         sorted(
             itertools.chain([(version, schema)], schemas.items()),
-            key=lambda vs: [int(u) for u in vs[0][1:].split(".")],
+            key=lambda vs: [int(u) for u in vs[0][1:].split('.')],
         )
     )
 
@@ -46,7 +46,7 @@ def get_latest_query_version() -> str:
 
 class InvalidQuerySchemaVersionError(Exception):
     def __init__(self, version):
-        super(Exception, self).__init__(f"Invalid query version: {version}")
+        super(Exception, self).__init__(f'Invalid query version: {version}')
 
 
 def validate_query(query: dict, version: str) -> bool:
@@ -96,7 +96,7 @@ def hash_query(query: dict, version: str) -> str:
         return get_schema(version).hash(query)
 
 
-def get_schema(version: str) -> "Schema":
+def get_schema(version: str) -> 'Schema':
     return schemas[version]
 
 
@@ -126,12 +126,12 @@ def load_core_schema(version):
     :return: the loaded schema (as a dict) and a jsonschmea validator object for the
              schema
     """
-    schema_file = schema_base_path / version / f"{version}.json"
-    schema = json.loads(schema_file.read_text("utf-8"))
+    schema_file = schema_base_path / version / f'{version}.json'
+    schema = json.loads(schema_file.read_text('utf-8'))
     validator_cls = validator_for(schema)
     validator_cls.check_schema(schema)
     # create a resolver which can resolve refs relative to the schema
-    resolver = RefResolver(base_uri=f"file://{schema_file}", referrer=schema)
+    resolver = RefResolver(base_uri=f'file://{schema_file}', referrer=schema)
     validator = validator_cls(schema, resolver=resolver)
     return schema, validator
 

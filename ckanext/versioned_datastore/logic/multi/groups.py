@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from functools import total_ordering
 from itertools import chain, islice
-from typing import List, Set, Union, Dict, Tuple
+from typing import Dict, List, Set, Tuple, Union
 
 from splitgill.indexing.fields import ParsedField
 
@@ -90,7 +90,7 @@ class FieldGroups:
         ]
         for group in sorted(self.groups.values(), reverse=True):
             # process skips and ignores
-            if self.skip_ids and group.name == "_id":
+            if self.skip_ids and group.name == '_id':
                 continue
             if any(ignore.match(group.name) for ignore in self.ignore_groups):
                 continue
@@ -101,11 +101,11 @@ class FieldGroups:
 
         return [
             {
-                "group": group.name,
-                "count": group.resource_count,
-                "records": group.record_count,
-                "fields": group.path_to_resource_id_map,
-                "forced": group in forced,
+                'group': group.name,
+                'count': group.resource_count,
+                'records': group.record_count,
+                'fields': group.path_to_resource_id_map,
+                'forced': group in forced,
             }
             for group in islice(chain(forced, groups), count)
         ]

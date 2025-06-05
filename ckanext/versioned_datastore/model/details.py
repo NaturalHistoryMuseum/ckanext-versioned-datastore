@@ -1,7 +1,7 @@
 import json
 
-from ckan.model import meta, DomainObject
-from sqlalchemy import Column, Table, BigInteger, UnicodeText
+from ckan.model import DomainObject, meta
+from sqlalchemy import BigInteger, Column, Table, UnicodeText
 
 # this table stores general details about each version of each resource. Currently it only stores
 # the column names and order.

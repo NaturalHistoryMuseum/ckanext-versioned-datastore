@@ -1,21 +1,21 @@
 from datetime import datetime
 from typing import List
 
+from ckan.model import DomainObject, Session, meta
+from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
-    UnicodeText,
+    Column,
     DateTime,
     ForeignKey,
+    Table,
+    UnicodeText,
     desc,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm import backref, relationship
 
-from ckan.model import meta, DomainObject, Session
-from ckan.model.types import make_uuid
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
@@ -249,7 +249,7 @@ class DownloadRequest(DomainObject):
     state_retrieving = 'retrieving'
 
     @classmethod
-    def get(cls, request_id) -> "DownloadRequest":
+    def get(cls, request_id) -> 'DownloadRequest':
         return Session.query(cls).get(request_id)
 
     def update(self, **kwargs):

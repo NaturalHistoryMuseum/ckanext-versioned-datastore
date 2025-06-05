@@ -1,17 +1,18 @@
 import logging
 
 from ckan.plugins import toolkit
+
 from ckanext.versioned_datastore.lib.downloads.transforms.base import BaseTransform
 
 log = logging.getLogger(__name__)
-base_url = toolkit.config.get("ckan.site_url")
+base_url = toolkit.config.get('ckan.site_url')
 object_endpoint = toolkit.config.get(
-    "ckanext.versioned_datastore.record_view_endpoint", "object.view"
+    'ckanext.versioned_datastore.record_view_endpoint', 'object.view'
 )
 
 
 class IdAsUrlTransform(BaseTransform):
-    name = "id_as_url"
+    name = 'id_as_url'
 
     def __init__(self, field=None, **kwargs):
         """
@@ -33,13 +34,13 @@ class IdAsUrlTransform(BaseTransform):
             return data
         try:
             object_id = data.get(self.field)
-            if object_id is None or object_id == "":
+            if object_id is None or object_id == '':
                 log.error(f'Failed to get uuid from field "{self.field}".')
                 return data
-            kwargs = {"uuid": object_id}
+            kwargs = {'uuid': object_id}
             url = toolkit.url_for(object_endpoint, **kwargs)
         except:
-            log.error(f"Failed to generate URL from ID.", exc_info=True)
+            log.error(f'Failed to generate URL from ID.', exc_info=True)
             return data
         data[self.field] = base_url + url
         return data

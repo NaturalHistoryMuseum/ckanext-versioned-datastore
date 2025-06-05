@@ -1,16 +1,15 @@
 from typing import Optional
 
+from ckan.plugins import toolkit
 from ckantools.decorators import action
 from elasticsearch_dsl import A, Q
-from splitgill.search import keyword, ALL_POINTS
+from splitgill.search import ALL_POINTS, keyword
 
-from ckan.plugins import toolkit
-from ckanext.versioned_datastore.logic.basic import helptext
-from ckanext.versioned_datastore.logic.basic import schema
+from ckanext.versioned_datastore.logic.basic import helptext, schema
 from ckanext.versioned_datastore.logic.basic.utils import (
-    make_request,
-    get_fields,
     format_facets,
+    get_fields,
+    make_request,
 )
 
 
@@ -48,15 +47,15 @@ def vds_basic_query(
     """
     request = make_request(data_dict)
     if not run_query:
-        return {"indexes": request.indexes(), "search": request.to_search().to_dict()}
+        return {'indexes': request.indexes(), 'search': request.to_search().to_dict()}
 
     response = request.run()
     return {
-        "total": response.count,
-        "records": response.data,
-        "facets": format_facets(response.aggs),
-        "fields": get_fields(resource_id, request.query.version),
-        "after": response.next_after,
+        'total': response.count,
+        'records': response.data,
+        'facets': format_facets(response.aggs),
+        'fields': get_fields(resource_id, request.query.version),
+        'after': response.next_after,
     }
 
 
@@ -88,35 +87,35 @@ def vds_basic_autocomplete(data_dict: dict, field: str, term: str):
     :return: a dict containing the values and optionally an after key for pagination
     """
     # extract the limit but default to a size of 20 if it's not present
-    size = data_dict.pop("limit", 20)
+    size = data_dict.pop('limit', 20)
     if not 0 < size <= 20:
-        raise toolkit.ValidationError("Size must be 0 < size <= 20")
+        raise toolkit.ValidationError('Size must be 0 < size <= 20')
     # grab the after as we need to use it for the agg, not the query
-    after = data_dict.pop("after", None)
+    after = data_dict.pop('after', None)
 
     request = make_request(data_dict)
     request.set_no_results()
     # add the autocomplete part of the query
-    request.extra_filter &= Q("prefix", **{keyword(field): term})
+    request.extra_filter &= Q('prefix', **{keyword(field): term})
 
     # add the aggregation which gets the field values
-    agg_options = dict(field=keyword(field), order="asc")
+    agg_options = dict(field=keyword(field), order='asc')
     if after is not None:
-        agg_options["after"] = {field: after}
+        agg_options['after'] = {field: after}
     request.add_agg(
-        "field_values",
-        "composite",
+        'field_values',
+        'composite',
         size=size,
-        sources={field: A("terms", **agg_options)},
+        sources={field: A('terms', **agg_options)},
     )
 
     response = request.run()
-    agg_result = response.aggs["field_values"]
+    agg_result = response.aggs['field_values']
     return_dict = {
-        "values": [bucket["key"][field] for bucket in agg_result["buckets"]],
+        'values': [bucket['key'][field] for bucket in agg_result['buckets']],
     }
-    if "after_key" in agg_result:
-        return_dict["after"] = agg_result["after_key"][field]
+    if 'after_key' in agg_result:
+        return_dict['after'] = agg_result['after_key'][field]
     return return_dict
 
 
@@ -150,20 +149,20 @@ def vds_basic_extent(data_dict: dict):
     total = request.run().count
 
     # add a filter to get only records with geo data
-    request.extra_filter &= Q("exists", field=ALL_POINTS)
+    request.extra_filter &= Q('exists', field=ALL_POINTS)
     # add our bounds aggregation
-    request.add_agg("bounds", "geo_bounds", field=ALL_POINTS, wrap_longitude=False)
+    request.add_agg('bounds', 'geo_bounds', field=ALL_POINTS, wrap_longitude=False)
 
     response = request.run()
 
     result = {
-        "total_count": total,
-        "geom_count": response.count,
+        'total_count': total,
+        'geom_count': response.count,
     }
     # extract and add the bounds info from the aggregations if there is any
     if response.count > 0:
-        top_left = response.aggs["bounds"]["bounds"]["top_left"]
-        bottom_right = response.aggs["bounds"]["bounds"]["bottom_right"]
-        result["bounds"] = [[p["lat"], p["lon"]] for p in (top_left, bottom_right)]
+        top_left = response.aggs['bounds']['bounds']['top_left']
+        bottom_right = response.aggs['bounds']['bounds']['bottom_right']
+        result['bounds'] = [[p['lat'], p['lon']] for p in (top_left, bottom_right)]
 
     return result

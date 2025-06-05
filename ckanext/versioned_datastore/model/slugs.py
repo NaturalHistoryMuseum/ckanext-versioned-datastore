@@ -1,45 +1,45 @@
 from datetime import datetime
 
+from ckan.model import DomainObject, meta
+from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
+    Column,
+    DateTime,
+    Table,
     UnicodeText,
     UniqueConstraint,
-    DateTime,
     or_,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
-from ckan.model import meta, DomainObject
-from ckan.model.types import make_uuid
 from ckanext.versioned_datastore.lib.query.schema import get_latest_query_version
 
 # this table stores query slugs
 datastore_slugs_table = Table(
-    "versioned_datastore_slugs",
+    'versioned_datastore_slugs',
     meta.metadata,
-    Column("id", UnicodeText, primary_key=True, default=make_uuid),
-    Column("query_hash", UnicodeText, nullable=False, index=True, unique=True),
-    Column("query", JSONB, nullable=False),
-    Column("query_version", UnicodeText, nullable=False),
-    Column("resource_ids", JSONB, nullable=False),
-    Column("version", BigInteger, nullable=True),
-    Column("pretty_slug", UnicodeText, nullable=True, index=True, unique=True),
-    Column("created", DateTime, nullable=False, default=datetime.utcnow),
-    Column("reserved_pretty_slug", UnicodeText, nullable=True, index=True, unique=True),
-    UniqueConstraint("id", "pretty_slug", "reserved_pretty_slug"),
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('query_hash', UnicodeText, nullable=False, index=True, unique=True),
+    Column('query', JSONB, nullable=False),
+    Column('query_version', UnicodeText, nullable=False),
+    Column('resource_ids', JSONB, nullable=False),
+    Column('version', BigInteger, nullable=True),
+    Column('pretty_slug', UnicodeText, nullable=True, index=True, unique=True),
+    Column('created', DateTime, nullable=False, default=datetime.utcnow),
+    Column('reserved_pretty_slug', UnicodeText, nullable=True, index=True, unique=True),
+    UniqueConstraint('id', 'pretty_slug', 'reserved_pretty_slug'),
 )
 
 # this table stores transient, temporary slugs
 navigational_slugs_table = Table(
-    "versioned_datastore_navigational_slugs",
+    'versioned_datastore_navigational_slugs',
     meta.metadata,
-    Column("id", UnicodeText, primary_key=True, default=make_uuid),
-    Column("query_hash", UnicodeText, nullable=False, index=True, unique=True),
-    Column("query", JSONB, nullable=False),
-    Column("resource_ids", JSONB, nullable=False),
-    Column("created", DateTime, nullable=False, default=datetime.utcnow),
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('query_hash', UnicodeText, nullable=False, index=True, unique=True),
+    Column('query', JSONB, nullable=False),
+    Column('resource_ids', JSONB, nullable=False),
+    Column('created', DateTime, nullable=False, default=datetime.utcnow),
 )
 
 
@@ -84,7 +84,7 @@ class NavigationalSlug(DomainObject):
     Object for a navigational slug.
     """
 
-    prefix = "nav-"
+    prefix = 'nav-'
     version = None
 
     @property

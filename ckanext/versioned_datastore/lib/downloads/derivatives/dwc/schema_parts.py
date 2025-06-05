@@ -14,38 +14,38 @@ class Extension(object):
     def create(cls, url: SchemaUrl, extension_schema=None, core=False):
         if extension_schema is None:
             extension_schema = load_schema(url.url)
-        row_type = extension_schema.attrib["rowType"]
-        name = extension_schema.attrib["name"]
-        schema_props = extension_schema.findall(".//{*}property")
-        prop_names = [p.attrib["name"] for p in schema_props]
+        row_type = extension_schema.attrib['rowType']
+        name = extension_schema.attrib['name']
+        schema_props = extension_schema.findall('.//{*}property')
+        prop_names = [p.attrib['name'] for p in schema_props]
         return cls(url, prop_names, row_type, name, core)
 
     @classmethod
     def load(cls, serialised):
-        serialised["location"] = SchemaUrl(**serialised["location"])
+        serialised['location'] = SchemaUrl(**serialised['location'])
         return cls(**serialised)
 
     def serialise(self):
         return {
-            "location": self.location.__dict__,
-            "prop_names": self.prop_names,
-            "row_type": self.row_type,
-            "name": self.name,
-            "core": self.core,
+            'location': self.location.__dict__,
+            'prop_names': self.prop_names,
+            'row_type': self.row_type,
+            'name': self.name,
+            'core': self.core,
         }
 
 
 class Prop(object):
     def __init__(self, **kwargs):
         # preferable to instantiate with .create() class method instead
-        self.name = kwargs.get("name")
-        self.iri = kwargs.get("iri")
-        self.prop_type = kwargs.get("prop_type", str)
-        self.is_identifier = kwargs.get("is_identifier", False)
-        self.domain = kwargs.get("domain")
-        self.vocabulary = kwargs.get("vocabulary", [])
-        self._flags = kwargs.get("flags", [])
-        self.extension = kwargs.get("extension")
+        self.name = kwargs.get('name')
+        self.iri = kwargs.get('iri')
+        self.prop_type = kwargs.get('prop_type', str)
+        self.is_identifier = kwargs.get('is_identifier', False)
+        self.domain = kwargs.get('domain')
+        self.vocabulary = kwargs.get('vocabulary', [])
+        self._flags = kwargs.get('flags', [])
+        self.extension = kwargs.get('extension')
 
     @classmethod
     def create(
@@ -61,32 +61,32 @@ class Prop(object):
     ):
         flags = flags or []
         if row_source is None and xml_element_source is None:
-            raise Exception("At least one source required.")
+            raise Exception('At least one source required.')
         if row_source is not None:
             self.name = row_source.term_localName
             self.iri = row_source.term_iri
             self.domain = row_source.organized_in
         else:
-            self.name = xml_element_source.attrib["name"]
-            self.iri = xml_element_source.attrib.get("qualName")
-            self.domain = xml_element_source.attrib.get("group")
+            self.name = xml_element_source.attrib['name']
+            self.iri = xml_element_source.attrib.get('qualName')
+            self.domain = xml_element_source.attrib.get('group')
         if xml_element_source is None:
             self.is_identifier = False
             thesaurus_url = None
         else:
             self.is_identifier = (
-                xml_element_source.attrib.get("substitutionGroup")
-                == "dwc:anyIdentifier"
+                xml_element_source.attrib.get('substitutionGroup')
+                == 'dwc:anyIdentifier'
             )
-            prop_type = xml_element_source.attrib.get("type")
-            if prop_type != "xs:string":
+            prop_type = xml_element_source.attrib.get('type')
+            if prop_type != 'xs:string':
                 self.prop_type = prop_type
-            thesaurus_url = xml_element_source.attrib.get("thesaurus")
+            thesaurus_url = xml_element_source.attrib.get('thesaurus')
         if thesaurus_url is not None:
             thesaurus = load_schema(thesaurus_url)
-            terms = thesaurus.findall(".//{*}concept")
+            terms = thesaurus.findall('.//{*}concept')
             identifier_key = next(
-                k for k in terms[0].attrib.keys() if "identifier" in k
+                k for k in terms[0].attrib.keys() if 'identifier' in k
             )
             self.vocabulary = [t.attrib[identifier_key] for t in terms]
         else:
@@ -106,12 +106,12 @@ class Prop(object):
 
     def serialise(self):
         return {
-            "name": self.name,
-            "iri": self.iri,
-            "is_identifier": self.is_identifier,
-            "domain": self.domain,
-            "vocabulary": self.vocabulary,
-            "flags": self.flags,
+            'name': self.name,
+            'iri': self.iri,
+            'is_identifier': self.is_identifier,
+            'domain': self.domain,
+            'vocabulary': self.vocabulary,
+            'flags': self.flags,
         }
 
     @classmethod
@@ -120,7 +120,7 @@ class Prop(object):
 
     def __repr__(self):
         if self.vocabulary:
-            return f"{self.name} ({len(self.vocabulary)} terms)"
+            return f'{self.name} ({len(self.vocabulary)} terms)'
         else:
             return self.name
 
@@ -134,7 +134,7 @@ class PropCollection(dict):
             try:
                 props = {p.name: p for p in props}
             except:
-                raise TypeError("Must be dict or iterable.")
+                raise TypeError('Must be dict or iterable.')
         super(PropCollection, self).__init__(**props)
 
     def flagged(self, *flags):
@@ -174,7 +174,7 @@ class Domain(object):
         return cls(name, label, iri)
 
     def serialise(self):
-        return {"name": self.name, "label": self.label, "iri": self.iri}
+        return {'name': self.name, 'label': self.label, 'iri': self.iri}
 
     @classmethod
     def load(cls, serialised):

@@ -4,7 +4,7 @@ from typing import Optional
 from splitgill.indexing.options import ParsingOptionsBuilder
 from splitgill.model import ParsingOptions
 
-from ckanext.versioned_datastore.lib.utils import ivds_implementations, get_database
+from ckanext.versioned_datastore.lib.utils import get_database, ivds_implementations
 
 
 def get_options(
@@ -56,17 +56,17 @@ def update_options(resource_id: str, overrides: Optional[dict] = None) -> Option
     else:
         builder = ParsingOptionsBuilder(based_on=current_options)
 
-    if "keyword_length" in overrides:
-        builder.with_keyword_length(overrides["keyword_length"])
-    if "float_format" in overrides:
-        builder.with_float_format(overrides["float_format"])
-    for true_value in overrides.get("true_values", []):
+    if 'keyword_length' in overrides:
+        builder.with_keyword_length(overrides['keyword_length'])
+    if 'float_format' in overrides:
+        builder.with_float_format(overrides['float_format'])
+    for true_value in overrides.get('true_values', []):
         builder.with_true_value(true_value)
-    for false_value in overrides.get("false_values", []):
+    for false_value in overrides.get('false_values', []):
         builder.with_false_value(false_value)
-    for date_format in overrides.get("date_formats", []):
+    for date_format in overrides.get('date_formats', []):
         builder.with_date_format(date_format)
-    for geo_hint in overrides.get("geo_hints", []):
+    for geo_hint in overrides.get('geo_hints', []):
         builder.with_geo_hint(*geo_hint)
 
     for plugin in ivds_implementations():
@@ -86,5 +86,5 @@ def create_default_options_builder() -> ParsingOptionsBuilder:
     """
     builder = ParsingOptionsBuilder()
     builder.with_keyword_length(8191)
-    builder.with_float_format("{0:.15g}")
+    builder.with_float_format('{0:.15g}')
     return builder

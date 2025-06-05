@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from ckan import model
 

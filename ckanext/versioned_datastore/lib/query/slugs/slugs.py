@@ -4,13 +4,14 @@ import logging
 import random
 from typing import Optional, Tuple
 
+from ckan import model
 from sqlalchemy.exc import IntegrityError
 
-from ckan import model
 from ckanext.versioned_datastore.model.slugs import DatastoreSlug, NavigationalSlug
-from .slug_words import list_one, list_two, list_three
+
 from ..schema import hash_query
 from ..search.query import SchemaQuery
+from .slug_words import list_one, list_three, list_two
 
 log = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def generate_query_hash(query: SchemaQuery) -> str:
         # sort the resource ids to ensure stability
         sorted(query.resource_ids),
     ]
-    hash_value.update("|".join(map(str, bits)).encode("utf-8"))
+    hash_value.update('|'.join(map(str, bits)).encode('utf-8'))
     return hash_value.hexdigest()
 
 
@@ -47,7 +48,7 @@ def generate_pretty_slug(word_lists=(list_one, list_two, list_three)) -> str:
     :param word_lists: a sequence of word lists to choose from
     :return: the slug
     """
-    return "-".join(map(random.choice, word_lists))
+    return '-'.join(map(random.choice, word_lists))
 
 
 def create_slug(
@@ -116,7 +117,7 @@ def create_nav_slug(query: SchemaQuery) -> Tuple[bool, DatastoreSlug]:
         clean_nav_slugs()
     except Exception as e:
         # if it fails, log it and move on
-        log.debug(f"Cleaning nav slugs failed: {e}")
+        log.debug(f'Cleaning nav slugs failed: {e}')
 
     query_hash = generate_query_hash(query)
 
@@ -153,7 +154,7 @@ def resolve_slug(slug, allow_nav=True) -> Optional[DatastoreSlug]:
             clean_nav_slugs()
         except Exception as e:
             # if it fails, log it and move on
-            log.debug(f"Cleaning nav slugs failed: {e}")
+            log.debug(f'Cleaning nav slugs failed: {e}')
         return (
             model.Session.query(NavigationalSlug)
             .filter(NavigationalSlug.on_slug(slug))
@@ -206,7 +207,7 @@ def reserve_slug(reserved_pretty_slug: str, query: SchemaQuery) -> DatastoreSlug
             success, slug = create_slug(query, pretty_slug=False)
             if not success:
                 # this should never really happen
-                raise Exception("Failed to create new reserved slug")
+                raise Exception('Failed to create new reserved slug')
             slug.reserved_pretty_slug = reserved_pretty_slug
             slug.save()
             return slug
@@ -218,8 +219,8 @@ def reserve_slug(reserved_pretty_slug: str, query: SchemaQuery) -> DatastoreSlug
                 return slug
             else:
                 raise DuplicateSlugException(
-                    f"The query parameters are already associated with a "
-                    f"different slug: {slug.get_slug_string()}"
+                    f'The query parameters are already associated with a '
+                    f'different slug: {slug.get_slug_string()}'
                 )
 
 

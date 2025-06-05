@@ -7,15 +7,15 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
     A factory class for generating derivative files in a given format.
     """
 
-    name = "base"
+    name = 'base'
     extension = None
 
-    RESOURCE_ID_FIELD_NAME = "Source resource ID"
+    RESOURCE_ID_FIELD_NAME = 'Source resource ID'
 
     def __init__(self, output_dir, fields, query, resource_id=None, **format_args):
         self.output_dir = output_dir
         self.output_name = os.extsep.join(
-            [resource_id or "resource", self.extension or self.name]
+            [resource_id or 'resource', self.extension or self.name]
         )
 
         if resource_id:
@@ -25,7 +25,7 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
         # split the fields by file; there should not be any keys here that are not in
         # self.file_paths (though this only has to contain keys for files with fields,
         # e.g. not manifest files or similar)
-        self.fields = {"main": self.all_fields}
+        self.fields = {'main': self.all_fields}
 
         # some derivatives might need access to the original query
         self._query = query
@@ -37,7 +37,7 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
 
         # a derivative may have multiple component files, but most will just have the one (the
         # output file). None of them _have_ to be the output filename.
-        self.file_paths = {"main": os.path.join(self.output_dir, self.output_name)}
+        self.file_paths = {'main': os.path.join(self.output_dir, self.output_name)}
         # this will contain open file handles
         self.files = {}
         # indicators
@@ -47,7 +47,7 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
 
     def __enter__(self):
         for fn, fp in self.file_paths.items():
-            self.files[fn] = open(fp, "a")
+            self.files[fn] = open(fp, 'a')
         self._opened = True
         self.setup()
         if not self._initialised:
@@ -66,8 +66,8 @@ class BaseDerivativeGenerator(metaclass=ABCMeta):
 
     @property
     def main_file(self):
-        if "main" in self.files:
-            return self.files["main"]
+        if 'main' in self.files:
+            return self.files['main']
         if len(self.files.values()) == 1:
             return list(self.files.values())[0]
         else:

@@ -60,10 +60,14 @@ class TestDownloadRunManager:
         server_args = ServerArgs(**ServerArgs.defaults)
         notifier_args = NotifierArgs(type='none')
 
-        with patch(
-            'ckanext.versioned_datastore.lib.downloads.download.idownload_implementations',
-            return_value=[mock_plugin],
-        ), patches.get_available_resources(), patches.rounded_versions():
+        with (
+            patch(
+                'ckanext.versioned_datastore.lib.downloads.download.idownload_implementations',
+                return_value=[mock_plugin],
+            ),
+            patches.get_available_resources(),
+            patches.rounded_versions(),
+        ):
             run_manager = DownloadRunManager(
                 query_args, derivative_args, server_args, notifier_args
             )

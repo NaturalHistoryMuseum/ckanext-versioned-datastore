@@ -2,12 +2,12 @@ import abc
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
-from cachetools import cached, TTLCache
+from cachetools import TTLCache, cached
+from ckan.plugins import toolkit
 from rq.job import Job
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.utils import es_client
 
 
@@ -50,9 +50,9 @@ class Task(abc.ABC):
         directory.
         """
         with tempfile.TemporaryDirectory() as tmp_dir_name:
-            self.log.info(f"Starting {self.title}")
+            self.log.info(f'Starting {self.title}')
             self.run(Path(tmp_dir_name))
-        self.log.info(f"Finished {self.title}")
+        self.log.info(f'Finished {self.title}')
 
     def queue(
         self,
@@ -71,9 +71,9 @@ class Task(abc.ABC):
         :return: returns the result of calling CKAN's enqueue_job which will provide
                  details about the queued job for this task
         """
-        rq_kwargs = {"timeout": timeout or self.timeout}
+        rq_kwargs = {'timeout': timeout or self.timeout}
         if depends_on:
-            rq_kwargs["depends_on"] = depends_on
+            rq_kwargs['depends_on'] = depends_on
 
         return toolkit.enqueue_job(
             self.start,

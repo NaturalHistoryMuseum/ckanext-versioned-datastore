@@ -1,6 +1,5 @@
-from splitgill.indexing.options import ParsingOptionsBuilder
-
 from ckan.plugins.interfaces import Interface
+from splitgill.indexing.options import ParsingOptionsBuilder
 
 
 class IVersionedDatastore(Interface):
