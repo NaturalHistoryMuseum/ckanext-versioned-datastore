@@ -44,7 +44,7 @@ class Query(abc.ABC):
         """
         Returns just an Elasticsearch DSL Query object representing this search.
 
-        :return: an Elasticsearch Query instance
+        :returns: an Elasticsearch Query instance
         """
         ...
 
@@ -109,7 +109,7 @@ class SchemaQuery(Query):
         """
         Returns the hash of the query for use in identifying it uniquely.
 
-        :return: the hash as a str
+        :returns: the hash as a str
         """
         return hash_query(self.query, self.query_version)
 
@@ -126,7 +126,7 @@ class SchemaQuery(Query):
         Checks that the query is valid according to the schema and then translates it to
         a Search object.
 
-        :return: a Search object
+        :returns: a Search object
         """
         self.validate()
         return translate_query(self.query, self.query_version)
@@ -185,7 +185,7 @@ class BasicQuery(Query):
         Converts the q and filters parameters specified on creation to an Elasticsearch
         DSL query.
 
-        :return: the Elasticsearch DSL query
+        :returns: the Elasticsearch DSL query
         """
         must = []
         if self.q is not None and self.q != '' and self.q != {}:
@@ -237,7 +237,7 @@ class BasicQuery(Query):
             essentially values like 10km etc).
         :param coordinates: the point to centre the radius on, specified as a lon/lat
             pair in a list (i.e. [40.2, -20]).
-        :return: a Query object
+        :returns: a Query object
         """
         options = {
             'distance': distance,
@@ -261,7 +261,7 @@ class BasicQuery(Query):
 
         :param coordinates: a list of a list of a list of a list of at least 3 lon/lat
             pairs (i.e. [[[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]]])
-        :return: a Query object
+        :returns: a Query object
         """
         should = []
         for group in coordinates:
@@ -303,7 +303,7 @@ class BasicQuery(Query):
 
         :param coordinates: a list of a list of a list of at least 3 lon/lat pairs (i.e.
             [[[-16, 44], [-13.1, 34.8], [15.99, 35], [5, 49]]])
-        :return: a Query object
+        :returns: a Query object
         """
         # just wrap in another list and pass to the multipolygon handler
         return BasicQuery.create_multipolygon_filter([coordinates])
@@ -318,7 +318,7 @@ class BasicQuery(Query):
             key. The type must be one of: Point, MultiPolygon or Polygon. In the case of
             a Point, a distance key is also required which specifies the radius of the
             point in a form elasticsearch understands (for example, 10km).
-        :return: a Query object
+        :returns: a Query object
         """
         # we support 3 GeoJSON types currently, Point, MultiPolygon and Polygon
         query_type_map = {

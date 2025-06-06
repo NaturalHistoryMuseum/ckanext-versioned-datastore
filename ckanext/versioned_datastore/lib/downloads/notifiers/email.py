@@ -2,15 +2,16 @@ import re
 
 from ckan.lib import mailer
 from ckan.plugins import toolkit
+
 from .base import BaseNotifier
 
-default_html_body = '''
+default_html_body = """
 <html lang="en">
 <body>
 {0}
 </body>
 </html>
-'''.strip()
+""".strip()
 
 
 class EmailNotifier(BaseNotifier):

@@ -2,12 +2,12 @@ import abc
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional, List, Union
+from typing import List, Optional, Union
 
-from cachetools import cached, TTLCache
+from cachetools import TTLCache, cached
+from ckan.plugins import toolkit
 from rq.job import Job
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.utils import es_client
 
 
@@ -40,7 +40,7 @@ class Task(abc.ABC):
         when a task begins after some setup is completed.
 
         :param tmpdir: a temporary directory which can be used by the task and will be
-                       cleaned up after this run method completes
+            cleaned up after this run method completes
         """
         ...
 
@@ -50,9 +50,9 @@ class Task(abc.ABC):
         directory.
         """
         with tempfile.TemporaryDirectory() as tmp_dir_name:
-            self.log.info(f"Starting {self.title}")
+            self.log.info(f'Starting {self.title}')
             self.run(Path(tmp_dir_name))
-        self.log.info(f"Finished {self.title}")
+        self.log.info(f'Finished {self.title}')
 
     def queue(
         self,
@@ -63,17 +63,17 @@ class Task(abc.ABC):
         Queues this task on the appropriate RQ queue.
 
         :param depends_on: a job, or list of jobs, which this task depends on. If given,
-                           this task will only start when the other jobs finish
-                           successfully. Check the RQ docs for more information.
+            this task will only start when the other jobs finish successfully. Check the
+            RQ docs for more information.
         :param timeout: a timeout in seconds for this task. If provided this overrides
-                        the base timeout defined in the task, otherwise the default
-                        task's timeout is used.
-        :return: returns the result of calling CKAN's enqueue_job which will provide
-                 details about the queued job for this task
+            the base timeout defined in the task, otherwise the default task's timeout
+            is used.
+        :returns: returns the result of calling CKAN's enqueue_job which will provide
+            details about the queued job for this task
         """
-        rq_kwargs = {"timeout": timeout or self.timeout}
+        rq_kwargs = {'timeout': timeout or self.timeout}
         if depends_on:
-            rq_kwargs["depends_on"] = depends_on
+            rq_kwargs['depends_on'] = depends_on
 
         return toolkit.enqueue_job(
             self.start,
@@ -90,7 +90,7 @@ def get_queue_length(queue_name):
     processing.
 
     :param queue_name: the name of the queue to check, e.g. 'download'
-    :return: length of queue as int
+    :returns: length of queue as int
     """
     queued_jobs = toolkit.get_action('job_list')(
         {'ignore_auth': True}, {'queues': [queue_name]}

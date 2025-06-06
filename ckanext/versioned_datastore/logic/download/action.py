@@ -29,7 +29,7 @@ def vds_download_queue(
     :param file: the file options as a DerivativeArgs object
     :param server: the server options as a ServerArgs object (default is None)
     :param notifier: the notifier options as a NotifierArgs object (default is None)
-    :return: a dict of information about the download
+    :returns: a dict of information about the download
     """
     server = server or ServerArgs(**ServerArgs.defaults)
     notifier = notifier or NotifierArgs(**NotifierArgs.defaults)
@@ -88,7 +88,7 @@ def vds_download_regenerate(
     :param download_id: the download ID
     :param server: the server options as a ServerArgs object (default is None)
     :param notifier: the notifier options as a NotifierArgs object (default is None)
-    :return: a dict of information about the download
+    :returns: a dict of information about the download
     """
     # find the download request first
     original_request = DownloadRequest.get(download_id)

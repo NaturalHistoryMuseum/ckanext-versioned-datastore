@@ -39,7 +39,7 @@ def vds_slug_create(
     :param query_version: the query schema version to use
     :param pretty_slug: whether to produce a pretty slug (es muy bonita)
     :param nav_slug: whether to produce a nav type slug
-    :return: details about the slug
+    :returns: details about the slug
     """
     if query_version and query_version.lower().startswith('v0'):
         # this is an old/basic query, so we need to convert it first
@@ -81,7 +81,7 @@ def vds_slug_resolve(slug: str):
     for DOIs and returns the query details of the DOI.
 
     :param slug: the slug to resolve
-    :return: the slug query details, or a ValidationError if no slug could be resolved
+    :returns: the slug query details, or a ValidationError if no slug could be resolved
     """
     # try resolving the slug first
     resolved = resolve_slug(slug)
@@ -145,7 +145,7 @@ def vds_slug_reserve(context: dict, current_slug: str, new_reserved_slug: str):
     :param context: the CKAN action context
     :param current_slug: the current slug name
     :param new_reserved_slug: the new slug name
-    :return: the slug details as a dict
+    :returns: the slug details as a dict
     """
     slug = resolve_slug(current_slug)
     if slug is None:

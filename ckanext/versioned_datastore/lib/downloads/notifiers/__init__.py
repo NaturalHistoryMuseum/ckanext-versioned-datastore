@@ -1,7 +1,8 @@
-from .email import EmailNotifier
-from .webhook import WebhookNotifier
-from .null import NullNotifier
 from ckan.plugins import toolkit
+
+from .email import EmailNotifier
+from .null import NullNotifier
+from .webhook import WebhookNotifier
 
 notifiers = [EmailNotifier, WebhookNotifier, NullNotifier]
 

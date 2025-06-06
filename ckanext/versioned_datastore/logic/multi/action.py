@@ -32,8 +32,8 @@ def vds_multi_query(data_dict: dict):
     query language and the ability to query multiple resources at the same time.
 
     :param data_dict: the data dict of options
-    :return: a dict which contains the total number of records found, an after value for
-        pagination, and a list of dicts of record data
+    :returns: a dict which contains the total number of records found, an after value
+        for pagination, and a list of dicts of record data
     """
     request = make_request(data_dict)
     response = request.run()
@@ -64,7 +64,7 @@ def vds_multi_count(data_dict: dict):
     language and the ability to query multiple resources at the same time.
 
     :param data_dict: the data dict of options
-    :return: a dict which contains the total count and a breakdown of the hits per
+    :returns: a dict which contains the total count and a breakdown of the hits per
         resource
     """
     request = make_request(data_dict)
@@ -107,7 +107,7 @@ def vds_multi_autocomplete_value(
     :param data_dict: the action options
     :param field: the field to get the values from
     :param prefix: the prefix to search for
-    :return: a dict containing the list of values and an after key if there are more
+    :returns: a dict containing the list of values and an after key if there are more
         values available. If the after key is not present, there are no more values
         available
     """
@@ -181,7 +181,7 @@ def vds_multi_autocomplete_field(
     :param lowercase: whether to compare the text to the field names in lowercase
                       (default is False)
     :param version: the version to search at (default is None, which means latest)
-    :return: the total number of fields matched and details about the fields that were
+    :returns: the total number of fields matched and details about the fields that were
              matched
     """
     fields = defaultdict(dict)
@@ -217,7 +217,7 @@ def vds_multi_hash(query: dict, query_version: Optional[str] = None):
 
     :param query: the query
     :param query_version: the version of the query schema
-    :return: the hash
+    :returns: the hash
     """
     if query_version is None:
         query_version = get_latest_query_version()
@@ -240,7 +240,7 @@ def vds_multi_fields(
     :param data_dict: the action options
     :param size: the number of field groups to return (defaults to the top 10)
     :param ignore_groups: an optional list of fields to ignore
-    :return: a list of field groups represented as dicts
+    :returns: a list of field groups represented as dicts
     """
     request = make_request(data_dict)
     request.set_no_results()
@@ -284,7 +284,7 @@ def vds_multi_stats(data_dict: dict, field: str, missing: Optional[float] = None
     :param data_dict: the data dict passed to this action
     :param field: the field to get stats for
     :param missing: value to use for records missing this field, or None to ignore them
-    :return: a dict of statistical data
+    :returns: a dict of statistical data
     """
     request = make_request(data_dict)
     request.set_no_results()
@@ -315,7 +315,7 @@ def vds_multi_direct(data_dict: dict):
     raised during validation.
 
     :param data_dict: the action data dict
-    :return: the raw response from Elasticsearch
+    :returns: the raw response from Elasticsearch
     """
     resource_ids = data_dict['resource_ids']
     version = data_dict.get('version', 'latest')

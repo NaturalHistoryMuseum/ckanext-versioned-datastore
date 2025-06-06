@@ -1,21 +1,21 @@
 from datetime import datetime
 from typing import List
 
+from ckan.model import DomainObject, Session, meta
+from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
-    UnicodeText,
+    Column,
     DateTime,
     ForeignKey,
+    Table,
+    UnicodeText,
     desc,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import relationship, backref
 from sqlalchemy.exc import InvalidRequestError
+from sqlalchemy.orm import backref, relationship
 
-from ckan.model import meta, DomainObject, Session
-from ckan.model.types import make_uuid
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 
 # this one is outside DownloadRequest so we can use it as a default in the table def
@@ -128,7 +128,7 @@ class CoreFileRecord(DomainObject):
         """
         Returns the list of resource IDs this download searches over.
 
-        :return: a sorted list of resource IDs
+        :returns: a sorted list of resource IDs
         """
         return sorted(self.resource_ids_and_versions.keys())
 
@@ -139,7 +139,7 @@ class CoreFileRecord(DomainObject):
         that was searched at the time the download was created, but it will produce the
         same data.
 
-        :return: an integer version
+        :returns: an integer version
         """
         return max(self.resource_ids_and_versions.values())
 
@@ -147,7 +147,7 @@ class CoreFileRecord(DomainObject):
         """
         Converts this download core into a SchemaQuery object.
 
-        :return: a new SchemaQuery object
+        :returns: a new SchemaQuery object
         """
         return SchemaQuery(
             self.get_resource_ids(), self.get_version(), self.query, self.query_version
@@ -249,7 +249,7 @@ class DownloadRequest(DomainObject):
     state_retrieving = 'retrieving'
 
     @classmethod
-    def get(cls, request_id) -> "DownloadRequest":
+    def get(cls, request_id) -> 'DownloadRequest':
         return Session.query(cls).get(request_id)
 
     def update(self, **kwargs):

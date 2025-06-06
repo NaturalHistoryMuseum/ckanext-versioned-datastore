@@ -23,7 +23,7 @@ def get_available_datastore_resources(
     datastore resources to the currently logged-in user.
 
     :param ignore_auth: whether to ignore authentication (default: False)
-    :return: a set of resource IDs
+    :returns: a set of resource IDs
     """
     return get_available_resources(
         datastore_only=True, ignore_auth=ignore_auth, user_id=user_id
@@ -42,7 +42,7 @@ def get_available_resources(
 
     :param datastore_only: whether to only return resource IDs that are datastore active
     :param ignore_auth: whether to ignore authentication (default: False)
-    :return: a set of resource IDs
+    :returns: a set of resource IDs
     """
     resource_ids = set()
 
@@ -77,7 +77,7 @@ def get_database(resource_id: str) -> SplitgillDatabase:
     SplitgillClient on the VDS plugin isn't yet configured, an exception is raised.
 
     :param resource_id: the resource's ID
-    :return: a SplitgillDatabase
+    :returns: a SplitgillDatabase
     """
     name = get_sg_name(resource_id)
     return sg_client().get_database(name)
@@ -88,7 +88,7 @@ def sg_client() -> SplitgillClient:
     Retrieves a Splitgill client object. If Splitgill is not configured yet on the VDS
     plugin, an exception is raised.
 
-    :return: an SplitgillClient object
+    :returns: an SplitgillClient object
     """
     vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
@@ -101,7 +101,7 @@ def es_client() -> Elasticsearch:
     Retrieves an Elasticsearch client for use on the in use cluster. If Splitgill is not
     configured yet on the VDS plugin, an exception is raised.
 
-    :return: an Elasticsearch object
+    :returns: an Elasticsearch object
     """
     vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
@@ -114,7 +114,7 @@ def mongo_client() -> MongoClient:
     Retrieves a Mongo client for use on the in use database instance. If Splitgill is
     not configured yet on the VDS plugin, an exception is raised.
 
-    :return: an MongoClient object
+    :returns: an MongoClient object
     """
     vds_plugin = get_plugin('versioned_datastore')
     if not vds_plugin.is_sg_configured:
@@ -127,7 +127,7 @@ def get_latest_version(resource_id) -> Optional[int]:
     Retrieves the latest version of the given resource from the status index.
 
     :param resource_id: the resource's id
-    :return: the version or None if the resource isn't indexed
+    :returns: the version or None if the resource isn't indexed
     """
     return get_database(resource_id).get_elasticsearch_version()
 
@@ -138,7 +138,7 @@ def get_sg_name(resource_id: str) -> str:
     the resource data in elasticsearch.
 
     :param resource_id: the resource id
-    :return: the resource's Splitgill database name
+    :returns: the resource's Splitgill database name
     """
     prefix = toolkit.config.get('ckanext.versioned_datastore.sg_prefix', '')
     return f'{prefix}{resource_id}'
@@ -150,7 +150,7 @@ def unprefix_sg_name(sg_name: str) -> str:
     id.
 
     :param sg_name: the Spitgill database name
-    :return: the resource's id
+    :returns: the resource's id
     """
     prefix = toolkit.config.get('ckanext.versioned_datastore.sg_prefix', '')
     return sg_name[len(prefix) :]
@@ -163,7 +163,7 @@ def unprefix_index_name(sg_index_name: str) -> str:
     resource ID cannot be extracted, a ValueError is raised.
 
     :param sg_index_name: the Splitgill index name
-    :return: the resource's ID
+    :returns: the resource's ID
     """
     # all indexes have data- at the start and -latest or -arc-# on the end
     regexes = [re.compile(r'data-(.*)-latest'), re.compile(r'data-(.*)-arc-[0-9]+')]
@@ -188,7 +188,7 @@ def is_resource_read_only(resource_id: str) -> bool:
     Loops through the plugin implementations checking if any of them want the given
     resource id to be read only.
 
-    :return: True if the resource should be treated as read only, False if not
+    :returns: True if the resource should be treated as read only, False if not
     """
     return any(
         plugin.vds_is_read_only_resource(resource_id)
@@ -203,7 +203,7 @@ def is_datastore_resource(resource_id: str) -> bool:
     simply test if there is any searchable data for the resource.
 
     :param resource_id: the resource id
-    :return: True if the resource is a datastore resource, False if not
+    :returns: True if the resource is a datastore resource, False if not
     """
     return get_database(resource_id).get_elasticsearch_version() is not None
 
@@ -218,7 +218,7 @@ def is_datastore_only_resource(resource_url: str) -> bool:
     front of these URLs when saving the resource, sometimes.
 
     :param resource_url: the URL of the resource
-    :return: True if the resource is a datastore only resource, False if not
+    :returns: True if the resource is a datastore only resource, False if not
     """
     return (
         resource_url == common.DATASTORE_ONLY_RESOURCE
@@ -237,7 +237,7 @@ def is_ingestible(resource: dict) -> bool:
     constraint, but it's worth covering off anyway.
 
     :param resource: the resource dict
-    :return: True if it is, False if not
+    :returns: True if it is, False if not
     """
     if resource.get('url', None) is None:
         return False

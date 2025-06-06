@@ -1,1 +1,1 @@
-vds_resource_check = ""
+vds_resource_check = ''

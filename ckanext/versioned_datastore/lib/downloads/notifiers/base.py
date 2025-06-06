@@ -1,14 +1,14 @@
 from abc import ABCMeta, abstractmethod
 
+from ckan.plugins import toolkit
 from jinja2 import Template
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.lib.utils import idownload_implementations
 from ckanext.versioned_datastore.model.downloads import DownloadRequest
 
 
 class BaseNotifier(metaclass=ABCMeta):
-    name = "base"
+    name = 'base'
 
     default_start_text = """
     Your download on {{ site_name }} has started processing.
@@ -59,17 +59,17 @@ class BaseNotifier(metaclass=ABCMeta):
 
     def template_context(self, file_url=None):
         context = {
-            "site_url": toolkit.config.get("ckan.site_url"),
-            "site_name": toolkit.config.get(
-                "ckan.site_name", toolkit.config.get("ckan.site_url")
+            'site_url': toolkit.config.get('ckan.site_url'),
+            'site_name': toolkit.config.get(
+                'ckan.site_name', toolkit.config.get('ckan.site_url')
             ),
-            "status_page": toolkit.url_for(
-                "datastore_status.download_status",
+            'status_page': toolkit.url_for(
+                'datastore_status.download_status',
                 download_id=self.request.id,
                 qualified=True,
             ),
-            "download_url": file_url,
-            "contact_email": toolkit.config.get("smtp.mail_from"),
+            'download_url': file_url,
+            'contact_email': toolkit.config.get('smtp.mail_from'),
         }
         for plugin in idownload_implementations():
             context = plugin.download_modify_notifier_template_context(
@@ -89,17 +89,17 @@ class BaseNotifier(metaclass=ABCMeta):
 
     def start_text(self):
         templates = (self.default_start_text, self.default_start_html)
-        return self._get_text(templates, "download_modify_notifier_start_templates")
+        return self._get_text(templates, 'download_modify_notifier_start_templates')
 
     def end_text(self, file_url):
         templates = (self.default_end_text, self.default_end_html)
         return self._get_text(
-            templates, "download_modify_notifier_end_templates", file_url
+            templates, 'download_modify_notifier_end_templates', file_url
         )
 
     def error_text(self):
         templates = (self.default_error_text, self.default_error_html)
-        return self._get_text(templates, "download_modify_notifier_error_templates")
+        return self._get_text(templates, 'download_modify_notifier_error_templates')
 
     @abstractmethod
     def notify_start(self):

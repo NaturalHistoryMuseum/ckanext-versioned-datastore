@@ -2,6 +2,7 @@ import json
 from datetime import date
 
 from ckan.plugins import toolkit
+
 from ckanext.versioned_datastore.lib.common import ALL_FORMATS
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 from ckanext.versioned_datastore.lib.query.slugs.slugs import create_nav_slug
@@ -17,9 +18,10 @@ def is_duplicate_ingestion(stat):
     positives/negatives.
 
     :param stat: the ImportStats object
-    :return: True if the error on this stat is a duplicate ingestion error, False if not
+    :returns: True if the error on this stat is a duplicate ingestion error, False if
+        not
     """
-    return stat.error and "this file has been ingested before" in stat.error.lower()
+    return stat.error and 'this file has been ingested before' in stat.error.lower()
 
 
 def get_human_duration(stat):
@@ -31,14 +33,14 @@ def get_human_duration(stat):
     minutes (to 0 decimal places) or the number of hours (to 0 decimal places).
 
     :param stat: the ImportStats object
-    :return: a nicely formatted duration string
+    :returns: a nicely formatted duration string
     """
     if stat.duration < 60:
-        return toolkit._(f"{stat.duration:.2f} seconds")
+        return toolkit._(f'{stat.duration:.2f} seconds')
     elif stat.duration < 60 * 60:
-        return toolkit._(f"{stat.duration / 60:.0f} minutes")
+        return toolkit._(f'{stat.duration / 60:.0f} minutes')
     else:
-        return toolkit._(f"{stat.duration / (60 * 60):.0f} hours")
+        return toolkit._(f'{stat.duration / (60 * 60):.0f} hours')
 
 
 def get_stat_icon(stat):
@@ -48,25 +50,25 @@ def get_stat_icon(stat):
     operation the stat represents is still in progress.
 
     :param stat: the ImportStats object
-    :return: the fontawesome icon classes to use, as a string
+    :returns: the fontawesome icon classes to use, as a string
     """
     if stat.in_progress:
         # a spinner, that spins
-        return "fa-spinner fa-pulse"
+        return 'fa-spinner fa-pulse'
     if stat.error:
         if is_duplicate_ingestion(stat):
             # we don't want this to look like an error
-            return "fa-copy"
-        return "fa-exclamation"
+            return 'fa-copy'
+        return 'fa-exclamation'
 
     if stat.type == stats.INGEST:
-        return "fa-tasks"
+        return 'fa-tasks'
     if stat.type == stats.INDEX:
-        return "fa-search"
+        return 'fa-search'
     if stat.type == stats.PREP:
-        return "fa-cogs"
+        return 'fa-cogs'
     # shouldn't get here, just use some default tick thing
-    return "fa-check"
+    return 'fa-check'
 
 
 def get_stat_activity_class(stat):
@@ -76,14 +78,14 @@ def get_stat_activity_class(stat):
     from core ckan or matches one of the custom ones in this extension's css.
 
     :param stat: the ImportStats object
-    :return: a string
+    :returns: a string
     """
     if stat.in_progress:
-        return "in_progress"
+        return 'in_progress'
     if stat.error:
         if is_duplicate_ingestion(stat):
-            return "duplicate"
-        return "failure"
+            return 'duplicate'
+        return 'failure'
     return stat.type
 
 
@@ -93,14 +95,14 @@ def get_stat_title(stat):
     object. This is based on the stat's type.
 
     :param stat: the ImportStats object
-    :return: the title for the activity item as a unicode string
+    :returns: the title for the activity item as a unicode string
     """
     if stat.type == stats.INGEST:
-        return toolkit._("Ingested new resource data")
+        return toolkit._('Ingested new resource data')
     if stat.type == stats.INDEX:
-        return toolkit._("Updated search index with resource data")
+        return toolkit._('Updated search index with resource data')
     if stat.type == stats.PREP:
-        return toolkit._("Validated and prepared the data for ingestion")
+        return toolkit._('Validated and prepared the data for ingestion')
     return stat.type
 
 
@@ -108,7 +110,7 @@ def get_available_formats():
     """
     Simply returns all the formats that we can ingest.
 
-    :return: a list of formats
+    :returns: a list of formats
     """
     return ALL_FORMATS
 
@@ -118,7 +120,7 @@ def pretty_print_json(json_string):
     Does what you'd expect really.
 
     :param json_string: a json string
-    :return: a string of pretty json
+    :returns: a string of pretty json
     """
     return json.dumps(json_string, sort_keys=True, indent=2)
 
@@ -128,7 +130,7 @@ def get_version_date(version):
     Returns a date object from a version number.
 
     :param version: a resource/record version number (i.e. a timestamp in ms)
-    :return: a date object
+    :returns: a date object
     """
     return date.fromtimestamp(int(version) / 1000)
 
@@ -139,14 +141,15 @@ def latest_item_version(resource_id, record_id=None):
 
     :param resource_id: the id of the resource to search in
     :param record_id: optional; a record id to search for instead
-    :return: if record id is provided, the latest record version, else the latest resource version
+    :returns: if record id is provided, the latest record version, else the latest
+        resource version
     """
     if record_id:
-        action = "vds_version_record"
-        data_dict = {"resource_id": resource_id, "record_id": record_id}
+        action = 'vds_version_record'
+        data_dict = {'resource_id': resource_id, 'record_id': record_id}
     else:
-        action = "vds_version_resource"
-        data_dict = {"resource_id": resource_id}
+        action = 'vds_version_resource'
+        data_dict = {'resource_id': resource_id}
 
     result = toolkit.get_action(action)({}, data_dict)
 

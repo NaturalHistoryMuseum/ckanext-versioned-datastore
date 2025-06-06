@@ -1,16 +1,16 @@
 import abc
+import itertools
 import json
 from collections import OrderedDict
 from typing import List
 
-import itertools
 from elasticsearch_dsl.query import Query as DSLQuery
 from importlib_resources import files
-from jsonschema.validators import validator_for, RefResolver
+from jsonschema.validators import RefResolver, validator_for
 
 schemas = OrderedDict()
 schema_base_path = (
-    files("ckanext.versioned_datastore.theme") / "public" / "querySchemas"
+    files('ckanext.versioned_datastore.theme') / 'public' / 'querySchemas'
 )
 
 
@@ -30,7 +30,7 @@ def register_schema(version: str, schema: dict):
     schemas = OrderedDict(
         sorted(
             itertools.chain([(version, schema)], schemas.items()),
-            key=lambda vs: [int(u) for u in vs[0][1:].split(".")],
+            key=lambda vs: [int(u) for u in vs[0][1:].split('.')],
         )
     )
 
@@ -39,14 +39,14 @@ def get_latest_query_version() -> str:
     """
     Gets the latest query version from the registered schemas dict.
 
-    :return: the latest query version
+    :returns: the latest query version
     """
     return next(iter(schemas.keys()))
 
 
 class InvalidQuerySchemaVersionError(Exception):
     def __init__(self, version):
-        super(Exception, self).__init__(f"Invalid query version: {version}")
+        super(Exception, self).__init__(f'Invalid query version: {version}')
 
 
 def validate_query(query: dict, version: str) -> bool:
@@ -57,8 +57,8 @@ def validate_query(query: dict, version: str) -> bool:
 
     :param query: the query dict
     :param version: the query schema version to validate against
-    :return: True if the validation succeeded, otherwise jsonschema exceptions will be
-             raised
+    :returns: True if the validation succeeded, otherwise jsonschema exceptions will be
+        raised
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -74,7 +74,7 @@ def translate_query(query: dict, version: str) -> DSLQuery:
 
     :param query: the whole query dict
     :param version: the query schema version to translate using
-    :return: an instantiated Elasticsearch DSL Query object
+    :returns: an instantiated Elasticsearch DSL Query object
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -88,7 +88,7 @@ def hash_query(query: dict, version: str) -> str:
 
     :param query: the query dict
     :param version: the query version
-    :return: the hash
+    :returns: the hash
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -96,7 +96,7 @@ def hash_query(query: dict, version: str) -> str:
         return get_schema(version).hash(query)
 
 
-def get_schema(version: str) -> "Schema":
+def get_schema(version: str) -> 'Schema':
     return schemas[version]
 
 
@@ -110,7 +110,7 @@ def normalise_query(query, version):
 
     :param query: the query dict
     :param version: the query version
-    :return: the corrected/normalised query
+    :returns: the corrected/normalised query
     """
     if version not in schemas:
         raise InvalidQuerySchemaVersionError(version)
@@ -123,15 +123,15 @@ def load_core_schema(version):
     Given a query schema version, loads the schema from the schema_base_path directory.
 
     :param version: the version to load
-    :return: the loaded schema (as a dict) and a jsonschmea validator object for the
-             schema
+    :returns: the loaded schema (as a dict) and a jsonschmea validator object for the
+        schema
     """
-    schema_file = schema_base_path / version / f"{version}.json"
-    schema = json.loads(schema_file.read_text("utf-8"))
+    schema_file = schema_base_path / version / f'{version}.json'
+    schema = json.loads(schema_file.read_text('utf-8'))
     validator_cls = validator_for(schema)
     validator_cls.check_schema(schema)
     # create a resolver which can resolve refs relative to the schema
-    resolver = RefResolver(base_uri=f"file://{schema_file}", referrer=schema)
+    resolver = RefResolver(base_uri=f'file://{schema_file}', referrer=schema)
     validator = validator_cls(schema, resolver=resolver)
     return schema, validator
 
@@ -159,7 +159,7 @@ class Schema(abc.ABC):
         Translates the query into an Elasticsearch DSL object.
 
         :param query: the whole query dict
-        :return: an instantiated Elasticsearch DSL object
+        :returns: an instantiated Elasticsearch DSL object
         """
         pass
 
@@ -169,7 +169,7 @@ class Schema(abc.ABC):
         Hashes the query and returns the hex digest.
 
         :param query: the whole query dict
-        :return: a string hex digest
+        :returns: a string hex digest
         """
         pass
 
@@ -178,6 +178,6 @@ class Schema(abc.ABC):
         Corrects some (small) common query errors, e.g. removing empty groups.
 
         :param query: the query dict
-        :return: the corrected/normalised query dict
+        :returns: the corrected/normalised query dict
         """
         return query
