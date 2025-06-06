@@ -4,7 +4,7 @@ datastore-activities:
   contents:
     - less/datastore-activities.less
 
-search-css:
+vds-search-css:
   output: ckanext-versioned-datastore/%(version)s_search.css
   filters: less
   contents:
@@ -16,7 +16,7 @@ download-status-css:
   contents:
     - less/download-status.less
 
-search-js:
+vds-search-js:
   output: ckanext-versioned-datastore/%(version)s_search.js
   filters: rjsmin
   contents:
