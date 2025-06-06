@@ -261,13 +261,10 @@ class TestNotifierTemplateOverrides:
         mock_plugin = ContextOverridePlugin()
         notifier = NullNotifier(MagicMock())
 
-        with (
-            patch(
-                'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
-                return_value=[mock_plugin],
-            ),
-            patch('ckan.plugins.toolkit.url_for', return_value='/banana'),
-        ):
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
+            return_value=[mock_plugin],
+        ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             start_text = notifier.start_text()
 
         assert isinstance(start_text, tuple)
@@ -280,13 +277,10 @@ class TestNotifierTemplateOverrides:
         mock_plugin = TemplateOverridePlugin()
         notifier = NullNotifier(MagicMock())
 
-        with (
-            patch(
-                'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
-                return_value=[mock_plugin],
-            ),
-            patch('ckan.plugins.toolkit.url_for', return_value='/banana'),
-        ):
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
+            return_value=[mock_plugin],
+        ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             start_text = notifier.start_text()
 
         assert isinstance(start_text, tuple)
@@ -298,13 +292,10 @@ class TestNotifierTemplateOverrides:
         mock_plugin = TemplateOverridePlugin()
         notifier = NullNotifier(MagicMock())
 
-        with (
-            patch(
-                'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
-                return_value=[mock_plugin],
-            ),
-            patch('ckan.plugins.toolkit.url_for', return_value='/banana'),
-        ):
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
+            return_value=[mock_plugin],
+        ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             end_text = notifier.end_text('/download-url-here')
 
         assert isinstance(end_text, tuple)
@@ -316,13 +307,10 @@ class TestNotifierTemplateOverrides:
         mock_plugin = TemplateOverridePlugin()
         notifier = NullNotifier(MagicMock())
 
-        with (
-            patch(
-                'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
-                return_value=[mock_plugin],
-            ),
-            patch('ckan.plugins.toolkit.url_for', return_value='/banana'),
-        ):
+        with patch(
+            'ckanext.versioned_datastore.lib.downloads.notifiers.base.idownload_implementations',
+            return_value=[mock_plugin],
+        ), patch('ckan.plugins.toolkit.url_for', return_value='/banana'):
             error_text = notifier.error_text()
 
         assert isinstance(error_text, tuple)
