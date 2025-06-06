@@ -37,4 +37,8 @@ def make_request(data_dict: dict) -> SearchRequest:
         after=data_dict.get('after'),
         data_dict=data_dict,
     )
+
+    # ignore any resources that are unavailable for whatever reason
+    request.add_param('ignore_unavailable', True)
+
     return request
