@@ -1,45 +1,45 @@
 from datetime import datetime
 
+from ckan.model import DomainObject, meta
+from ckan.model.types import make_uuid
 from sqlalchemy import (
-    Column,
-    Table,
     BigInteger,
+    Column,
+    DateTime,
+    Table,
     UnicodeText,
     UniqueConstraint,
-    DateTime,
     or_,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 
-from ckan.model import meta, DomainObject
-from ckan.model.types import make_uuid
 from ckanext.versioned_datastore.lib.query.schema import get_latest_query_version
 
 # this table stores query slugs
 datastore_slugs_table = Table(
-    "versioned_datastore_slugs",
+    'versioned_datastore_slugs',
     meta.metadata,
-    Column("id", UnicodeText, primary_key=True, default=make_uuid),
-    Column("query_hash", UnicodeText, nullable=False, index=True, unique=True),
-    Column("query", JSONB, nullable=False),
-    Column("query_version", UnicodeText, nullable=False),
-    Column("resource_ids", JSONB, nullable=False),
-    Column("version", BigInteger, nullable=True),
-    Column("pretty_slug", UnicodeText, nullable=True, index=True, unique=True),
-    Column("created", DateTime, nullable=False, default=datetime.utcnow),
-    Column("reserved_pretty_slug", UnicodeText, nullable=True, index=True, unique=True),
-    UniqueConstraint("id", "pretty_slug", "reserved_pretty_slug"),
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('query_hash', UnicodeText, nullable=False, index=True, unique=True),
+    Column('query', JSONB, nullable=False),
+    Column('query_version', UnicodeText, nullable=False),
+    Column('resource_ids', JSONB, nullable=False),
+    Column('version', BigInteger, nullable=True),
+    Column('pretty_slug', UnicodeText, nullable=True, index=True, unique=True),
+    Column('created', DateTime, nullable=False, default=datetime.utcnow),
+    Column('reserved_pretty_slug', UnicodeText, nullable=True, index=True, unique=True),
+    UniqueConstraint('id', 'pretty_slug', 'reserved_pretty_slug'),
 )
 
 # this table stores transient, temporary slugs
 navigational_slugs_table = Table(
-    "versioned_datastore_navigational_slugs",
+    'versioned_datastore_navigational_slugs',
     meta.metadata,
-    Column("id", UnicodeText, primary_key=True, default=make_uuid),
-    Column("query_hash", UnicodeText, nullable=False, index=True, unique=True),
-    Column("query", JSONB, nullable=False),
-    Column("resource_ids", JSONB, nullable=False),
-    Column("created", DateTime, nullable=False, default=datetime.utcnow),
+    Column('id', UnicodeText, primary_key=True, default=make_uuid),
+    Column('query_hash', UnicodeText, nullable=False, index=True, unique=True),
+    Column('query', JSONB, nullable=False),
+    Column('resource_ids', JSONB, nullable=False),
+    Column('created', DateTime, nullable=False, default=datetime.utcnow),
 )
 
 
@@ -54,7 +54,7 @@ class DatastoreSlug(DomainObject):
         None value from the following attributes in this order: reserved_pretty_slug,
         pretty_slug or id.
 
-        :return: the slug string
+        :returns: the slug string
         """
         if self.reserved_pretty_slug is not None:
             return self.reserved_pretty_slug
@@ -70,7 +70,7 @@ class DatastoreSlug(DomainObject):
         passed slug string.
 
         :param slug_string: the slug string
-        :return: an or filter
+        :returns: an or filter
         """
         return or_(
             DatastoreSlug.id == slug_string,
@@ -84,7 +84,7 @@ class NavigationalSlug(DomainObject):
     Object for a navigational slug.
     """
 
-    prefix = "nav-"
+    prefix = 'nav-'
     version = None
 
     @property
@@ -95,7 +95,7 @@ class NavigationalSlug(DomainObject):
         """
         Returns the slug string to be used for this slug.
 
-        :return: the slug string
+        :returns: the slug string
         """
         return NavigationalSlug.prefix + self.id
 
@@ -106,7 +106,7 @@ class NavigationalSlug(DomainObject):
         passed slug string.
 
         :param slug_string: the slug string
-        :return: a filter
+        :returns: a filter
         """
         return NavigationalSlug.id == slug_string[len(NavigationalSlug.prefix) :]
 

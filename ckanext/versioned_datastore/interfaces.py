@@ -1,6 +1,5 @@
-from splitgill.indexing.options import ParsingOptionsBuilder
-
 from ckan.plugins.interfaces import Interface
+from splitgill.indexing.options import ParsingOptionsBuilder
 
 
 class IVersionedDatastore(Interface):
@@ -33,7 +32,7 @@ class IVersionedDatastore(Interface):
             - vds_data_sync
 
         :param resource_id: the resource id to check
-        :return: True if the resource should be treated as read only, False if not
+        :returns: True if the resource should be treated as read only, False if not
         """
         return False
 
@@ -81,7 +80,7 @@ class IVersionedDatastore(Interface):
         remove custom filters before processing.
 
         :param basic_query: the query dict to be modified
-        :return: the modified query
+        :returns: the modified query
         """
         return basic_query
 
@@ -91,9 +90,9 @@ class IVersionedDatastore(Interface):
         custom filters.
 
         :param basic_query: the original basic query, before it was modified by other
-                            plugins
+            plugins
         :param multisearch_query: the converted multisearch version of the query
-        :return: the modified multisearch query
+        :returns: the modified multisearch query
         """
         return multisearch_query
 
@@ -103,10 +102,9 @@ class IVersionedDatastoreQuerySchema(Interface):
         """
         Hook to allow registering custom query schemas.
 
-        :return: a list of tuples of the format (query schema version, schema object)
-                 where the query schema version is a string of format v#.#.# and the
-                 schema object is an instance of
-                 ckanext.versioned_datastore.lib.query.Schema
+        :returns: a list of tuples of the format (query schema version, schema object)
+            where the query schema version is a string of format v#.#.# and the schema
+            object is an instance of ckanext.versioned_datastore.lib.query.Schema
         """
         return []
 
@@ -122,8 +120,8 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
-                 string
+        :returns: a 2-tuple containing the text template string and the html template
+            string
         """
         return text_template, html_template
 
@@ -137,8 +135,8 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
-                 string
+        :returns: a 2-tuple containing the text template string and the html template
+            string
         """
         return text_template, html_template
 
@@ -152,8 +150,8 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param text_template: the text template string
         :param html_template: the html template string
-        :return: a 2-tuple containing the text template string and the html template
-                 string
+        :returns: a 2-tuple containing the text template string and the html template
+            string
         """
         return text_template, html_template
 
@@ -169,7 +167,7 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param request: the DownloadRequest object
         :param context: templating context dict
-        :return: context templating dict
+        :returns: context templating dict
         """
         return context
 
@@ -178,9 +176,9 @@ class IVersionedDatastoreDownloads(Interface):
         Extend or modify the list of derivative generators.
 
         :param registered_derivatives: a dict of existing derivative generator classes,
-                                       returned from previously loaded plugins
-        :return: a dict of loaded derivative generator classes, keyed on the name used
-                 to specify them in download requests
+            returned from previously loaded plugins
+        :returns: a dict of loaded derivative generator classes, keyed on the name used
+            to specify them in download requests
         """
         return registered_derivatives or {}
 
@@ -189,9 +187,9 @@ class IVersionedDatastoreDownloads(Interface):
         Extend or modify the list of file servers.
 
         :param registered_servers: a dict of existing file server classes, returned from
-                                   previously loaded plugins
-        :return: a dict of loaded file server classes, keyed on the name used to specify
-                 them in download requests
+            previously loaded plugins
+        :returns: a dict of loaded file server classes, keyed on the name used to
+            specify them in download requests
         """
         return registered_servers or {}
 
@@ -200,9 +198,9 @@ class IVersionedDatastoreDownloads(Interface):
         Extend or modify the list of download notifiers.
 
         :param registered_notifiers: a dict of existing notifier classes, returned from
-                                     previously loaded plugins
-        :return: a dict of loaded notifier classes, keyed on the name used to specify
-                 them in download requests
+            previously loaded plugins
+        :returns: a dict of loaded notifier classes, keyed on the name used to specify
+            them in download requests
         """
         return registered_notifiers or {}
 
@@ -211,9 +209,9 @@ class IVersionedDatastoreDownloads(Interface):
         Extend or modify the list of data transformations.
 
         :param registered_transformations: a dict of existing data transformations,
-                                           returned from previously loaded plugins
-        :return: a dict of loaded transformations, keyed on the name used to specify
-                 them in download requests
+            returned from previously loaded plugins
+        :returns: a dict of loaded transformations, keyed on the name used to specify
+            them in download requests
         """
         return registered_transformations or {}
 
@@ -228,8 +226,8 @@ class IVersionedDatastoreDownloads(Interface):
         :param derivative_args: a DerivativeArgs object
         :param server_args: a ServerArgs object
         :param notifier_args: a NotifierArgs object
-        :return: all four args objects (query_args, derivative_args, server_args,
-                 notifier_args)
+        :returns: all four args objects (query_args, derivative_args, server_args,
+            notifier_args)
         """
         return query_args, derivative_args, server_args, notifier_args
 
@@ -239,7 +237,7 @@ class IVersionedDatastoreDownloads(Interface):
         been initialised. Does not allow modification; purely for notification purposes.
 
         :param query: the query for this download
-        :return: None
+        :returns: None
         """
         return
 
@@ -250,7 +248,7 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param manifest: the manifest dict
         :param request: the DownloadRequest object
-        :return: the manifest dict
+        :returns: the manifest dict
         """
         return manifest
 
@@ -261,7 +259,7 @@ class IVersionedDatastoreDownloads(Interface):
 
         :param eml_dict: the current eml content, as a dict
         :param query: the query for this download
-        :return: the modified eml dict
+        :returns: the modified eml dict
         """
         return eml_dict
 
@@ -271,6 +269,6 @@ class IVersionedDatastoreDownloads(Interface):
         not allow modification; purely for notification purposes.
 
         :param request: the DownloadRequest object
-        :return: None
+        :returns: None
         """
         return

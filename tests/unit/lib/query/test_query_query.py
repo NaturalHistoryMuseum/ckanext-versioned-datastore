@@ -5,8 +5,9 @@ from collections import OrderedDict
 
 import jsonschema
 import pytest
-from ckanext.versioned_datastore.lib.query import schema as schema_lib
 from mock import MagicMock, patch
+
+from ckanext.versioned_datastore.lib.query import schema as schema_lib
 
 
 class TestQuery(object):

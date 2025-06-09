@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Iterable
 
 import requests
+from ckan.plugins import toolkit
 from splitgill.model import Record
 
-from ckan.plugins import toolkit
 from ckanext.versioned_datastore.model.stats import ImportStats
 
 
@@ -23,14 +23,14 @@ def download_resource_data(resource: dict, into: Path, api_key: str) -> str:
     :param resource: the resource dict
     :param into: the path to the file where the data should be put
     :param api_key: the user's API key
-    :return: the hash of the downloaded file
+    :returns: the hash of the downloaded file
     """
     hasher = hashlib.sha1()
     # grab the resource's data via this URL
     url = toolkit.url_for(
-        "resource.download",
-        id=resource["package_id"],
-        resource_id=resource["id"],
+        'resource.download',
+        id=resource['package_id'],
+        resource_id=resource['id'],
         qualified=True,
     )
     # include the auth header regardless of whether the resource URL is of a file hosted
@@ -39,10 +39,10 @@ def download_resource_data(resource: dict, into: Path, api_key: str) -> str:
     # because if the resource's URL is another website, the resource.download route will
     # respond with a redirect to the other site and requests won't copy those headers on
     # to the request to the redirected URL
-    headers = {"Authorization": api_key}
+    headers = {'Authorization': api_key}
     with closing(requests.get(url, stream=True, headers=headers)) as r:
         r.raise_for_status()
-        with into.open("wb") as f:
+        with into.open('wb') as f:
             for chunk in r.iter_content(chunk_size=8192, decode_unicode=False):
                 if chunk:
                     f.write(chunk)
@@ -82,13 +82,13 @@ def iter_records(data: Iterable[dict], stats: ImportStats) -> Iterable[Record]:
 
     :param data: an iterable of dicts representing record data
     :param stats: the current ImportStats object in use which will be updated with
-                  progress every 5000 records handled
-    :return: yields Record objects
+        progress every 5000 records handled
+    :returns: yields Record objects
     """
     stats.update(count=0)
 
     # choose a random 3 letter prefix for all records in this stream
-    prefix = "".join(secrets.choice(string.ascii_lowercase) for _ in range(3))
+    prefix = ''.join(secrets.choice(string.ascii_lowercase) for _ in range(3))
     constant = secrets.randbelow(3294967296)
     index = 1
 
@@ -96,17 +96,17 @@ def iter_records(data: Iterable[dict], stats: ImportStats) -> Iterable[Record]:
         if index % 5000 == 0:
             stats.update(count=index)
 
-        record_id = record_data.get("_id")
+        record_id = record_data.get('_id')
         if not record_id:
             # generate a new id for the record
-            record_id = f"{prefix}{constant + index:09x}"
+            record_id = f'{prefix}{constant + index:09x}'
         else:
             # make sure it's a str
             record_id = str(record_id)
 
         # put the record ID in the record's data, this is necessary if the _id wasn't
         # already in there, and it ensures it is a str if it was
-        record_data["_id"] = record_id
+        record_data['_id'] = record_id
         yield Record(record_id, record_data)
         index += 1
 

@@ -28,7 +28,7 @@ class ReaderNotFound(Exception):
         self.fmt = fmt
 
 
-def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> "Reader":
+def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> 'Reader':
     """
     Chooses an appropriate reader for the provided source. If the source is a file, this
     uses the resource_format to choose the reader, if the source is a list of dicts,
@@ -36,7 +36,7 @@ def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> "Rea
 
     :param resource_format: the resource format
     :param source: the source data, either a path to a file, or a list of dicts
-    :return: a Reader instance
+    :returns: a Reader instance
     """
     if isinstance(source, Path):
         if resource_format in SV_FORMATS:
@@ -54,22 +54,22 @@ def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> "Rea
 
 def choose_reader_for_resource(
     resource: dict, source: Union[Path, List[dict]]
-) -> "Reader":
+) -> 'Reader':
     """
     Selects a reader for the given resource using the format primarily, and resource url
     secondarily.
 
     :param resource: the resource dict
     :param source: the source data, either a path to a file, or a list of dicts
-    :return: a Reader instance
+    :returns: a Reader instance
     """
     # start off trying to use the format they have set/CKAN has inferred
-    resource_format = resource.get("format", "")
+    resource_format = resource.get('format', '')
     if not resource_format:
         # if that isn't available, try and get it from the resource url
-        url = resource["url"]
+        url = resource['url']
         if url:
-            resource_format = url.rsplit(".", 1)[-1]
+            resource_format = url.rsplit('.', 1)[-1]
         # todo: could try detecting based on the file? e.g. using python-magic etc
     return choose_reader(resource_format.lower(), source)
 
@@ -79,9 +79,9 @@ def detect_encoding(source: Path) -> str:
     Given a file, attempt to detect the character encoding it uses.
 
     :param source: the path to the file
-    :return: the character encoding
+    :returns: the character encoding
     """
-    with source.open("rb") as f:
+    with source.open('rb') as f:
         detector = UniversalDetector()
         # feed the universal detector the entire file
         while True:
@@ -92,12 +92,12 @@ def detect_encoding(source: Path) -> str:
                 detector.close()
                 break
 
-        encoding = detector.result["encoding"]
+        encoding = detector.result['encoding']
         # if the detector failed to work out the encoding (unlikely) or if the
         # encoding it comes up with is ASCII, just default to UTF-8 (UTF-8 is a
         # superset of ASCII)
-        if encoding is None or encoding == "ASCII":
-            encoding = "utf-8"
+        if encoding is None or encoding == 'ASCII':
+            encoding = 'utf-8'
 
     return encoding
 
@@ -110,7 +110,7 @@ class Reader(abc.ABC):
     @abc.abstractmethod
     def get_name(self) -> str:
         """
-        :return: a name for the Reader instance (for logging)
+        :returns: a name for the Reader instance (for logging)
         """
         ...
 
@@ -119,7 +119,7 @@ class Reader(abc.ABC):
         """
         Returns the list of the field names found in the source.
 
-        :return: the fields in the source this Reader is reading
+        :returns: the fields in the source this Reader is reading
         """
         ...
 
@@ -128,7 +128,7 @@ class Reader(abc.ABC):
         """
         Actually reads the data from the source and yields dicts for each row found.
 
-        :return: yields dicts
+        :returns: yields dicts
         """
         ...
 
@@ -137,7 +137,7 @@ class Reader(abc.ABC):
         """
         Returns the number of rows in the source.
 
-        :return: an integer representing the number of rows
+        :returns: an integer representing the number of rows
         """
         ...
 
@@ -153,7 +153,7 @@ class SVReader(Reader):
         """
         self.source = source
         self.encoding = detect_encoding(self.source)
-        with self.source.open(encoding=self.encoding, newline="") as f:
+        with self.source.open(encoding=self.encoding, newline='') as f:
             # instead of relying on people to correctly declare the dialect they are
             # using (from experience people are awful at this), sniff it for ourselves
             self.dialect = csv.Sniffer().sniff(f.read(1024))
@@ -165,43 +165,43 @@ class SVReader(Reader):
         character encoding found (useful for debugging why someone's data wasn't
         ingested as expected).
 
-        :return: the name
+        :returns: the name
         """
-        dialect_info = ", ".join(
-            f"{attr}: {str(getattr(self.dialect, attr))}"
+        dialect_info = ', '.join(
+            f'{attr}: {str(getattr(self.dialect, attr))}'
             for attr in [
-                "lineterminator",
-                "quoting",
-                "doublequote",
-                "delimiter",
-                "quotechar",
-                "skipinitialspace",
+                'lineterminator',
+                'quoting',
+                'doublequote',
+                'delimiter',
+                'quotechar',
+                'skipinitialspace',
             ]
         )
-        dialect_info = dialect_info.encode("unicode_escape").decode("utf-8")
-        return f"SV reader, encoding: {self.encoding}, dialect: [{dialect_info}]"
+        dialect_info = dialect_info.encode('unicode_escape').decode('utf-8')
+        return f'SV reader, encoding: {self.encoding}, dialect: [{dialect_info}]'
 
     def get_fields(self) -> List[str]:
         """
         Reads the first line of the source file and returns it as a list.
 
-        :return: the field names
+        :returns: the field names
         """
-        with self.source.open(encoding=self.encoding, newline="") as f:
+        with self.source.open(encoding=self.encoding, newline='') as f:
             return next(csv.reader(f, dialect=self.dialect))
 
     def read(self) -> Iterable[dict]:
         """
         Reads each line of the source file and yields each row as a dict.
 
-        :return: yields each row as a dict
+        :returns: yields each row as a dict
         """
-        with self.source.open(encoding=self.encoding, newline="") as f:
+        with self.source.open(encoding=self.encoding, newline='') as f:
             yield from csv.DictReader(f, dialect=self.dialect)
 
     def get_count(self) -> int:
         if self._count is None:
-            with self.source.open(encoding=self.encoding, newline="") as f:
+            with self.source.open(encoding=self.encoding, newline='') as f:
                 # count each row once, then take 1 off assuming the first row is the
                 # header. Use max to avoid returning a negative value if the file is
                 # just empty
@@ -219,7 +219,7 @@ class XLSReader(Reader):
         :param source: the file path to the source XLS file
         """
         self.source = source
-        with self.source.open("rb") as f:
+        with self.source.open('rb') as f:
             book = xlrd.open_workbook(f.read())
             # todo: currently we don't deal with multisheeted spreadsheets, we just
             #       choose the first sheet and roll with it
@@ -228,7 +228,7 @@ class XLSReader(Reader):
             self.rows = list(sheet.rows())[1:]
 
     def get_name(self) -> str:
-        return "XLS reader"
+        return 'XLS reader'
 
     def get_fields(self) -> List[str]:
         return self.header
@@ -243,7 +243,7 @@ class XLSReader(Reader):
 
         Empty field names, empty values, and values we can't convert are ignored.
 
-        :return: yields a dict per row
+        :returns: yields a dict per row
         """
         converters = {
             # value should be a str, just use it
@@ -277,7 +277,7 @@ class XLSXReader(Reader):
         :param source: the path to the XLSX file
         """
         self.source = source
-        with self.source.open("rb") as f:
+        with self.source.open('rb') as f:
             workbook = openpyxl.load_workbook(f, read_only=True)
             # todo: currently we don't deal with multisheeted spreadsheets, we just
             #       choose the first sheet and roll with it
@@ -286,7 +286,7 @@ class XLSXReader(Reader):
             self.rows = all_rows[1:]
 
     def get_name(self) -> str:
-        return "XLSX reader"
+        return 'XLSX reader'
 
     def get_fields(self) -> List[str]:
         return self.header
@@ -297,7 +297,7 @@ class XLSXReader(Reader):
         conversions are handled by openpyxl. Empty field names or empty cell values are
         ignored.
 
-        :return: a dict per row
+        :returns: a dict per row
         """
         for row in self.rows[1:]:
             yield {
@@ -323,7 +323,7 @@ class MemoryReader(Reader):
         self.source = source
 
     def get_name(self) -> str:
-        return "Memory reader"
+        return 'Memory reader'
 
     def get_fields(self) -> List[str]:
         """
@@ -331,7 +331,7 @@ class MemoryReader(Reader):
         the order they are found in the source from first dict to last. This ensures the
         ordering is representative of the source.
 
-        :return: a list of field names
+        :returns: a list of field names
         """
         fields = []
         for record_data in self.source:
@@ -353,7 +353,7 @@ class NoCandidateFileFoundInZip(Exception):
     """
 
     def __init__(self):
-        super().__init__("No candidate file was found in the zip file")
+        super().__init__('No candidate file was found in the zip file')
 
 
 class ZipReader(Reader):
@@ -372,11 +372,11 @@ class ZipReader(Reader):
         with zipfile.ZipFile(source) as temp_zip:
             # sort the list of files so that we maintain a consistency when reading zips
             for name in sorted(temp_zip.namelist()):
-                extension = name.rsplit(".", 1)[-1]
+                extension = name.rsplit('.', 1)[-1]
                 if extension in ALL_FORMATS:
-                    extracted_source = source.parent / "zipped_source"
-                    with extracted_source.open("wb") as s:
-                        with temp_zip.open(name, "r") as f:
+                    extracted_source = source.parent / 'zipped_source'
+                    with extracted_source.open('wb') as s:
+                        with temp_zip.open(name, 'r') as f:
                             shutil.copyfileobj(f, s)
                     try:
                         self.reader = choose_reader(extension, extracted_source)
@@ -387,7 +387,7 @@ class ZipReader(Reader):
                 raise NoCandidateFileFoundInZip()
 
     def get_name(self) -> str:
-        return f"Zip reader, using {self.reader.get_name()}"
+        return f'Zip reader, using {self.reader.get_name()}'
 
     def get_fields(self) -> List[str]:
         return self.reader.get_fields()

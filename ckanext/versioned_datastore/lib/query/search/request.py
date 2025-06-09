@@ -42,6 +42,19 @@ class SearchRequest:
     # None, indicating there is no associated (or relevant) data dict available.
     data_dict: Optional[dict] = None
     ignore_auth: bool = False
+    # optional additional request parameters to be included when performing the search
+    req_params: dict = dataclasses.field(default_factory=dict)
+
+    def add_param(self, param: str, value: Any):
+        """
+        Add a request parameter to be passed as part of this search request. The search
+        request is completed using the _msearch endpoint on Elasticsearch so only
+        parameters that work on that endpoint should be added.
+
+        :param param: the param name
+        :param value: the param value
+        """
+        self.req_params[param] = value
 
     def add_sort(self, field: str, ascending: bool = True):
         """
@@ -62,7 +75,7 @@ class SearchRequest:
         :param agg_type: the aggregation type
         :param args: the aggregation arguments
         :param kwargs: the aggregation kwarguments
-        :return:
+        :returns:
         """
         self.aggs[name] = A(agg_type, *args, **kwargs)
 
@@ -71,7 +84,7 @@ class SearchRequest:
         A list of the indexes this request will search over. This list is created from
         the resource_ids specified in the query.
 
-        :return: a list of index names, this could include wildcards
+        :returns: a list of index names, this could include wildcards
         """
         databases = map(get_database, self.query.resource_ids)
 
@@ -98,7 +111,7 @@ class SearchRequest:
         method returns a value based on the `self.size` property but capped between 0
         and 1000, with a default value of 100 if `self.size` is set to None.
 
-        :return: a number between 0 and 1000
+        :returns: a number between 0 and 1000
         """
         return max(0, min(100 if self.size is None else self.size, 1000))
 
@@ -107,7 +120,7 @@ class SearchRequest:
         Builds an Elasticsearch Search object with the query, indexes, sorts, size, and
         aggregations set.
 
-        :return: a new Elasticsearch Search object
+        :returns: a new Elasticsearch Search object
         """
         search = (
             Search()
@@ -167,7 +180,7 @@ class SearchRequest:
         """
         Builds the search, runs it, and returns a SearchResponse object.
 
-        :return: a SearchResponse object
+        :returns: a SearchResponse object
         """
         for plugin in ivds_implementations():
             plugin.vds_before_search(self)
@@ -181,6 +194,7 @@ class SearchRequest:
         # problem because the multisearch is sent to Elasticsearch as a POST request
         # with all parts of the search, including the indexes, as part of the payload
         multi_search = MultiSearch(using=es_client()).add(search)
+        multi_search = multi_search.params(**self.req_params)
         result = next(iter(multi_search.execute()))
         return SearchResponse(self, result)
 
@@ -199,14 +213,14 @@ class ResultRecord:
     @property
     def id(self) -> str:
         """
-        :return: the record's ID
+        :returns: the record's ID
         """
         return self.hit[DocumentField.ID]
 
     @property
     def version(self) -> int:
         """
-        :return: the record's version
+        :returns: the record's version
         """
         return self.hit[DocumentField.VERSION]
 
@@ -216,21 +230,21 @@ class ResultRecord:
         Rebuilds the record data from the hit in the raw Elasticsearch response using
         Splitgill's rebuild_data function and returns the data as a dict.
 
-        :return: the record data
+        :returns: the record data
         """
         return rebuild_data(self.hit[DocumentField.DATA].to_dict())
 
     @property
     def index(self) -> str:
         """
-        :return: the index this record comes from
+        :returns: the index this record comes from
         """
         return self.hit.meta.index
 
     @property
     def resource_id(self) -> str:
         """
-        :return: the resource this record comes from
+        :returns: the resource this record comes from
         """
         return unprefix_index_name(self.index)
 
@@ -253,14 +267,14 @@ class SearchResponse:
     @property
     def count(self) -> int:
         """
-        :return: the number of documents which matched the search request
+        :returns: the number of documents which matched the search request
         """
         return self.response.hits.total.value
 
     @property
     def hits(self) -> List[ResultRecord]:
         """
-        :return: returns the list of ResultRecords which were returned in the request
+        :returns: returns the list of ResultRecords which were returned in the request
         """
         hits = [ResultRecord(hit) for hit in self.response.hits]
         if len(self.response.hits) > self._request_size:
@@ -273,14 +287,14 @@ class SearchResponse:
     @property
     def data(self) -> List[dict]:
         """
-        :return: a list of just the data dicts for each hit
+        :returns: a list of just the data dicts for each hit
         """
         return [hit.data for hit in self.hits]
 
     @property
     def aggs(self) -> dict:
         """
-        :return: the aggregation results, keyed by the names specified in the request
+        :returns: the aggregation results, keyed by the names specified in the request
         """
         return self.response.aggs.to_dict()
 
@@ -290,7 +304,7 @@ class SearchResponse:
         Returns the after value to be used to get the next set of results. If there are
         no more results to get, None is returned.
 
-        :return: None or a list
+        :returns: None or a list
         """
         if self.count == 0:
             return None

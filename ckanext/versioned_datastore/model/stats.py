@@ -3,26 +3,25 @@ from datetime import datetime, timezone
 from traceback import format_exception_only
 from typing import Optional, Union
 
+from ckan import model
+from ckan.model import DomainObject, Session, meta
+from ckan.model.types import JsonDictType
 from sqlalchemy import (
+    BigInteger,
+    Boolean,
     Column,
     DateTime,
     Float,
-    Boolean,
     Table,
-    BigInteger,
     UnicodeText,
     desc,
 )
 from sqlalchemy.exc import InvalidRequestError
 
-from ckan import model
-from ckan.model import meta, DomainObject, Session
-from ckan.model.types import JsonDictType
-
 # options for the ImportStats.type field
-PREP = "prep"
-INGEST = "ingest"
-INDEX = "index"
+PREP = 'prep'
+INGEST = 'ingest'
+INDEX = 'index'
 ALL_TYPES = [PREP, INDEX, INGEST]
 
 # this table stores general "statistics" about the ingest and index events that occur on
@@ -30,28 +29,28 @@ ALL_TYPES = [PREP, INDEX, INGEST]
 # certain extent indexed and it's therefore pretty important (it is used to avoid
 # ingesting older versions for example).
 import_stats_table = Table(
-    "versioned_datastore_import_stats",
+    'versioned_datastore_import_stats',
     meta.metadata,
-    Column("id", BigInteger, primary_key=True),
-    Column("resource_id", UnicodeText, nullable=False, index=True),
+    Column('id', BigInteger, primary_key=True),
+    Column('resource_id', UnicodeText, nullable=False, index=True),
     # the type of operation
-    Column("type", UnicodeText, nullable=False),
+    Column('type', UnicodeText, nullable=False),
     # the version this operation created or is working on, this will be null for ingests
-    Column("version", BigInteger),
+    Column('version', BigInteger),
     # the start datetime of the operation
-    Column("start", DateTime),
+    Column('start', DateTime),
     # the end datetime of the operation
-    Column("end", DateTime),
+    Column('end', DateTime),
     # how long the operation took in seconds
-    Column("duration", Float),
+    Column('duration', Float),
     # whether the operation is in progress or whether it has completed
-    Column("in_progress", Boolean),
+    Column('in_progress', Boolean),
     # if there was an error, this column is populated with the details
-    Column("error", UnicodeText),
+    Column('error', UnicodeText),
     # the number of records handled during the operation
-    Column("count", BigInteger),
+    Column('count', BigInteger),
     # the detailed operation breakdown returned by splitgill
-    Column("operations", JsonDictType),
+    Column('operations', JsonDictType),
 )
 
 
@@ -61,7 +60,7 @@ class ImportStats(DomainObject):
     """
 
     @classmethod
-    def get(cls, stats_id: int) -> Optional["ImportStats"]:
+    def get(cls, stats_id: int) -> Optional['ImportStats']:
         return Session.query(cls).get(stats_id)
 
     def update(self, **kwargs):
@@ -127,7 +126,7 @@ def get_all_stats(resource_id):
     results coming back first.
 
     :param resource_id: the id of the resource
-    :return: a Query object which can be iterated over to retrieve all the results
+    :returns: a Query object which can be iterated over to retrieve all the results
     """
     return list(
         model.Session.query(ImportStats)
@@ -141,7 +140,7 @@ def get_last_ingest(resource_id):
     Retrieve the last ingest stat object from the database, or None if there aren't any.
 
     :param resource_id: the resource id
-    :return: an ImportStats object or None
+    :returns: an ImportStats object or None
     """
     return (
         model.Session.query(ImportStats)

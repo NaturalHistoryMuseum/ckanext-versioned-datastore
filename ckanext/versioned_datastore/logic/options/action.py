@@ -21,7 +21,7 @@ def vds_options_get(resource_id: str, version: Optional[int] = None) -> Optional
 
     :param resource_id: the resource ID
     :param version: the version (default is None which means get the latest options)
-    :return: the options as a dict, or None if there are no options available
+    :returns: the options as a dict, or None if there are no options available
     """
     options = get_options(resource_id, version)
     return None if options is None else options.to_doc()
@@ -40,7 +40,7 @@ def vds_options_update(
 
     :param resource_id: the resource ID
     :param overrides: a dict of override options to apply
-    :return: the new options version, or None if nothing was changed
+    :returns: the new options version, or None if nothing was changed
     """
     if is_resource_read_only(resource_id):
         raise ReadOnlyResourceException('This resource has been marked as read only')

@@ -89,7 +89,7 @@ If run_query is True, then a dict with the following keys is returned instead:
 :type search: dict
 """
 
-vds_basic_count = ""
-vds_basic_autocomplete = ""
-vds_basic_extent = ""
-vds_basic_raw = ""
+vds_basic_count = ''
+vds_basic_autocomplete = ''
+vds_basic_extent = ''
+vds_basic_raw = ''

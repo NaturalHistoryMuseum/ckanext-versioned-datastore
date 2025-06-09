@@ -17,7 +17,7 @@ def vds_version_schema():
     """
     Retrieves all the query schema versions that are available.
 
-    :return: a list of query schema versions.
+    :returns: a list of query schema versions.
     """
     return get_schema_versions()
 
@@ -30,7 +30,7 @@ def vds_version_record(resource_id: str, record_id: str) -> List[int]:
 
     :param resource_id: the resource ID
     :param record_id: the record ID
-    :return: a list of versions, or an empty list if the record doesn't exist
+    :returns: a list of versions, or an empty list if the record doesn't exist
     """
     query = DirectQuery(
         [resource_id],
@@ -49,7 +49,7 @@ def vds_version_resource(resource_id: str) -> List[int]:
     ascending order.
 
     :param resource_id: the resource ID
-    :return: the versions in ascending order
+    :returns: the versions in ascending order
     """
     database = get_database(resource_id)
     return database.get_versions()
@@ -65,7 +65,7 @@ def vds_version_round(resource_id: str, version: Optional[int] = None):
 
     :param resource_id: the resource ID
     :param version: the version to round (default is None)
-    :return: the rounded version
+    :returns: the rounded version
     """
     database = get_database(resource_id)
     versions = database.get_versions()

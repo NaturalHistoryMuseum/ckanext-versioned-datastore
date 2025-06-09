@@ -24,7 +24,7 @@ def float_validator(value, context) -> float:
 
     :param value: the value
     :param context: the context
-    :return: a float
+    :returns: a float
     """
     try:
         value = float(value)
@@ -75,7 +75,7 @@ def _deduplicate(values: Iterable[str]) -> Iterable[str]:
     Simple util function to remove duplicate entries in an iterable.
 
     :param values: the iterable to deduplicate
-    :return: the deduplicated values as another iterable
+    :returns: the deduplicated values as another iterable
     """
     seen = set()
     for value in values:

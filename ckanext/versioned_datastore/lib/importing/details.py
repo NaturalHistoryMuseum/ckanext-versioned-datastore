@@ -1,6 +1,6 @@
 import json
 from collections import OrderedDict
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from ckan import model
 
@@ -20,7 +20,7 @@ def create_details(
     :param version: the version being ingested
     :param columns: the columns present in the ingested resource
     :param file_hash: the computed file hash of the uploaded data
-    :return: the id of the created row
+    :returns: the id of the created row
     """
     columns_str = json.dumps(columns)
     details = DatastoreResourceDetails(
@@ -40,7 +40,7 @@ def get_details(resource_id, version):
 
     :param resource_id: the resource id
     :param version: the version to get the details at
-    :return: None or a DatastoreResourceDetails object
+    :returns: None or a DatastoreResourceDetails object
     """
     return (
         model.Session.query(DatastoreResourceDetails)
@@ -59,8 +59,10 @@ def get_all_details(
     beyond it are ignored and not returned in the resulting OrderedDict.
 
     :param resource_id: the resource id
-    :param up_to_version: the maximum version to include in the resulting OrderedDict (inclusive)
-    :return: None or an OrderedDict of version: DatastoreResourceDetails objects in ascending order
+    :param up_to_version: the maximum version to include in the resulting OrderedDict
+        (inclusive)
+    :returns: None or an OrderedDict of version: DatastoreResourceDetails objects in
+        ascending order
     """
     query = (
         model.Session.query(DatastoreResourceDetails)
@@ -87,7 +89,7 @@ def get_details_at(
 
     :param resource_id: the resource ID to get the details for
     :param version: the version of the details to get (or None for latest)
-    :return: None if no details were found, or a DatastoreResourceDetails object
+    :returns: None if no details were found, or a DatastoreResourceDetails object
     """
     all_details = query = (
         model.Session.query(DatastoreResourceDetails)
@@ -117,7 +119,7 @@ def get_last_file_hash(resource_id):
     details rows available) then this function returns None.
 
     :param resource_id: the resource id
-    :return: None or the most recent file hash
+    :returns: None or the most recent file hash
     """
     last_details = (
         model.Session.query(DatastoreResourceDetails)

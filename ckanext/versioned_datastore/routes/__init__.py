@@ -5,7 +5,7 @@
 # Created by the Natural History Museum in London, UK
 from ckan.plugins import toolkit
 
-from . import datastore, search, downloads, status
+from . import datastore, downloads, search, status
 
 blueprints = [datastore.blueprint, search.blueprint, status.blueprint]
 
