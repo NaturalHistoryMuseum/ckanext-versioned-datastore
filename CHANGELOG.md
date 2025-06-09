@@ -1,3 +1,9 @@
+## v6.2.1 (2025-06-09)
+
+### Fix
+
+- remove assets entirely
+
 ## v6.2.0 (2025-06-09)
 
 ### Feature
