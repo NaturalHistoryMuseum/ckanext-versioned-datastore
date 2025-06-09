@@ -1,3 +1,46 @@
+## v6.2.0 (2025-06-09)
+
+### Feature
+
+- allow ES parameters to be passed with search requests
+
+### Fix
+
+- include assets correctly
+- ignore missing resources
+
+### Docs
+
+- docstring tidying
+- use variable logo, update tests badge
+
+### Style
+
+- remove space
+- ruff formatting
+
+### Tests
+
+- remove parenthesised context managers to fix tests
+- add some more tests for the search request class
+
+### Build System(s)
+
+- update ckantools
+
+### CI System(s)
+
+- set ruff target py version, add more ignores
+- remove pylint, add ruff lint rules Primarily the defaults plus pydocstyle and isort.
+- update pre-commit repo versions
+- add pull request validation workflow new workflow to check commit format and code style against pre-commit config
+- update workflow files standardise format, change name of tests file
+
+### Chores/Misc
+
+- add pull request template
+- update tool details in contributing guide
+
 ## v6.1.0 (2025-05-27)
 
 ### Feature
