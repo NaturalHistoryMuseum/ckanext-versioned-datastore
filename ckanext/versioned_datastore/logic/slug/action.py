@@ -16,6 +16,7 @@ from ckanext.versioned_datastore.lib.query.slugs.slugs import (
 )
 from ckanext.versioned_datastore.lib.query.utils import convert_to_multisearch
 from ckanext.versioned_datastore.logic.slug import helptext, schema
+from ckanext.versioned_datastore.logic.validators import check_datastore_resource_id
 
 
 @action(schema.vds_slug_create(), helptext.vds_slug_create)
@@ -83,37 +84,40 @@ def vds_slug_resolve(slug: str):
     :param slug: the slug to resolve
     :returns: the slug query details, or a ValidationError if no slug could be resolved
     """
+    saved_search_type = None
+    result = {
+        'query': {},
+        'query_version': '',
+        'version': None,
+        'resource_ids': [],
+        'created': '',
+        'warnings': [],
+    }
     # try resolving the slug first
     resolved = resolve_slug(slug)
     if resolved:
-        result = {
-            'query': resolved.query,
-            'query_version': resolved.query_version,
-            'version': resolved.version,
-            # todo: should we turn an empty resource_ids list into the list of all
-            #       available resources at this point or let it ride until query time?
-            'resource_ids': resolved.resource_ids,
-            'created': resolved.created.isoformat(),
-        }
-        if result.get('query_version') == 'v0':
-            result['query'] = convert_to_multisearch(result['query'])
-            result['query_version'] = get_latest_query_version()
-        return result
+        saved_search_type = 'slug'
+        result.update(
+            {
+                'query': resolved.query,
+                'query_version': resolved.query_version,
+                'version': resolved.version,
+                # todo: should we turn an empty resource_ids list into the list of all
+                #       available resources at this point or let it ride until query time?
+                'resource_ids': resolved.resource_ids,
+                'created': resolved.created.isoformat(),
+            }
+        )
 
     # then check if it's a query DOI
-    if plugin_loaded('query_dois'):
+    elif plugin_loaded('query_dois'):
         from ckan import model
 
         from ckanext.query_dois.model import QueryDOI
 
         resolved = model.Session.query(QueryDOI).filter(QueryDOI.doi == slug).first()
         if resolved:
-            if resolved.query_version == 'v0':
-                query = convert_to_multisearch(resolved.query)
-                query_version = get_latest_query_version()
-            else:
-                query = resolved.query
-                query_version = resolved.query_version
+            saved_search_type = 'doi'
             if resolved.requested_version:
                 requested_version = resolved.requested_version
             else:
@@ -121,16 +125,62 @@ def vds_slug_resolve(slug: str):
                 # v6, which allowed different versions per resource; this rounds them
                 # all up to  the newest version in the list. See #187 for more detail.
                 requested_version = max(resolved.get_rounded_versions())
-            return {
-                'query': query,
-                'query_version': query_version,
-                'version': requested_version,
-                'resource_ids': resolved.get_resource_ids(),
-                'created': resolved.timestamp.isoformat(),
-            }
+            result.update(
+                {
+                    'query': resolved.query,
+                    'query_version': resolved.query_version,
+                    'version': requested_version,
+                    'resource_ids': resolved.get_resource_ids(),
+                    'created': resolved.timestamp.isoformat(),
+                }
+            )
 
-    # if both slug and DOI have failed
-    raise toolkit.ValidationError('Slug not found')
+    if saved_search_type is None:
+        # if both slug and DOI have failed
+        raise toolkit.ValidationError('Slug not found')
+
+    if result.get('query_version') == 'v0':
+        result['query'] = convert_to_multisearch(result['query'])
+        result['query_version'] = get_latest_query_version()
+
+    # warn that "all resources" changes
+    if len(result['resource_ids']) == 0:
+        result['warnings'].append(
+            toolkit._(
+                'Resource IDs were not saved for this search. The list of available '
+                'resources may have changed since this slug was saved.'
+            )
+        )
+
+    # check that all the resources exist and are available
+    valid_resource_ids = [
+        resource_id
+        for resource_id in result['resource_ids']
+        if check_datastore_resource_id(resource_id)
+    ]
+    valid_resource_count = len(valid_resource_ids)
+    current_resource_count = len(result['resource_ids'])
+    if valid_resource_count != current_resource_count:
+        if valid_resource_count == 0:
+            # this would change the search too much
+            raise toolkit.Invalid(
+                'All resources associated with this search have been '
+                'deleted, moved, or are no longer available.'
+            )
+        result['warnings'].append(
+            toolkit._(
+                'Some resources have been deleted, moved, or are no longer available. '
+                'Affected resources: '
+            )
+            + str(current_resource_count - valid_resource_count)
+        )
+        if saved_search_type == 'doi' and hasattr(resolved, 'count'):
+            result['warnings'].append(
+                toolkit._('Record count at save time: ') + str(resolved.count)
+            )
+    result['resource_ids'] = valid_resource_ids
+
+    return result
 
 
 @action(schema.vds_slug_reserve(), helptext.vds_slug_reserve)
