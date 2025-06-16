@@ -1,3 +1,17 @@
+## v6.3.0 (2025-06-16)
+
+### Feature
+
+- add warnings to resolved slugs about missing resources
+
+### Fix
+
+- ignore resources with no database
+
+### Tests
+
+- add tests for slug/doi resolution
+
 ## v6.2.1 (2025-06-09)
 
 ### Fix
