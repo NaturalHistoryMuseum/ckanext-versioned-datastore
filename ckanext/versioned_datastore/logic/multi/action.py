@@ -2,6 +2,7 @@ from collections import defaultdict
 from typing import List, Optional
 
 from ckantools.decorators import action
+from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import A, MultiSearch, Q, Search
 from splitgill.search import keyword, number, version_query
 
@@ -193,7 +194,13 @@ def vds_multi_autocomplete_field(
     for resource_id in resource_ids:
         database = get_database(resource_id)
 
-        for field in database.get_parsed_fields(version=version):
+        try:
+            parsed_fields = database.get_parsed_fields(version=version)
+        except NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            continue
+
+        for field in parsed_fields:
             if text in (field.path.lower() if lowercase else field.path):
                 fields[field.path][resource_id] = {
                     'name': field.name,
@@ -257,7 +264,13 @@ def vds_multi_fields(
 
     for resource_id in request.query.resource_ids:
         database = get_database(resource_id)
-        fields = database.get_parsed_fields(version=request.query.version, query=query)
+        try:
+            fields = database.get_parsed_fields(
+                version=request.query.version, query=query
+            )
+        except NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            continue
         field_groups.add(resource_id, fields)
 
     return field_groups.select(size)
