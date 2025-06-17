@@ -2,7 +2,6 @@ import re
 from math import isfinite
 from typing import Iterable, Optional, Union
 
-from ckan import logic
 from ckan.plugins import toolkit
 
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource
@@ -55,10 +54,10 @@ def check_resource_id(resource_id: str, context: Optional[dict] = None) -> bool:
     context = context.copy() if context is not None else {}
 
     try:
-        # check access (this also checks if the resource exists)
-        toolkit.check_access('resource_show', context, {'id': resource_id})
+        # check resource exists and check access
+        toolkit.get_action('resource_show')(context, {'id': resource_id})
         return True
-    except logic.NotFound:
+    except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
         return False
 
 
