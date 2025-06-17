@@ -1,3 +1,10 @@
+## v6.3.1 (2025-06-17)
+
+### Fix
+
+- remove auth audit key after failed request
+- use get_action rather than check_access
+
 ## v6.3.0 (2025-06-16)
 
 ### Feature
