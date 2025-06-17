@@ -2,6 +2,7 @@ import re
 from math import isfinite
 from typing import Iterable, Optional, Union
 
+from ckan.model import Resource, Session
 from ckan.plugins import toolkit
 
 from ckanext.versioned_datastore.lib.utils import is_datastore_resource
@@ -53,13 +54,14 @@ def check_resource_id(resource_id: str, context: Optional[dict] = None) -> bool:
     # TODO: does this context include auth for the calling user?
     context = context.copy() if context is not None else {}
 
+    # check it exists
+    if not Session.query(Resource).get(resource_id):
+        return False
+    # check we have access to it
     try:
-        # check resource exists and check access
-        toolkit.get_action('resource_show')(context, {'id': resource_id})
+        toolkit.check_access('resource_show', context, {'id': resource_id})
         return True
-    except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
-        # see ckanext-harvest@f315f41
-        context.pop('__auth_audit', None)
+    except toolkit.NotAuthorized:
         return False
 
 
