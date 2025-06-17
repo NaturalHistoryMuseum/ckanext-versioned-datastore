@@ -58,6 +58,8 @@ def check_resource_id(resource_id: str, context: Optional[dict] = None) -> bool:
         toolkit.get_action('resource_show')(context, {'id': resource_id})
         return True
     except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
+        # see ckanext-harvest@f315f41
+        context.pop('__auth_audit', None)
         return False
 
 
