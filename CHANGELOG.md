@@ -1,3 +1,9 @@
+## v6.3.2 (2025-06-17)
+
+### Performance
+
+- check resource exists with session instead of action
+
 ## v6.3.1 (2025-06-17)
 
 ### Fix
