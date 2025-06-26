@@ -7,7 +7,7 @@ from ckan.plugins import toolkit
 from flask import Blueprint
 from sqlalchemy import func
 
-from ckanext.versioned_datastore.lib.query import slugs
+from ckanext.versioned_datastore.lib.query.slugs import slugs
 from ckanext.versioned_datastore.lib.query.slugs.slug_words import (
     list_one,
     list_three,
