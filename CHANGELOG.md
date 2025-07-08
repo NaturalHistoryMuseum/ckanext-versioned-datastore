@@ -1,3 +1,9 @@
+## v6.3.3 (2025-07-08)
+
+### Fix
+
+- fix slug import path
+
 ## v6.3.2 (2025-06-17)
 
 ### Performance
