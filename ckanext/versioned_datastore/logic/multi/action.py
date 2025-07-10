@@ -81,12 +81,8 @@ def vds_multi_count(data_dict: dict):
     # default the counts to 0 for all resources
     counts = {resource_id: 0 for resource_id in request.query.resource_ids}
     # then update with the counts from the resources that matched the query
-    counts.update(
-        {
-            unprefix_index_name(bucket['key']): bucket['doc_count']
-            for bucket in response.aggs['counts']['buckets']
-        }
-    )
+    for bucket in response.aggs['counts']['buckets']:
+        counts[unprefix_index_name(bucket['key'])] += bucket['doc_count']
     return {'total': response.count, 'counts': counts}
 
 
