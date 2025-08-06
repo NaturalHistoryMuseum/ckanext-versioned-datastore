@@ -17,7 +17,7 @@ warnings = {
 }
 
 
-@pytest.mark.usefixtures('with_vds', 'with_vds_resource')
+@pytest.mark.usefixtures('with_request_context', 'with_vds', 'with_vds_resource')
 class TestResolveSlug:
     @patch('ckanext.versioned_datastore.logic.slug.action.resolve_slug')
     def test_resolve_slug_basic(self, mock_resolve_slug, with_vds_resource):
@@ -170,7 +170,7 @@ class TestResolveSlug:
             vds_slug_resolve('slug-does-not-exist')
 
 
-@pytest.mark.usefixtures('with_vds', 'with_vds_resource')
+@pytest.mark.usefixtures('with_request_context', 'with_vds', 'with_vds_resource')
 class TestResolveDOI:
     @patch(
         'ckanext.versioned_datastore.logic.slug.action.plugin_loaded', return_value=True
