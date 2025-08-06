@@ -154,7 +154,7 @@ def vds_slug_resolve(slug: str):
 
     # check that all the resources exist and are available
     all_resource_ids = get_available_datastore_resources(
-        ignore_auth=False, user_id=toolkit.g.user
+        ignore_auth=False, user_id=getattr(toolkit.g, 'user', '')
     )
     valid_resource_ids = list(set(result['resource_ids']) & all_resource_ids)
     valid_resource_count = len(valid_resource_ids)
