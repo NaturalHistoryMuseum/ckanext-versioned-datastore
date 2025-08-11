@@ -6,7 +6,7 @@ info:
 servers:
   - url: https://data.nhm.ac.uk/api/3/action
 paths:
-  /datastore_multisearch:
+  /vds_multi_query:
     post:
       summary: Search for records across all or a selection of resources in one query
       requestBody:
