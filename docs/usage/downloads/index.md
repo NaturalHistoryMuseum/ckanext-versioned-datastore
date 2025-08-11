@@ -1,4 +1,4 @@
-Calling the `datastore_queue_download` action adds a download job to the queue. There
+Calling the `vds_download_queue` action adds a download job to the queue. There
 are four parameters in a request: `query`, `file`, `server`, and `notifier`.
 
 See [Examples](examples) for some complete requests.
