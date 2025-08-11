@@ -1,3 +1,24 @@
+## v6.3.4 (2025-08-11)
+
+### Fix
+
+- default to empty string if user not in flask context
+- fix summing logic to account for arc indices
+
+### Performance
+
+- check against set of available resources
+
+### Docs
+
+- use relative links for actions docs
+- remove references to old actions and add links to new ones
+- update endpoint name for openapi docs
+
+### Tests
+
+- use request context in slug/doi tests
+
 ## v6.3.3 (2025-07-08)
 
 ### Fix
