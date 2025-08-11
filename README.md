@@ -155,43 +155,7 @@ The `datastore_search_raw` action allows users to query the datastore using raw 
 
 ## Actions
 
-All of this extension's actions are fully documented inline, including all parameters and results.
-
-### `datastore_create`
-Adds a resource to the versioned datastore (note that this doesn't add any data, it just does setup work. This is different to CKAN's default `datastore_create` action).
-
-### `datastore_upsert`
-Upserts data into the datastore for the resource. The data can be provided in the data_dict using the key 'records' or, if data is not specified, the URL on the resource is used.
-
-### `datastore_delete`
-Deletes the data in the datastore against the given resource ID.
-
-### `datastore_search`
-Search a resource's data using a similar API to CKAN's default `datastore_search` action.
-
-### `datastore_get_record_versions`
-Given a record id and a resource it appears in, returns the version timestamps available for that record in ascending order.
-
-### `datastore_get_resource_versions`
-Given a resource id, returns the version timestamps available for that resource in ascending order along with the number of records modified in the version and the number of records at that version.
-
-### `datastore_autocomplete`
-Provides autocompletion results against a specific field in a specific resource.
-
-### `datastore_reindex`
-Triggers a reindex of the given resource's data.
-
-### `datastore_query_extent`
-Return the geospatial extent of the results of a given datastore search query.
-
-### `datastore_get_rounded_version`
-Round the requested version of this query down to the nearest actual version of the resource.
-
-### `datastore_search_raw`
-This action allows you to search data in a resource using a raw elasticsearch query.
-
-### `datastore_ensure_privacy`
-This action runs through all resources (or handles a specific resource if a resource id is provided) and makes sure that the privacy set on each resource's package is reflected in the datastore.
+All of this extension's actions are [fully documented](https://ckanext-versioned-datastore.readthedocs.io/en/latest/usage/actions), including all parameters and results.
 
 ## Commands
 
