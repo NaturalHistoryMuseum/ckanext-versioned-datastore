@@ -51,8 +51,13 @@ def url_safe(value, context):
 
 
 def check_resource_id(resource_id: str, context: Optional[dict] = None) -> bool:
-    # TODO: does this context include auth for the calling user?
     context = context.copy() if context is not None else {}
+    if context.get('user') is None:
+        try:
+            context['user'] = toolkit.g.get('user')
+        except RuntimeError:
+            # during e.g. testing we don't have access to toolkit.g
+            pass
 
     # check it exists
     if not Session.query(Resource).get(resource_id):
