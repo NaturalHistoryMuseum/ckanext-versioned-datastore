@@ -1,3 +1,10 @@
+## v6.3.5 (2025-11-03)
+
+### Fix
+
+- ignore runtime error when adding user to context
+- add username to context if empty
+
 ## v6.3.4 (2025-08-11)
 
 ### Fix
