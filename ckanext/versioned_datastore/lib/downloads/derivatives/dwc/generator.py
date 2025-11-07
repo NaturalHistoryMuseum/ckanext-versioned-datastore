@@ -370,10 +370,10 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                     'geographicCoverage': {
                         'geographicDescription': 'Unbound',
                         'boundingCoordinates': {
-                            'westBoundingCoordinates': -180,
-                            'eastBoundingCoordinates': 180,
-                            'northBoundingCoordinates': -90,
-                            'southBoundingCoordinates': 90,
+                            'westBoundingCoordinate': -180,
+                            'eastBoundingCoordinate': 180,
+                            'northBoundingCoordinate': -90,
+                            'southBoundingCoordinate': 90,
                         },
                     }
                 },
