@@ -176,8 +176,8 @@ def unprefix_index_name(sg_index_name: str) -> str:
 
 class ReadOnlyResourceException(toolkit.ValidationError):
     """
-    This exception is raised when a write operation of some variety is attempted on a
-    resource which has been marked as read only.
+    Raised when a write operation of some variety is attempted on a resource which has
+    been marked as read only.
     """
 
     pass
