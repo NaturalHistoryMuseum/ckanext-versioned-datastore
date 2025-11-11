@@ -1,0 +1,15 @@
+{% ckan_extends %}
+
+{% block basic_fields %}
+    {{ super() }}
+
+    {# only for new or raw resource #}
+    {% if data.__len__() == 0 or data.get('disable_parsing', False) %}
+        {% call form.checkbox('disable_parsing', id='field-disable-parsing', label=_('Preserve original files (reduces searchability)'), value=1, checked=data.disable_parsing, error=errors.disable_parsing) %}
+            <span class="info-block info-block-small">
+          <i class="fa fa-info-circle"></i>
+          {{ _('Where possible, we try to extract records from your file to make them searchable. Only tick the box if your upload contains multiple files, multiple spreadsheet tabs, or if you want to make the full original file available for any other reason. You cannot revert to using raw files once the data have been extracted.') }}
+        </span>
+        {% endcall %}
+    {% endif %}
+{% endblock %}

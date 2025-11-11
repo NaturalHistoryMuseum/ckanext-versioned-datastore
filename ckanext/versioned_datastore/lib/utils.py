@@ -183,6 +183,14 @@ class ReadOnlyResourceException(toolkit.ValidationError):
     pass
 
 
+class RawResourceException(toolkit.ValidationError):
+    """
+    Raised when trying to ingest a resource that has been marked with "disable_parsing".
+    """
+
+    pass
+
+
 def is_resource_read_only(resource_id: str) -> bool:
     """
     Loops through the plugin implementations checking if any of them want the given
@@ -243,8 +251,14 @@ def is_ingestible(resource: dict) -> bool:
         return False
 
     resource_format = resource.get('format', None)
-    return is_datastore_only_resource(resource['url']) or (
-        resource_format is not None and resource_format.lower() in common.ALL_FORMATS
+    not_raw = not resource.get('disable_parsing', False)
+    return (
+        not_raw
+        and is_datastore_only_resource(resource['url'])
+        or (
+            resource_format is not None
+            and resource_format.lower() in common.ALL_FORMATS
+        )
     )
 
 
