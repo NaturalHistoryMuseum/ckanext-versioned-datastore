@@ -168,7 +168,9 @@ class TestResolveSlug:
         """
         Test trying to resolve a string that is neither a slug nor a DOI.
         """
-        with pytest.raises(toolkit.ValidationError, match='Slug not found'):
+        with pytest.raises(
+            toolkit.ValidationError, match='This saved search could not be found'
+        ):
             vds_slug_resolve('slug-does-not-exist')
 
 
