@@ -137,7 +137,7 @@ def vds_slug_resolve(slug: str):
 
     if saved_search_type is None:
         # if both slug and DOI have failed
-        raise toolkit.ValidationError('Slug not found')
+        raise toolkit.ValidationError('This saved search could not be found.')
 
     if result.get('query_version') == 'v0':
         result['query'] = convert_to_multisearch(result['query'])
