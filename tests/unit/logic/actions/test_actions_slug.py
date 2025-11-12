@@ -152,7 +152,9 @@ class TestResolveSlug:
             version=1234,
             created=ts,
         )
-        with pytest.raises(toolkit.Invalid, match=warnings['ALL_INVALID_RESOURCES']):
+        with pytest.raises(
+            toolkit.ValidationError, match=warnings['ALL_INVALID_RESOURCES']
+        ):
             vds_slug_resolve('test-slug')
 
     @patch(
@@ -381,6 +383,6 @@ class TestResolveDOI:
                 mock_resolved
             )
             with pytest.raises(
-                toolkit.Invalid, match=warnings['ALL_INVALID_RESOURCES']
+                toolkit.ValidationError, match=warnings['ALL_INVALID_RESOURCES']
             ):
                 vds_slug_resolve('test-doi')
