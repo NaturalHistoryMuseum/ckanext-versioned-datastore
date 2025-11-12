@@ -198,7 +198,7 @@ def vds_slug_reserve(context: dict, current_slug: str, new_reserved_slug: str):
     """
     slug = resolve_slug(current_slug)
     if slug is None:
-        raise toolkit.Invalid(f'The slug {current_slug} does not exist')
+        raise toolkit.ValidationError(f'The slug {current_slug} does not exist')
     if slug.reserved_pretty_slug and not context['auth_user_obj'].sysadmin:
         raise toolkit.NotAuthorized(
             'Only sysadmins can replace existing reserved slugs.'
