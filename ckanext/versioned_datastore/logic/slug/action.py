@@ -162,7 +162,7 @@ def vds_slug_resolve(slug: str):
     if valid_resource_count != current_resource_count:
         if valid_resource_count == 0:
             # this would change the search too much
-            raise toolkit.Invalid(
+            raise toolkit.ValidationError(
                 'All resources associated with this search have been '
                 'deleted, moved, or are no longer available.'
             )
