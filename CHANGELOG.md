@@ -1,3 +1,25 @@
+## v6.4.0 (2025-11-19)
+
+### Feature
+
+- add a flag to disable data ingestion
+
+### Fix
+
+- use API-compatible error for slug reservation
+- improve "no slug found" message
+- use error compatible with API
+- make coordinate field names singular
+
+### Docs
+
+- fix linter error for docstring
+
+### Tests
+
+- update error message
+- check for correct error
+
 ## v6.3.5 (2025-11-03)
 
 ### Fix
