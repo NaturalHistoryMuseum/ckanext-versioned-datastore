@@ -152,7 +152,9 @@ class TestResolveSlug:
             version=1234,
             created=ts,
         )
-        with pytest.raises(toolkit.Invalid, match=warnings['ALL_INVALID_RESOURCES']):
+        with pytest.raises(
+            toolkit.ValidationError, match=warnings['ALL_INVALID_RESOURCES']
+        ):
             vds_slug_resolve('test-slug')
 
     @patch(
@@ -166,7 +168,9 @@ class TestResolveSlug:
         """
         Test trying to resolve a string that is neither a slug nor a DOI.
         """
-        with pytest.raises(toolkit.ValidationError, match='Slug not found'):
+        with pytest.raises(
+            toolkit.ValidationError, match='This saved search could not be found'
+        ):
             vds_slug_resolve('slug-does-not-exist')
 
 
@@ -381,6 +385,6 @@ class TestResolveDOI:
                 mock_resolved
             )
             with pytest.raises(
-                toolkit.Invalid, match=warnings['ALL_INVALID_RESOURCES']
+                toolkit.ValidationError, match=warnings['ALL_INVALID_RESOURCES']
             ):
                 vds_slug_resolve('test-doi')

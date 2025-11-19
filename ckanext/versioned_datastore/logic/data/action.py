@@ -15,6 +15,7 @@ from ckanext.versioned_datastore.lib.importing.tasks import (
 from ckanext.versioned_datastore.lib.query.search.query import DirectQuery
 from ckanext.versioned_datastore.lib.query.search.request import SearchRequest
 from ckanext.versioned_datastore.lib.utils import (
+    RawResourceException,
     ReadOnlyResourceException,
     is_resource_read_only,
 )
@@ -60,6 +61,10 @@ def vds_data_add(
 
     user = toolkit.get_action('user_show')(context, {'id': context['user']})
     resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
+
+    if resource.get('disable_parsing', False):
+        raise RawResourceException('Ingestion has been disabled for this resource')
+
     ingest_job, sync_job = queue_ingest(resource, replace, user['apikey'], records)
 
     return {
@@ -119,6 +124,10 @@ def vds_data_sync(context: dict, resource_id: str, full: bool = False):
         raise ReadOnlyResourceException('This resource has been marked as read only')
 
     resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
+
+    if resource.get('disable_parsing', False):
+        raise RawResourceException('Ingestion has been disabled for this resource')
+
     job = queue_sync(resource, full)
 
     return {

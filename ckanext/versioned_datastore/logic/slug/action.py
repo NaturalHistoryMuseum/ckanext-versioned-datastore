@@ -137,7 +137,7 @@ def vds_slug_resolve(slug: str):
 
     if saved_search_type is None:
         # if both slug and DOI have failed
-        raise toolkit.ValidationError('Slug not found')
+        raise toolkit.ValidationError('This saved search could not be found.')
 
     if result.get('query_version') == 'v0':
         result['query'] = convert_to_multisearch(result['query'])
@@ -162,7 +162,7 @@ def vds_slug_resolve(slug: str):
     if valid_resource_count != current_resource_count:
         if valid_resource_count == 0:
             # this would change the search too much
-            raise toolkit.Invalid(
+            raise toolkit.ValidationError(
                 'All resources associated with this search have been '
                 'deleted, moved, or are no longer available.'
             )
@@ -198,7 +198,7 @@ def vds_slug_reserve(context: dict, current_slug: str, new_reserved_slug: str):
     """
     slug = resolve_slug(current_slug)
     if slug is None:
-        raise toolkit.Invalid(f'The slug {current_slug} does not exist')
+        raise toolkit.ValidationError(f'The slug {current_slug} does not exist')
     if slug.reserved_pretty_slug and not context['auth_user_obj'].sysadmin:
         raise toolkit.NotAuthorized(
             'Only sysadmins can replace existing reserved slugs.'

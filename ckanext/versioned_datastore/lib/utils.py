@@ -176,8 +176,16 @@ def unprefix_index_name(sg_index_name: str) -> str:
 
 class ReadOnlyResourceException(toolkit.ValidationError):
     """
-    This exception is raised when a write operation of some variety is attempted on a
-    resource which has been marked as read only.
+    Raised when a write operation of some variety is attempted on a resource which has
+    been marked as read only.
+    """
+
+    pass
+
+
+class RawResourceException(toolkit.ValidationError):
+    """
+    Raised when trying to ingest a resource that has been marked with "disable_parsing".
     """
 
     pass
@@ -243,8 +251,14 @@ def is_ingestible(resource: dict) -> bool:
         return False
 
     resource_format = resource.get('format', None)
-    return is_datastore_only_resource(resource['url']) or (
-        resource_format is not None and resource_format.lower() in common.ALL_FORMATS
+    not_raw = not resource.get('disable_parsing', False)
+    return (
+        not_raw
+        and is_datastore_only_resource(resource['url'])
+        or (
+            resource_format is not None
+            and resource_format.lower() in common.ALL_FORMATS
+        )
     )
 
 

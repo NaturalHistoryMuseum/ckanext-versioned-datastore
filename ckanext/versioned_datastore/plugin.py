@@ -20,6 +20,7 @@ from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 from ckanext.versioned_datastore.lib.tasks import get_es_health, get_queue_length
 from ckanext.versioned_datastore.lib.utils import (
+    RawResourceException,
     ReadOnlyResourceException,
     iqs_implementations,
     is_datastore_resource,
@@ -220,20 +221,39 @@ class VersionedSearchPlugin(SingletonPlugin):
     def before_show(self, resource_dict):
         # ensure datastore_active is set where it should be
         resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
+        # theoretically a resource could be datastore_active and have parsing disabled
+        # at the same time if the database and ES have gotten out of sync, which isn't
+        # ideal, but the fixes are more annoying than the problem itself
         return resource_dict
+
+    # IResourceController
+    def before_create(self, context, resource):
+        # only set disable_parsing if it's True (False by default)
+        if toolkit.asbool(resource.pop('disable_parsing', False)):
+            resource['disable_parsing'] = True
+
+    # IResourceController
+    def before_update(self, context, current, resource):
+        # we can't automatically go from ingested to raw because it might be included
+        # in queries and DOIs, but we can ingest a file that was previously raw
+        was_raw = toolkit.asbool(current.get('disable_parsing', False))
+        is_raw = toolkit.asbool(resource.pop('disable_parsing', False))
+        if was_raw and is_raw:
+            # only allow if it was already previously raw
+            resource['disable_parsing'] = True
 
     # IResourceController
     def after_update(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
         data_dict = {'resource_id': resource['id'], 'replace': True}
-        with suppress(ReadOnlyResourceException):
+        with suppress(ReadOnlyResourceException), suppress(RawResourceException):
             toolkit.get_action('vds_data_add')(context, data_dict)
 
     # IResourceController
     def after_create(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
         data_dict = {'resource_id': resource['id'], 'replace': True}
-        with suppress(ReadOnlyResourceException):
+        with suppress(ReadOnlyResourceException), suppress(RawResourceException):
             toolkit.get_action('vds_data_add')(context, data_dict)
 
     def before_delete(self, context: dict, resource: dict, resources: List[dict]):
