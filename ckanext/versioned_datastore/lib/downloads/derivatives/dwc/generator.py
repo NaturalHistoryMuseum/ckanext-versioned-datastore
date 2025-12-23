@@ -193,6 +193,13 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
             for f in e.location.fields:
                 extension_map[f] = e.name
 
+        def _serialise_value(field_value):
+            # implement custom serialisation for field values, e.g. pipe-delimit lists
+            if isinstance(field_value, list):
+                return ' | '.join(field_value)
+            else:
+                return field_value
+
         for k, v in record.items():
             if k in extension_map:
                 ext_props = self.writers[extension_map[k]].fieldnames
@@ -201,7 +208,7 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                     props = {'_id': record_id}
                     for ek, ev in subdict.items():
                         if ek in ext_props and ek != '_id':
-                            props[ek] = ev
+                            props[ek] = _serialise_value(ev)
                     return props
 
                 if isinstance(v, list):
@@ -216,9 +223,9 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
                 ext[extension_map[k]] = ext_extracted
             else:
                 if k in self.writers['core'].fieldnames:
-                    core[k] = v
+                    core[k] = _serialise_value(v)
                 else:
-                    dynamic_properties[k] = v
+                    dynamic_properties[k] = _serialise_value(v)
 
         core['dynamicProperties'] = json.dumps(dynamic_properties)
         return core, ext
