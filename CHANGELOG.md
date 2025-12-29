@@ -1,3 +1,9 @@
+## v6.4.1 (2025-12-29)
+
+### Fix
+
+- serialise lists in dwc-a files as pipe-delimited strings
+
 ## v6.4.0 (2025-11-19)
 
 ### Feature
