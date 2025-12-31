@@ -121,12 +121,26 @@ def validate_datastore_resource_ids(
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
-    if context is None:
-        context = {}
+    context = context.copy() if context is not None else {}
+    if context.get('user') is None:
+        try:
+            context['user'] = toolkit.g.get('user')
+        except RuntimeError:
+            # during e.g. testing we don't have access to toolkit.g
+            pass
+
+    packages_and_resources = toolkit.get_action('current_package_list_with_resources')(
+        context, {}
+    )
+    all_available_resource_ids = [
+        r['id'] for p in packages_and_resources for r in p['resources']
+    ]
+
     valid_resource_ids = [
         resource_id
         for resource_id in _deduplicate(value)
-        if check_datastore_resource_id(resource_id, context)
+        if resource_id in all_available_resource_ids
+        and is_datastore_resource(resource_id)
     ]
     if value and not valid_resource_ids:
         # the user passed some resources, but none of them were datastore resources
