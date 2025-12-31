@@ -41,6 +41,14 @@ def vds_multi_autocomplete_value() -> dict:
     }
 
 
+def vds_multi_autocomplete_field_latest() -> dict:
+    return {
+        'resource_ids': [validate_datastore_resource_ids],
+        'text': [ignore_missing, str],
+        'lowercase': [ignore_missing, boolean_validator],
+    }
+
+
 def vds_multi_autocomplete_field() -> dict:
     return {
         'resource_ids': [validate_datastore_resource_ids],

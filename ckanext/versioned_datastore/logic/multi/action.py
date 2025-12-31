@@ -144,6 +144,62 @@ def vds_multi_autocomplete_value(
 
 
 @action(
+    schema.vds_multi_autocomplete_field_latest(),
+    helptext.vds_multi_autocomplete_field_latest,
+    get=True,
+)
+def vds_multi_autocomplete_field_latest(
+    resource_ids: List[str],
+    text: str = '',
+    lowercase: bool = False,
+):
+    """
+    Returns fields from the latest version of the given resources.
+
+    This action is significantly faster than vds_multi_autocomplete_field for larger
+    and/or more resources, but it does not allow filtering by version and does not
+    return field or type counts.
+
+    :param resource_ids: the resources match fields on (if no resource IDs are passed,
+        all resources are searched)
+    :param text: the text to search for
+    :param lowercase: whether to compare the text to the field names in lowercase
+        (default is False)
+    :returns: the total number of fields matched and details about the fields that were
+        matched
+    """
+    fields = defaultdict(dict)
+
+    # if no resource IDs were provided, use all resources available to the user
+    if not resource_ids:
+        resource_ids = sorted(get_available_datastore_resources())
+
+    for resource_id in resource_ids:
+        database = get_database(resource_id)
+
+        try:
+            parsed_fields = database.get_field_names()
+        except NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            continue
+
+        for field in parsed_fields:
+            if text in (field.path.lower() if lowercase else field.path):
+                fields[field.path][resource_id] = {
+                    'name': field.name,
+                    'path': field.path,
+                    'text': field.is_text,
+                    'keyword': field.is_keyword,
+                    'boolean': field.is_boolean,
+                    'date': field.is_date,
+                    'number': field.is_number,
+                    'geo': field.is_geo,
+                }
+
+    return {'count': len(fields), 'fields': fields}
+
+
+@action(
     schema.vds_multi_autocomplete_field(),
     helptext.vds_multi_autocomplete_field,
     get=True,

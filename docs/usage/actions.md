@@ -19,6 +19,7 @@ The most up-to-date documentation for actions is inline:
 - [`vds_multi_count`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_count)
 - [`vds_multi_autocomplete_value`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_autocomplete_value)
 - [`vds_multi_autocomplete_field`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_autocomplete_field)
+- [`vds_multi_autocomplete_field_latest`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_autocomplete_field_latest)
 - [`vds_multi_hash`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_hash)
 - [`vds_multi_fields`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_fields)
 - [`vds_multi_stats`](../../API/versioned_datastore/logic/multi/action/#ckanext.versioned_datastore.logic.multi.action.vds_multi_stats)
@@ -39,37 +40,38 @@ For [version 6](https://github.com/NaturalHistoryMuseum/ckanext-versioned-datast
 
 This page is to help map the old actions to the closest equivalent new one.
 
-| v5 name                                     | v6 name                        | notes                                                                |
-|---------------------------------------------|--------------------------------|----------------------------------------------------------------------|
-| `datastore_autocomplete`                    | `vds_basic_autocomplete`       |                                                                      |
-| `datastore_count`                           | `vds_basic_count`              |                                                                      |
-| `datastore_create_slug`                     | `vds_slug_create`              |                                                                      |
-| `datastore_create`                          | `vds_data_add`                 | `_create` and `_upsert` were combined                                |
-| `datastore_delete`                          | `vds_data_delete`              |                                                                      |
-| `datastore_edit_slug`                       | `vds_slug_reserve`             |                                                                      |
-| `datastore_ensure_privacy`                  | --                             |                                                                      |
-| `datastore_field_autocomplete`              | `vds_multi_autocomplete_field` |                                                                      |
-| `datastore_get_latest_query_schema_version` | `vds_schema_latest`            |                                                                      |
-| `datastore_get_record_versions`             | `vds_version_record`           |                                                                      |
-| `datastore_get_resource_versions`           | `vds_version_resource`         |                                                                      |
-| `datastore_get_rounded_version`             | `vds_version_round`            |                                                                      |
-| `datastore_guess_fields`                    | `vds_multi_fields`             |                                                                      |
-| `datastore_hash_query`                      | `vds_multi_hash`               |                                                                      |
-| `datastore_is_datastore_resource`           | `vds_resource_check`           |                                                                      |
-| `datastore_multisearch_counts`              | `vds_multi_count`              |                                                                      |
-| `datastore_multisearch`                     | `vds_multi_query`              |                                                                      |
-| `datastore_query_extent`                    | `vds_basic_extent`             | `datastore_query_extent` still exists, but just calls the new action |
-| `datastore_queue_download`                  | `vds_download_queue`           |                                                                      |
-| `datastore_regenerate_download`             | `vds_download_regenerate`      |                                                                      |
-| `datastore_reindex`                         | `vds_data_sync`                |                                                                      |
-| `datastore_resolve_slug`                    | `vds_slug_resolve`             |                                                                      |
-| `datastore_search_raw`                      | `vds_multi_direct`             |                                                                      |
-| `datastore_search`                          | `vds_basic_query`              | `datastore_search` still exists, but it just calls `vds_basic_query` |
-| `datastore_upsert`                          | `vds_data_add`                 | `_create` and `_upsert` were combined                                |
-| `datastore_value_autocomplete`              | `vds_multi_autocomplete_value` |                                                                      |
-| --                                          | `vds_data_get`                 |                                                                      |
-| --                                          | `vds_multi_stats`              |                                                                      |
-| --                                          | `vds_options_get`              |                                                                      |
-| --                                          | `vds_options_update`           |                                                                      |
-| --                                          | `vds_schema_validate`          |                                                                      |
-| --                                          | `vds_version_schema`           |                                                                      |
+| v5 name                                     | v6 name                               | notes                                                                |
+|---------------------------------------------|---------------------------------------|----------------------------------------------------------------------|
+| `datastore_autocomplete`                    | `vds_basic_autocomplete`              |                                                                      |
+| `datastore_count`                           | `vds_basic_count`                     |                                                                      |
+| `datastore_create_slug`                     | `vds_slug_create`                     |                                                                      |
+| `datastore_create`                          | `vds_data_add`                        | `_create` and `_upsert` were combined                                |
+| `datastore_delete`                          | `vds_data_delete`                     |                                                                      |
+| `datastore_edit_slug`                       | `vds_slug_reserve`                    |                                                                      |
+| `datastore_ensure_privacy`                  | --                                    |                                                                      |
+| `datastore_field_autocomplete`              | `vds_multi_autocomplete_field`        |                                                                      |
+| `datastore_get_latest_query_schema_version` | `vds_schema_latest`                   |                                                                      |
+| `datastore_get_record_versions`             | `vds_version_record`                  |                                                                      |
+| `datastore_get_resource_versions`           | `vds_version_resource`                |                                                                      |
+| `datastore_get_rounded_version`             | `vds_version_round`                   |                                                                      |
+| `datastore_guess_fields`                    | `vds_multi_fields`                    |                                                                      |
+| `datastore_hash_query`                      | `vds_multi_hash`                      |                                                                      |
+| `datastore_is_datastore_resource`           | `vds_resource_check`                  |                                                                      |
+| `datastore_multisearch_counts`              | `vds_multi_count`                     |                                                                      |
+| `datastore_multisearch`                     | `vds_multi_query`                     |                                                                      |
+| `datastore_query_extent`                    | `vds_basic_extent`                    | `datastore_query_extent` still exists, but just calls the new action |
+| `datastore_queue_download`                  | `vds_download_queue`                  |                                                                      |
+| `datastore_regenerate_download`             | `vds_download_regenerate`             |                                                                      |
+| `datastore_reindex`                         | `vds_data_sync`                       |                                                                      |
+| `datastore_resolve_slug`                    | `vds_slug_resolve`                    |                                                                      |
+| `datastore_search_raw`                      | `vds_multi_direct`                    |                                                                      |
+| `datastore_search`                          | `vds_basic_query`                     | `datastore_search` still exists, but it just calls `vds_basic_query` |
+| `datastore_upsert`                          | `vds_data_add`                        | `_create` and `_upsert` were combined                                |
+| `datastore_value_autocomplete`              | `vds_multi_autocomplete_value`        |                                                                      |
+| --                                          | `vds_data_get`                        |                                                                      |
+| --                                          | `vds_multi_stats`                     |                                                                      |
+| --                                          | `vds_options_get`                     |                                                                      |
+| --                                          | `vds_options_update`                  |                                                                      |
+| --                                          | `vds_schema_validate`                 |                                                                      |
+| --                                          | `vds_version_schema`                  |                                                                      |
+| --                                          | `vds_multi_autocomplete_field_latest` | similar to `vds_multi_autocomplete_field`, but more limited          |
