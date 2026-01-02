@@ -1,3 +1,9 @@
+## v6.4.2 (2026-01-02)
+
+### Fix
+
+- stringify list items and filter out nulls
+
 ## v6.4.1 (2025-12-29)
 
 ### Fix
