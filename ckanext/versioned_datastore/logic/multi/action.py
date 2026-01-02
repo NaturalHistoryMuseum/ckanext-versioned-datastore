@@ -144,6 +144,62 @@ def vds_multi_autocomplete_value(
 
 
 @action(
+    schema.vds_multi_autocomplete_field_latest(),
+    helptext.vds_multi_autocomplete_field_latest,
+    get=True,
+)
+def vds_multi_autocomplete_field_latest(
+    resource_ids: List[str],
+    text: str = '',
+    lowercase: bool = False,
+):
+    """
+    Returns fields from the latest version of the given resources.
+
+    This action is significantly faster than vds_multi_autocomplete_field for larger
+    and/or more resources, but it does not allow filtering by version and does not
+    return field or type counts.
+
+    :param resource_ids: the resources match fields on (if no resource IDs are passed,
+        all resources are searched)
+    :param text: the text to search for
+    :param lowercase: whether to compare the text to the field names in lowercase
+        (default is False)
+    :returns: the total number of fields matched and details about the fields that were
+        matched
+    """
+    fields = defaultdict(dict)
+
+    # if no resource IDs were provided, use all resources available to the user
+    if not resource_ids:
+        resource_ids = sorted(get_available_datastore_resources())
+
+    for resource_id in resource_ids:
+        database = get_database(resource_id)
+
+        try:
+            parsed_fields = database.get_field_names()
+        except NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            continue
+
+        for field in parsed_fields:
+            if text in (field.path.lower() if lowercase else field.path):
+                fields[field.path][resource_id] = {
+                    'name': field.name,
+                    'path': field.path,
+                    'text': field.is_text,
+                    'keyword': field.is_keyword,
+                    'boolean': field.is_boolean,
+                    'date': field.is_date,
+                    'number': field.is_number,
+                    'geo': field.is_geo,
+                }
+
+    return {'count': len(fields), 'fields': fields}
+
+
+@action(
     schema.vds_multi_autocomplete_field(),
     helptext.vds_multi_autocomplete_field,
     get=True,
@@ -230,7 +286,10 @@ def vds_multi_hash(query: dict, query_version: Optional[str] = None):
 
 @action(schema.vds_multi_fields(), helptext.vds_multi_fields, get=True)
 def vds_multi_fields(
-    data_dict: dict, size: int = 10, ignore_groups: Optional[List[str]] = None
+    data_dict: dict,
+    size: int = 10,
+    ignore_groups: Optional[List[str]] = None,
+    sample: Optional[float] = 1.0,
 ):
     """
     Groups the fields available on the given resources at the optional given version and
@@ -240,9 +299,13 @@ def vds_multi_fields(
     the field, but also most common as in with the most records that have the field in
     them in a resource).
 
+    This aggregates across all records in a resource, so it can be very slow.
+
     :param data_dict: the action options
     :param size: the number of field groups to return (defaults to the top 10)
     :param ignore_groups: an optional list of fields to ignore
+    :param sample: set to <1 to enable random sampling of records (increases query
+        speed); this is the probability that a given record will be included
     :returns: a list of field groups represented as dicts
     """
     request = make_request(data_dict)
@@ -262,7 +325,10 @@ def vds_multi_fields(
         database = get_database(resource_id)
         try:
             fields = database.get_parsed_fields(
-                version=request.query.version, query=query
+                version=request.query.version,
+                query=query,
+                sample_probability=sample,
+                chunk_size=100,
             )
         except NotFoundError:
             # temporary fix for splitgill#38 (so we can ignore unavailable resources)
