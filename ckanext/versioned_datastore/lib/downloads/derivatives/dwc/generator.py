@@ -196,7 +196,9 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
         def _serialise_value(field_value):
             # implement custom serialisation for field values, e.g. pipe-delimit lists
             if isinstance(field_value, list):
-                return ' | '.join(field_value)
+                return ' | '.join(
+                    [str(subvalue) for subvalue in field_value if subvalue is not None]
+                )
             else:
                 return field_value
 
