@@ -1,3 +1,9 @@
+## v6.5.1 (2026-01-05)
+
+### Fix
+
+- paginate current package list action
+
 ## v6.5.0 (2026-01-05)
 
 ### Feature
