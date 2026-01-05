@@ -3,6 +3,7 @@ from ckantools.validators import list_of_strings, list_validator
 from ckanext.datastore.logic.schema import json_validator
 from ckanext.versioned_datastore.logic.validators import (
     boolean_validator,
+    float_validator,
     ignore_missing,
     int_validator,
     not_empty,
@@ -40,6 +41,14 @@ def vds_multi_autocomplete_value() -> dict:
     }
 
 
+def vds_multi_autocomplete_field_latest() -> dict:
+    return {
+        'resource_ids': [validate_datastore_resource_ids],
+        'text': [ignore_missing, str],
+        'lowercase': [ignore_missing, boolean_validator],
+    }
+
+
 def vds_multi_autocomplete_field() -> dict:
     return {
         'resource_ids': [validate_datastore_resource_ids],
@@ -62,6 +71,7 @@ def vds_multi_fields() -> dict:
         'version': [ignore_missing, int_validator],
         'size': [ignore_missing, int_validator],
         'ignore_groups': [ignore_missing, list_of_strings()],
+        'sample': [ignore_missing, float_validator],
     }
 
 

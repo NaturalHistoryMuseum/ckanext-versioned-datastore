@@ -17,6 +17,23 @@ email_validator = toolkit.get_validator('email_validator')
 one_of = toolkit.get_validator('one_of')
 
 
+def _populate_context(context=None):
+    """
+    Populates the context with a user if it doesn't already exist.
+
+    :param context: an existing context object
+    :returns: dict with at least a 'user' key, even if the value is None
+    """
+    context = context.copy() if context is not None else {}
+    if context.get('user') is None:
+        try:
+            context['user'] = toolkit.g.get('user')
+        except RuntimeError:
+            # during e.g. testing we don't have access to toolkit.g
+            context['user'] = None
+    return context
+
+
 def float_validator(value, context) -> float:
     """
     Checks if the value can be parsed as a float and returns it if it can, otherwise
@@ -51,13 +68,7 @@ def url_safe(value, context):
 
 
 def check_resource_id(resource_id: str, context: Optional[dict] = None) -> bool:
-    context = context.copy() if context is not None else {}
-    if context.get('user') is None:
-        try:
-            context['user'] = toolkit.g.get('user')
-        except RuntimeError:
-            # during e.g. testing we don't have access to toolkit.g
-            pass
+    context = _populate_context(context)
 
     # check it exists
     if not Session.query(Resource).get(resource_id):
@@ -99,8 +110,7 @@ def validate_resource_ids(value: Union[str, list], context: Optional[dict] = Non
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
-    if context is None:
-        context = {}
+    context = _populate_context(context)
     valid_resource_ids = [
         resource_id
         for resource_id in _deduplicate(value)
@@ -121,12 +131,19 @@ def validate_datastore_resource_ids(
     if not isinstance(value, list):
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
-    if context is None:
-        context = {}
+    context = _populate_context(context)
+    packages_and_resources = toolkit.get_action('current_package_list_with_resources')(
+        context, {}
+    )
+    all_available_resource_ids = [
+        r['id'] for p in packages_and_resources for r in p['resources']
+    ]
+
     valid_resource_ids = [
         resource_id
         for resource_id in _deduplicate(value)
-        if check_datastore_resource_id(resource_id, context)
+        if resource_id in all_available_resource_ids
+        and is_datastore_resource(resource_id)
     ]
     if value and not valid_resource_ids:
         # the user passed some resources, but none of them were datastore resources

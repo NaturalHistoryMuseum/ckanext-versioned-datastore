@@ -21,6 +21,12 @@ def vds_multi_autocomplete_value(context, data_dict) -> dict:
 
 
 @auth(anon=True)
+def vds_multi_autocomplete_field_latest(context, data_dict) -> dict:
+    # allow access to everyone
+    return {'success': True}
+
+
+@auth(anon=True)
 def vds_multi_autocomplete_field(context, data_dict) -> dict:
     # allow access to everyone
     return {'success': True}

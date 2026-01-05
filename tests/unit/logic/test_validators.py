@@ -2,6 +2,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from ckan.plugins import toolkit
+from ckan.tests import factories
 
 from ckanext.versioned_datastore.logic.validators import (
     _deduplicate,
@@ -78,6 +79,7 @@ class TestValidateResourceIDs:
             assert validate_resource_ids(['x', 'a', 'a', 'a', 'b']) == ['x', 'a']
 
 
+@pytest.mark.usefixtures('with_vds')
 class TestValidateDatastoreResourceIDs:
     def test_empty(self):
         assert validate_datastore_resource_ids([]) == []
@@ -89,57 +91,38 @@ class TestValidateDatastoreResourceIDs:
         ):
             validate_datastore_resource_ids({})
 
-    def test_all_valid(self):
-        valid = ['a', 'c', 'x']
-        check_datastore_resource_id_mock = MagicMock(
-            side_effect=lambda r, _: r in valid
-        )
-
-        with patch(
-            'ckanext.versioned_datastore.logic.validators.check_datastore_resource_id',
-            check_datastore_resource_id_mock,
-        ):
-            assert validate_datastore_resource_ids(valid) == valid
+    def test_all_valid(self, with_vds_resource):
+        valid = [with_vds_resource[0]['id'], with_vds_resource[1]['id']]
+        assert validate_datastore_resource_ids(valid) == valid
 
     def test_all_invalid(self):
-        check_datastore_resource_id_mock = MagicMock(return_value=False)
+        # random resources that don't exist
+        invalid_resource_ids = ['a', 'b', 'c', 'd']
 
-        with patch(
-            'ckanext.versioned_datastore.logic.validators.check_datastore_resource_id',
-            check_datastore_resource_id_mock,
+        with pytest.raises(
+            toolkit.Invalid, match='No resource IDs are datastore resources'
         ):
-            with pytest.raises(
-                toolkit.Invalid, match='No resource IDs are datastore resources'
-            ):
-                validate_datastore_resource_ids(['o', 'b'])
+            validate_datastore_resource_ids(invalid_resource_ids)
 
-    def test_some_valid(self):
-        valid = {'a', 'c', 'x'}
-        check_datastore_resource_id_mock = MagicMock(
-            side_effect=lambda r, _: r in valid
+        # resource that does exist, but isn't in the datastore
+        package = factories.Dataset()
+        non_datastore_resource = factories.Resource(
+            package_id=package['id'],
+            url_type='upload',
+            url='https://somewhere-else',
         )
 
-        with patch(
-            'ckanext.versioned_datastore.logic.validators.check_datastore_resource_id',
-            check_datastore_resource_id_mock,
+        with pytest.raises(
+            toolkit.Invalid, match='No resource IDs are datastore resources'
         ):
-            assert validate_datastore_resource_ids(['x', 'o', 'a', 'b', 'c']) == [
-                'x',
-                'a',
-                'c',
-            ]
+            validate_datastore_resource_ids([non_datastore_resource['id']])
 
-    def test_some_valid_with_duplicates(self):
-        valid = {'a', 'c', 'x'}
-        check_datastore_resource_id_mock = MagicMock(
-            side_effect=lambda r, _: r in valid
-        )
+    def test_some_valid(self, with_vds_resource):
+        valid = [with_vds_resource[0]['id'], with_vds_resource[1]['id']]
 
-        with patch(
-            'ckanext.versioned_datastore.logic.validators.check_datastore_resource_id',
-            check_datastore_resource_id_mock,
-        ):
-            assert validate_datastore_resource_ids(['x', 'a', 'a', 'a', 'b']) == [
-                'x',
-                'a',
-            ]
+        assert validate_datastore_resource_ids(['a', 'b', 'c'] + valid) == valid
+
+    def test_some_valid_with_duplicates(self, with_vds_resource):
+        valid = [with_vds_resource[0]['id'], with_vds_resource[1]['id']]
+
+        assert validate_datastore_resource_ids(valid + valid + ['a', 'a', 'b']) == valid

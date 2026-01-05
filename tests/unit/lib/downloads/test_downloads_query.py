@@ -43,29 +43,25 @@ class TestDownloadQuery:
                     )
 
     @pytest.mark.usefixtures('with_vds')
-    def test_create_query_from_query_args(self):
-        resource_ids = ['test-resource-id']
-        check_mock = MagicMock(return_value=True)
-        with patch(
-            'ckanext.versioned_datastore.logic.validators.check_datastore_resource_id',
-            check_mock,
-        ):
-            query_args = QueryArgs(
-                query={
-                    'filters': {
-                        'and': [
-                            {
-                                'string_equals': {
-                                    'fields': ['collectionCode'],
-                                    'value': 'bot',
-                                }
+    def test_create_query_from_query_args(self, with_vds_resource):
+        resource_ids = [with_vds_resource[0]['id']]
+
+        query_args = QueryArgs(
+            query={
+                'filters': {
+                    'and': [
+                        {
+                            'string_equals': {
+                                'fields': ['collectionCode'],
+                                'value': 'bot',
                             }
-                        ]
-                    },
-                    'resource_ids': resource_ids,
-                }
-            )
-            q = query_args.to_schema_query()
+                        }
+                    ]
+                },
+                'resource_ids': resource_ids,
+            }
+        )
+        q = query_args.to_schema_query()
 
         assert q.query_version == 'v1.0.0'
         assert q.resource_ids == resource_ids
