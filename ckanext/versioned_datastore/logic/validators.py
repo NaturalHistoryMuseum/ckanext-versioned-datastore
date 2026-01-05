@@ -132,12 +132,16 @@ def validate_datastore_resource_ids(
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
     context = _populate_context(context)
-    packages_and_resources = toolkit.get_action('current_package_list_with_resources')(
-        context, {}
-    )
-    all_available_resource_ids = [
-        r['id'] for p in packages_and_resources for r in p['resources']
-    ]
+    get_current_packages = toolkit.get_action('current_package_list_with_resources')
+    all_available_resource_ids = []
+    offset = 0
+    page_size = 500
+    while True:
+        page = get_current_packages(context, {'limit': page_size, 'offset': offset})
+        all_available_resource_ids += [r['id'] for p in page for r in p['resources']]
+        if len(page) < page_size:
+            break
+        offset += page_size
 
     valid_resource_ids = [
         resource_id
