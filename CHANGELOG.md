@@ -1,3 +1,27 @@
+## v6.5.0 (2026-01-05)
+
+### Feature
+
+- add action to get field names from latest index
+- add sample option to vds_multi_fields
+
+### Fix
+
+- add user key to context even if user is null
+
+### Performance
+
+- check access using current_package_list_with_resources
+
+### Tests
+
+- remove mocking from query args test
+- fix validator tests
+
+### Build System(s)
+
+- update splitgill and elasticsearch-dsl
+
 ## v6.4.2 (2026-01-02)
 
 ### Fix
