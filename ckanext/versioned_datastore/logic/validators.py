@@ -5,7 +5,10 @@ from typing import Iterable, Optional, Union
 from ckan.model import Resource, Session
 from ckan.plugins import toolkit
 
-from ckanext.versioned_datastore.lib.utils import is_datastore_resource
+from ckanext.versioned_datastore.lib.utils import (
+    get_public_resources,
+    is_datastore_resource,
+)
 
 boolean_validator = toolkit.get_validator('boolean_validator')
 ignore_missing = toolkit.get_validator('ignore_missing')
@@ -111,11 +114,16 @@ def validate_resource_ids(value: Union[str, list], context: Optional[dict] = Non
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
     context = _populate_context(context)
-    valid_resource_ids = [
-        resource_id
-        for resource_id in _deduplicate(value)
-        if check_resource_id(resource_id, context)
-    ]
+    public_resources = get_public_resources()
+    valid_resource_ids = []
+    for resource_id in _deduplicate(value):
+        datastore_status = public_resources.get(resource_id)
+        if datastore_status is None:
+            if check_resource_id(resource_id, context):
+                valid_resource_ids.append(resource_id)
+        else:
+            valid_resource_ids.append(resource_id)
+
     if value and not valid_resource_ids:
         # the user passed some resources, but none of them were datastore resources
         raise toolkit.Invalid('No resource IDs are available')
@@ -132,23 +140,15 @@ def validate_datastore_resource_ids(
         raise toolkit.Invalid('Invalid list of resource ID strings')
 
     context = _populate_context(context)
-    get_current_packages = toolkit.get_action('current_package_list_with_resources')
-    all_available_resource_ids = []
-    offset = 0
-    page_size = 500
-    while True:
-        page = get_current_packages(context, {'limit': page_size, 'offset': offset})
-        all_available_resource_ids += [r['id'] for p in page for r in p['resources']]
-        if len(page) < page_size:
-            break
-        offset += page_size
+    public_resources = get_public_resources()
+    valid_resource_ids = []
+    for resource_id in _deduplicate(value):
+        datastore_status = public_resources.get(resource_id)
+        if datastore_status is None:
+            datastore_status = check_datastore_resource_id(resource_id, context)
+        if datastore_status:
+            valid_resource_ids.append(resource_id)
 
-    valid_resource_ids = [
-        resource_id
-        for resource_id in _deduplicate(value)
-        if resource_id in all_available_resource_ids
-        and is_datastore_resource(resource_id)
-    ]
     if value and not valid_resource_ids:
         # the user passed some resources, but none of them were datastore resources
         raise toolkit.Invalid('No resource IDs are datastore resources')

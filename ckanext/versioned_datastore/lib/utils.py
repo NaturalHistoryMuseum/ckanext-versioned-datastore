@@ -1,6 +1,8 @@
+import logging
 import re
-from typing import Iterable, Optional, Set, TypeVar
+from typing import Dict, Iterable, Optional, Set, TypeVar
 
+from beaker.cache import CacheManager, cache_region, cache_regions
 from ckan import plugins
 from ckan.plugins import get_plugin, toolkit
 from elasticsearch import Elasticsearch
@@ -13,6 +15,8 @@ from ckanext.versioned_datastore.interfaces import (
     IVersionedDatastoreQuerySchema,
 )
 from ckanext.versioned_datastore.lib import common
+
+log = logging.getLogger(__name__)
 
 
 def get_available_datastore_resources(
@@ -66,6 +70,31 @@ def get_available_resources(
                 for resource in package['resources']
                 if not datastore_only or resource.get('datastore_active', False)
             )
+        offset += len(packages)
+
+    return resource_ids
+
+
+@cache_region('vds', 'public_resources')
+def get_public_resources() -> Dict[str, bool]:
+    """
+    Retrieves a list of public resources and whether they are present in the datastore.
+
+    :returns: dict of publicly available resource IDs and whether they are available in
+        the datastore
+    """
+    resource_ids = {}
+    offset = 0
+    action = toolkit.get_action('current_package_list_with_resources')
+    while True:
+        # do not ignore auth, do not provide a user
+        context = {'ignore_auth': False}
+        packages = action(context, {'offset': offset, 'limit': 100})
+        if not packages:
+            break
+        for package in packages:
+            for resource in package.get('resources', []):
+                resource_ids[resource['id']] = is_datastore_resource(resource['id'])
         offset += len(packages)
 
     return resource_ids
@@ -277,3 +306,33 @@ def idownload_implementations() -> Iterable[U]:
 
 def iqs_implementations() -> Iterable[V]:
     yield from plugins.PluginImplementations(IVersionedDatastoreQuerySchema)
+
+
+def clear_cached_metadata():
+    """
+    Clears cached package and resource metadata, e.g. lists of public resource IDs.
+
+    Cached functions have to be added manually and cleared individually. This is partly
+    so we can control exactly which functions to clear, and partly because beaker does
+    not seem to have a way to clear an entire region.
+    :return:
+    """
+    cache_opts = cache_regions.get('vds')
+    if cache_opts is None:
+        # this shouldn't happen, but just in case
+        cache_opts = {}
+        for k, v in toolkit.config.items():
+            if k.startswith('ckanext.versioned_datastore.cache.'):
+                cache_opts[k.split('.')[-1]] = v
+    # cache_managers does not usually seem to be populated so just construct a new ref
+    cache_manager = CacheManager(**cache_opts)
+    # manually list the cached functions to be cleared
+    cached_functions = [get_public_resources]
+    for func in cached_functions:
+        # each function has its own namespace that needs to be cleared
+        try:
+            cache = cache_manager.get_cache(func._arg_namespace)
+            cache.clear()
+            log.info(f'Cleared cache for {func.__name__}')
+        except Exception as e:
+            log.error(f'Failed to clear cache for {func.__name__}: {e}')
