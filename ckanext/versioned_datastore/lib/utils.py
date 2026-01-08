@@ -1,6 +1,7 @@
 import logging
 import re
-from typing import Dict, Iterable, Optional, Set, TypeVar
+from collections import defaultdict
+from typing import Dict, Iterable, List, Optional, Set, TypeVar
 
 from beaker.cache import CacheManager, cache_region, cache_regions
 from ckan import plugins
@@ -98,6 +99,42 @@ def get_public_resources() -> Dict[str, bool]:
         offset += len(packages)
 
     return resource_ids
+
+
+@cache_region('vds', 'resource_fields')
+def get_latest_resource_fields(resource_ids: List[str]) -> Dict[str, Dict[str, Dict]]:
+    """
+    Retrieves a list of fields available on the latest indices for the given resources.
+
+    Does not do any authentication. Only call from within other authenticated functions.
+
+    :param resource_ids: list of resource IDs
+    :returns: dict of field names, the resources they're found in, and their details
+        within those resources
+    """
+    fields = defaultdict(dict)
+    for resource_id in resource_ids:
+        database = get_database(resource_id)
+
+        try:
+            parsed_fields = database.get_field_names()
+        except toolkit.NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            return fields
+
+        for field in parsed_fields:
+            fields[field.path][resource_id] = {
+                'name': field.name,
+                'path': field.path,
+                'text': field.is_text,
+                'keyword': field.is_keyword,
+                'boolean': field.is_boolean,
+                'date': field.is_date,
+                'number': field.is_number,
+                'geo': field.is_geo,
+            }
+
+    return fields
 
 
 def get_database(resource_id: str) -> SplitgillDatabase:
@@ -327,7 +364,7 @@ def clear_cached_metadata():
     # cache_managers does not usually seem to be populated so just construct a new ref
     cache_manager = CacheManager(**cache_opts)
     # manually list the cached functions to be cleared
-    cached_functions = [get_public_resources]
+    cached_functions = [get_public_resources, get_latest_resource_fields]
     for func in cached_functions:
         # each function has its own namespace that needs to be cleared
         try:
