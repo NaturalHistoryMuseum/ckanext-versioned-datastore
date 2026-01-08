@@ -88,7 +88,7 @@ def get_public_resources() -> Dict[str, bool]:
     action = toolkit.get_action('current_package_list_with_resources')
     while True:
         # do not ignore auth, do not provide a user
-        context = {'ignore_auth': False}
+        context = {'ignore_auth': False, 'user': None}
         packages = action(context, {'offset': offset, 'limit': 100})
         if not packages:
             break
