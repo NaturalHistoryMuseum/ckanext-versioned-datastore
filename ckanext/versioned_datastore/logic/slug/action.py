@@ -15,8 +15,8 @@ from ckanext.versioned_datastore.lib.query.slugs.slugs import (
     resolve_slug,
 )
 from ckanext.versioned_datastore.lib.query.utils import convert_to_multisearch
-from ckanext.versioned_datastore.lib.utils import get_available_datastore_resources
 from ckanext.versioned_datastore.logic.slug import helptext, schema
+from ckanext.versioned_datastore.logic.validators import validate_datastore_resource_ids
 
 
 @action(schema.vds_slug_create(), helptext.vds_slug_create)
@@ -153,10 +153,10 @@ def vds_slug_resolve(slug: str):
         )
 
     # check that all the resources exist and are available
-    all_resource_ids = get_available_datastore_resources(
-        ignore_auth=False, user_id=getattr(toolkit.g, 'user', '')
-    )
-    valid_resource_ids = list(set(result['resource_ids']) & all_resource_ids)
+    try:
+        valid_resource_ids = validate_datastore_resource_ids(result['resource_ids'])
+    except toolkit.Invalid:
+        valid_resource_ids = []
     valid_resource_count = len(valid_resource_ids)
     current_resource_count = len(result['resource_ids'])
     if valid_resource_count != current_resource_count:

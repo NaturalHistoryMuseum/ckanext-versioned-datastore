@@ -1,6 +1,9 @@
+import logging
 import re
-from typing import Iterable, Optional, Set, TypeVar
+from collections import defaultdict
+from typing import Dict, Iterable, List, Optional, Set, TypeVar
 
+from beaker.cache import CacheManager, cache_region, cache_regions
 from ckan import plugins
 from ckan.plugins import get_plugin, toolkit
 from elasticsearch import Elasticsearch
@@ -13,6 +16,8 @@ from ckanext.versioned_datastore.interfaces import (
     IVersionedDatastoreQuerySchema,
 )
 from ckanext.versioned_datastore.lib import common
+
+log = logging.getLogger(__name__)
 
 
 def get_available_datastore_resources(
@@ -69,6 +74,67 @@ def get_available_resources(
         offset += len(packages)
 
     return resource_ids
+
+
+@cache_region('vds', 'public_resources')
+def get_public_resources() -> Dict[str, bool]:
+    """
+    Retrieves a list of public resources and whether they are present in the datastore.
+
+    :returns: dict of publicly available resource IDs and whether they are available in
+        the datastore
+    """
+    resource_ids = {}
+    offset = 0
+    action = toolkit.get_action('current_package_list_with_resources')
+    while True:
+        # do not ignore auth, do not provide a user
+        context = {'ignore_auth': False, 'user': None}
+        packages = action(context, {'offset': offset, 'limit': 100})
+        if not packages:
+            break
+        for package in packages:
+            for resource in package.get('resources', []):
+                resource_ids[resource['id']] = is_datastore_resource(resource['id'])
+        offset += len(packages)
+
+    return resource_ids
+
+
+@cache_region('vds', 'resource_fields')
+def get_latest_resource_fields(resource_ids: List[str]) -> Dict[str, Dict[str, Dict]]:
+    """
+    Retrieves a list of fields available on the latest indices for the given resources.
+
+    Does not do any authentication. Only call from within other authenticated functions.
+
+    :param resource_ids: list of resource IDs
+    :returns: dict of field names, the resources they're found in, and their details
+        within those resources
+    """
+    fields = defaultdict(dict)
+    for resource_id in resource_ids:
+        database = get_database(resource_id)
+
+        try:
+            parsed_fields = database.get_field_names()
+        except toolkit.NotFoundError:
+            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
+            return fields
+
+        for field in parsed_fields:
+            fields[field.path][resource_id] = {
+                'name': field.name,
+                'path': field.path,
+                'text': field.is_text,
+                'keyword': field.is_keyword,
+                'boolean': field.is_boolean,
+                'date': field.is_date,
+                'number': field.is_number,
+                'geo': field.is_geo,
+            }
+
+    return fields
 
 
 def get_database(resource_id: str) -> SplitgillDatabase:
@@ -277,3 +343,33 @@ def idownload_implementations() -> Iterable[U]:
 
 def iqs_implementations() -> Iterable[V]:
     yield from plugins.PluginImplementations(IVersionedDatastoreQuerySchema)
+
+
+def clear_cached_metadata():
+    """
+    Clears cached package and resource metadata, e.g. lists of public resource IDs.
+
+    Cached functions have to be added manually and cleared individually. This is partly
+    so we can control exactly which functions to clear, and partly because beaker does
+    not seem to have a way to clear an entire region.
+    :return:
+    """
+    cache_opts = cache_regions.get('vds')
+    if cache_opts is None:
+        # this shouldn't happen, but just in case
+        cache_opts = {}
+        for k, v in toolkit.config.items():
+            if k.startswith('ckanext.versioned_datastore.cache.'):
+                cache_opts[k.split('.')[-1]] = v
+    # cache_managers does not usually seem to be populated so just construct a new ref
+    cache_manager = CacheManager(**cache_opts)
+    # manually list the cached functions to be cleared
+    cached_functions = [get_public_resources, get_latest_resource_fields]
+    for func in cached_functions:
+        # each function has its own namespace that needs to be cleared
+        try:
+            cache = cache_manager.get_cache(func._arg_namespace)
+            cache.clear()
+            log.info(f'Cleared cache for {func.__name__}')
+        except Exception as e:
+            log.error(f'Failed to clear cache for {func.__name__}: {e}')
