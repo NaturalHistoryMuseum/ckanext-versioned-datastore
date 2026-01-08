@@ -153,7 +153,10 @@ def vds_slug_resolve(slug: str):
         )
 
     # check that all the resources exist and are available
-    valid_resource_ids = validate_datastore_resource_ids(result['resource_ids'])
+    try:
+        valid_resource_ids = validate_datastore_resource_ids(result['resource_ids'])
+    except toolkit.Invalid:
+        valid_resource_ids = []
     valid_resource_count = len(valid_resource_ids)
     current_resource_count = len(result['resource_ids'])
     if valid_resource_count != current_resource_count:
