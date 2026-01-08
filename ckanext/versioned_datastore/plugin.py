@@ -2,6 +2,7 @@ import logging
 from contextlib import suppress
 from typing import List, Optional
 
+from beaker.cache import cache_regions
 from ckan.plugins import (
     SingletonPlugin,
     implements,
@@ -22,6 +23,7 @@ from ckanext.versioned_datastore.lib.tasks import get_es_health, get_queue_lengt
 from ckanext.versioned_datastore.lib.utils import (
     RawResourceException,
     ReadOnlyResourceException,
+    clear_cached_metadata,
     iqs_implementations,
     is_datastore_resource,
     ivds_implementations,
@@ -104,6 +106,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     implements(interfaces.IBlueprint, inherit=True)
     implements(IVersionedDatastoreQuerySchema)
     implements(interfaces.IClick)
+    implements(interfaces.IPackageController, inherit=True)
     if status_available:
         implements(IStatus)
 
@@ -154,6 +157,13 @@ class VersionedSearchPlugin(SingletonPlugin):
                 query = SchemaQuery(**query_parameters)
                 with suppress(Exception):
                     reserve_slug(reserved_pretty_slug, query)
+
+        # configure cache
+        options = {}
+        for k, v in ckan_config.items():
+            if k.startswith('ckanext.versioned_datastore.cache.'):
+                options[k.split('.')[-1]] = v
+        cache_regions.update({'vds': options})
 
     def is_sg_configured(self) -> bool:
         """
@@ -248,6 +258,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         data_dict = {'resource_id': resource['id'], 'replace': True}
         with suppress(ReadOnlyResourceException), suppress(RawResourceException):
             toolkit.get_action('vds_data_add')(context, data_dict)
+        clear_cached_metadata()
 
     # IResourceController
     def after_create(self, context: dict, resource: dict):
@@ -255,9 +266,23 @@ class VersionedSearchPlugin(SingletonPlugin):
         data_dict = {'resource_id': resource['id'], 'replace': True}
         with suppress(ReadOnlyResourceException), suppress(RawResourceException):
             toolkit.get_action('vds_data_add')(context, data_dict)
+        clear_cached_metadata()
 
     def before_delete(self, context: dict, resource: dict, resources: List[dict]):
         toolkit.get_action('vds_data_delete')(context, {'resource_id': resource['id']})
+
+    def after_delete(self, context: dict, resources: List[dict]):
+        clear_cached_metadata()
+
+    # IPackageController
+    def after_create(self, context: dict, pkg_dict: dict):
+        clear_cached_metadata()
+
+    def after_update(self, context: dict, pkg_dict: dict):
+        clear_cached_metadata()
+
+    def after_delete(self, context: dict, pkg_dict: dict):
+        clear_cached_metadata()
 
     # IConfigurer
     def update_config(self, config):

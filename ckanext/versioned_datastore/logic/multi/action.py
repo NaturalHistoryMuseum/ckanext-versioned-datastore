@@ -14,6 +14,7 @@ from ckanext.versioned_datastore.lib.query.schema import (
 from ckanext.versioned_datastore.lib.utils import (
     es_client,
     get_database,
+    get_latest_resource_fields,
     ivds_implementations,
     unprefix_index_name,
 )
@@ -168,33 +169,20 @@ def vds_multi_autocomplete_field_latest(
     :returns: the total number of fields matched and details about the fields that were
         matched
     """
-    fields = defaultdict(dict)
 
     # if no resource IDs were provided, use all resources available to the user
     if not resource_ids:
         resource_ids = sorted(get_available_datastore_resources())
 
-    for resource_id in resource_ids:
-        database = get_database(resource_id)
-
-        try:
-            parsed_fields = database.get_field_names()
-        except NotFoundError:
-            # temporary fix for splitgill#38 (so we can ignore unavailable resources)
-            continue
-
-        for field in parsed_fields:
-            if text in (field.path.lower() if lowercase else field.path):
-                fields[field.path][resource_id] = {
-                    'name': field.name,
-                    'path': field.path,
-                    'text': field.is_text,
-                    'keyword': field.is_keyword,
-                    'boolean': field.is_boolean,
-                    'date': field.is_date,
-                    'number': field.is_number,
-                    'geo': field.is_geo,
-                }
+    resource_fields = get_latest_resource_fields(resource_ids)
+    if text:
+        fields = {
+            k: v
+            for k, v in resource_fields.items()
+            if text in (k.lower() if lowercase else k)
+        }
+    else:
+        fields = resource_fields
 
     return {'count': len(fields), 'fields': fields}
 
