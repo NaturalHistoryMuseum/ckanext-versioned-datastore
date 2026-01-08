@@ -1,3 +1,15 @@
+## v6.5.2 (2026-01-08)
+
+### Fix
+
+- pass null user
+- return empty list if validator raises exception
+
+### Performance
+
+- cache resource fields
+- cache list of public resources
+
 ## v6.5.1 (2026-01-05)
 
 ### Fix
