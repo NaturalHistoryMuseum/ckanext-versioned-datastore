@@ -316,5 +316,7 @@ class DeleteResourceTask(Task):
             else:
                 self.log.info(f'Deleted all records at {version}')
                 stats.update(
-                    version=version, count=count, operations=result_to_dict(result)
+                    version=version,
+                    count=count,
+                    operations=IngestResourceTask.result_to_dict(result),
                 )

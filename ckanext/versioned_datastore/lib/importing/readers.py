@@ -156,7 +156,7 @@ class SVReader(Reader):
         with self.source.open(encoding=self.encoding, newline='') as f:
             # instead of relying on people to correctly declare the dialect they are
             # using (from experience people are awful at this), sniff it for ourselves
-            self.dialect = csv.Sniffer().sniff(f.read(1024))
+            self.dialect = csv.Sniffer().sniff(f.readline())
         self._count = None
 
     def get_name(self) -> str:
