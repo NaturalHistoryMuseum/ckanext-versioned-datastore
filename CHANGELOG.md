@@ -1,3 +1,10 @@
+## v6.5.3 (2026-02-16)
+
+### Fix
+
+- add class for result_to_dict
+- read first line of csv to sniff dialect
+
 ## v6.5.2 (2026-01-08)
 
 ### Fix
