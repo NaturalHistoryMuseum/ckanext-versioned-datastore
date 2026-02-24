@@ -12,4 +12,11 @@
         </span>
         {% endcall %}
     {% endif %}
+
+    {% call form.checkbox('download_original_filenames', id='field-download-original-filenames', label=_('Preserve original filenames in downloads'), value=1, checked=data.download_original_filenames, error=errors.download_original_filenames) %}
+        <span class="info-block info-block-small">
+      <i class="fa fa-info-circle"></i>
+      {{ _('When users download files, we usually change the filenames to include the resource ID. Tick the box if the original file names are important and you would like users to see these instead.') }}
+    </span>
+    {% endcall %}
 {% endblock %}
