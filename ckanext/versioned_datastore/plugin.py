@@ -241,6 +241,9 @@ class VersionedSearchPlugin(SingletonPlugin):
         # only set disable_parsing if it's True (False by default)
         if toolkit.asbool(resource.pop('disable_parsing', False)):
             resource['disable_parsing'] = True
+        # same for download_original_filenames
+        if toolkit.asbool(resource.pop('download_original_filenames', False)):
+            resource['download_original_filenames'] = True
 
     # IResourceController
     def before_update(self, context, current, resource):
@@ -251,6 +254,9 @@ class VersionedSearchPlugin(SingletonPlugin):
         if was_raw and is_raw:
             # only allow if it was already previously raw
             resource['disable_parsing'] = True
+        # download_original_filenames is fine; we can change that whenever
+        if toolkit.asbool(resource.pop('download_original_filenames', False)):
+            resource['download_original_filenames'] = True
 
     # IResourceController
     def after_update(self, context: dict, resource: dict):
