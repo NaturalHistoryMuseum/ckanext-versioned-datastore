@@ -1,3 +1,13 @@
+## v6.6.0 (2026-03-02)
+
+### Feature
+
+- allow original filenames for raw downloads
+
+### Style
+
+- indent jinja template properly
+
 ## v6.5.3 (2026-02-16)
 
 ### Fix
