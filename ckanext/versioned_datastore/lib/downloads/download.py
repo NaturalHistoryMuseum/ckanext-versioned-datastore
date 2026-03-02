@@ -509,11 +509,14 @@ class DownloadRunManager:
                             raise Exception('Non-datastore uploads are not configured.')
                         filepath = upload.get_path(res['id'])
                         original_filename = res.get('url', '').split('/')[-1]
-                        fileext = (
-                            os.path.splitext(original_filename)[-1].strip('.')
-                            or res['format'].lower()
-                        )
-                        filename = os.path.extsep.join([resource_id, fileext])
+                        if res.get('download_original_filenames', False):
+                            filename = original_filename
+                        else:
+                            fileext = (
+                                os.path.splitext(original_filename)[-1].strip('.')
+                                or res['format'].lower()
+                            )
+                            filename = os.path.extsep.join([resource_id, fileext])
                         shutil.copy2(filepath, os.path.join(temp_dir, filename))
                     else:
                         raise NotImplemented(
