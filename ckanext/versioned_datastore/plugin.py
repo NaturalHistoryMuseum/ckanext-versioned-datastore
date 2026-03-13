@@ -2,13 +2,13 @@ import logging
 from contextlib import suppress
 from typing import List, Optional
 
-from beaker.cache import cache_regions
 from ckan.plugins import (
     SingletonPlugin,
     implements,
     interfaces,
     toolkit,
 )
+from ckantools.cache import CacheClearError, clear_cache_region, configure_cache
 from ckantools.loaders import create_actions, create_auth
 from elasticsearch import Elasticsearch
 from pymongo import MongoClient
@@ -16,18 +16,11 @@ from splitgill.manager import SplitgillClient
 
 from ckanext.versioned_datastore import cli, helpers, routes
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
+from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.lib.query.schema import register_schema
 from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 from ckanext.versioned_datastore.lib.tasks import get_es_health, get_queue_length
-from ckanext.versioned_datastore.lib.utils import (
-    RawResourceException,
-    ReadOnlyResourceException,
-    clear_cached_metadata,
-    iqs_implementations,
-    is_datastore_resource,
-    ivds_implementations,
-)
 from ckanext.versioned_datastore.logic.basic import (
     action as basic_action,
 )
@@ -144,14 +137,14 @@ class VersionedSearchPlugin(SingletonPlugin):
         )
 
         # register all custom query schemas
-        for plugin in iqs_implementations():
+        for plugin in utils.iqs_implementations():
             for query_version, query_schema in plugin.get_query_schemas():
                 register_schema(query_version, query_schema)
 
         # reserve any requested slugs
         from .lib.query.slugs.slugs import reserve_slug
 
-        for plugin in ivds_implementations():
+        for plugin in utils.ivds_implementations():
             slugs = plugin.vds_reserve_slugs()
             for reserved_pretty_slug, query_parameters in slugs.items():
                 query = SchemaQuery(**query_parameters)
@@ -159,11 +152,7 @@ class VersionedSearchPlugin(SingletonPlugin):
                     reserve_slug(reserved_pretty_slug, query)
 
         # configure cache
-        options = {}
-        for k, v in ckan_config.items():
-            if k.startswith('ckanext.versioned_datastore.cache.'):
-                options[k.split('.')[-1]] = v
-        cache_regions.update({'vds': options})
+        configure_cache(ckan_config, 'versioned_datastore', 'vds')
 
     def is_sg_configured(self) -> bool:
         """
@@ -214,7 +203,7 @@ class VersionedSearchPlugin(SingletonPlugin):
     # ITemplateHelpers
     def get_helpers(self):
         return {
-            'is_datastore_resource': is_datastore_resource,
+            'is_datastore_resource': utils.is_datastore_resource,
             'is_duplicate_ingestion': helpers.is_duplicate_ingestion,
             'get_human_duration': helpers.get_human_duration,
             'get_stat_icon': helpers.get_stat_icon,
@@ -230,7 +219,9 @@ class VersionedSearchPlugin(SingletonPlugin):
     # IResourceController
     def before_show(self, resource_dict):
         # ensure datastore_active is set where it should be
-        resource_dict['datastore_active'] = is_datastore_resource(resource_dict['id'])
+        resource_dict['datastore_active'] = utils.is_datastore_resource(
+            resource_dict['id']
+        )
         # theoretically a resource could be datastore_active and have parsing disabled
         # at the same time if the database and ES have gotten out of sync, which isn't
         # ideal, but the fixes are more annoying than the problem itself
@@ -262,33 +253,55 @@ class VersionedSearchPlugin(SingletonPlugin):
     def after_update(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
         data_dict = {'resource_id': resource['id'], 'replace': True}
-        with suppress(ReadOnlyResourceException), suppress(RawResourceException):
+        with suppress(utils.ReadOnlyResourceException), suppress(
+            utils.RawResourceException
+        ):
             toolkit.get_action('vds_data_add')(context, data_dict)
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     # IResourceController
     def after_create(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
         data_dict = {'resource_id': resource['id'], 'replace': True}
-        with suppress(ReadOnlyResourceException), suppress(RawResourceException):
+        with suppress(utils.ReadOnlyResourceException), suppress(
+            utils.RawResourceException
+        ):
             toolkit.get_action('vds_data_add')(context, data_dict)
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     def before_delete(self, context: dict, resource: dict, resources: List[dict]):
         toolkit.get_action('vds_data_delete')(context, {'resource_id': resource['id']})
 
     def after_delete(self, context: dict, resources: List[dict]):
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     # IPackageController
     def after_create(self, context: dict, pkg_dict: dict):
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     def after_update(self, context: dict, pkg_dict: dict):
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     def after_delete(self, context: dict, pkg_dict: dict):
-        clear_cached_metadata()
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
 
     # IConfigurer
     def update_config(self, config):
