@@ -519,7 +519,7 @@ class DownloadRunManager:
                             filename = os.path.extsep.join([resource_id, fileext])
                         shutil.copy2(filepath, os.path.join(temp_dir, filename))
                     else:
-                        raise NotImplemented(
+                        raise NotImplementedError(
                             f'No raw file is available for resource {resource_id}'
                         )
 

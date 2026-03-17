@@ -1,6 +1,7 @@
 import dataclasses
 from typing import Any, Dict, List, Optional
 
+from ckan.plugins import toolkit
 from elasticsearch_dsl import AttrDict, MultiSearch, Search
 from elasticsearch_dsl.aggs import A
 from elasticsearch_dsl.query import Bool
@@ -145,10 +146,20 @@ class SearchRequest:
             search = search.extra(size=0)
         else:
             # add one to the size so that we can work out when there are no more hits
-            search = search.extra(size=size + 1)
+            size += 1
+            search = search.extra(size=size)
 
             # only offset or after should be used
             if self.offset:
+                # if from + size > 10000, running the search will fail. we still want
+                # to return an error instead of silently failing, but we can return a
+                # better error.
+                search_window = size + self.offset
+                if search_window > 10000:
+                    raise toolkit.ValidationError(
+                        f'Search window size out of bounds: {search_window} (from: '
+                        f'{self.offset}, size: {size})'
+                    )
                 search = search.extra(from_=self.offset)
             elif self.after is not None:
                 search = search.extra(search_after=self.after)
