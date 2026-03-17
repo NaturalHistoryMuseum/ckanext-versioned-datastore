@@ -1,3 +1,14 @@
+## v6.6.1 (2026-03-17)
+
+### Fix
+
+- use correct error class for notimplemented
+- return validation error when search window too large
+
+### Refactor
+
+- move cache config and clear to ckantools
+
 ## v6.6.0 (2026-03-02)
 
 ### Feature
