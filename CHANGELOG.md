@@ -1,3 +1,9 @@
+## v6.6.2 (2026-03-23)
+
+### Fix
+
+- rename vds_slug_edit auth function
+
 ## v6.6.1 (2026-03-17)
 
 ### Fix
