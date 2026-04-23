@@ -29,6 +29,7 @@ def queue_ingest(
     replace: bool,
     api_key: str,
     records: Optional[List[dict]] = None,
+    reingest: bool = False,
 ) -> Tuple[Job, Job]:
     """
     Queues a new ingest job on the importing queue for the given resource.
@@ -40,6 +41,8 @@ def queue_ingest(
         private datasets)
     :param records: optional list of dicts to ingest instead of the file/URL on the
         resource
+    :param reingest: reingest the dataset even if the new file hash matches the
+        previously ingested file hash
     :returns: a 2-tuple of the created ingest job and sync job which is dependent on the
         ingest job
     """
@@ -47,7 +50,7 @@ def queue_ingest(
         raise ReadOnlyResourceException('This resource has been marked as read only')
 
     # create the ingest task first
-    ingest_task = IngestResourceTask(resource, replace, api_key, records)
+    ingest_task = IngestResourceTask(resource, replace, api_key, records, reingest)
     ingest_job = ingest_task.queue()
 
     # then create a sync task dependent on the ingest task
@@ -121,6 +124,7 @@ class IngestResourceTask(Task):
         replace: bool,
         api_key: str,
         records: Optional[List[dict]] = None,
+        reingest: bool = False,
     ):
         """
         :param resource: the resource dict
@@ -130,18 +134,21 @@ class IngestResourceTask(Task):
                         private datasets)
         :param records: optional list of dicts to ingest instead of the resource's
                         file/URL
+        :param reingest: reingest the dataset even if the new file hash matches the
+                      previously ingested file hash
         """
         self.resource = resource
         self.replace = replace
         self.api_key = api_key
         self.records = records
+        self.reingest = reingest
 
         # create a meaningful title
         if records is not None:
             data_info = f'{len(records)} records'
         else:
             data_info = 'data from file/url'
-        title = f'Ingest for {self.resource_id} of {data_info} [replace: {replace}]'
+        title = f'Ingest for {self.resource_id} of {data_info} [replace: {replace}] [reingest: {reingest}]'
         super().__init__('importing', title)
 
     @staticmethod
@@ -177,7 +184,7 @@ class IngestResourceTask(Task):
                 source = tmpdir / 'source'
                 file_hash = download_resource_data(self.resource, source, self.api_key)
                 last_hash = get_last_file_hash(self.resource_id)
-                if file_hash == last_hash:
+                if file_hash == last_hash and not self.reingest:
                     stats.update(error=get_dupe_message(file_hash))
                     self.log.info(get_dupe_message(file_hash))
                     return

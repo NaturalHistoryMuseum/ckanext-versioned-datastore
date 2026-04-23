@@ -13,6 +13,7 @@ def vds_data_add() -> dict:
     return {
         'resource_id': [not_empty, str, resource_id_exists],
         'replace': [not_missing, boolean_validator],
+        'reingest': [ignore_missing, boolean_validator],
     }
 
 
