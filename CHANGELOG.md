@@ -1,3 +1,19 @@
+## v6.7.0 (2026-04-29)
+
+### Feature
+
+- add cache clear command
+- allow reingesting files
+
+### Fix
+
+- handle overlapping methods
+- also clear cache after datastore background tasks
+
+### Docs
+
+- fix cli instructions
+
 ## v6.6.2 (2026-03-23)
 
 ### Fix
