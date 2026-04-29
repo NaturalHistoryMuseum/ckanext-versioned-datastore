@@ -2,7 +2,9 @@ from typing import Tuple
 
 import click
 from ckan.plugins import toolkit
+from ckantools.cache import CacheClearError, clear_cache_region
 
+from ckanext.versioned_datastore.lib import utils
 from ckanext.versioned_datastore.model.details import datastore_resource_details_table
 from ckanext.versioned_datastore.model.downloads import (
     datastore_downloads_core_files_table,
@@ -99,3 +101,12 @@ def reindex(resource_ids: Tuple[str], full: bool = False):
                 f'Failed to reindex {resource_id} due to validation error: {e}',
                 fg='red',
             )
+
+
+@versioned_datastore.command()
+def clear_cache():
+    try:
+        clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        click.secho('Cleared vds cache', fg='green')
+    except CacheClearError as e:
+        click.secho(f'Failed to clear vds cache: {e}', fg='red')

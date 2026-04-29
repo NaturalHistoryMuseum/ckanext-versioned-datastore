@@ -163,12 +163,12 @@ All of this extension's actions are [fully documented](https://ckanext-versioned
 
 1. `initdb`: ensure the tables needed by this plugin exist.
     ```bash
-    ckan -c $CONFIG_FILE initdb
+    ckan -c $CONFIG_FILE versioned-datastore initdb
     ```
 
 2. `reindex`: reindex either a specific resource or all resources.
     ```bash
-    ckan -c $CONFIG_FILE reindex $OPTIONAL_RESOURCE_ID
+    ckan -c $CONFIG_FILE versioned-datastore reindex $OPTIONAL_RESOURCE_ID
     ```
 
 ## Interfaces

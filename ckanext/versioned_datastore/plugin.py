@@ -216,8 +216,77 @@ class VersionedSearchPlugin(SingletonPlugin):
             'nav_slug': helpers.nav_slug,
         }
 
-    # IResourceController
+    # IResourceController (<2.10 compatibility)
+    def before_create(self, context, resource):
+        # only in IResourceController, but renamed
+        self.before_resource_create(context, resource)
+
+    # IResourceController and IPackageController (<2.10 compatibility)
+    def after_create(self, context, data_dict=None, resource=None, pkg_dict=None):
+        data_dict = data_dict or resource or pkg_dict
+        is_resource = (resource is not None) or ('resource_type' in data_dict)
+        if is_resource:
+            self.after_resource_create(context, data_dict)
+        else:
+            self.after_dataset_create(context, data_dict)
+
+    # IResourceController (<2.10 compatibility)
     def before_show(self, resource_dict):
+        # only in IResourceController, but renamed
+        self.before_resource_show(resource_dict)
+
+    # IResourceController (<2.10 compatibility)
+    def before_update(self, context, current, resource):
+        # only in IResourceController, but renamed
+        self.before_resource_update(context, current, resource)
+
+    # IResourceController and IPackageController (<2.10 compatibility)
+    def after_update(self, context, data_dict=None, resource=None, pkg_dict=None):
+        data_dict = data_dict or resource or pkg_dict
+        is_resource = (resource is not None) or ('resource_type' in data_dict)
+        if is_resource:
+            self.after_resource_update(context, data_dict)
+        else:
+            self.after_dataset_update(context, data_dict)
+
+    # IResourceController (<2.10 compatibility)
+    def before_delete(self, context: dict, resource: dict, resources: List[dict]):
+        # only in IResourceController, but renamed
+        self.before_resource_delete(context, resource, resources)
+
+    # IResourceController and IPackageController (<2.10 compatibility)
+    def after_delete(self, context, data_obj=None, resources=None, pkg_dict=None):
+        data_obj = data_obj or resources or pkg_dict
+        is_resource = (resources is not None) or isinstance(data_obj, list)
+        if is_resource:
+            self.after_resource_delete(context, data_obj)
+        else:
+            self.after_dataset_delete(context, data_obj)
+
+    # IResourceController
+    def before_resource_create(self, context, resource):
+        # only set disable_parsing if it's True (False by default)
+        if toolkit.asbool(resource.pop('disable_parsing', False)):
+            resource['disable_parsing'] = True
+        # same for download_original_filenames
+        if toolkit.asbool(resource.pop('download_original_filenames', False)):
+            resource['download_original_filenames'] = True
+
+    # IResourceController
+    def after_resource_create(self, context: dict, resource: dict):
+        # use replace to overwrite the existing data (this is what users would expect)
+        data_dict = {'resource_id': resource['id'], 'replace': True}
+        with suppress(utils.ReadOnlyResourceException), suppress(
+            utils.RawResourceException
+        ):
+            toolkit.get_action('vds_data_add')(context, data_dict)
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            log.error(e)
+
+    # IResourceController
+    def before_resource_show(self, resource_dict):
         # ensure datastore_active is set where it should be
         resource_dict['datastore_active'] = utils.is_datastore_resource(
             resource_dict['id']
@@ -228,16 +297,7 @@ class VersionedSearchPlugin(SingletonPlugin):
         return resource_dict
 
     # IResourceController
-    def before_create(self, context, resource):
-        # only set disable_parsing if it's True (False by default)
-        if toolkit.asbool(resource.pop('disable_parsing', False)):
-            resource['disable_parsing'] = True
-        # same for download_original_filenames
-        if toolkit.asbool(resource.pop('download_original_filenames', False)):
-            resource['download_original_filenames'] = True
-
-    # IResourceController
-    def before_update(self, context, current, resource):
+    def before_resource_update(self, context, current, resource):
         # we can't automatically go from ingested to raw because it might be included
         # in queries and DOIs, but we can ingest a file that was previously raw
         was_raw = toolkit.asbool(current.get('disable_parsing', False))
@@ -250,7 +310,7 @@ class VersionedSearchPlugin(SingletonPlugin):
             resource['download_original_filenames'] = True
 
     # IResourceController
-    def after_update(self, context: dict, resource: dict):
+    def after_resource_update(self, context: dict, resource: dict):
         # use replace to overwrite the existing data (this is what users would expect)
         data_dict = {'resource_id': resource['id'], 'replace': True}
         with suppress(utils.ReadOnlyResourceException), suppress(
@@ -263,41 +323,34 @@ class VersionedSearchPlugin(SingletonPlugin):
             log.error(e)
 
     # IResourceController
-    def after_create(self, context: dict, resource: dict):
-        # use replace to overwrite the existing data (this is what users would expect)
-        data_dict = {'resource_id': resource['id'], 'replace': True}
-        with suppress(utils.ReadOnlyResourceException), suppress(
-            utils.RawResourceException
-        ):
-            toolkit.get_action('vds_data_add')(context, data_dict)
-        try:
-            clear_cache_region('versioned_datastore', utils, cache_name='vds')
-        except CacheClearError as e:
-            log.error(e)
-
-    def before_delete(self, context: dict, resource: dict, resources: List[dict]):
+    def before_resource_delete(
+        self, context: dict, resource: dict, resources: List[dict]
+    ):
         toolkit.get_action('vds_data_delete')(context, {'resource_id': resource['id']})
 
-    def after_delete(self, context: dict, resources: List[dict]):
+    # IResourceController
+    def after_resource_delete(self, context: dict, resources: List[dict]):
         try:
             clear_cache_region('versioned_datastore', utils, cache_name='vds')
         except CacheClearError as e:
             log.error(e)
 
     # IPackageController
-    def after_create(self, context: dict, pkg_dict: dict):
+    def after_dataset_create(self, context: dict, pkg_dict: dict):
         try:
             clear_cache_region('versioned_datastore', utils, cache_name='vds')
         except CacheClearError as e:
             log.error(e)
 
-    def after_update(self, context: dict, pkg_dict: dict):
+    # IPackageController
+    def after_dataset_update(self, context: dict, pkg_dict: dict):
         try:
             clear_cache_region('versioned_datastore', utils, cache_name='vds')
         except CacheClearError as e:
             log.error(e)
 
-    def after_delete(self, context: dict, pkg_dict: dict):
+    # IPackageController
+    def after_dataset_delete(self, context: dict, pkg_dict: dict):
         try:
             clear_cache_region('versioned_datastore', utils, cache_name='vds')
         except CacheClearError as e:

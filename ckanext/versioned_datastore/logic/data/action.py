@@ -24,7 +24,11 @@ from ckanext.versioned_datastore.logic.data import helptext, schema
 
 @action(schema.vds_data_add(), helptext.vds_data_add)
 def vds_data_add(
-    context: dict, original_data_dict: dict, resource_id: str, replace: bool
+    context: dict,
+    original_data_dict: dict,
+    resource_id: str,
+    replace: bool,
+    reingest: bool = False,
 ):
     """
     Add data to the datastore for the given resource. The data added will be the data
@@ -40,6 +44,10 @@ def vds_data_add(
     data replacing the old data. This is the kind of behaviour users expect when
     uploading a fresh new file.
 
+    If the reingest flag is True, the file will be ingested even if the database
+    believes it has already ingested a file with the same file hash. This is mostly for
+    handling errors and shouldn't generally be needed.
+
     Before the ingest and sync jobs are queued, the datastore's parsing options are
     updated if required. If they are altered before ingest, the new version will be
     returned in the result dict.
@@ -47,6 +55,7 @@ def vds_data_add(
     :param context: the CKAN context
     :param resource_id: the resource ID
     :param replace: whether to replace all existing records with the new ones
+    :param reingest: whether to ingest even if the previous file is identical
     :returns: a dict containing information about the add
     """
     if is_resource_read_only(resource_id):
@@ -65,7 +74,9 @@ def vds_data_add(
     if resource.get('disable_parsing', False):
         raise RawResourceException('Ingestion has been disabled for this resource')
 
-    ingest_job, sync_job = queue_ingest(resource, replace, user['apikey'], records)
+    ingest_job, sync_job = queue_ingest(
+        resource, replace, user['apikey'], records, reingest
+    )
 
     return {
         'new_options_version': new_options_version,

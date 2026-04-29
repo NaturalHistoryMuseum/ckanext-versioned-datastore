@@ -6,9 +6,10 @@ from typing import List, Optional, Union
 
 from cachetools import TTLCache, cached
 from ckan.plugins import toolkit
+from ckantools.cache import CacheClearError, clear_cache_region
 from rq.job import Job
 
-from ckanext.versioned_datastore.lib.utils import es_client
+from ckanext.versioned_datastore.lib import utils
 
 
 class Task(abc.ABC):
@@ -44,6 +45,15 @@ class Task(abc.ABC):
         """
         ...
 
+    def post_run(self):
+        """
+        Runs immediately after self.run().
+        """
+        try:
+            clear_cache_region('versioned_datastore', utils, cache_name='vds')
+        except CacheClearError as e:
+            self.log.error(e)
+
     def start(self):
         """
         Starts the task, performs some setup and then calls self.run with a temporary
@@ -52,6 +62,7 @@ class Task(abc.ABC):
         with tempfile.TemporaryDirectory() as tmp_dir_name:
             self.log.info(f'Starting {self.title}')
             self.run(Path(tmp_dir_name))
+        self.post_run()
         self.log.info(f'Finished {self.title}')
 
     def queue(
@@ -100,5 +111,5 @@ def get_queue_length(queue_name):
 
 @cached(cache=TTLCache(maxsize=10, ttl=300))
 def get_es_health():
-    client = es_client()
+    client = utils.es_client()
     return {'ping': client.ping(), 'info': client.info()}
