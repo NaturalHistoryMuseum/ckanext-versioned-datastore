@@ -219,7 +219,7 @@ def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
     else:
         # we have details, order the fields using the order of the columns in the
         # original source
-        column_order = details.get_columns(validate=False)
+        column_order = details.get_columns(skip_empty=False)
 
         def key(f: dict) -> int:
             try:
