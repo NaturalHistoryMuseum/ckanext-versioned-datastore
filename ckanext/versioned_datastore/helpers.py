@@ -7,7 +7,6 @@ from ckanext.versioned_datastore.lib.common import ALL_FORMATS
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
 from ckanext.versioned_datastore.lib.query.slugs.slugs import create_nav_slug
 from ckanext.versioned_datastore.model import stats
-from ckanext.versioned_datastore.lib.query.utils import convert_to_multisearch
 
 
 def is_duplicate_ingestion(stat):
@@ -168,11 +167,3 @@ def nav_slug(query=None, version=None, resource_ids=None):
     """
     is_new, slug = create_nav_slug(SchemaQuery(resource_ids, version, query))
     return slug.get_slug_string()
-
-
-def multisearch(query=None):
-    """
-    A helper proxy for convert_to_multisearch.
-    """
-    multisearch = convert_to_multisearch(query)
-    return multisearch

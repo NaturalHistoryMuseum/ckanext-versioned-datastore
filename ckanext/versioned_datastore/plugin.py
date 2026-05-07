@@ -214,7 +214,6 @@ class VersionedSearchPlugin(SingletonPlugin):
             'get_version_date': helpers.get_version_date,
             'latest_item_version': helpers.latest_item_version,
             'nav_slug': helpers.nav_slug,
-            'multisearch': helpers.multisearch
         }
 
     # IResourceController (<2.10 compatibility)
