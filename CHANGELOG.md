@@ -1,3 +1,9 @@
+## v6.8.0 (2026-05-07)
+
+### Feature
+
+- **helpers**: adds function to helper for converting to multisearch
+
 ## v6.7.0 (2026-04-29)
 
 ### Feature
