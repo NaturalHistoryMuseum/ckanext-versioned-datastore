@@ -1,3 +1,13 @@
+## v6.9.0 (2026-05-08)
+
+### Feature
+
+- adds function to helper for converting multisearch
+
+### Fix
+
+- match datastore when listing field names
+
 ## v6.8.0 (2026-05-07)
 
 ### Feature
