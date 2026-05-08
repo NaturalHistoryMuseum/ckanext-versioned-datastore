@@ -1,6 +1,7 @@
 import json
 
 from ckan.model import DomainObject, meta
+from splitgill.diffing import prepare_field_name
 from sqlalchemy import BigInteger, Column, Table, UnicodeText
 
 # this table stores general details about each version of each resource. Currently it only stores
@@ -28,22 +29,28 @@ class DatastoreResourceDetails(DomainObject):
     version.
     """
 
-    def get_columns(self, validate=True):
+    def get_columns(self, validate=None, skip_empty=True, fix_names=True):
         """
         Retrieve the columns contained in this resource's version.
 
-        :param validate: if True (the default) then fullstops are replaced with
-            underscores before returning the list of columns and any falsey columns
-            (empty strings, Nones) are removed
+        :param validate: for backwards compatibility; sets both skip_empty and fix_names
+        :param skip_empty: if True, remove falsey (empty strings, Nones) columns
+            (default True)
+        :param fix_names: if True, change column names to match datastore/splitgill
+            (default True)
         :returns: a list of column names in the order they were in the original data
             source
         """
+        if validate is not None:
+            skip_empty = validate
+            fix_names = validate
+
         columns = []
         for column in json.loads(self.columns):
-            if validate:
-                if not column:
-                    continue
-                column = column.replace('.', '_')
+            if skip_empty and not column:
+                continue
+            if fix_names:
+                column = prepare_field_name(column)
             columns.append(column)
         return columns
 
