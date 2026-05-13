@@ -104,8 +104,7 @@ def vds_slug_resolve(slug: str):
                 'version': resolved.version,
                 # todo: should we turn an empty resource_ids list into the list of all
                 #       available resources at this point or let it ride until query time?
-                'resource_ids': validate_datastore_resource_ids(resolved.resource_ids)
-                or [],
+                'resource_ids': resolved.resource_ids,
                 'created': resolved.created.isoformat(),
             }
         )
@@ -153,6 +152,10 @@ def vds_slug_resolve(slug: str):
             )
         )
 
+    # check the resource_ids are a list
+    resource_ids = result['resource_ids']
+    if isinstance(resource_ids, str):
+        result['resource_ids'] = resource_ids.split(',') if resource_ids else []
     # check that all the resources exist and are available
     try:
         valid_resource_ids = validate_datastore_resource_ids(result['resource_ids'])
