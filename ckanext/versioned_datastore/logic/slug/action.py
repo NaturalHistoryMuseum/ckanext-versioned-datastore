@@ -152,6 +152,10 @@ def vds_slug_resolve(slug: str):
             )
         )
 
+    # check the resource_ids are a list
+    resource_ids = result['resource_ids']
+    if isinstance(resource_ids, str):
+        result['resource_ids'] = resource_ids.split(',') if resource_ids else []
     # check that all the resources exist and are available
     try:
         valid_resource_ids = validate_datastore_resource_ids(result['resource_ids'])
