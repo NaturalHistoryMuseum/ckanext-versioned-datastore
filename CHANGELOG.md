@@ -1,3 +1,10 @@
+## v6.9.1 (2026-05-20)
+
+### Fix
+
+- **slug**: enfore resource_ids being compared as list
+- convert rescource ids into an array to prevent wrong error message
+
 ## v6.9.0 (2026-05-08)
 
 ### Feature
