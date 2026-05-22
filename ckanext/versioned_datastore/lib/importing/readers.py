@@ -74,11 +74,12 @@ def choose_reader_for_resource(
     return choose_reader(resource_format.lower(), source)
 
 
-def detect_encoding(source: Path) -> str:
+def detect_encoding(source: Path, test_encoding: bool = True) -> str:
     """
     Given a file, attempt to detect the character encoding it uses.
 
     :param source: the path to the file
+    :param test_encoding: whether to test the detected encoding - and some common alternatives if necessary (default True)
     :returns: the character encoding
     """
     with source.open('rb') as f:
@@ -99,7 +100,47 @@ def detect_encoding(source: Path) -> str:
         if encoding is None or encoding == 'ASCII':
             encoding = 'utf-8'
 
-    return encoding
+    if not test_encoding:
+        return encoding
+
+    # try these (in order) if the detected encoding doesn't work
+    fallback_encodings = ['utf-8', 'latin-1', 'cp1252']
+    encodings_to_test = [encoding] + [
+        e for e in fallback_encodings if e != encoding.lower()
+    ]
+    working_encoding = None
+
+    # reading the file multiple times is not ideal, but if the detected encoding is
+    # correct this will only loop once
+    for enc in encodings_to_test:
+        try:
+            with source.open('r', encoding=enc) as f:
+                while f.read(8192):
+                    pass
+                # we got all the way through the file without an error
+                working_encoding = enc
+                break
+        except UnicodeDecodeError:
+            continue
+
+    if working_encoding is None:
+        raise UnidentifiedEncoding(encoding, encodings_to_test)
+
+    return working_encoding
+
+
+class UnidentifiedEncoding(Exception):
+    """
+    Exception indicating that the encoding could not be identified.
+    """
+
+    def __init__(self, detected, tested):
+        super().__init__(
+            f'File encoding could not be identified. Detected encoding: {detected}. '
+            f'Also tested: {tested}'
+        )
+        self.detected = detected
+        self.tested = tested
 
 
 class Reader(abc.ABC):
@@ -220,12 +261,12 @@ class XLSReader(Reader):
         """
         self.source = source
         with self.source.open('rb') as f:
-            book = xlrd.open_workbook(f.read())
+            book = xlrd.open_workbook(file_contents=f.read())
             # todo: currently we don't deal with multisheeted spreadsheets, we just
             #       choose the first sheet and roll with it
             sheet = book.sheet_by_index(0)
             self.header = [str(cell.value) for cell in sheet.row(0)]
-            self.rows = list(sheet.rows())[1:]
+            self.rows = list(sheet.get_rows())[1:]
 
     def get_name(self) -> str:
         return 'XLS reader'
