@@ -261,12 +261,12 @@ class XLSReader(Reader):
         """
         self.source = source
         with self.source.open('rb') as f:
-            book = xlrd.open_workbook(f.read())
+            book = xlrd.open_workbook(file_contents=f.read())
             # todo: currently we don't deal with multisheeted spreadsheets, we just
             #       choose the first sheet and roll with it
             sheet = book.sheet_by_index(0)
             self.header = [str(cell.value) for cell in sheet.row(0)]
-            self.rows = list(sheet.rows())[1:]
+            self.rows = list(sheet.get_rows())[1:]
 
     def get_name(self) -> str:
         return 'XLS reader'
