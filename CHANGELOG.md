@@ -1,3 +1,10 @@
+## v6.9.2 (2026-05-27)
+
+### Fix
+
+- fix xlrd usage
+- test detected encodings
+
 ## v6.9.1 (2026-05-20)
 
 ### Fix
