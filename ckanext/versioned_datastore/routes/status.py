@@ -26,14 +26,24 @@ def get_download_details(download_id):
             extra_vars={'download_request': None},
         )
 
-    res_show = toolkit.get_action('resource_show')
     resources = {}
     if dl.core_record:
-        for k in dl.core_record.resource_ids_and_versions:
-            try:
-                resources[k] = res_show({}, {'id': k})
-            except:
-                continue
+        offset = 0
+        pkg_action = toolkit.get_action('current_package_list_with_resources')
+        unchecked_resource_ids = set(dl.core_record.resource_ids_and_versions.keys())
+        while len(unchecked_resource_ids) > 0:
+            packages = pkg_action({}, {'offset': 0, 'limit': 500})
+            if not packages:
+                break
+            for package in packages:
+                for resource in package.get('resources', []):
+                    if resource['id'] in dl.core_record.resource_ids_and_versions:
+                        unchecked_resource_ids.discard(resource['id'])
+                        # we could take the whole thing, but we only use the name atm
+                        resources[resource['id']] = {'name': resource['name']}
+            offset += len(packages)
+        for rid in unchecked_resource_ids:
+            resources[rid] = {'name': 'Unknown resource'}
 
     status_friendly = {
         DownloadRequest.state_initial: toolkit._('Waiting to start'),
