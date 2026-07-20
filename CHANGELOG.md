@@ -1,3 +1,9 @@
+## v6.9.3 (2026-07-20)
+
+### Performance
+
+- get resource names from package list
+
 ## v6.9.2 (2026-05-27)
 
 ### Fix
