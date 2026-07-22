@@ -1,49 +1,64 @@
 <div class="vds-download-popup">
     <form>
         {% if datastore == 'true' %}
-        <p><small>More advanced download options can be found on the <a
-            href="{{ searchUrl }}" target="_blank" id="vds-dl-search-link">search page</a>.</small>
-        </p>
-        <div class="form-group">
-            <div class="form-row"><label for="vds-dl-format">File format</label>
-                <select id="vds-dl-format" class="full-width-input" name="file.format">
-                    <option value="csv">CSV/TSV</option>
-                    <option value="dwc">Darwin Core</option>
-                    <option value="json">JSON</option>
-                </select>
-            </div>
+            <p>
+                <small>
+                    More advanced download options can be found on the
+                    <a href="{{ searchUrl }}" target="_blank" id="vds-dl-search-link">
+                        search page
+                    </a>.
+                </small>
+            </p>
+            <div class="form-group">
+                <div class="form-row"><label for="vds-dl-format">File format</label>
+                    <select id="vds-dl-format" class="full-width-input" name="file.format">
+                        <option value="csv">CSV/TSV</option>
+                        <option value="dwc">Darwin Core</option>
+                        <option value="json">JSON</option>
+                    </select>
+                </div>
 
-            <div class="form-row">
-                {% if multiResource == 'true' %}
-                <div>
-                    <label for="vds-dl-sep">One file per resource</label>
-                    <input id="vds-dl-sep" type="checkbox" name="file.separate_files">
-                </div>
-                {% endif %}
-                <div>
-                    <label for="vds-dl-empty">Skip empty columns</label>
-                    <input id="vds-dl-empty" type="checkbox"
-                           name="file.ignore_empty_fields">
+                <div class="form-row">
+                    {% if multiResource == 'true' %}
+                        <div>
+                            <label for="vds-dl-sep">One file per resource</label>
+                            <input id="vds-dl-sep" type="checkbox" name="file.separate_files">
+                        </div>
+                    {% endif %}
+                    <div>
+                        <label for="vds-dl-empty">Skip empty columns</label>
+                        <input id="vds-dl-empty" type="checkbox"
+                               name="file.ignore_empty_fields">
+                    </div>
                 </div>
             </div>
-        </div>
         {% endif %}
 
         <div class="form-group">
             <div class="form-row">
                 <label for="vds-dl-notifier">Notifications</label>
-                <p><small>Should we notify you when your download is ready?</small></p>
+                <p>
+                    <small>
+                        Downloads are not instant. Depending on size and server load,
+                        your file may take some time to generate. We can automatically
+                        notify you when your download is ready, or you can choose to
+                        check the queue yourself.
+                    </small>
+                </p>
                 <select id="vds-dl-notifier" class="full-width-input"
                         name="notifier.type">
+                    <option value="" disabled selected>
+                        Choose how you'd like to be notified
+                    </option>
                     <option value="email">
                         Email me
                     </option>
                     <option value="none">
-                        I'll check the download status manually
+                        No notification (check status manually)
                     </option>
                 </select>
             </div>
-            <div class="form-row" id="vds-dl-email-group">
+            <div class="form-row hidden" id="vds-dl-email-group">
                 <label for="vds-dl-email">Email address</label>
                 <input id="vds-dl-email" type="email" required
                        placeholder="data@nhm.ac.uk"
@@ -62,7 +77,7 @@
 
         <div>
             <button type="submit" class="btn btn-primary" id="vds-dl-submit">
-                <i class="fas fa-download"></i> {{ _('Submit') }}
+                <i class="fas fa-download"></i> {{ _('Start') }}
             </button>
             <button type="reset" class="btn btn-warning" id="vds-dl-cancel">
                 <i class="fas fa-times"></i> {{ _('Cancel') }}
@@ -72,7 +87,7 @@
 
     <div id="vds-dl-post-submit" class="hidden">
         <p>Your download has been queued. You can follow its progress at the link
-           below:</p>
+            below:</p>
         <a href="#" class="btn btn-primary" id="vds-dl-status-link" target="_blank"><i
             class="fas fa-hourglass-half"></i>
             Download status
