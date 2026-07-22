@@ -35,6 +35,7 @@
                 <p><small>Should we notify you when your download is ready?</small></p>
                 <select id="vds-dl-notifier" class="full-width-input"
                         name="notifier.type">
+                    <option value="" disabled selected>Choose how you'd like to be notified</option>
                     <option value="email">
                         Email me
                     </option>
@@ -43,7 +44,7 @@
                     </option>
                 </select>
             </div>
-            <div class="form-row" id="vds-dl-email-group">
+            <div class="form-row hidden" id="vds-dl-email-group">
                 <label for="vds-dl-email">Email address</label>
                 <input id="vds-dl-email" type="email" required
                        placeholder="data@nhm.ac.uk"
