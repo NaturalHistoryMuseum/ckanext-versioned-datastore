@@ -106,6 +106,15 @@ ckan.module('versioned_datastore_download-button', function ($) {
       }
     },
 
+    _onClickOutside: function (event) {
+      // hide popover when user clicks outside
+      if ($(event.target).closest(`#${this.popoverId}`).length === 0) {
+        this.el.popover('hide');
+        // remove listener
+        $(document).off('click', this._onClickOutside);
+      }
+    },
+
     _onShowPopover: function (event) {
       // emit/publish event for other download buttons to listen to
       this.sandbox.publish('vds_dl_popover_shown', this.el);
@@ -121,6 +130,9 @@ ckan.module('versioned_datastore_download-button', function ($) {
       this.popoverForm.on('reset', () => {
         this.el.popover('hide');
       });
+
+      // hide it when the user clicks outside the popover
+      $(document).on('click', this._onClickOutside);
 
       // hide/show the email group when user changes notif type
       const notifierSelect = this.popoverForm.find('#vds-dl-notifier');
