@@ -1,3 +1,20 @@
+## v6.9.4 (2026-07-27)
+
+### Fix
+
+- hide popup when user clicks outside
+- force selection of notification option
+
+### Style
+
+- reindent template
+
+### Minor UI Changes
+
+- expand download help text
+- change wording of no notification option
+- change submit button text
+
 ## v6.9.3 (2026-07-20)
 
 ### Performance
