@@ -35,8 +35,9 @@ else:
 
 def log_query(query, source):
     """
-    Call this to log a query dict to the query log file (if the config permits it). The
-    query is simply json dumped. If query logging is disabled then nothing happens.
+    Call this to log a query dict to the query log file (if the config permits it).
+
+    The query is simply json dumped. If query logging is disabled then nothing happens.
 
     :param query: the query dict
     :param source: the source of the query (e.g. multisearch or basicsearch)

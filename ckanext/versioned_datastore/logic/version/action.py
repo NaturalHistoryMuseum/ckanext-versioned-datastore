@@ -25,8 +25,9 @@ def vds_version_schema():
 @action(schema.vds_version_record(), helptext.vds_version_record, get=True)
 def vds_version_record(resource_id: str, record_id: str) -> List[int]:
     """
-    Retrieves all the versions available for a record in a resource. These will be
-    returned as a list of ints in ascending order.
+    Retrieves all the versions available for a record in a resource.
+
+    These will be returned as a list of ints in ascending order.
 
     :param resource_id: the resource ID
     :param record_id: the record ID
@@ -45,8 +46,9 @@ def vds_version_record(resource_id: str, record_id: str) -> List[int]:
 @action(schema.vds_version_resource(), helptext.vds_version_resource, get=True)
 def vds_version_resource(resource_id: str) -> List[int]:
     """
-    Returns a list of the available versions for a datastore resource. These will be in
-    ascending order.
+    Returns a list of the available versions for a datastore resource.
+
+    These will be in ascending order.
 
     :param resource_id: the resource ID
     :returns: the versions in ascending order

@@ -31,13 +31,15 @@ def vds_data_add(
     reingest: bool = False,
 ):
     """
-    Add data to the datastore for the given resource. The data added will be the data
-    found at the resource's URL unless a list of dict records is provided in which case
-    this will be added. The addition is asynchronous and so the result returned by
-    calling this action is information about the queued jobs. Two jobs will be queued,
-    an ingest job to store the data found at the URL/in the provided records, and then a
-    sync job, which updates the data search index making the data available for
-    searching (this will only run if the ingest succeeded).
+    Add data to the datastore for the given resource.
+
+    The data added will be the data found at the resource's URL unless a list of dict
+    records is provided in which case this will be added. The addition is asynchronous
+    and so the result returned by calling this action is information about the queued
+    jobs. Two jobs will be queued, an ingest job to store the data found at the URL/in
+    the provided records, and then a sync job, which updates the data search index
+    making the data available for searching (this will only run if the ingest
+    succeeded).
 
     If the replace flag is passed as True, all the existing data in the datastore for
     this resource will be deleted before the new data is added, resulting in the new
@@ -89,11 +91,12 @@ def vds_data_add(
 @action(schema.vds_data_delete(), helptext.vds_data_delete)
 def vds_data_delete(context: dict, resource_id: str):
     """
-    Deletes all the data from the given resource. This is an async operation as
-    signified by the return of this action which is details about the created jobs. The
-    data will be deleted by creating new deleted versions of the records in the resource
-    and thus the old data will still be available in old versions, but the latest
-    version of the resource will be empty.
+    Deletes all the data from the given resource.
+
+    This is an async operation as signified by the return of this action which is
+    details about the created jobs. The data will be deleted by creating new deleted
+    versions of the records in the resource and thus the old data will still be
+    available in old versions, but the latest version of the resource will be empty.
 
     Two jobs will be queued, one to delete all the records in MongoDB and then one to
     sync the changes with Elasticsearch.

@@ -74,9 +74,10 @@ def get_stat_icon(stat):
 
 def get_stat_activity_class(stat):
     """
-    Returns the activity css class to use for the given ImportStats object. The return
-    value is a string css class which either matches one of the activity item classes
-    from core ckan or matches one of the custom ones in this extension's css.
+    Returns the activity css class to use for the given ImportStats object.
+
+    The return value is a string css class which either matches one of the activity item
+    classes from core ckan or matches one of the custom ones in this extension's css.
 
     :param stat: the ImportStats object
     :returns: a string

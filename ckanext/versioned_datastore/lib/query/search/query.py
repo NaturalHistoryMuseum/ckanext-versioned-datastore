@@ -251,10 +251,11 @@ class BasicQuery(Query):
     @staticmethod
     def create_multipolygon_filter(coordinates: list) -> DSLQuery:
         """
-        Creates a Query object for the given multipolygon filters. Only the first group
-        in each polygon grouping will be used as elasticsearch doesn't support this type
-        of query yet (this kind of query is used for vacating space inside a polygon,
-        like a donut for example).
+        Creates a Query object for the given multipolygon filters.
+
+        Only the first group in each polygon grouping will be used as elasticsearch
+        doesn't support this type of query yet (this kind of query is used for vacating
+        space inside a polygon, like a donut for example).
 
         If more than one group is included then they are included as an or with a
         minimum must match of 1.
@@ -294,9 +295,11 @@ class BasicQuery(Query):
     @staticmethod
     def create_polygon_filter(coordinates: list) -> DSLQuery:
         """
-        Creates a polygon Query object. Only the first group in each polygon grouping
-        will be used as elasticsearch doesn't support this type of query yet (this kind
-        of query is used for vacating space inside a polygon, like a donut for example.
+        Creates a polygon Query object.
+
+        Only the first group in each polygon grouping will be used as elasticsearch
+        doesn't support this type of query yet (this kind of query is used for vacating
+        space inside a polygon, like a donut for example.
 
         If more than one group is included then they are included as an or with a
         minimum must match of 1.

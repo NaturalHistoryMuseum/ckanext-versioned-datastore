@@ -37,8 +37,10 @@ class Task(abc.ABC):
     @abc.abstractmethod
     def run(self, tmpdir: Path):
         """
-        Method stub for subclasses to override. This is automatically called by start
-        when a task begins after some setup is completed.
+        Method stub for subclasses to override.
+
+        This is automatically called by start when a task begins after some setup is
+        completed.
 
         :param tmpdir: a temporary directory which can be used by the task and will be
             cleaned up after this run method completes

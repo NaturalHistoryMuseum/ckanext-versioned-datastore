@@ -9,10 +9,12 @@ class IVersionedDatastore(Interface):
 
     def vds_before_search(self, request):
         """
-        Called right before the Search object is created and performed. Implementing
-        this hook allows modification of the request (including the query etc) before it
-        is run. It doesn't matter how the search request is made, this hook will be
-        called, so make sure your implementation works with all Query types etc.
+        Called right before the Search object is created and performed.
+
+        Implementing this hook allows modification of the request (including the query
+        etc) before it is run. It doesn't matter how the search request is made, this
+        hook will be called, so make sure your implementation works with all Query types
+        etc.
 
         :param request: a SearchRequest instance
         """
@@ -23,8 +25,9 @@ class IVersionedDatastore(Interface):
 
     def vds_is_read_only_resource(self, resource_id: str):
         """
-        Allows implementors to designate certain resources as read only. This is purely
-        a datastore concept and doesn't impact the actual resource from CKAN's point of
+        Allows implementors to designate certain resources as read only.
+
+        This is purely a datastore concept and doesn't impact the actual resource from CKAN's point of
         view. This is checked when performing the following actions:
 
             - vds_data_add
@@ -41,8 +44,9 @@ class IVersionedDatastore(Interface):
 
     def vds_reserve_slugs(self):
         """
-        Allows implementors to reserve queries using reserved pretty slugs. Implementors
-        should return a dict made up of reserved pretty slugs as keys and then the slug
+        Allows implementors to reserve queries using reserved pretty slugs.
+
+        Implementors should return a dict made up of reserved pretty slugs as keys and then the slug
         parameters as the values. These values should be another dict containing the
         following optional keys:
 
@@ -265,8 +269,9 @@ class IVersionedDatastoreDownloads(Interface):
 
     def download_after_run(self, request):
         """
-        Hook notifying that a download has finished (whether failed or completed). Does
-        not allow modification; purely for notification purposes.
+        Hook notifying that a download has finished (whether failed or completed).
+
+        Does not allow modification; purely for notification purposes.
 
         :param request: the DownloadRequest object
         :returns: None

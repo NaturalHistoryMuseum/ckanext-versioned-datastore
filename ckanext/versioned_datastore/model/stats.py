@@ -96,9 +96,10 @@ class ImportStats(DomainObject):
 
     def mark_error(self, error: Union[Exception, str]):
         """
-        Marks the ImportStats object as having finished with an error. Just the error
-        message is stored against the ImportStats object. "in_progress", "duration" and
-        "end" are also updated.
+        Marks the ImportStats object as having finished with an error.
+
+        Just the error message is stored against the ImportStats object. "in_progress",
+        "duration" and "end" are also updated.
 
         :param error: the exception object or string message
         """

@@ -172,8 +172,10 @@ class DwcDerivativeGenerator(BaseDerivativeGenerator):
 
     def _extract_record(self, record):
         """
-        Transform the data in a single row into the required format. Separates extension
-        fields from core fields and filters out any fields that don't match the schema.
+        Transform the data in a single row into the required format.
+
+        Separates extension fields from core fields and filters out any fields that
+        don't match the schema.
 
         :param record: the row of data
         :returns: core row (dict), extension rows keyed on extension name (dict of lists

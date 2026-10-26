@@ -62,9 +62,10 @@ def queue_ingest(
 
 def queue_delete(resource: dict) -> Tuple[Job, Job]:
     """
-    Queues a new delete job for the given resource to remove all records. This is a
-    versioned delete, so in reality all the data is maintained, just the latest versions
-    of all records are set to empty.
+    Queues a new delete job for the given resource to remove all records.
+
+    This is a versioned delete, so in reality all the data is maintained, just the
+    latest versions of all records are set to empty.
 
     :param resource: the resource dict
     :returns: a 2-tuple of the created ingest job and sync job which is dependent on the

@@ -23,9 +23,11 @@ class IdAsUrlTransform(BaseTransform):
 
     def __call__(self, data):
         """
-        Reformat an ID field as a URL (probably one that links to that record). Requires
-        an endpoint (config option ckanext.versioned_datastore.record_view_endpoint,
-        default 'object.view') taking the ID field as the 'uuid' named argument.
+        Reformat an ID field as a URL (probably one that links to that record).
+
+        Requires an endpoint (config option
+        ckanext.versioned_datastore.record_view_endpoint, default 'object.view') taking
+        the ID field as the 'uuid' named argument.
 
         :param data: the record data to be transformed
         :returns: the transformed data (or untransformed if there was an error).

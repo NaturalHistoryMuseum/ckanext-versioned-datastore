@@ -25,8 +25,9 @@ def vds_schema_latest():
 @action(schema.vds_schema_validate(), helptext.vds_schema_validate, get=True)
 def vds_schema_validate(query: dict, query_version: Optional[str] = None):
     """
-    Validates the given query against the given query schema version. If the query
-    version is not provided, the latest query schema version is used.
+    Validates the given query against the given query schema version.
+
+    If the query version is not provided, the latest query schema version is used.
 
     :param query: the query to validate
     :param query_version: the query schema version to validate against (default is None

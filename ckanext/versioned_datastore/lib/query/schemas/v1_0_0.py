@@ -664,8 +664,9 @@ class v1_0_0Hasher:
     @staticmethod
     def build_geo_polygon_query(points):
         """
-        Given a series of points, returns a string version of them. Note that we don't
-        sort them as that could change the meaning.
+        Given a series of points, returns a string version of them.
+
+        Note that we don't sort them as that could change the meaning.
 
         :param points: the points as lat lon pairs
         :returns: a string representing the points

@@ -7,9 +7,11 @@ blueprint = Blueprint(name='downloads', import_name=__name__, url_prefix='/downl
 @blueprint.route('/direct/<zip_name>')
 def direct(zip_name):
     """
-    Serves up the requested zip from the download directory. This is only registered
-    with flask when running in debug mode and therefore is only for testing in
-    development. In production we should always serve files through the web server.
+    Serves up the requested zip from the download directory.
+
+    This is only registered with flask when running in debug mode and therefore is only
+    for testing in development. In production we should always serve files through the
+    web server.
 
     :param zip_name: the zip name
     :returns: the send file response

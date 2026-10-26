@@ -156,9 +156,10 @@ class VersionedSearchPlugin(SingletonPlugin):
 
     def is_sg_configured(self) -> bool:
         """
-        Returns whether Splitgill is configured and ready for use. This checks if the
-        Mongo client, Elasticsearch client, and Splitgill client have all been created
-        and stored against this plugin instance.
+        Returns whether Splitgill is configured and ready for use.
+
+        This checks if the Mongo client, Elasticsearch client, and Splitgill client have
+        all been created and stored against this plugin instance.
 
         :returns: True if it's ready, False if not
         """

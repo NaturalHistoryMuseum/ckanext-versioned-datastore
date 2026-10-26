@@ -13,8 +13,9 @@ from ckanext.versioned_datastore.lib.utils import get_database
 
 def find_version(data_dict: dict) -> Optional[int]:
     """
-    Retrieve the version from the data_dict. The version can be specified as a parameter
-    in its own right or as a special filter in the filters dict using the key
+    Retrieve the version from the data_dict.
+
+    The version can be specified as a parameter in its own right or as a special filter in the filters dict using the key
     __version__. Using the version parameter is preferred and will override any filter
     version value. The filter method is provided because of limitations in the CKAN
     recline.js framework used by the NHM on CKAN 2.3 where no additional parameters can
@@ -47,10 +48,11 @@ def find_version(data_dict: dict) -> Optional[int]:
 
 def make_request(data_dict: dict) -> SearchRequest:
     """
-    Creates a SearchRequest from the given data_dict and returns it. The SearchRequest
-    object will use a BasicQuery as its query which will be made by this function from
-    the given data_dict. This function should be used by all basic actions which need to
-    use basic queries for searches.
+    Creates a SearchRequest from the given data_dict and returns it.
+
+    The SearchRequest object will use a BasicQuery as its query which will be made by
+    this function from the given data_dict. This function should be used by all basic
+    actions which need to use basic queries for searches.
 
     :param data_dict: the data_dict passed to the action
     :returns: a SearchRequest object
@@ -84,8 +86,9 @@ def make_request(data_dict: dict) -> SearchRequest:
 
 def format_facets(aggs: dict) -> dict:
     """
-    Formats the facet aggregation result into the format we require. Specifically we
-    expand the buckets out into a dict that looks like this:
+    Formats the facet aggregation result into the format we require.
+
+    Specifically we expand the buckets out into a dict that looks like this:
 
         {
             "facet1": {
@@ -167,8 +170,9 @@ def infer_type(
 
 def get_fields(resource_id: str, version: Optional[int] = None) -> List[dict]:
     """
-    Given a resource id, returns the fields that existed at the given version. If the
-    version is None then the fields for the latest version are returned.
+    Given a resource id, returns the fields that existed at the given version.
+
+    If the version is None then the fields for the latest version are returned.
 
     The response format is important as it must match the requirements of reclineJS's
     field definitions. See

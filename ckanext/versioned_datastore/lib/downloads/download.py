@@ -391,7 +391,6 @@ class DownloadRunManager:
 
         :returns:
         """
-
         self.request.update_status(DownloadRequest.state_derivative_gen)
 
         if self.derivative_record.filepath is None:

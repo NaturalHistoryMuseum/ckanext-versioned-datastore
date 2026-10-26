@@ -84,8 +84,9 @@ def get_details_at(
     resource_id: str, version: Optional[int] = None
 ) -> Optional[DatastoreResourceDetails]:
     """
-    Retrieve the details that apply at the given version. If the version is None (the
-    default) then the latest details are returned.
+    Retrieve the details that apply at the given version.
+
+    If the version is None (the default) then the latest details are returned.
 
     :param resource_id: the resource ID to get the details for
     :param version: the version of the details to get (or None for latest)
@@ -114,9 +115,10 @@ def get_details_at(
 
 def get_last_file_hash(resource_id):
     """
-    Retrieves the most recent file hash and returns it. If there is no most recent file
-    hash (either because there isn't a file hash present or because there aren't any
-    details rows available) then this function returns None.
+    Retrieves the most recent file hash and returns it.
+
+    If there is no most recent file hash (either because there isn't a file hash present
+    or because there aren't any details rows available) then this function returns None.
 
     :param resource_id: the resource id
     :returns: None or the most recent file hash

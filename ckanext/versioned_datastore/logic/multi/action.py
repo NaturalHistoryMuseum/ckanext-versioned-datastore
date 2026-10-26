@@ -169,7 +169,6 @@ def vds_multi_autocomplete_field_latest(
     :returns: the total number of fields matched and details about the fields that were
         matched
     """
-
     # if no resource IDs were provided, use all resources available to the user
     if not resource_ids:
         resource_ids = sorted(get_available_datastore_resources())
@@ -362,8 +361,9 @@ def vds_multi_stats(data_dict: dict, field: str, missing: Optional[float] = None
 @action(schema.vds_multi_direct(), helptext.vds_multi_direct)
 def vds_multi_direct(data_dict: dict):
     """
-    Allows users to run Elasticsearch queries directly against the cluster. The raw
-    response from Elasticsearch is returned directly as well. This is locked down to
+    Allows users to run Elasticsearch queries directly against the cluster.
+
+    The raw response from Elasticsearch is returned directly as well. This is locked down to
     admin users only to avoid misuse, but can be used from other extensions easily with
     the ignore_auth context option.
 
