@@ -48,9 +48,10 @@ class SearchRequest:
 
     def add_param(self, param: str, value: Any):
         """
-        Add a request parameter to be passed as part of this search request. The search
-        request is completed using the _msearch endpoint on Elasticsearch so only
-        parameters that work on that endpoint should be added.
+        Add a request parameter to be passed as part of this search request.
+
+        The search request is completed using the _msearch endpoint on Elasticsearch so
+        only parameters that work on that endpoint should be added.
 
         :param param: the param name
         :param value: the param value
@@ -82,8 +83,9 @@ class SearchRequest:
 
     def indexes(self) -> List[str]:
         """
-        A list of the indexes this request will search over. This list is created from
-        the resource_ids specified in the query.
+        A list of the indexes this request will search over.
+
+        This list is created from the resource_ids specified in the query.
 
         :returns: a list of index names, this could include wildcards
         """
@@ -108,9 +110,10 @@ class SearchRequest:
 
     def get_safe_size(self) -> int:
         """
-        The size that is actually going to be used in the request to Elasticsearch. This
-        method returns a value based on the `self.size` property but capped between 0
-        and 1000, with a default value of 100 if `self.size` is set to None.
+        The size that is actually going to be used in the request to Elasticsearch.
+
+        This method returns a value based on the `self.size` property but capped between
+        0 and 1000, with a default value of 100 if `self.size` is set to None.
 
         :returns: a number between 0 and 1000
         """
@@ -312,8 +315,9 @@ class SearchResponse:
     @property
     def next_after(self) -> Optional[list]:
         """
-        Returns the after value to be used to get the next set of results. If there are
-        no more results to get, None is returned.
+        Returns the after value to be used to get the next set of results.
+
+        If there are no more results to get, None is returned.
 
         :returns: None or a list
         """

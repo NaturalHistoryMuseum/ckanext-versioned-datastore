@@ -39,8 +39,9 @@ def generate_query_hash(query: SchemaQuery) -> str:
 
 def generate_pretty_slug(word_lists=(list_one, list_two, list_three)) -> str:
     """
-    Generate a new slug using the adjective and animal lists available. The default
-    word_lists value is a trio of lists: (adjectives, adjectives, animals). This
+    Generate a new slug using the adjective and animal lists available.
+
+    The default word_lists value is a trio of lists: (adjectives, adjectives, animals). This
     produces >31,000,000 unique combinations which should be more than enough! This
     function does have the potential to produce duplicate adjectives (for example,
     green-green-llama) but the chances are really low and it doesn't really matter.
@@ -57,10 +58,11 @@ def create_slug(
     attempts=5,
 ) -> Tuple[bool, Optional[DatastoreSlug]]:
     """
-    Creates a new slug in the database and returns the saved DatastoreSlug object. If a
-    slug already exists under the query hash then the existing slug entry is returned.
-    In addition to the slug object, also returned is information about whether the slug
-    was new or not.
+    Creates a new slug in the database and returns the saved DatastoreSlug object.
+
+    If a slug already exists under the query hash then the existing slug entry is
+    returned. In addition to the slug object, also returned is information about whether
+    the slug was new or not.
 
     :param pretty_slug: whether to generate a pretty slug or just use the uuid id of the
         slug, by default this is True
@@ -171,8 +173,9 @@ class DuplicateSlugException(Exception):
 
 def reserve_slug(reserved_pretty_slug: str, query: SchemaQuery) -> DatastoreSlug:
     """
-    This function can be used to reserve a slug using a specific string. This should
-    probably only be called during this extension's initialisation via the
+    This function can be used to reserve a slug using a specific string.
+
+    This should probably only be called during this extension's initialisation via the
     vds_reserve_slugs interface function.
 
     If a slug already exists in the database with the same reserved pretty slug and the

@@ -16,8 +16,9 @@ schema_base_path = (
 
 def register_schema(version: str, schema: dict):
     """
-    Registers a new schema with the given version into the central schemas dict. The
-    schema parameter should be a subclass of the Schema class but generally must at
+    Registers a new schema with the given version into the central schemas dict.
+
+    The schema parameter should be a subclass of the Schema class but generally must at
     least provide the translate and validate methods. After registration, the schemas
     dict is updated to ensure the correct sort order is in use.
 
@@ -51,9 +52,10 @@ class InvalidQuerySchemaVersionError(Exception):
 
 def validate_query(query: dict, version: str) -> bool:
     """
-    Validate the given query dict against the query schema for the given version. If the
-    version doesn't match any registered schemas then an InvalidQuerySchemaVersionError
-    will be raised.
+    Validate the given query dict against the query schema for the given version.
+
+    If the version doesn't match any registered schemas then an
+    InvalidQuerySchemaVersionError will be raised.
 
     :param query: the query dict
     :param version: the query schema version to validate against
@@ -146,8 +148,9 @@ class Schema(abc.ABC):
     @abc.abstractmethod
     def validate(self, query: dict):
         """
-        Validate the given query against this schema. Failures are marked raising
-        jsonschema exceptions.
+        Validate the given query against this schema.
+
+        Failures are marked raising jsonschema exceptions.
 
         :param query: the query dict to validate
         """

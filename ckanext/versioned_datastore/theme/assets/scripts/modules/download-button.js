@@ -146,6 +146,7 @@ ckan.module('versioned_datastore_download-button', function ($) {
           emailGroup.addClass('hidden');
           emailBox.removeAttr('required');
         }
+        updateSubmitButton();
       });
 
       // prevent the form submitting until we're ready
@@ -155,14 +156,24 @@ ckan.module('versioned_datastore_download-button', function ($) {
         e.preventDefault();
       });
 
+      let queryReady = false;
       // set the query and make sure the search page link is correct
       this._setQuery().then(() => {
         this.popover
           .find('#vds-dl-search-link')
           .attr('href', this.templateOptions.searchUrl);
         this.popoverForm.on('submit', this._onSubmit);
-        submitButton.removeAttr('disabled');
+        queryReady = true;
+        updateSubmitButton();
       });
+
+      // enable the submit button if the notifier field is valid and query is ready
+      const updateSubmitButton = () => {
+        const validNotifier = notifierSelect.val();
+        if (validNotifier && queryReady) {
+          submitButton.removeAttr('disabled');
+        }
+      };
     },
 
     _onSubmit: function (event) {

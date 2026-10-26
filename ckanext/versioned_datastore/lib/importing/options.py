@@ -12,8 +12,9 @@ def get_options(
     version: Optional[int] = None,
 ) -> Optional[ParsingOptions]:
     """
-    Retrieves the resource's parsing options that apply for the given version. If the
-    version is None, returns the latest options.
+    Retrieves the resource's parsing options that apply for the given version.
+
+    If the version is None, returns the latest options.
 
     :param resource_id: the resource ID
     :param version: optional version which, if passed, will mean the options returned
@@ -41,8 +42,9 @@ def get_options(
 
 def update_options(resource_id: str, overrides: Optional[dict] = None) -> Optional[int]:
     """
-    Update the options for the given resource using the overrides if given. If no
-    options are set on the resource then some default ones are created and added.
+    Update the options for the given resource using the overrides if given.
+
+    If no options are set on the resource then some default ones are created and added.
 
     :param resource_id: the resource ID
     :param overrides: any override options to set
@@ -78,8 +80,9 @@ def update_options(resource_id: str, overrides: Optional[dict] = None) -> Option
 
 def create_default_options_builder() -> ParsingOptionsBuilder:
     """
-    Creates an options builder with some sensible default options set. This is
-    deliberately pretty slim (just the minimum required options are set). Use
+    Creates an options builder with some sensible default options set.
+
+    This is deliberately pretty slim (just the minimum required options are set). Use
     vds_update_options to make modifications.
 
     :returns: a ParsingOptionsBuilder instance

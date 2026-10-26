@@ -29,8 +29,10 @@ def vds_slug_create(
     nav_slug: bool = False,
 ):
     """
-    Creates a slug for the given query options. If the slug already exists then this
-    will be indicated in the is_new key of the response dict.
+    Creates a slug for the given query options.
+
+    If the slug already exists then this will be indicated in the is_new key of the
+    response dict.
 
     :param resource_ids: the resource IDs to search over (no value or an empty list will
         result in a search over all resources at the time of recovering the slug and
@@ -77,9 +79,10 @@ def vds_slug_create(
 @action(schema.vds_slug_resolve(), helptext.vds_slug_resolve, get=True)
 def vds_slug_resolve(slug: str):
     """
-    Resolves the given slug and returns the query details. If the provided slug string
-    is a DOI and the query_dois plugin is loaded, this action also checks that plugin
-    for DOIs and returns the query details of the DOI.
+    Resolves the given slug and returns the query details.
+
+    If the provided slug string is a DOI and the query_dois plugin is loaded, this
+    action also checks that plugin for DOIs and returns the query details of the DOI.
 
     :param slug: the slug to resolve
     :returns: the slug query details, or a ValidationError if no slug could be resolved
@@ -189,8 +192,10 @@ def vds_slug_resolve(slug: str):
 @action(schema.vds_slug_reserve(), helptext.vds_slug_reserve)
 def vds_slug_reserve(context: dict, current_slug: str, new_reserved_slug: str):
     """
-    Attempts to reserve the given slug under a new name. Each slug can only have one
-    reserved name so if a reserved name already exists, the new name will overwrite it.
+    Attempts to reserve the given slug under a new name.
+
+    Each slug can only have one reserved name so if a reserved name already exists, the
+    new name will overwrite it.
 
     Note that only sysadmins can update a reserved slug name, but normal users can add a
     reserved name.

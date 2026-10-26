@@ -8,9 +8,10 @@ from ckanext.versioned_datastore.lib.utils import get_database
 
 def _get_field_type(field: DataField) -> List[Union[str, dict]]:
     """
-    Given a field, get its Avro type information. If the field is a complex type (list,
-    dict) this function will recurse to create type information for the field and its
-    children.
+    Given a field, get its Avro type information.
+
+    If the field is a complex type (list, dict) this function will recurse to create
+    type information for the field and its children.
 
     :param field: the field to create schema for
     :returns: the schema for the field as

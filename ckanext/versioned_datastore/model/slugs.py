@@ -50,8 +50,9 @@ class DatastoreSlug(DomainObject):
 
     def get_slug_string(self):
         """
-        Returns the slug string to be used for this slug. This will be the first non-
-        None value from the following attributes in this order: reserved_pretty_slug,
+        Returns the slug string to be used for this slug.
+
+        This will be the first non- None value from the following attributes in this order: reserved_pretty_slug,
         pretty_slug or id.
 
         :returns: the slug string

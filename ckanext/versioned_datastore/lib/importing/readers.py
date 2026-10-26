@@ -30,9 +30,10 @@ class ReaderNotFound(Exception):
 
 def choose_reader(resource_format: str, source: Union[Path, List[dict]]) -> 'Reader':
     """
-    Chooses an appropriate reader for the provided source. If the source is a file, this
-    uses the resource_format to choose the reader, if the source is a list of dicts,
-    then the MemoryReader is used.
+    Chooses an appropriate reader for the provided source.
+
+    If the source is a file, this uses the resource_format to choose the reader, if the
+    source is a list of dicts, then the MemoryReader is used.
 
     :param resource_format: the resource format
     :param source: the source data, either a path to a file, or a list of dicts
@@ -276,11 +277,12 @@ class XLSReader(Reader):
 
     def read(self) -> Iterable[dict]:
         """
-        Yields a dict for each row in the file's first sheet. We do some basic handling
-        of types to ensure text, numbers, and booleans are converted correctly. Dates
-        are not handled because the way dates are handled in XLS files is extremely
-        complicated, and it's easier just to tell people not to do it, or use a string
-        representation that Splitgill can parse.
+        Yields a dict for each row in the file's first sheet.
+
+        We do some basic handling of types to ensure text, numbers, and booleans are
+        converted correctly. Dates are not handled because the way dates are handled in
+        XLS files is extremely complicated, and it's easier just to tell people not to
+        do it, or use a string representation that Splitgill can parse.
 
         Empty field names, empty values, and values we can't convert are ignored.
 
@@ -334,9 +336,10 @@ class XLSXReader(Reader):
 
     def read(self) -> Iterable[dict]:
         """
-        Yields the rows from the spreadsheet's first sheet as dicts. All type
-        conversions are handled by openpyxl. Empty field names or empty cell values are
-        ignored.
+        Yields the rows from the spreadsheet's first sheet as dicts.
+
+        All type conversions are handled by openpyxl. Empty field names or empty cell
+        values are ignored.
 
         :returns: a dict per row
         """
@@ -368,9 +371,10 @@ class MemoryReader(Reader):
 
     def get_fields(self) -> List[str]:
         """
-        Return the fields present in the source dicts. The fields will be returned in
-        the order they are found in the source from first dict to last. This ensures the
-        ordering is representative of the source.
+        Return the fields present in the source dicts.
+
+        The fields will be returned in the order they are found in the source from first
+        dict to last. This ensures the ordering is representative of the source.
 
         :returns: a list of field names
         """

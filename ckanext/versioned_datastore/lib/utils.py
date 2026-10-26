@@ -139,8 +139,10 @@ def get_latest_resource_fields(resource_ids: List[str]) -> Dict[str, Dict[str, D
 
 def get_database(resource_id: str) -> SplitgillDatabase:
     """
-    Retrieves a SplitgillDatabase object for the given resource ID. If the
-    SplitgillClient on the VDS plugin isn't yet configured, an exception is raised.
+    Retrieves a SplitgillDatabase object for the given resource ID.
+
+    If the SplitgillClient on the VDS plugin isn't yet configured, an exception is
+    raised.
 
     :param resource_id: the resource's ID
     :returns: a SplitgillDatabase
@@ -151,8 +153,9 @@ def get_database(resource_id: str) -> SplitgillDatabase:
 
 def sg_client() -> SplitgillClient:
     """
-    Retrieves a Splitgill client object. If Splitgill is not configured yet on the VDS
-    plugin, an exception is raised.
+    Retrieves a Splitgill client object.
+
+    If Splitgill is not configured yet on the VDS plugin, an exception is raised.
 
     :returns: an SplitgillClient object
     """
@@ -164,8 +167,9 @@ def sg_client() -> SplitgillClient:
 
 def es_client() -> Elasticsearch:
     """
-    Retrieves an Elasticsearch client for use on the in use cluster. If Splitgill is not
-    configured yet on the VDS plugin, an exception is raised.
+    Retrieves an Elasticsearch client for use on the in use cluster.
+
+    If Splitgill is not configured yet on the VDS plugin, an exception is raised.
 
     :returns: an Elasticsearch object
     """
@@ -177,8 +181,9 @@ def es_client() -> Elasticsearch:
 
 def mongo_client() -> MongoClient:
     """
-    Retrieves a Mongo client for use on the in use database instance. If Splitgill is
-    not configured yet on the VDS plugin, an exception is raised.
+    Retrieves a Mongo client for use on the in use database instance.
+
+    If Splitgill is not configured yet on the VDS plugin, an exception is raised.
 
     :returns: an MongoClient object
     """
@@ -272,9 +277,10 @@ def is_resource_read_only(resource_id: str) -> bool:
 
 def is_datastore_resource(resource_id: str) -> bool:
     """
-    Checks if any data has made it to Elasticsearch for this resource ID. Note that this
-    only checks Elasticsearch, it doesn't check MongoDB, and is therefore intended to
-    simply test if there is any searchable data for the resource.
+    Checks if any data has made it to Elasticsearch for this resource ID.
+
+    Note that this only checks Elasticsearch, it doesn't check MongoDB, and is therefore
+    intended to simply test if there is any searchable data for the resource.
 
     :param resource_id: the resource id
     :returns: True if the resource is a datastore resource, False if not
@@ -284,12 +290,13 @@ def is_datastore_resource(resource_id: str) -> bool:
 
 def is_datastore_only_resource(resource_url: str) -> bool:
     """
-    Checks whether the resource url is a datastore only resource url. When uploading
-    data directly to the API without using a source file/URL the url of the resource
-    will be set to "_datastore_only_resource" to indicate that as such. This function
-    checks to see if the resource URL provided is one of these URLs. Note that we check
-    a few different scenarios as CKAN has the nasty habit of adding a protocol onto the
-    front of these URLs when saving the resource, sometimes.
+    Checks whether the resource url is a datastore only resource url.
+
+    When uploading data directly to the API without using a source file/URL the url of
+    the resource will be set to "_datastore_only_resource" to indicate that as such.
+    This function checks to see if the resource URL provided is one of these URLs. Note
+    that we check a few different scenarios as CKAN has the nasty habit of adding a
+    protocol onto the front of these URLs when saving the resource, sometimes.
 
     :param resource_url: the URL of the resource
     :returns: True if the resource is a datastore only resource, False if not
@@ -303,11 +310,12 @@ def is_datastore_only_resource(resource_url: str) -> bool:
 
 def is_ingestible(resource: dict) -> bool:
     """
-    Returns True if the resource can be ingested into the datastore and False if not. To
-    be ingestible, the resource must either be a datastore only resource (signified by
-    the url being set to _datastore_only_resource) or have a format that we can ingest
-    (the format field on the resource is used for this, not the URL). If the url is
-    None, False is returned. This is technically not possible due to a Resource model
+    Returns True if the resource can be ingested into the datastore and False if not.
+
+    To be ingestible, the resource must either be a datastore only resource (signified
+    by the url being set to _datastore_only_resource) or have a format that we can
+    ingest (the format field on the resource is used for this, not the URL). If the url
+    is None, False is returned. This is technically not possible due to a Resource model
     constraint, but it's worth covering off anyway.
 
     :param resource: the resource dict
