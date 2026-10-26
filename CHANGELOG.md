@@ -1,3 +1,24 @@
+## v6.9.5 (2026-10-26)
+
+### Fix
+
+- ensure that the download submit button is disabled until notification option is chosen
+
+### Refactor
+
+- ruff formatting run on all files
+- docformatter updated  changes
+
+### CI System(s)
+
+- update all pre-commits
+- update docformatter
+- update action versions update the actions to the latest versions
+
+### Chores/Misc
+
+- update team names
+
 ## v6.9.4 (2026-07-27)
 
 ### Fix
