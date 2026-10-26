@@ -22,7 +22,7 @@ repos:
         args: [ '--fix', '--select', 'I', '--select', 'F401', '--fix-only' ]
       - id: ruff-format
   - repo: https://github.com/PyCQA/docformatter
-    rev: v1.7.7
+    rev: v1.7.8
     hooks:
       - id: docformatter
         args: [ '-i', '--config', './pyproject.toml' ]
