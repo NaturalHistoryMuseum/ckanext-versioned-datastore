@@ -31,9 +31,17 @@ import string
 
 sets = [
     # the name keys here MUST match the ones used in the v1_0_0Schema class
-    ('50m-admin-0-countries-v4.1.0.geojson', 'v1.0.0-countries.json', ('NAME_EN', 'NAME')),
-    ('50m-geography-regions-v4.1.0.geojson', 'v1.0.0-geography.json', ('name_en', 'name')),
-    ('50m-marine-regions-v4.1.0.geojson', 'v1.0.0-marine.json', ('name', )),
+    (
+        '50m-admin-0-countries-v4.1.0.geojson',
+        'v1.0.0-countries.json',
+        ('NAME_EN', 'NAME'),
+    ),
+    (
+        '50m-geography-regions-v4.1.0.geojson',
+        'v1.0.0-geography.json',
+        ('name_en', 'name'),
+    ),
+    ('50m-marine-regions-v4.1.0.geojson', 'v1.0.0-marine.json', ('name',)),
 ]
 
 for source, schema, name_keys in sets:
@@ -46,8 +54,16 @@ for source, schema, name_keys in sets:
     names = set()
     for feature in geojson['features']:
         # again, this MUST match the method used in the v1_0_0Schema class
-        name = string.capwords(next(iter(
-            filter(None, (feature[u'properties'].get(key, None) for key in name_keys)))))
+        name = string.capwords(
+            next(
+                iter(
+                    filter(
+                        None,
+                        (feature['properties'].get(key, None) for key in name_keys),
+                    )
+                )
+            )
+        )
         names.add(name)
 
     # replace the enum in the definitions, the next(iter()) is used so that we don't have to know
@@ -55,7 +71,7 @@ for source, schema, name_keys in sets:
     # the definitions in the schemas is changed, beware!
     next(iter(schema['definitions'].values()))['enum'] = sorted(names)
 
-    with open(schema,  'w') as f:
+    with open(schema, 'w') as f:
         json.dump(schema, f, sort_keys=True, indent=2)
 ```
 
