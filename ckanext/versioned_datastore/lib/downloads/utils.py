@@ -140,17 +140,14 @@ def calculate_field_counts(
     :returns: a dict of fields -> counts
     """
     database = get_database(resource_id)
-    # todo: depending on what this is used for, should this be using get_data_fields?
     # grab all the fields at this version
-    all_fields = database.get_parsed_fields(version)
+    all_fields = database.get_data_fields(version)
     # grab the fields that appear in this specific query's results
     found_fields = {
-        field.path for field in database.get_parsed_fields(version, query.to_dsl())
+        field.path: field.count
+        for field in database.get_parsed_fields(version, query.to_dsl())
     }
-    return {
-        field.path: field.count if field.path in found_fields else 0
-        for field in all_fields
-    }
+    return {field.path: found_fields.get(field.path, 0) for field in all_fields}
 
 
 def filter_data_fields(data, field_counts, prefix=None):
