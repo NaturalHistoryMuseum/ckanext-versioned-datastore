@@ -142,12 +142,13 @@ def calculate_field_counts(
     database = get_database(resource_id)
     # grab all the fields at this version
     all_fields = database.get_data_fields(version)
+    all_field_names = list(set([field.parsed_path for field in all_fields]))
     # grab the fields that appear in this specific query's results
     found_fields = {
         field.path: field.count
         for field in database.get_parsed_fields(version, query.to_dsl())
     }
-    return {field.path: found_fields.get(field.path, 0) for field in all_fields}
+    return {field: found_fields.get(field, 0) for field in all_field_names}
 
 
 def filter_data_fields(data, field_counts, prefix=None):
