@@ -1,3 +1,9 @@
+## v6.10.1 (2026-11-10)
+
+### Fix
+
+- used parsed_path to account for nested fields
+
 ## v6.10.0 (2026-11-02)
 
 ## v6.9.5 (2026-10-26)
