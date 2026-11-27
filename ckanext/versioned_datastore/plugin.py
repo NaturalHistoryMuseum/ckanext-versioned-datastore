@@ -17,6 +17,7 @@ from splitgill.manager import SplitgillClient
 from ckanext.versioned_datastore import cli, helpers, routes
 from ckanext.versioned_datastore.interfaces import IVersionedDatastoreQuerySchema
 from ckanext.versioned_datastore.lib import utils
+from ckanext.versioned_datastore.lib.cleanup_download import cleanup_download
 from ckanext.versioned_datastore.lib.query.schema import register_schema
 from ckanext.versioned_datastore.lib.query.schemas.v1_0_0 import v1_0_0Schema
 from ckanext.versioned_datastore.lib.query.search.query import SchemaQuery
@@ -336,6 +337,14 @@ class VersionedSearchPlugin(SingletonPlugin):
             clear_cache_region('versioned_datastore', utils, cache_name='vds')
         except CacheClearError as e:
             log.error(e)
+
+    # IResourceController
+    def after_resource_update(self, context, resource):
+        """
+        Cleanup download files when resource is updated.
+        """
+        if not resource.get('datastore_active'):
+            cleanup_download(resource.get('id'))
 
     # IPackageController
     def after_dataset_create(self, context: dict, pkg_dict: dict):
